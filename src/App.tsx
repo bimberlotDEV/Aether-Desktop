@@ -1,0 +1,29 @@
+import { Routes, Route } from 'react-router-dom'
+import { Sidebar } from '@/components/Sidebar'
+import { CommandPalette } from '@/components/CommandPalette'
+import { Pulse } from '@/routes/Pulse'
+import { Spaces } from '@/routes/Spaces'
+import { Vault } from '@/routes/Vault'
+import { Activity } from '@/routes/Activity'
+import { Settings } from '@/routes/Settings'
+
+export function App() {
+  return (
+    <div
+      className="flex h-screen w-screen overflow-hidden"
+      style={{ backgroundColor: 'var(--color-bg)' }}
+    >
+      <Sidebar />
+      <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <Routes>
+          <Route path="/" element={<Pulse />} />
+          <Route path="/spaces" element={<Spaces />} />
+          <Route path="/vault" element={<Vault />} />
+          <Route path="/activity" element={<Activity />} />
+          <Route path="/settings" element={<Settings />} />
+        </Routes>
+      </main>
+      <CommandPalette />
+    </div>
+  )
+}
