@@ -1,5 +1,5 @@
 import { invoke } from '@tauri-apps/api/core'
-import type { AppSetting, UserProfile, Space, ModuleInstance, SpaceWithDetails, ActivityEvent } from './types'
+import type { AppSetting, UserProfile, Space, ModuleInstance, SpaceWithDetails, ActivityEvent, Note, NoteListItem, NoteSearchResult } from './types'
 
 // ─── Settings ────────────────────────────────────────────
 export async function getSetting(key: string): Promise<AppSetting | null> {
@@ -119,6 +119,57 @@ export async function reorderSpaces(ids: string[]): Promise<void> {
 
 export async function duplicateSpace(id: string): Promise<Space> {
   return invoke('duplicate_space', { id })
+}
+
+
+// ─── Notes ───────────────────────────────────────────────
+export async function createNote(spaceId: string): Promise<Note> {
+  return invoke('create_note', { spaceId })
+}
+export async function getNote(id: string): Promise<Note | null> {
+  return invoke('get_note', { id })
+}
+export async function updateNote(
+  id: string,
+  params: { title?: string; content?: string; excerpt?: string; expectedRevision?: number }
+): Promise<Note | null> {
+  return invoke('update_note', {
+    id, title: params.title ?? null, content: params.content ?? null,
+    excerpt: params.excerpt ?? null, expectedRevision: params.expectedRevision ?? null,
+  })
+}
+export async function listNotesBySpace(spaceId: string): Promise<NoteListItem[]> {
+  return invoke('list_notes_by_space', { spaceId })
+}
+export async function listRecentNotes(spaceId?: string, limit?: number): Promise<NoteListItem[]> {
+  return invoke('list_recent_notes', { spaceId: spaceId ?? null, limit: limit ?? null })
+}
+export async function listPinnedNotes(spaceId?: string): Promise<NoteListItem[]> {
+  return invoke('list_pinned_notes', { spaceId: spaceId ?? null })
+}
+export async function listArchivedNotes(spaceId?: string): Promise<NoteListItem[]> {
+  return invoke('list_archived_notes', { spaceId: spaceId ?? null })
+}
+export async function searchNotes(query: string, spaceId?: string, limit?: number): Promise<NoteSearchResult[]> {
+  return invoke('search_notes', { query, spaceId: spaceId ?? null, limit: limit ?? null })
+}
+export async function pinNote(id: string, pinned: boolean): Promise<boolean> {
+  return invoke('pin_note', { id, pinned })
+}
+export async function archiveNote(id: string): Promise<boolean> {
+  return invoke('archive_note', { id })
+}
+export async function restoreNote(id: string): Promise<boolean> {
+  return invoke('restore_note', { id })
+}
+export async function deleteNote(id: string): Promise<boolean> {
+  return invoke('delete_note', { id })
+}
+export async function moveNote(id: string, newSpaceId: string): Promise<boolean> {
+  return invoke('move_note', { id, newSpaceId })
+}
+export async function duplicateNote(id: string): Promise<Note> {
+  return invoke('duplicate_note', { id })
 }
 
 // ─── Activity ────────────────────────────────────────────

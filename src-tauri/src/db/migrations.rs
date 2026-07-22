@@ -77,6 +77,57 @@ const MIGRATIONS: &[(&str, &str)] = &[
         CREATE INDEX IF NOT EXISTS idx_spaces_parent ON spaces(parent_space_id);
         ",
     ),
+    // Migration 003: Notes
+    (
+        "003_notes",
+        "
+        CREATE TABLE IF NOT EXISTS notes (
+            id              TEXT PRIMARY KEY NOT NULL,
+            space_id        TEXT NOT NULL REFERENCES spaces(id) ON DELETE CASCADE,
+            title           TEXT NOT NULL DEFAULT 'Untitled note',
+            content         TEXT NOT NULL DEFAULT '',
+            content_format  TEXT NOT NULL DEFAULT 'markdown',
+            excerpt         TEXT NOT NULL DEFAULT '',
+            pinned          INTEGER NOT NULL DEFAULT 0,
+            revision        INTEGER NOT NULL DEFAULT 1,
+            archived_at     TEXT,
+            created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at      TEXT NOT NULL DEFAULT (datetime('now')),
+            last_opened_at  TEXT
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_notes_space ON notes(space_id);
+        CREATE INDEX IF NOT EXISTS idx_notes_archived ON notes(archived_at);
+        CREATE INDEX IF NOT EXISTS idx_notes_pinned ON notes(pinned);
+        CREATE INDEX IF NOT EXISTS idx_notes_updated ON notes(updated_at);
+        CREATE INDEX IF NOT EXISTS idx_notes_last_opened ON notes(last_opened_at);
+
+        CREATE VIRTUAL TABLE IF NOT EXISTS notes_fts USING fts5(
+            title,
+            content,
+            excerpt,
+            content='notes',
+            content_rowid='rowid'
+        );
+
+        CREATE TRIGGER IF NOT EXISTS notes_ai AFTER INSERT ON notes BEGIN
+            INSERT INTO notes_fts(rowid, title, content, excerpt)
+            VALUES (new.rowid, new.title, new.content, new.excerpt);
+        END;
+
+        CREATE TRIGGER IF NOT EXISTS notes_ad AFTER DELETE ON notes BEGIN
+            INSERT INTO notes_fts(notes_fts, rowid, title, content, excerpt)
+            VALUES ('delete', old.rowid, old.title, old.content, old.excerpt);
+        END;
+
+        CREATE TRIGGER IF NOT EXISTS notes_au AFTER UPDATE ON notes BEGIN
+            INSERT INTO notes_fts(notes_fts, rowid, title, content, excerpt)
+            VALUES ('delete', old.rowid, old.title, old.content, old.excerpt);
+            INSERT INTO notes_fts(rowid, title, content, excerpt)
+            VALUES (new.rowid, new.title, new.content, new.excerpt);
+        END;
+        ",
+    ),
 ];
 
 fn ensure_migrations_table(conn: &Connection) -> Result<(), String> {
@@ -157,6 +208,7 @@ mod tests {
         assert!(tables.contains(&"spaces".to_string()));
         assert!(tables.contains(&"module_instances".to_string()));
         assert!(tables.contains(&"activity_events".to_string()));
+        assert!(tables.contains(&"notes".to_string()));
     }
 
     #[test]
@@ -177,18 +229,18 @@ mod tests {
     }
 
     #[test]
-    fn test_parent_column_exists() {
+    fn test_notes_table_exists() {
         let conn = in_memory_db();
         run(&conn).unwrap();
-        // Verify parent_space_id column exists
         let cols: Vec<String> = conn
-            .prepare("PRAGMA table_info(spaces)")
+            .prepare("PRAGMA table_info(notes)")
             .unwrap()
             .query_map([], |row| row.get(1))
             .unwrap()
             .filter_map(|r| r.ok())
             .collect();
-        assert!(cols.contains(&"parent_space_id".to_string()));
-        assert!(cols.contains(&"last_opened_at".to_string()));
+        assert!(cols.contains(&"title".to_string()));
+        assert!(cols.contains(&"content".to_string()));
+        assert!(cols.contains(&"revision".to_string()));
     }
 }

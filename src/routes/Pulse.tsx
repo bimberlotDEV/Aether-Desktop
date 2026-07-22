@@ -1,7 +1,9 @@
 import { useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Sparkles, ArrowRight, Layers, Star } from 'lucide-react'
+import { Sparkles, ArrowRight, Layers, Star, Pin } from 'lucide-react'
 import { useSpaces } from '@/hooks/useSpaces'
+import { useGlobalNotes } from '@/hooks/useNotes'
+import { FileText } from 'lucide-react'
 
 function getGreeting(): string {
   const hour = new Date().getHours()
@@ -119,6 +121,7 @@ export function Pulse() {
                 </div>
               </div>
             )}
+            <PulseNotes />
             <button
               onClick={() => navigate('/spaces')}
               className="inline-flex items-center gap-1.5 text-sm font-medium transition-colors"
@@ -151,3 +154,41 @@ export function Pulse() {
     </div>
   )
 }
+
+function PulseNotes() {
+  const navigate = useNavigate()
+  const { recent, pinned } = useGlobalNotes()
+
+  if (recent.length === 0 && pinned.length === 0) return null
+
+  return (
+    <div>
+      <h3 className="text-xs font-semibold uppercase tracking-wider mb-2 flex items-center gap-1.5" style={{ color: 'var(--color-text-tertiary)' }}>
+        <FileText size={11} /> Notes
+      </h3>
+      <div className="space-y-1">
+        {pinned.slice(0, 2).map(n => (
+          <button
+            key={n.id}
+            onClick={() => navigate(`/spaces/${n.space_id}/notes`)}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm transition-colors hover:bg-[var(--color-bg-tertiary)]"
+          >
+            <Pin size={11} style={{ color: 'var(--color-warning)' }} />
+            <span className="truncate" style={{ color: 'var(--color-text-primary)' }}>{n.title || 'Untitled'}</span>
+          </button>
+        ))}
+        {recent.slice(0, 3).map(n => (
+          <button
+            key={n.id}
+            onClick={() => navigate(`/spaces/${n.space_id}/notes`)}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left text-sm transition-colors hover:bg-[var(--color-bg-tertiary)]"
+          >
+            <FileText size={11} style={{ color: 'var(--color-text-tertiary)' }} />
+            <span className="truncate" style={{ color: 'var(--color-text-primary)' }}>{n.title || 'Untitled'}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+

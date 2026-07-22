@@ -413,7 +413,190 @@ pub fn list_activity(
     })
 }
 
+// ─── Notes ───────────────────────────────────────────────
+
+#[tauri::command]
+pub fn create_note(db: State<Database>, space_id: String) -> Result<serde_json::Value, String> {
+    with_conn(&db.conn, |conn| {
+        Ok(json_note(&repositories::notes::create(conn, &space_id)?))
+    })
+}
+
+#[tauri::command]
+pub fn get_note(db: State<Database>, id: String) -> Result<Option<serde_json::Value>, String> {
+    with_conn(&db.conn, |conn| {
+        if let Some(note) = repositories::notes::get_by_id(conn, &id)? {
+            repositories::notes::touch_last_opened(conn, &id)?;
+            Ok(Some(json_note(&note)))
+        } else {
+            Ok(None)
+        }
+    })
+}
+
+#[tauri::command]
+pub fn update_note(
+    db: State<Database>,
+    id: String,
+    title: Option<String>,
+    content: Option<String>,
+    excerpt: Option<String>,
+    expected_revision: Option<i64>,
+) -> Result<Option<serde_json::Value>, String> {
+    with_conn(&db.conn, |conn| {
+        Ok(repositories::notes::update(
+            conn,
+            &id,
+            title.as_deref(),
+            content.as_deref(),
+            excerpt.as_deref(),
+            expected_revision,
+        )?
+        .map(|n| json_note(&n)))
+    })
+}
+
+#[tauri::command]
+pub fn list_notes_by_space(
+    db: State<Database>,
+    space_id: String,
+) -> Result<Vec<serde_json::Value>, String> {
+    with_conn(&db.conn, |conn| {
+        Ok(repositories::notes::list_by_space(conn, &space_id)?
+            .iter()
+            .map(json_note_list_item)
+            .collect())
+    })
+}
+
+#[tauri::command]
+pub fn list_recent_notes(
+    db: State<Database>,
+    space_id: Option<String>,
+    limit: Option<u32>,
+) -> Result<Vec<serde_json::Value>, String> {
+    with_conn(&db.conn, |conn| {
+        Ok(
+            repositories::notes::list_recent(conn, space_id.as_deref(), limit.unwrap_or(10))?
+                .iter()
+                .map(json_note_list_item)
+                .collect(),
+        )
+    })
+}
+
+#[tauri::command]
+pub fn list_pinned_notes(
+    db: State<Database>,
+    space_id: Option<String>,
+) -> Result<Vec<serde_json::Value>, String> {
+    with_conn(&db.conn, |conn| {
+        Ok(repositories::notes::list_pinned(conn, space_id.as_deref())?
+            .iter()
+            .map(json_note_list_item)
+            .collect())
+    })
+}
+
+#[tauri::command]
+pub fn list_archived_notes(
+    db: State<Database>,
+    space_id: Option<String>,
+) -> Result<Vec<serde_json::Value>, String> {
+    with_conn(&db.conn, |conn| {
+        Ok(
+            repositories::notes::list_archived(conn, space_id.as_deref())?
+                .iter()
+                .map(json_note_list_item)
+                .collect(),
+        )
+    })
+}
+
+#[tauri::command]
+pub fn search_notes(
+    db: State<Database>,
+    query: String,
+    space_id: Option<String>,
+    limit: Option<u32>,
+) -> Result<Vec<serde_json::Value>, String> {
+    with_conn(&db.conn, |conn| {
+        Ok(
+            repositories::notes::search(conn, &query, space_id.as_deref(), limit.unwrap_or(20))?
+                .iter()
+                .map(json_note_search_result)
+                .collect(),
+        )
+    })
+}
+
+#[tauri::command]
+pub fn pin_note(db: State<Database>, id: String, pinned: bool) -> Result<bool, String> {
+    with_conn(&db.conn, |conn| {
+        repositories::notes::set_pinned(conn, &id, pinned)
+    })
+}
+
+#[tauri::command]
+pub fn archive_note(db: State<Database>, id: String) -> Result<bool, String> {
+    with_conn(&db.conn, |conn| repositories::notes::archive(conn, &id))
+}
+
+#[tauri::command]
+pub fn restore_note(db: State<Database>, id: String) -> Result<bool, String> {
+    with_conn(&db.conn, |conn| repositories::notes::restore(conn, &id))
+}
+
+#[tauri::command]
+pub fn delete_note(db: State<Database>, id: String) -> Result<bool, String> {
+    with_conn(&db.conn, |conn| {
+        repositories::notes::delete_permanent(conn, &id)
+    })
+}
+
+#[tauri::command]
+pub fn move_note(db: State<Database>, id: String, new_space_id: String) -> Result<bool, String> {
+    with_conn(&db.conn, |conn| {
+        repositories::notes::move_to_space(conn, &id, &new_space_id)
+    })
+}
+
+#[tauri::command]
+pub fn duplicate_note(db: State<Database>, id: String) -> Result<serde_json::Value, String> {
+    with_conn(&db.conn, |conn| {
+        Ok(json_note(&repositories::notes::duplicate(conn, &id)?))
+    })
+}
+
 // ─── JSON helpers ───────────────────────────────────────
+
+fn json_note(n: &repositories::notes::Note) -> serde_json::Value {
+    serde_json::json!({
+        "id": n.id, "space_id": n.space_id, "title": n.title,
+        "content": n.content, "content_format": n.content_format,
+        "excerpt": n.excerpt, "pinned": n.pinned, "revision": n.revision,
+        "archived_at": n.archived_at, "created_at": n.created_at,
+        "updated_at": n.updated_at, "last_opened_at": n.last_opened_at,
+    })
+}
+
+fn json_note_list_item(n: &repositories::notes::NoteListItem) -> serde_json::Value {
+    serde_json::json!({
+        "id": n.id, "space_id": n.space_id, "title": n.title,
+        "excerpt": n.excerpt, "content_format": n.content_format,
+        "pinned": n.pinned, "revision": n.revision,
+        "archived_at": n.archived_at, "created_at": n.created_at,
+        "updated_at": n.updated_at, "last_opened_at": n.last_opened_at,
+    })
+}
+
+fn json_note_search_result(n: &repositories::notes::NoteSearchResult) -> serde_json::Value {
+    serde_json::json!({
+        "id": n.id, "space_id": n.space_id, "title": n.title,
+        "excerpt": n.excerpt, "pinned": n.pinned,
+        "archived_at": n.archived_at, "updated_at": n.updated_at,
+    })
+}
 
 fn json_space(s: &repositories::spaces::Space) -> serde_json::Value {
     serde_json::json!({

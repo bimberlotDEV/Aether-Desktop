@@ -44,6 +44,20 @@ const defaultCommands: Command[] = [
     action: () => { window.location.hash = '#/activity' },
   },
   {
+    id: 'create-note',
+    label: 'Create Note',
+    description: 'Create a new note',
+    keywords: ['note', 'new', 'write'],
+    action: () => { window.location.hash = '#/spaces' },
+  },
+  {
+    id: 'search-notes',
+    label: 'Search Notes',
+    description: 'Search through all notes',
+    keywords: ['find', 'note', 'text'],
+    action: () => { window.location.hash = '#/spaces' },
+  },
+  {
     id: 'settings',
     label: 'Open Settings',
     description: 'Configure Aether preferences',

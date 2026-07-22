@@ -65,3 +65,46 @@ export const ActivityEventSchema = z.object({
   created_at: z.string(),
 })
 export type ActivityEvent = z.infer<typeof ActivityEventSchema>
+
+export const NoteSchema = z.object({
+  id: z.string(),
+  space_id: z.string(),
+  title: z.string(),
+  content: z.string(),
+  content_format: z.string(),
+  excerpt: z.string(),
+  pinned: z.boolean(),
+  revision: z.number(),
+  archived_at: z.string().nullable(),
+  created_at: z.string(),
+  updated_at: z.string(),
+  last_opened_at: z.string().nullable(),
+})
+export type Note = z.infer<typeof NoteSchema>
+
+export const NoteListItemSchema = z.object({
+  id: z.string(),
+  space_id: z.string(),
+  title: z.string(),
+  excerpt: z.string(),
+  content_format: z.string(),
+  pinned: z.boolean(),
+  revision: z.number(),
+  archived_at: z.string().nullable(),
+  created_at: z.string(),
+  updated_at: z.string(),
+  last_opened_at: z.string().nullable(),
+})
+export type NoteListItem = z.infer<typeof NoteListItemSchema>
+
+export const NoteSearchResultSchema = z.object({
+  id: z.string(),
+  space_id: z.string(),
+  title: z.string(),
+  excerpt: z.string(),
+  pinned: z.boolean(),
+  archived_at: z.string().nullable(),
+  updated_at: z.string(),
+})
+export type NoteSearchResult = z.infer<typeof NoteSearchResultSchema>
+

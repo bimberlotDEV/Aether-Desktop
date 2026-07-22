@@ -10,6 +10,7 @@ import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { cn } from '@/lib/utils'
 import type { Space, ModuleInstance } from '@/lib/db/types'
 import { iconToEmoji } from '@/components/IconPicker'
+import { NotesView } from '@/routes/Notes'
 
 const MODULE_ICONS: Record<string, React.ComponentType<{ size?: number; strokeWidth?: number }>> = {
   notes: FileText,
@@ -146,7 +147,13 @@ export function SpaceDetailLayout() {
             <Route
               key={m.id}
               path={m.module_type}
-              element={<ModulePlaceholder moduleType={m.module_type} />}
+              element={
+                m.module_type === 'notes' ? (
+                  <NotesView />
+                ) : (
+                  <ModulePlaceholder moduleType={m.module_type} />
+                )
+              }
             />
           ))}
         </Routes>
