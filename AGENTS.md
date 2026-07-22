@@ -71,5 +71,25 @@ Use conventional commits:
 
 ## Current phase
 
-We are building Phase 0 (Foundation) and Phase 1 (App Shell + Design System).
+Phase 0-1 (Foundation + Shell) and Phase 2 (Database) are complete.
+Next: Phase 3 (Spaces).
+
+## Database architecture
+
+- SQLite via `rusqlite` (bundled) — no system dependency
+- Database at `%APPDATA%/Aether/aether.db`
+- All queries through Tauri commands — no frontend SQL
+- Versioned migrations in `src-tauri/src/db/migrations.rs`
+- Repository pattern: Rust repos → Tauri commands → TS invoke wrappers
+- Add new migrations as entries in `MIGRATIONS` array
+
+## Adding a new domain entity
+1. Add migration SQL to `MIGRATIONS`
+2. Create repository in `src-tauri/src/db/repositories/`
+3. Add Tauri commands in `src-tauri/src/commands.rs`
+4. Register commands in `src-tauri/src/lib.rs`
+5. Add TypeScript types + Zod schemas in `src/lib/db/types.ts`
+6. Add invoke wrappers in `src/lib/db/tauri.ts`
+7. Write Rust tests (in-memory DB)
+
 Future phases are documented in `IDEA.md` §35.

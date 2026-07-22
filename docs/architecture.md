@@ -6,11 +6,17 @@
 ┌─────────────────────────────────────────┐
 │  React UI (components, routes, stores)  │
 ├─────────────────────────────────────────┤
-│  Service Layer (AI, DB, File system)    │
+│  Database Layer (TS types, Zod, invoke)  │
+├─────────────────────────────────────────┤
+│  Tauri Commands (typed wrappers)        │
+├─────────────────────────────────────────┤
+│  Repository Layer (settings, spaces...)  │
+├─────────────────────────────────────────┤
+│  SQLite via rusqlite (bundled)           │
 ├─────────────────────────────────────────┤
 │  Tauri Bridge (IPC, native APIs)        │
 ├─────────────────────────────────────────┤
-│  Rust Backend (commands, plugins)       │
+│  Tauri Bridge (IPC, native APIs)        │
 ├─────────────────────────────────────────┤
 │  Windows OS (WebView2, filesystem)      │
 └─────────────────────────────────────────┘
@@ -29,7 +35,7 @@
 - **React 19 + Vite 8:** Modern, fast HMR, TypeScript-native
 - **Tailwind CSS v4:** Utility-first with CSS custom properties for theming
 - **Zustand:** Simple, performant state management
-- **SQLite:** Local-first, reliable, zero-config (Phase 2)
+- **SQLite (rusqlite):** Local-first, reliable, zero-config, versioned migrations (Phase 2 ✅)
 
 ## Security Model
 

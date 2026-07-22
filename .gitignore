@@ -35,3 +35,9 @@ pnpm-debug.log*
 
 # Local data
 *.local
+
+# Local databases
+*.db
+*.db-journal
+*.db-wal
+*.db-shm

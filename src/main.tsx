@@ -6,7 +6,7 @@ import { initTheme } from './stores/themeStore'
 import './styles/index.css'
 
 // Initialize theme before render to avoid flash
-initTheme()
+initTheme().catch(console.error)
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

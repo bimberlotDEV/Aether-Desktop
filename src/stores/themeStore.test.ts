@@ -1,9 +1,16 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { useThemeStore } from './themeStore'
+
+// Mock the dynamic import for tests
+vi.mock('@/lib/db/tauri', () => ({
+  getSetting: async () => null,
+  setSetting: async () => {},
+}))
 
 describe('themeStore', () => {
   beforeEach(() => {
-    useThemeStore.setState({ theme: 'system', resolved: 'dark' })
+    useThemeStore.setState({ theme: 'system', resolved: 'dark', _isReady: false })
+    localStorage.clear()
   })
 
   it('starts with system theme', () => {
@@ -23,5 +30,10 @@ describe('themeStore', () => {
     const { theme, resolved } = useThemeStore.getState()
     expect(theme).toBe('dark')
     expect(resolved).toBe('dark')
+  })
+
+  it('persists to localStorage', () => {
+    useThemeStore.getState().setTheme('light')
+    expect(localStorage.getItem('aether-theme')).toBe('light')
   })
 })
