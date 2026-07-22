@@ -1,7 +1,5 @@
 import { z } from 'zod'
 
-// ─── App Settings ────────────────────────────────────────
-
 export const AppSettingSchema = z.object({
   key: z.string(),
   value: z.string(),
@@ -9,10 +7,7 @@ export const AppSettingSchema = z.object({
   created_at: z.string(),
   updated_at: z.string(),
 })
-
 export type AppSetting = z.infer<typeof AppSettingSchema>
-
-// ─── User Profile ───────────────────────────────────────
 
 export const UserProfileSchema = z.object({
   id: z.string(),
@@ -21,10 +16,7 @@ export const UserProfileSchema = z.object({
   created_at: z.string(),
   updated_at: z.string(),
 })
-
 export type UserProfile = z.infer<typeof UserProfileSchema>
-
-// ─── Spaces ──────────────────────────────────────────────
 
 export const SpaceSchema = z.object({
   id: z.string(),
@@ -37,13 +29,31 @@ export const SpaceSchema = z.object({
   archived_at: z.string().nullable(),
   sort_order: z.number(),
   settings_json: z.string().nullable(),
+  parent_space_id: z.string().nullable(),
+  last_opened_at: z.string().nullable(),
   created_at: z.string(),
   updated_at: z.string(),
 })
-
 export type Space = z.infer<typeof SpaceSchema>
 
-// ─── Activity Events ────────────────────────────────────
+export const ModuleInstanceSchema = z.object({
+  id: z.string(),
+  space_id: z.string(),
+  module_type: z.string(),
+  title: z.string().nullable(),
+  config_json: z.string().nullable(),
+  layout_json: z.string().nullable(),
+  created_at: z.string(),
+  updated_at: z.string(),
+})
+export type ModuleInstance = z.infer<typeof ModuleInstanceSchema>
+
+export const SpaceWithDetailsSchema = z.object({
+  space: SpaceSchema,
+  modules: z.array(ModuleInstanceSchema),
+  children: z.array(SpaceSchema),
+})
+export type SpaceWithDetails = z.infer<typeof SpaceWithDetailsSchema>
 
 export const ActivityEventSchema = z.object({
   id: z.string(),
@@ -54,5 +64,4 @@ export const ActivityEventSchema = z.object({
   metadata_json: z.string().nullable(),
   created_at: z.string(),
 })
-
 export type ActivityEvent = z.infer<typeof ActivityEventSchema>

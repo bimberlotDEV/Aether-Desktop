@@ -68,9 +68,17 @@ const MIGRATIONS: &[(&str, &str)] = &[
         CREATE INDEX IF NOT EXISTS idx_activity_events_type ON activity_events(event_type);
         ",
     ),
+    // Migration 002: Space hierarchy + tracking
+    (
+        "002_space_hierarchy",
+        "
+        ALTER TABLE spaces ADD COLUMN parent_space_id TEXT REFERENCES spaces(id) ON DELETE SET NULL;
+        ALTER TABLE spaces ADD COLUMN last_opened_at TEXT;
+        CREATE INDEX IF NOT EXISTS idx_spaces_parent ON spaces(parent_space_id);
+        ",
+    ),
 ];
 
-/// Track which migrations have been applied
 fn ensure_migrations_table(conn: &Connection) -> Result<(), String> {
     conn.execute(
         "CREATE TABLE IF NOT EXISTS _migrations (
@@ -105,7 +113,6 @@ fn apply_migration(tx: &Transaction, name: &str, sql: &str) -> Result<(), String
 }
 
 pub fn run(conn: &Connection) -> Result<(), String> {
-    // Use a transaction so all migrations are atomic
     let tx = conn
         .unchecked_transaction()
         .map_err(|e| format!("Transaction error: {}", e))?;
@@ -140,8 +147,6 @@ mod tests {
     fn test_migrations_run() {
         let conn = in_memory_db();
         run(&conn).unwrap();
-
-        // Check all tables exist
         let tables: Vec<String> = conn
             .prepare("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
             .unwrap()
@@ -149,7 +154,6 @@ mod tests {
             .unwrap()
             .filter_map(|r| r.ok())
             .collect();
-
         assert!(tables.contains(&"_migrations".to_string()));
         assert!(tables.contains(&"app_settings".to_string()));
         assert!(tables.contains(&"user_profile".to_string()));
@@ -162,7 +166,6 @@ mod tests {
     fn test_migrations_idempotent() {
         let conn = in_memory_db();
         run(&conn).unwrap();
-        // Running again should not error
         run(&conn).unwrap();
     }
 
@@ -170,10 +173,25 @@ mod tests {
     fn test_migration_records() {
         let conn = in_memory_db();
         run(&conn).unwrap();
-
         let count: i64 = conn
             .query_row("SELECT COUNT(*) FROM _migrations", [], |row| row.get(0))
             .unwrap();
         assert_eq!(count, MIGRATIONS.len() as i64);
+    }
+
+    #[test]
+    fn test_parent_column_exists() {
+        let conn = in_memory_db();
+        run(&conn).unwrap();
+        // Verify parent_space_id column exists
+        let cols: Vec<String> = conn
+            .prepare("PRAGMA table_info(spaces)")
+            .unwrap()
+            .query_map([], |row| row.get(1))
+            .unwrap()
+            .filter_map(|r| r.ok())
+            .collect();
+        assert!(cols.contains(&"parent_space_id".to_string()));
+        assert!(cols.contains(&"last_opened_at".to_string()));
     }
 }

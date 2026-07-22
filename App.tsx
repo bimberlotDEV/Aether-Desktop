@@ -3,7 +3,6 @@ import { Sidebar } from '@/components/Sidebar'
 import { CommandPalette } from '@/components/CommandPalette'
 import { Pulse } from '@/routes/Pulse'
 import { Spaces } from '@/routes/Spaces'
-import { ArchivedSpaces } from '@/routes/ArchivedSpaces'
 import { SpaceDetailLayout } from '@/routes/SpaceDetail'
 import { Vault } from '@/routes/Vault'
 import { Activity } from '@/routes/Activity'
@@ -20,7 +19,6 @@ export function App() {
         <Routes>
           <Route path="/" element={<Pulse />} />
           <Route path="/spaces" element={<Spaces />} />
-          <Route path="/spaces/archived" element={<ArchivedSpaces />} />
           <Route path="/spaces/:spaceId/*" element={<SpaceDetailLayout />} />
           <Route path="/vault" element={<Vault />} />
           <Route path="/activity" element={<Activity />} />

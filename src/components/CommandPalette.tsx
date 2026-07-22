@@ -7,9 +7,11 @@ import {
   Sun,
   Moon,
   Monitor,
+  Plus,
   type LucideIcon,
 } from 'lucide-react'
 import { useThemeStore } from '@/stores/themeStore'
+import { useSpaces } from '@/hooks/useSpaces'
 
 // Default commands
 const defaultCommands: Command[] = [
@@ -77,6 +79,7 @@ const iconMap: Record<string, LucideIcon> = {
   'Browse': FolderOpen,
   'View': Layers,
   'Open': Settings,
+  'Create': Plus,
   'Switch': Sun,
   'Light': Sun,
   'Dark': Moon,
@@ -98,10 +101,22 @@ export function CommandPalette() {
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
 
+  const { spaces } = useSpaces()
+  const spaceCommands = useMemo(() => {
+    return spaces
+      .filter(s => !s.archived_at)
+      .map(s => ({
+        id: `space-${s.id}`,
+        label: s.name,
+        description: s.description || `Open ${s.name}`,
+        keywords: [s.name, s.template_type || ''],
+        action: () => { window.location.hash = `#/spaces/${s.id}` },
+      }))
+  }, [spaces])
+
   const allCommands = useMemo(() => {
-    // In future: merge defaultCommands with registered commands
-    return defaultCommands
-  }, [])
+    return [...defaultCommands, ...spaceCommands]
+  }, [spaceCommands])
 
   const filtered = useMemo(() => {
     if (!query.trim()) return allCommands
