@@ -108,3 +108,56 @@ export const NoteSearchResultSchema = z.object({
 })
 export type NoteSearchResult = z.infer<typeof NoteSearchResultSchema>
 
+
+
+// ─── AI Types ────────────────────────────────────────────
+
+export const AiConversationSchema = z.object({
+  id: z.string(),
+  space_id: z.string().nullable(),
+  title: z.string(),
+  provider: z.string(),
+  model: z.string(),
+  system_context_version: z.number(),
+  archived_at: z.string().nullable(),
+  created_at: z.string(),
+  updated_at: z.string(),
+  last_opened_at: z.string().nullable(),
+})
+export type AiConversation = z.infer<typeof AiConversationSchema>
+
+export const AiMessageSchema = z.object({
+  id: z.string(),
+  conversation_id: z.string(),
+  role: z.enum(['user', 'assistant', 'system']),
+  content: z.string(),
+  status: z.enum(['pending', 'streaming', 'complete', 'error', 'cancelled']),
+  provider_message_id: z.string().nullable(),
+  error_code: z.string().nullable(),
+  metadata_json: z.string().nullable(),
+  created_at: z.string(),
+  updated_at: z.string(),
+})
+export type AiMessage = z.infer<typeof AiMessageSchema>
+
+export const AiContextItemSchema = z.object({
+  id: z.string(),
+  conversation_id: z.string(),
+  entity_type: z.string(),
+  entity_id: z.string(),
+  context_mode: z.string(),
+  added_at: z.string(),
+})
+export type AiContextItem = z.infer<typeof AiContextItemSchema>
+
+export const KeyStatusSchema = z.object({
+  configured: z.boolean(),
+  status: z.enum(['configured', 'missing', 'unavailable']),
+})
+export type KeyStatus = z.infer<typeof KeyStatusSchema>
+
+export const AiChatResponseSchema = z.object({
+  content: z.string(),
+  usage: z.any().nullable(),
+})
+export type AiChatResponse = z.infer<typeof AiChatResponseSchema>

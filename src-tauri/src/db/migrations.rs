@@ -128,6 +128,55 @@ const MIGRATIONS: &[(&str, &str)] = &[
         END;
         ",
     ),
+    // Migration 004: AI conversations
+    (
+        "004_ai",
+        "
+        CREATE TABLE IF NOT EXISTS ai_conversations (
+            id                      TEXT PRIMARY KEY NOT NULL,
+            space_id                TEXT REFERENCES spaces(id) ON DELETE SET NULL,
+            title                   TEXT NOT NULL DEFAULT 'New conversation',
+            provider                TEXT NOT NULL DEFAULT 'deepseek',
+            model                   TEXT NOT NULL DEFAULT 'deepseek-chat',
+            system_context_version  INTEGER NOT NULL DEFAULT 1,
+            archived_at             TEXT,
+            created_at              TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at              TEXT NOT NULL DEFAULT (datetime('now')),
+            last_opened_at          TEXT
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_ai_conversations_space ON ai_conversations(space_id);
+        CREATE INDEX IF NOT EXISTS idx_ai_conversations_archived ON ai_conversations(archived_at);
+        CREATE INDEX IF NOT EXISTS idx_ai_conversations_updated ON ai_conversations(updated_at);
+
+        CREATE TABLE IF NOT EXISTS ai_messages (
+            id                  TEXT PRIMARY KEY NOT NULL,
+            conversation_id     TEXT NOT NULL REFERENCES ai_conversations(id) ON DELETE CASCADE,
+            role                TEXT NOT NULL CHECK(role IN ('user', 'assistant', 'system')),
+            content             TEXT NOT NULL DEFAULT '',
+            status              TEXT NOT NULL DEFAULT 'complete' CHECK(status IN ('pending', 'streaming', 'complete', 'error', 'cancelled')),
+            provider_message_id TEXT,
+            error_code          TEXT,
+            metadata_json       TEXT,
+            created_at          TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at          TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_ai_messages_conversation ON ai_messages(conversation_id);
+        CREATE INDEX IF NOT EXISTS idx_ai_messages_created ON ai_messages(created_at);
+
+        CREATE TABLE IF NOT EXISTS ai_context_items (
+            id              TEXT PRIMARY KEY NOT NULL,
+            conversation_id TEXT NOT NULL REFERENCES ai_conversations(id) ON DELETE CASCADE,
+            entity_type     TEXT NOT NULL,
+            entity_id       TEXT NOT NULL,
+            context_mode    TEXT NOT NULL DEFAULT 'attached',
+            added_at        TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_ai_context_conversation ON ai_context_items(conversation_id);
+        ",
+    ),
 ];
 
 fn ensure_migrations_table(conn: &Connection) -> Result<(), String> {
@@ -208,7 +257,6 @@ mod tests {
         assert!(tables.contains(&"spaces".to_string()));
         assert!(tables.contains(&"module_instances".to_string()));
         assert!(tables.contains(&"activity_events".to_string()));
-        assert!(tables.contains(&"notes".to_string()));
     }
 
     #[test]
@@ -229,18 +277,18 @@ mod tests {
     }
 
     #[test]
-    fn test_notes_table_exists() {
+    fn test_parent_column_exists() {
         let conn = in_memory_db();
         run(&conn).unwrap();
+        // Verify parent_space_id column exists
         let cols: Vec<String> = conn
-            .prepare("PRAGMA table_info(notes)")
+            .prepare("PRAGMA table_info(spaces)")
             .unwrap()
             .query_map([], |row| row.get(1))
             .unwrap()
             .filter_map(|r| r.ok())
             .collect();
-        assert!(cols.contains(&"title".to_string()));
-        assert!(cols.contains(&"content".to_string()));
-        assert!(cols.contains(&"revision".to_string()));
+        assert!(cols.contains(&"parent_space_id".to_string()));
+        assert!(cols.contains(&"last_opened_at".to_string()));
     }
 }

@@ -1,5 +1,7 @@
 #![allow(clippy::too_many_arguments)]
 
+use crate::ai::credentials;
+use crate::ai::provider::{self, AiProvider, ChatCompletionRequest, ChatMessage, ProviderConfig, ThinkingConfig};
 use crate::db::repositories::{self, with_conn};
 use crate::db::Database;
 use tauri::State;
@@ -627,4 +629,256 @@ fn json_profile(p: &repositories::profile::UserProfile) -> serde_json::Value {
 
 fn json_activity(a: &repositories::activity::ActivityEvent) -> serde_json::Value {
     serde_json::json!({"id": a.id, "event_type": a.event_type, "entity_type": a.entity_type, "entity_id": a.entity_id, "space_id": a.space_id, "metadata_json": a.metadata_json, "created_at": a.created_at})
+}
+
+// ─── AI Credentials ─────────────────────────────────────
+
+#[derive(serde::Serialize)]
+pub struct KeyStatus {
+    pub configured: bool,
+    pub status: String, // "configured", "missing", "unavailable"
+}
+
+#[tauri::command]
+pub fn ai_get_key_status(db: State<Database>) -> Result<KeyStatus, String> {
+    match credentials::get(&db, credentials::AI_API_KEY) {
+        Ok(Some(_)) => Ok(KeyStatus {
+            configured: true,
+            status: "configured".to_string(),
+        }),
+        Ok(None) => Ok(KeyStatus {
+            configured: false,
+            status: "missing".to_string(),
+        }),
+        Err(_) => Ok(KeyStatus {
+            configured: false,
+            status: "unavailable".to_string(),
+        }),
+    }
+}
+
+#[tauri::command]
+pub fn ai_set_api_key(db: State<Database>, api_key: String) -> Result<(), String> {
+    credentials::store(&db, credentials::AI_API_KEY, &api_key)
+}
+
+#[tauri::command]
+pub fn ai_remove_api_key(db: State<Database>) -> Result<bool, String> {
+    credentials::remove(&db, credentials::AI_API_KEY)
+}
+
+#[tauri::command]
+pub fn ai_test_connection(db: State<Database>) -> Result<String, String> {
+    let key = credentials::get(&db, credentials::AI_API_KEY)?
+        .ok_or_else(|| "No API key configured".to_string())?;
+    
+    let config = ProviderConfig::default_deepseek(key);
+    let provider = provider::create_provider(config)?;
+    
+    provider.test_connection()?;
+    Ok("Connection successful".to_string())
+}
+
+// ─── AI Conversations ────────────────────────────────────
+
+#[tauri::command]
+pub fn ai_create_conversation(
+    db: State<Database>,
+    space_id: Option<String>,
+    title: Option<String>,
+) -> Result<serde_json::Value, String> {
+    with_conn(&db.conn, |conn| {
+        let conv = repositories::conversations::create_conversation(
+            conn,
+            space_id.as_deref(),
+            title.as_deref().unwrap_or("New conversation"),
+            "deepseek",
+            "deepseek-chat",
+        )?;
+        Ok(serde_json::to_value(conv).map_err(|e| format!("Serialize error: {}", e))?)
+    })
+}
+
+#[tauri::command]
+pub fn ai_get_conversation(db: State<Database>, id: String) -> Result<Option<serde_json::Value>, String> {
+    with_conn(&db.conn, |conn| {
+        let conv = repositories::conversations::get_conversation(conn, &id)?;
+        Ok(conv.map(|c| serde_json::to_value(c).unwrap()))
+    })
+}
+
+#[tauri::command]
+pub fn ai_list_conversations(
+    db: State<Database>,
+    space_id: Option<String>,
+    include_archived: Option<bool>,
+) -> Result<Vec<serde_json::Value>, String> {
+    with_conn(&db.conn, |conn| {
+        let convs = repositories::conversations::list_conversations(
+            conn,
+            space_id.as_deref(),
+            include_archived.unwrap_or(false),
+        )?;
+        Ok(convs.iter().map(|c| serde_json::to_value(c).unwrap()).collect())
+    })
+}
+
+#[tauri::command]
+pub fn ai_update_conversation(
+    db: State<Database>,
+    id: String,
+    title: Option<String>,
+    archived: Option<bool>,
+) -> Result<Option<serde_json::Value>, String> {
+    with_conn(&db.conn, |conn| {
+        let conv = repositories::conversations::update_conversation(
+            conn,
+            &id,
+            title.as_deref(),
+            archived,
+        )?;
+        Ok(conv.map(|c| serde_json::to_value(c).unwrap()))
+    })
+}
+
+#[tauri::command]
+pub fn ai_delete_conversation(db: State<Database>, id: String) -> Result<bool, String> {
+    with_conn(&db.conn, |conn| {
+        repositories::conversations::delete_conversation(conn, &id)
+    })
+}
+
+// ─── AI Messages ─────────────────────────────────────────
+
+#[tauri::command]
+pub fn ai_list_messages(
+    db: State<Database>,
+    conversation_id: String,
+    limit: Option<i64>,
+) -> Result<Vec<serde_json::Value>, String> {
+    with_conn(&db.conn, |conn| {
+        let msgs = repositories::conversations::list_messages(conn, &conversation_id, limit)?;
+        Ok(msgs.iter().map(|m| serde_json::to_value(m).unwrap()).collect())
+    })
+}
+
+// ─── AI Chat (non-streaming) ─────────────────────────────
+
+#[derive(serde::Serialize)]
+pub struct AiChatResponse {
+    pub content: String,
+    pub usage: Option<serde_json::Value>,
+}
+
+#[tauri::command]
+pub fn ai_send_message(
+    db: State<Database>,
+    conversation_id: String,
+    content: String,
+) -> Result<AiChatResponse, String> {
+    // Get API key
+    let key = credentials::get(&db, credentials::AI_API_KEY)?
+        .ok_or_else(|| "No API key configured. Please configure an AI provider in Settings.".to_string())?;
+    
+    // Save user message
+    with_conn(&db.conn, |conn| {
+        repositories::conversations::add_message(
+            conn, &conversation_id, "user", &content, "complete",
+        )?;
+        Ok::<_, String>(())
+    })?;
+    
+    // Get conversation history
+    let messages = with_conn(&db.conn, |conn| {
+        repositories::conversations::list_messages(conn, &conversation_id, Some(50))
+    })?;
+    
+    // Build provider request
+    let chat_messages: Vec<ChatMessage> = messages
+        .iter()
+        .map(|m| ChatMessage {
+            role: m.role.clone(),
+            content: m.content.clone(),
+        })
+        .collect();
+    
+    let request = ChatCompletionRequest {
+        model: "deepseek-chat".to_string(),
+        messages: chat_messages,
+        temperature: Some(0.1),
+        max_tokens: Some(4096),
+        top_p: Some(1.0),
+        stream: None,
+        thinking: Some(ThinkingConfig {
+            thinking_type: "enabled".to_string(),
+        }),
+    };
+    
+    // Create provider and send
+    let config = ProviderConfig::default_deepseek(key);
+    let provider = provider::create_provider(config)?;
+    
+    let response = provider.chat_completion(&request)
+        .map_err(|e| format!("AI request failed: {}", e))?;
+    
+    let assistant_content = response.choices
+        .first()
+        .and_then(|c| c.message.as_ref())
+        .map(|m| m.content.clone())
+        .unwrap_or_default();
+    
+    // Save assistant message
+    with_conn(&db.conn, |conn| {
+        repositories::conversations::add_message(
+            conn, &conversation_id, "assistant", &assistant_content, "complete",
+        )?;
+        Ok::<_, String>(())
+    })?;
+    
+    Ok(AiChatResponse {
+        content: assistant_content,
+        usage: response.usage.map(|u| serde_json::to_value(u).unwrap()),
+    })
+}
+
+// ─── AI Context Items ────────────────────────────────────
+
+#[tauri::command]
+pub fn ai_add_context(
+    db: State<Database>,
+    conversation_id: String,
+    entity_type: String,
+    entity_id: String,
+) -> Result<serde_json::Value, String> {
+    with_conn(&db.conn, |conn| {
+        let item = repositories::conversations::add_context_item(
+            conn, &conversation_id, &entity_type, &entity_id, "attached",
+        )?;
+        Ok(serde_json::to_value(item).map_err(|e| format!("Serialize error: {}", e))?)
+    })
+}
+
+#[tauri::command]
+pub fn ai_list_context(
+    db: State<Database>,
+    conversation_id: String,
+) -> Result<Vec<serde_json::Value>, String> {
+    with_conn(&db.conn, |conn| {
+        let items = repositories::conversations::list_context_items(conn, &conversation_id)?;
+        Ok(items.iter().map(|i| serde_json::to_value(i).unwrap()).collect())
+    })
+}
+
+#[tauri::command]
+pub fn ai_remove_context(db: State<Database>, id: String) -> Result<bool, String> {
+    with_conn(&db.conn, |conn| {
+        repositories::conversations::remove_context_item(conn, &id)
+    })
+}
+
+#[tauri::command]
+pub fn ai_clear_context(db: State<Database>, conversation_id: String) -> Result<usize, String> {
+    with_conn(&db.conn, |conn| {
+        repositories::conversations::clear_context(conn, &conversation_id)
+    })
 }

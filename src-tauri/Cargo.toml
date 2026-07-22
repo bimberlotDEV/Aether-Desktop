@@ -24,3 +24,6 @@ tauri-plugin-log = "2"
 rusqlite = { version = "0.31", features = ["bundled"] }
 uuid = { version = "1", features = ["v7", "serde"] }
 chrono = { version = "0.4", features = ["serde"] }
+ureq = "2"
+base64 = "0.22"
+ring = "0.17"

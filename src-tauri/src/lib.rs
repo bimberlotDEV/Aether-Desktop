@@ -1,3 +1,4 @@
+mod ai;
 mod commands;
 mod db;
 
@@ -32,6 +33,12 @@ pub fn run() {
             })?;
 
             log::info!("Database initialized at: {}", app_data_dir.display());
+
+            // Ensure secrets table exists for credential storage
+            {
+                let conn = database.conn.lock().map_err(|e| format!("Lock error: {}", e))?;
+                crate::ai::credentials::ensure_table(&conn)?;
+            }
 
             // Store database in Tauri state
             app.manage(database);
@@ -78,6 +85,22 @@ pub fn run() {
             commands::duplicate_note,
             commands::record_activity,
             commands::list_activity,
+            // AI
+            commands::ai_get_key_status,
+            commands::ai_set_api_key,
+            commands::ai_remove_api_key,
+            commands::ai_test_connection,
+            commands::ai_create_conversation,
+            commands::ai_get_conversation,
+            commands::ai_list_conversations,
+            commands::ai_update_conversation,
+            commands::ai_delete_conversation,
+            commands::ai_list_messages,
+            commands::ai_send_message,
+            commands::ai_add_context,
+            commands::ai_list_context,
+            commands::ai_remove_context,
+            commands::ai_clear_context,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
