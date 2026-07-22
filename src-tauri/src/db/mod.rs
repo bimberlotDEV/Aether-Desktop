@@ -19,8 +19,8 @@ impl Database {
                 .map_err(|e| format!("Failed to create database directory: {}", e))?;
         }
 
-        let conn = Connection::open(&db_path)
-            .map_err(|e| format!("Failed to open database: {}", e))?;
+        let conn =
+            Connection::open(&db_path).map_err(|e| format!("Failed to open database: {}", e))?;
 
         // Enable WAL mode for better concurrent reads
         conn.pragma_update(None, "journal_mode", "WAL")

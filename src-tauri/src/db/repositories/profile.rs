@@ -38,14 +38,10 @@ pub fn create(conn: &Connection, id: &str) -> Result<UserProfile, String> {
         return Err("A local profile already exists".to_string());
     }
 
-    conn.execute(
-        "INSERT INTO user_profile (id) VALUES (?1)",
-        params![id],
-    )
-    .map_err(|e| format!("Profile create error: {}", e))?;
+    conn.execute("INSERT INTO user_profile (id) VALUES (?1)", params![id])
+        .map_err(|e| format!("Profile create error: {}", e))?;
 
-    get(conn)?
-        .ok_or_else(|| "Profile not found after create".to_string())
+    get(conn)?.ok_or_else(|| "Profile not found after create".to_string())
 }
 
 pub fn update(
@@ -118,7 +114,9 @@ mod tests {
         assert!(p.display_name.is_none());
 
         // Update
-        let p = update(&conn, "test-uuid-1", Some("Bim"), Some(true)).unwrap().unwrap();
+        let p = update(&conn, "test-uuid-1", Some("Bim"), Some(true))
+            .unwrap()
+            .unwrap();
         assert_eq!(p.display_name.as_deref(), Some("Bim"));
         assert!(p.onboarding_completed);
 

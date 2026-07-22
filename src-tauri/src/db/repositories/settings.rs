@@ -51,7 +51,9 @@ pub fn delete(conn: &Connection, key: &str) -> Result<bool, String> {
 
 pub fn list(conn: &Connection) -> Result<Vec<AppSetting>, String> {
     let mut stmt = conn
-        .prepare("SELECT key, value, value_type, created_at, updated_at FROM app_settings ORDER BY key")
+        .prepare(
+            "SELECT key, value, value_type, created_at, updated_at FROM app_settings ORDER BY key",
+        )
         .map_err(|e| format!("Settings list error: {}", e))?;
 
     let rows = stmt

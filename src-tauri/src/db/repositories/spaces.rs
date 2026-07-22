@@ -1,3 +1,5 @@
+#![allow(clippy::too_many_arguments)]
+
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -70,7 +72,8 @@ const SPACE_COLS: &str = "id, name, description, icon, accent, template_type,
     favourite, archived_at, sort_order, settings_json,
     parent_space_id, last_opened_at, created_at, updated_at";
 
-const MODULE_COLS: &str = "id, space_id, module_type, title, config_json, layout_json, created_at, updated_at";
+const MODULE_COLS: &str =
+    "id, space_id, module_type, title, config_json, layout_json, created_at, updated_at";
 
 // ─── CRUD ────────────────────────────────────────────────
 
@@ -89,7 +92,9 @@ pub fn create(conn: &Connection, space: &Space) -> Result<Space, String> {
 
 pub fn get_by_id(conn: &Connection, id: &str) -> Result<Option<Space>, String> {
     let sql = format!("SELECT {} FROM spaces WHERE id = ?1", SPACE_COLS);
-    let mut stmt = conn.prepare(&sql).map_err(|e| format!("Space get error: {}", e))?;
+    let mut stmt = conn
+        .prepare(&sql)
+        .map_err(|e| format!("Space get error: {}", e))?;
     match stmt.query_row(params![id], row_to_space) {
         Ok(s) => Ok(Some(s)),
         Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
@@ -98,15 +103,25 @@ pub fn get_by_id(conn: &Connection, id: &str) -> Result<Option<Space>, String> {
 }
 
 pub fn list(conn: &Connection, include_archived: bool) -> Result<Vec<Space>, String> {
-    let where_clause = if include_archived { "" } else { "WHERE archived_at IS NULL" };
+    let where_clause = if include_archived {
+        ""
+    } else {
+        "WHERE archived_at IS NULL"
+    };
     let sql = format!(
         "SELECT {} FROM spaces {} ORDER BY favourite DESC, sort_order ASC, created_at DESC",
         SPACE_COLS, where_clause
     );
-    let mut stmt = conn.prepare(&sql).map_err(|e| format!("Space list error: {}", e))?;
-    let rows = stmt.query_map([], row_to_space).map_err(|e| format!("Space list error: {}", e))?;
+    let mut stmt = conn
+        .prepare(&sql)
+        .map_err(|e| format!("Space list error: {}", e))?;
+    let rows = stmt
+        .query_map([], row_to_space)
+        .map_err(|e| format!("Space list error: {}", e))?;
     let mut spaces = Vec::new();
-    for row in rows { spaces.push(row.map_err(|e| format!("Space row error: {}", e))?); }
+    for row in rows {
+        spaces.push(row.map_err(|e| format!("Space row error: {}", e))?);
+    }
     Ok(spaces)
 }
 
@@ -115,10 +130,16 @@ pub fn list_by_parent(conn: &Connection, parent_id: &str) -> Result<Vec<Space>, 
         "SELECT {} FROM spaces WHERE parent_space_id = ?1 AND archived_at IS NULL ORDER BY sort_order ASC, created_at ASC",
         SPACE_COLS
     );
-    let mut stmt = conn.prepare(&sql).map_err(|e| format!("Space list_by_parent error: {}", e))?;
-    let rows = stmt.query_map(params![parent_id], row_to_space).map_err(|e| format!("Space list_by_parent error: {}", e))?;
+    let mut stmt = conn
+        .prepare(&sql)
+        .map_err(|e| format!("Space list_by_parent error: {}", e))?;
+    let rows = stmt
+        .query_map(params![parent_id], row_to_space)
+        .map_err(|e| format!("Space list_by_parent error: {}", e))?;
     let mut spaces = Vec::new();
-    for row in rows { spaces.push(row.map_err(|e| format!("Space row error: {}", e))?); }
+    for row in rows {
+        spaces.push(row.map_err(|e| format!("Space row error: {}", e))?);
+    }
     Ok(spaces)
 }
 
@@ -127,44 +148,82 @@ pub fn list_top_level(conn: &Connection) -> Result<Vec<Space>, String> {
         "SELECT {} FROM spaces WHERE parent_space_id IS NULL AND archived_at IS NULL ORDER BY favourite DESC, sort_order ASC, created_at DESC",
         SPACE_COLS
     );
-    let mut stmt = conn.prepare(&sql).map_err(|e| format!("Space list_top_level error: {}", e))?;
-    let rows = stmt.query_map([], row_to_space).map_err(|e| format!("Space list_top_level error: {}", e))?;
+    let mut stmt = conn
+        .prepare(&sql)
+        .map_err(|e| format!("Space list_top_level error: {}", e))?;
+    let rows = stmt
+        .query_map([], row_to_space)
+        .map_err(|e| format!("Space list_top_level error: {}", e))?;
     let mut spaces = Vec::new();
-    for row in rows { spaces.push(row.map_err(|e| format!("Space row error: {}", e))?); }
+    for row in rows {
+        spaces.push(row.map_err(|e| format!("Space row error: {}", e))?);
+    }
     Ok(spaces)
 }
 
 pub fn update(
-    conn: &Connection, id: &str,
-    name: Option<&str>, description: Option<&str>, icon: Option<&str>,
-    accent: Option<&str>, settings_json: Option<&str>,
+    conn: &Connection,
+    id: &str,
+    name: Option<&str>,
+    description: Option<&str>,
+    icon: Option<&str>,
+    accent: Option<&str>,
+    settings_json: Option<&str>,
     parent_space_id: Option<Option<String>>,
 ) -> Result<Option<Space>, String> {
     let mut sets = Vec::new();
     let mut values: Vec<Box<dyn rusqlite::types::ToSql>> = Vec::new();
-    if let Some(v) = name { sets.push("name = ?"); values.push(Box::new(v.to_string())); }
-    if let Some(v) = description { sets.push("description = ?"); values.push(Box::new(v.to_string())); }
-    if let Some(v) = icon { sets.push("icon = ?"); values.push(Box::new(v.to_string())); }
-    if let Some(v) = accent { sets.push("accent = ?"); values.push(Box::new(v.to_string())); }
-    if let Some(v) = settings_json { sets.push("settings_json = ?"); values.push(Box::new(v.to_string())); }
+    if let Some(v) = name {
+        sets.push("name = ?");
+        values.push(Box::new(v.to_string()));
+    }
+    if let Some(v) = description {
+        sets.push("description = ?");
+        values.push(Box::new(v.to_string()));
+    }
+    if let Some(v) = icon {
+        sets.push("icon = ?");
+        values.push(Box::new(v.to_string()));
+    }
+    if let Some(v) = accent {
+        sets.push("accent = ?");
+        values.push(Box::new(v.to_string()));
+    }
+    if let Some(v) = settings_json {
+        sets.push("settings_json = ?");
+        values.push(Box::new(v.to_string()));
+    }
     if let Some(v) = parent_space_id {
         sets.push("parent_space_id = ?");
         values.push(Box::new(v));
     }
-    if sets.is_empty() { return get_by_id(conn, id); }
+    if sets.is_empty() {
+        return get_by_id(conn, id);
+    }
     sets.push("updated_at = datetime('now')");
     values.push(Box::new(id.to_string()));
-    let sql = format!("UPDATE spaces SET {} WHERE id = ?{}", sets.join(", "), values.len());
+    let sql = format!(
+        "UPDATE spaces SET {} WHERE id = ?{}",
+        sets.join(", "),
+        values.len()
+    );
     let params_refs: Vec<&dyn rusqlite::types::ToSql> = values.iter().map(|v| v.as_ref()).collect();
-    let affected = conn.execute(&sql, params_refs.as_slice()).map_err(|e| format!("Space update error: {}", e))?;
-    if affected == 0 { Ok(None) } else { get_by_id(conn, id) }
+    let affected = conn
+        .execute(&sql, params_refs.as_slice())
+        .map_err(|e| format!("Space update error: {}", e))?;
+    if affected == 0 {
+        Ok(None)
+    } else {
+        get_by_id(conn, id)
+    }
 }
 
 pub fn touch_last_opened(conn: &Connection, id: &str) -> Result<(), String> {
     conn.execute(
         "UPDATE spaces SET last_opened_at = datetime('now') WHERE id = ?1",
         params![id],
-    ).map_err(|e| format!("touch_last_opened error: {}", e))?;
+    )
+    .map_err(|e| format!("touch_last_opened error: {}", e))?;
     Ok(())
 }
 
@@ -187,7 +246,8 @@ pub fn restore(conn: &Connection, id: &str) -> Result<bool, String> {
 }
 
 pub fn delete_permanent(conn: &Connection, id: &str) -> Result<bool, String> {
-    let affected = conn.execute("DELETE FROM spaces WHERE id = ?1", params![id])
+    let affected = conn
+        .execute("DELETE FROM spaces WHERE id = ?1", params![id])
         .map_err(|e| format!("Space delete error: {}", e))?;
     Ok(affected > 0)
 }
@@ -195,10 +255,12 @@ pub fn delete_permanent(conn: &Connection, id: &str) -> Result<bool, String> {
 // ─── Favourite / Reorder ────────────────────────────────
 
 pub fn set_favourite(conn: &Connection, id: &str, fav: bool) -> Result<bool, String> {
-    let affected = conn.execute(
-        "UPDATE spaces SET favourite = ?1, updated_at = datetime('now') WHERE id = ?2",
-        params![fav as i64, id],
-    ).map_err(|e| format!("Space favourite error: {}", e))?;
+    let affected = conn
+        .execute(
+            "UPDATE spaces SET favourite = ?1, updated_at = datetime('now') WHERE id = ?2",
+            params![fav as i64, id],
+        )
+        .map_err(|e| format!("Space favourite error: {}", e))?;
     Ok(affected > 0)
 }
 
@@ -207,7 +269,8 @@ pub fn reorder(conn: &Connection, ordered_ids: &[String]) -> Result<(), String> 
         conn.execute(
             "UPDATE spaces SET sort_order = ?1, updated_at = datetime('now') WHERE id = ?2",
             params![i as i64, id],
-        ).map_err(|e| format!("Space reorder error: {}", e))?;
+        )
+        .map_err(|e| format!("Space reorder error: {}", e))?;
     }
     Ok(())
 }
@@ -264,28 +327,54 @@ pub fn duplicate(conn: &Connection, id: &str) -> Result<Space, String> {
 // ─── Modules ────────────────────────────────────────────
 
 pub fn list_modules(conn: &Connection, space_id: &str) -> Result<Vec<ModuleInstance>, String> {
-    let sql = format!("SELECT {} FROM module_instances WHERE space_id = ?1 ORDER BY created_at ASC", MODULE_COLS);
-    let mut stmt = conn.prepare(&sql).map_err(|e| format!("Module list error: {}", e))?;
-    let rows = stmt.query_map(params![space_id], row_to_module).map_err(|e| format!("Module list error: {}", e))?;
+    let sql = format!(
+        "SELECT {} FROM module_instances WHERE space_id = ?1 ORDER BY created_at ASC",
+        MODULE_COLS
+    );
+    let mut stmt = conn
+        .prepare(&sql)
+        .map_err(|e| format!("Module list error: {}", e))?;
+    let rows = stmt
+        .query_map(params![space_id], row_to_module)
+        .map_err(|e| format!("Module list error: {}", e))?;
     let mut mods = Vec::new();
-    for row in rows { mods.push(row.map_err(|e| format!("Module row error: {}", e))?); }
+    for row in rows {
+        mods.push(row.map_err(|e| format!("Module row error: {}", e))?);
+    }
     Ok(mods)
 }
 
 pub fn set_modules(
-    conn: &Connection, space_id: &str, module_types: &[&str],
+    conn: &Connection,
+    space_id: &str,
+    module_types: &[&str],
 ) -> Result<Vec<ModuleInstance>, String> {
     // Remove modules not in the new list
     if module_types.is_empty() {
-        conn.execute("DELETE FROM module_instances WHERE space_id = ?1", params![space_id])
-            .map_err(|e| format!("Module clear error: {}", e))?;
+        conn.execute(
+            "DELETE FROM module_instances WHERE space_id = ?1",
+            params![space_id],
+        )
+        .map_err(|e| format!("Module clear error: {}", e))?;
     } else {
-        let placeholders: Vec<String> = module_types.iter().enumerate().map(|(i, _)| format!("?{}", i + 2)).collect();
-        let sql = format!("DELETE FROM module_instances WHERE space_id = ?1 AND module_type NOT IN ({})", placeholders.join(","));
-        let mut del_params: Vec<Box<dyn rusqlite::types::ToSql>> = vec![Box::new(space_id.to_string())];
-        for mt in module_types { del_params.push(Box::new(mt.to_string())); }
-        let del_refs: Vec<&dyn rusqlite::types::ToSql> = del_params.iter().map(|v| v.as_ref()).collect();
-        conn.execute(&sql, del_refs.as_slice()).map_err(|e| format!("Module delete error: {}", e))?;
+        let placeholders: Vec<String> = module_types
+            .iter()
+            .enumerate()
+            .map(|(i, _)| format!("?{}", i + 2))
+            .collect();
+        let sql = format!(
+            "DELETE FROM module_instances WHERE space_id = ?1 AND module_type NOT IN ({})",
+            placeholders.join(",")
+        );
+        let mut del_params: Vec<Box<dyn rusqlite::types::ToSql>> =
+            vec![Box::new(space_id.to_string())];
+        for mt in module_types {
+            del_params.push(Box::new(mt.to_string()));
+        }
+        let del_refs: Vec<&dyn rusqlite::types::ToSql> =
+            del_params.iter().map(|v| v.as_ref()).collect();
+        conn.execute(&sql, del_refs.as_slice())
+            .map_err(|e| format!("Module delete error: {}", e))?;
     }
 
     // Add new modules
@@ -295,7 +384,8 @@ pub fn set_modules(
             conn.execute(
                 "INSERT INTO module_instances (id, space_id, module_type) VALUES (?1, ?2, ?3)",
                 params![Uuid::now_v7().to_string(), space_id, mt],
-            ).map_err(|e| format!("Module insert error: {}", e))?;
+            )
+            .map_err(|e| format!("Module insert error: {}", e))?;
         }
     }
 
@@ -306,7 +396,9 @@ pub fn set_modules(
 
 /// Create a space with modules in a transaction
 pub fn create_with_modules(
-    conn: &Connection, space: &Space, module_types: &[&str],
+    conn: &Connection,
+    space: &Space,
+    module_types: &[&str],
 ) -> Result<(Space, Vec<ModuleInstance>), String> {
     let created = create(conn, space)?;
     let modules = set_modules(conn, &created.id, module_types)?;
@@ -329,12 +421,20 @@ mod tests {
 
     fn test_space(id: &str, name: &str) -> Space {
         Space {
-            id: id.to_string(), name: name.to_string(),
-            description: None, icon: None, accent: None,
+            id: id.to_string(),
+            name: name.to_string(),
+            description: None,
+            icon: None,
+            accent: None,
             template_type: Some("blank".to_string()),
-            favourite: false, archived_at: None, sort_order: 0,
-            settings_json: None, parent_space_id: None, last_opened_at: None,
-            created_at: String::new(), updated_at: String::new(),
+            favourite: false,
+            archived_at: None,
+            sort_order: 0,
+            settings_json: None,
+            parent_space_id: None,
+            last_opened_at: None,
+            created_at: String::new(),
+            updated_at: String::new(),
         }
     }
 
@@ -343,7 +443,9 @@ mod tests {
         let conn = setup();
         let s = create(&conn, &test_space("s1", "Test")).unwrap();
         assert_eq!(s.name, "Test");
-        let s = update(&conn, "s1", Some("Renamed"), None, None, None, None, None).unwrap().unwrap();
+        let s = update(&conn, "s1", Some("Renamed"), None, None, None, None, None)
+            .unwrap()
+            .unwrap();
         assert_eq!(s.name, "Renamed");
     }
 

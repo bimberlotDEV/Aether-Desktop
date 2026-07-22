@@ -2,8 +2,8 @@ mod commands;
 mod db;
 
 use db::Database;
-use tauri::Manager;
 use std::path::PathBuf;
+use tauri::Manager;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -26,16 +26,12 @@ pub fn run() {
             let db_path = app_data_dir.join("aether.db");
 
             // Open database (creates and migrates if needed)
-            let database = Database::open(db_path)
-                .map_err(|e| {
-                    log::error!("Database initialization failed: {}", e);
-                    e
-                })?;
+            let database = Database::open(db_path).map_err(|e| {
+                log::error!("Database initialization failed: {}", e);
+                e
+            })?;
 
-            log::info!(
-                "Database initialized at: {}",
-                app_data_dir.display()
-            );
+            log::info!("Database initialized at: {}", app_data_dir.display());
 
             // Store database in Tauri state
             app.manage(database);

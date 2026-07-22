@@ -104,11 +104,8 @@ fn is_applied(conn: &Connection, name: &str) -> Result<bool, String> {
 fn apply_migration(tx: &Transaction, name: &str, sql: &str) -> Result<(), String> {
     tx.execute_batch(sql)
         .map_err(|e| format!("Migration '{}' failed: {}", name, e))?;
-    tx.execute(
-        "INSERT INTO _migrations (name) VALUES (?1)",
-        [name],
-    )
-    .map_err(|e| format!("Failed to record migration '{}': {}", name, e))?;
+    tx.execute("INSERT INTO _migrations (name) VALUES (?1)", [name])
+        .map_err(|e| format!("Failed to record migration '{}': {}", name, e))?;
     Ok(())
 }
 
