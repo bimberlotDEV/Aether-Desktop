@@ -71,8 +71,19 @@ Use conventional commits:
 
 ## Current phase
 
-Phase 0-1 (Foundation + Shell) and Phase 2 (Database) are complete.
-Next: Phase 3 (Spaces).
+Phase 0-2 are complete. Phase 3 (Spaces) and Phase 4 (Notes) are substantially implemented. Phase 7 (AI integration) has a backend prototype but is not production-ready. The canonical live status is `.ai/PROJECT_STATE.md`.
+
+## Multi-agent collaboration
+
+Aether uses a strict Hermes/Codex workflow defined in `WORKFLOW.md`.
+
+- **Hermes** owns analysis, planning, architecture, prioritization, decomposition, and review. Hermes does not write production code unless explicitly requested.
+- **Codex** owns implementation, debugging, refactoring, testing, verification, and implementation documentation. Codex does not redesign architecture unless the active handoff explicitly authorizes it.
+- `.ai/HANDOFF.md` is the only authority for the task Codex may implement.
+- `.ai/PROJECT_STATE.md` is the canonical current-state snapshot.
+- `.ai/TODO.md` is the prioritized backlog, not implementation authorization.
+
+At the start of every session, read the control documents in the order defined by `WORKFLOW.md`. Do not begin product implementation unless the handoff status is `ready` and its readiness gate is complete.
 
 ## Database architecture
 
