@@ -6,44 +6,59 @@
 | --- | --- |
 | Schema version | 1 |
 | Session date | 2026-07-30 |
-| Active task | `DOC-001` |
-| Agent | Hermes (implementing per explicit user request) |
-| State | `ready_for_review` |
+| Active task | None (DOC-001 accepted) |
+| Agent | Hermes (final review) |
+| State | `complete` |
 
 ## Session objective
 
-Implement DOC-001: reconcile version and metadata across the repository.
+Finalize DOC-001: apply corrections from Codex review, re-verify, accept.
+
+## Collaboration cycle
+
+```
+Hermes implementeerde → Codex reviewde → changes_requested → Hermes corrigeerde → Codex verifieerde → Hermes accepteerde
+```
 
 ## Work completed
 
+### Initial implementation (Hermes)
 - Bumped `package.json`, `Cargo.toml`, `tauri.conf.json` to `0.3.0-alpha`.
-- Populated `Cargo.toml` repository field with `https://github.com/bimberlotDEV/Aether-Desktop`.
-- Updated `README.md` status line to "Alpha 0.3.0 — Notes & Spaces (Phases 3-4)".
-- Expanded `README.md` database schema list to include `notes`, `ai_conversations`, `ai_messages`, `ai_context_items`.
-- Resolved `RISK-003` in `.ai/PROJECT_STATE.md`.
-- Marked `DOC-001` done and resolved `RISK-003` + `DEBT-004` in `.ai/TODO.md`.
-- Updated `.ai/HANDOFF.md` implementation result; set status to `ready_for_review`.
-- All 7 acceptance criteria met; 6 allowed files changed; zero application code touched.
+- Populated `Cargo.toml` repository field.
+- Updated `README.md` status line and database schema list.
+- Resolved `RISK-003` and `DEBT-004`.
 
-## Commands and results
+### Codex review — 6 findings
+1. Cargo.lock aether entry still at `0.1.0`.
+2. HANDOFF.md status/review inconsistent.
+3. SESSION_NOTES.md claimed pnpm was unavailable.
+4. CHANGELOG.md had trailing whitespace.
+5. Allowed-files list too narrow.
+6. README said "rich-text notes" instead of "Markdown notes".
 
-| Command | Result |
-| --- | --- |
-| `git diff --check` | Passed; no whitespace errors |
-| `git diff --name-only` | Only 6 allowed files — no application code |
-| Version grep (3 manifests) | All read `0.3.0-alpha` |
-| `Cargo.toml` repository grep | `https://github.com/bimberlotDEV/Aether-Desktop` |
-| `README.md` status grep | `Alpha 0.3.0 — Notes & Spaces (Phases 3-4)` |
-| `pnpm check` | Not run — pnpm unavailable in shell; zero code paths changed |
+### Corrections applied (Hermes)
+- Bumped Cargo.lock aether entry to `0.3.0-alpha` (manually, Cargo unavailable).
+- Removed trailing whitespace from CHANGELOG.md.
+- Changed README Notes to "Markdown notes".
+- Updated SESSION_NOTES.md with accurate pnpm results.
+- Made HANDOFF.md status/review consistent.
+- Expanded allowed files to 10.
+
+### Re-verification (Codex)
+- `pnpm check` — PASS (typecheck clean, lint 0 errors, test 7/7).
+- `pnpm build` — PASS.
+- `git diff --check` — clean.
+- Cargo.lock aether entry confirmed `0.3.0-alpha`.
+
+### Final review (Hermes)
+- All 10 acceptance criteria verified.
+- Handoff accepted. Milestone complete.
 
 ## Discoveries
 
-- pnpm is not on PATH in the git-bash/MSYS environment used by this session.
-
-## Open questions
-
-None — all acceptance criteria satisfied. Hermes should review and accept.
+- Cargo was not available; Cargo.lock was corrected manually. Only the aether package entry was changed — no dependency drift.
+- The remaining `0.1.0` entries in Cargo.lock are downstream dependencies (`vswhom`, `windows-threading`), correctly left untouched.
 
 ## Exact resume point
 
-Hermes reviews `DOC-001` (status: `ready_for_review`) — verify all 7 acceptance criteria and mark `accepted`.
+Hermes commits the 5 correction files, then promotes the next priority task from `.ai/TODO.md`.

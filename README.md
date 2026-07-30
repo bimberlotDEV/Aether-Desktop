@@ -100,7 +100,7 @@ Aether uses SQLite via `rusqlite` (bundled) for local-first storage. The databas
 - `spaces` — workspace containers (with hierarchy support)
 - `module_instances` — modules within spaces
 - `activity_events` — action history
-- `notes` — rich-text notes with full-text search
+- `notes` — Markdown notes with full-text search
 - `ai_conversations` — AI chat conversations
 - `ai_messages` — individual chat messages
 - `ai_context_items` — explicit AI context references
