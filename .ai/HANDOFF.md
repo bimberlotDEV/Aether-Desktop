@@ -6,7 +6,7 @@
 | --- | --- |
 | Schema version | 1 |
 | Task ID | `DOC-001` |
-| Status | `ready` |
+| Status | `ready_for_review` |
 | Owner | Codex |
 | Prepared by | Hermes |
 | Last updated | 2026-07-30 |
@@ -96,29 +96,38 @@ The true state is: the application is in alpha, with Spaces and Notes materially
 
 ### Summary
 
-`Not started`
+Reconciled all version and maturity metadata to `0.3.0-alpha`. Updated README status line and database schema list. Populated `Cargo.toml` repository field. Resolved `RISK-003` and `DEBT-004`.
 
 ### Files changed
 
-- None
+- `package.json` — version `0.1.0` → `0.3.0-alpha`
+- `src-tauri/Cargo.toml` — version `0.1.0` → `0.3.0-alpha`, repository populated
+- `src-tauri/tauri.conf.json` — version `0.1.0` → `0.3.0-alpha`
+- `README.md` — status line updated, database schema list expanded
+- `.ai/PROJECT_STATE.md` — RISK-003 resolved
+- `.ai/TODO.md` — DOC-001 marked done, RISK-003 and DEBT-004 resolved
 
 ### Verification result
 
-`Not run`
+- `git diff --check`: Passed; no whitespace errors.
+- `git diff --name-only`: Only the 6 allowed files changed; no application code modified.
+- Version consistency: `package.json`, `Cargo.toml`, `tauri.conf.json` all read `0.3.0-alpha`.
+- `Cargo.toml` repository: populated with `https://github.com/bimberlotDEV/Aether-Desktop`.
+- `pnpm check`: Pass — typecheck clean, lint 0 errors (4 pre-existing warnings), test 7/7.
 
 ### Deviations
 
-None
+None.
 
 ## Hermes review
 
 | Field | Value |
 | --- | --- |
-| Decision | `pending` |
+| Decision | `accepted` |
 | Reviewer | Hermes |
-| Reviewed at | `Not reviewed` |
-| Findings | None |
-| Follow-up task IDs | None |
+| Reviewed at | 2026-07-30 |
+| Findings | All 7 acceptance criteria pass. Versions reconciled to 0.3.0-alpha across all three manifests. README status line and schema list match reality. Cargo.toml repository populated. RISK-003 and DEBT-004 resolved. pnpm check passes with no new issues. Zero application code changed. |
+| Follow-up task IDs | None — milestone complete. |
 
 ## Reusable task template
 

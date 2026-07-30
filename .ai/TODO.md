@@ -32,7 +32,7 @@
 | P0 | `AIWF-001` | Establish Hermes/Codex collaboration system | Process | `done` | None | Hermes accepted the complete workflow. |
 | P0 | `TECH-001` | Audit and harden AI credential storage and locking | Security | `needs_design` | Rust toolchain | No deadlock; secrets use an approved OS-backed or cryptographically sound design. |
 | P1 | `ENV-001` | Restore Rust verification capability | Tooling | `blocked` | Rust MSVC installation | All Rust tests and Clippy can run locally. |
-| P1 | `DOC-001` | Reconcile version and milestone documentation | Documentation | `active` | `AIWF-001` accepted | README, app metadata, and project state agree. |
+| P1 | `DOC-001` | Reconcile version and milestone documentation | Documentation | `done` | `AIWF-001` accepted | README, app metadata, and project state agree. |
 | P1 | `PHASE5-EPIC` | Design and implement Tasks | Product | `needs_design` | Hermes decomposition | Phase 5 requirements are split into bounded vertical slices. |
 | P2 | `AI-UI-EPIC` | Complete the AI user experience | Product | `needs_design` | `TECH-001` | Provider setup, conversations, streaming, cancellation, and explicit context have reviewed UX. |
 | P2 | `VAULT-EPIC` | Design and implement Vault | Product | `needs_design` | Security and file lifecycle design | Phase 6 requirements have an approved architecture. |
@@ -44,7 +44,7 @@
 | P1 | `DEBT-001` | Testing | Frontend coverage is only 7 tests; Spaces, Notes, and Tauri boundaries need risk-based coverage. | `pnpm test` on 2026-07-30 |
 | P2 | `DEBT-002` | Lint | Four non-failing warnings remain in utilities, IconPicker, and SpaceDetail. | `pnpm lint` on 2026-07-30 |
 | P2 | `DEBT-003` | Architecture docs | Existing `docs/architecture.md` contains a duplicated Tauri Bridge layer and predates Notes/AI work. | Repository inspection |
-| P2 | `DEBT-004` | Packaging | `Cargo.toml` has an empty repository field despite the configured Git remote. | Repository inspection |
+| P2 | `DEBT-004` | Packaging | `Cargo.toml` repository field was empty despite configured Git remote. | ~~Repository inspection~~ Resolved: populated with https://github.com/bimberlotDEV/Aether-Desktop. |
 
 ## Feature status index
 

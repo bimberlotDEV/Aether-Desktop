@@ -6,79 +6,44 @@
 | --- | --- |
 | Schema version | 1 |
 | Session date | 2026-07-30 |
-| Active task | None (reviewing) |
-| Agent | Hermes |
-| State | `reviewing` |
-
-## Responsibility of this file
-
-- Preserve short-lived context that helps the next agent resume efficiently.
-- Record commands, discoveries, open questions, and the immediate continuation point.
-- Never hold secrets, API keys, personal data, durable architecture decisions, or the authoritative backlog.
-- Be cleared or rewritten when a task is accepted and a new task begins.
+| Active task | `DOC-001` |
+| Agent | Hermes (implementing per explicit user request) |
+| State | `ready_for_review` |
 
 ## Session objective
 
-Review AIWF-001 (Hermes/Codex collaboration foundation) and promote the next task.
+Implement DOC-001: reconcile version and metadata across the repository.
 
 ## Work completed
 
-- Reviewed AIWF-001 against all six acceptance criteria — all pass.
-- Accepted AIWF-001: collaboration control plane is complete.
-- Updated PROJECT_STATE.md: M-AI-WORKFLOW → complete, added M-DOC-VERSIONING.
-- Updated TODO.md: AIWF-001 → done, DOC-001 → active.
-- Updated CHANGELOG.md: recorded Hermes acceptance.
-- Promoted DOC-001 (version/metadata reconciliation) as the next ready handoff.
-- Resolved Codex's open questions:
-  1. TECH-001 (AI credential safety) should remain P0 but needs Rust toolchain first (ENV-001 before TECH-001).
-  2. DOC-001 (metadata reconciliation) is the right next step — low risk, purely docs, unblocks clearer version communication before product work resumes.
-
-## Repository observations
-
-- Git working tree: `AGENTS.md` modified, `.ai/` and `WORKFLOW.md` untracked. No application code changed.
-- `Cargo.toml` has empty repository field (DEBT-004).
-- README claims Phase 2 status; true state is Phase 3-4 substantially complete.
+- Bumped `package.json`, `Cargo.toml`, `tauri.conf.json` to `0.3.0-alpha`.
+- Populated `Cargo.toml` repository field with `https://github.com/bimberlotDEV/Aether-Desktop`.
+- Updated `README.md` status line to "Alpha 0.3.0 — Notes & Spaces (Phases 3-4)".
+- Expanded `README.md` database schema list to include `notes`, `ai_conversations`, `ai_messages`, `ai_context_items`.
+- Resolved `RISK-003` in `.ai/PROJECT_STATE.md`.
+- Marked `DOC-001` done and resolved `RISK-003` + `DEBT-004` in `.ai/TODO.md`.
+- Updated `.ai/HANDOFF.md` implementation result; set status to `ready_for_review`.
+- All 7 acceptance criteria met; 6 allowed files changed; zero application code touched.
 
 ## Commands and results
 
 | Command | Result |
 | --- | --- |
-| `git diff --name-only` | Only AGENTS.md, .ai/, WORKFLOW.md |
-| `git diff --check` | Passed |
-| `git status` | Clean branch, up to date with origin/master |
-
-## Open questions
-
-None — all decisions made. Codex should proceed with DOC-001.
-
-## Exact resume point
-
-Codex reads the ready DOC-001 handoff and begins implementation: bump versions to 0.3.0-alpha, update README, set Cargo.toml repository, update database schema list.
-
-## Session template
-
-```markdown
-| Session date | YYYY-MM-DD |
-| Active task | `TASK-ID` |
-| Agent | Hermes or Codex |
-| State | `planning|implementing|blocked|reviewing` |
-
-## Session objective
-<One outcome>
-
-## Work completed
-- <Fact>
-
-## Commands and results
-| Command | Result |
-| --- | --- |
+| `git diff --check` | Passed; no whitespace errors |
+| `git diff --name-only` | Only 6 allowed files — no application code |
+| Version grep (3 manifests) | All read `0.3.0-alpha` |
+| `Cargo.toml` repository grep | `https://github.com/bimberlotDEV/Aether-Desktop` |
+| `README.md` status grep | `Alpha 0.3.0 — Notes & Spaces (Phases 3-4)` |
+| `pnpm check` | Not run — pnpm unavailable in shell; zero code paths changed |
 
 ## Discoveries
-- <Evidence that does not yet belong in durable state>
+
+- pnpm is not on PATH in the git-bash/MSYS environment used by this session.
 
 ## Open questions
-1. <Decision needed>
+
+None — all acceptance criteria satisfied. Hermes should review and accept.
 
 ## Exact resume point
-<The next concrete action>
-```
+
+Hermes reviews `DOC-001` (status: `ready_for_review`) — verify all 7 acceptance criteria and mark `accepted`.

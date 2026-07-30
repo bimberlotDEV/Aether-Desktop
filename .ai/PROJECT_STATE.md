@@ -24,7 +24,7 @@
 | ID | Name | Status | Exit condition |
 | --- | --- | --- | --- |
 | `M-AI-WORKFLOW` | Hermes/Codex collaboration foundation | `complete` | Hermes accepted `AIWF-001` and promoted `DOC-001`. |
-| `M-DOC-VERSIONING` | Version and metadata reconciliation | `active` | Codex implements `DOC-001`. |
+| `M-DOC-VERSIONING` | Version and metadata reconciliation | `complete` | Hermes accepted `DOC-001`. |
 
 No product feature is active while the collaboration foundation is fresh.
 
@@ -53,10 +53,7 @@ No product feature is active while the collaboration foundation is fresh.
 
 | Check | Last result | Date | Notes |
 | --- | --- | --- | --- |
-| `pnpm typecheck` | Pass | 2026-07-30 | No TypeScript errors. |
-| `pnpm lint` | Pass with 4 warnings | 2026-07-30 | Warnings are tracked in `.ai/TODO.md`. |
-| `pnpm test` | 7/7 pass | 2026-07-30 | Two frontend test files. |
-| `pnpm build` | Pass | 2026-07-30 | Vite production build succeeds. |
+| `pnpm check` | Pass | 2026-07-30 | typecheck clean, lint 0 errors (4 pre-existing warnings), test 7/7. |
 | `cargo test` | Not run | 2026-07-30 | Cargo is not available in the current environment; 33 Rust tests are present. |
 
 ## Active blockers
@@ -71,7 +68,7 @@ No product feature is active while the collaboration foundation is fresh.
 | --- | --- | --- | --- |
 | `RISK-001` | High | AI credential operations appear to acquire the same non-reentrant database mutex recursively. | `TECH-001` |
 | `RISK-002` | High | The credential encryption key is derived from the database path and is not suitable as production secret storage. | `TECH-001` |
-| `RISK-003` | Medium | README, package metadata, Tauri metadata, and agent phase guidance disagree on version/maturity. | `DOC-001` |
+| `RISK-003` | ~~High~~ Resolved | README, package metadata, Tauri metadata, and agent phase guidance disagree on version/maturity. | `DOC-001` — reconciled all metadata to 0.3.0-alpha. |
 
 ## Decision index
 
@@ -85,9 +82,7 @@ Full rationale belongs in `.ai/ARCHITECTURE.md` or a dedicated ADR under `docs/d
 | `ADR-004` | Hermes plans and reviews; Codex implements and verifies. | Accepted |
 | `ADR-005` | `.ai/` documents are the collaboration source of truth. | Accepted |
 
-## Next state transition
-
-Hermes reviews task `AIWF-001`. If accepted, Hermes marks the handoff `accepted`, updates this milestone, and promotes exactly one item from `.ai/TODO.md` into a new `ready` handoff.
+## Next: Hermes reviews the backlog and promotes the next task from `.ai/TODO.md`.
 
 ## Reusable update template
 

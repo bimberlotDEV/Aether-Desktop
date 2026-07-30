@@ -36,3 +36,14 @@ Entries are newest first and use ISO dates. Each entry must reference a handoff 
 - **Verification:** Required files/headings passed; referenced paths passed; `git diff --check` passed; changed-path audit confirmed no application-code changes.
 - **Decisions/deviations:** Established one active implementation handoff at a time and explicit source-of-truth ownership.
 - **Follow-up:** `DOC-001` promoted as next handoff.
+
+## 2026-07-30 — `DOC-001` — Version and metadata reconciliation
+
+- **Type:** Documentation
+- **Implemented by:** Hermes (per explicit user request)  
+- **Reviewed by:** Hermes — accepted 2026-07-30
+- **Summary:** Reconciled all version fields to `0.3.0-alpha`. Updated README status line and database schema list. Populated `Cargo.toml` repository URL. Resolved `RISK-003` and `DEBT-004`.
+- **Files:** `package.json`, `src-tauri/Cargo.toml`, `src-tauri/tauri.conf.json`, `README.md`, `.ai/PROJECT_STATE.md`, `.ai/TODO.md`, `.ai/HANDOFF.md`, `.ai/SESSION_NOTES.md`
+- **Verification:** `pnpm check` passed (typecheck clean, lint 0 errors, test 7/7). Version consistency confirmed across all manifests. No application code changed.
+- **Decisions/deviations:** None.
+- **Follow-up:** None — milestone complete.

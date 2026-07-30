@@ -4,7 +4,7 @@
 
 Aether is a local-first, modular and AI-assisted personal workspace for Windows. It brings together spaces, notes, tasks, files, calendars, knowledge, and AI assistance — all in one calm, polished desktop application.
 
-**Status:** Alpha 0.2.0 — Database Layer (Phase 2)
+**Status:** Alpha 0.3.0 — Notes & Spaces (Phases 3-4)
 
 ## Technology
 
@@ -97,8 +97,12 @@ Aether uses SQLite via `rusqlite` (bundled) for local-first storage. The databas
 
 - `app_settings` — key-value preferences
 - `user_profile` — local user profile
-- `spaces` — workspace containers
+- `spaces` — workspace containers (with hierarchy support)
 - `module_instances` — modules within spaces
 - `activity_events` — action history
+- `notes` — rich-text notes with full-text search
+- `ai_conversations` — AI chat conversations
+- `ai_messages` — individual chat messages
+- `ai_context_items` — explicit AI context references
 
 See `docs/database.md` for full schema documentation.
