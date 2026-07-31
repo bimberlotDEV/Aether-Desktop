@@ -5,14 +5,17 @@ use rusqlite::Connection;
 use std::path::PathBuf;
 use std::sync::Mutex;
 
+use crate::ai::credentials::SecretCrypto;
+
 pub struct Database {
     pub conn: Mutex<Connection>,
+    pub crypto: Box<dyn SecretCrypto>,
 }
 
 impl Database {
     /// Open or create the database at the given path.
     /// Runs migrations automatically.
-    pub fn open(db_path: PathBuf) -> Result<Self, String> {
+    pub fn open(db_path: PathBuf, crypto: Box<dyn SecretCrypto>) -> Result<Self, String> {
         // Ensure parent directory exists
         if let Some(parent) = db_path.parent() {
             std::fs::create_dir_all(parent)
@@ -36,6 +39,7 @@ impl Database {
 
         let db = Database {
             conn: Mutex::new(conn),
+            crypto,
         };
 
         // Run migrations

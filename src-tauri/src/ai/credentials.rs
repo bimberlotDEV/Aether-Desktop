@@ -1,137 +1,203 @@
-use ring::aead::{Aad, LessSafeKey, Nonce, UnboundKey, AES_256_GCM};
-use ring::rand::{SecureRandom, SystemRandom};
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
 use rusqlite::Connection;
+use windows_sys::Win32::Foundation::LocalFree;
+use windows_sys::Win32::Security::Cryptography::{
+    CryptProtectData, CryptUnprotectData, CRYPTPROTECT_UI_FORBIDDEN, CRYPT_INTEGER_BLOB,
+};
+
 use crate::db::Database;
-use std::sync::Mutex;
 
 const SECRETS_TABLE_SQL: &str = "
     CREATE TABLE IF NOT EXISTS secrets (
         key         TEXT PRIMARY KEY NOT NULL,
-        value       TEXT NOT NULL,  -- base64(nonce || ciphertext)
+        value       TEXT NOT NULL,  -- base64(encrypted blob)
         created_at  TEXT NOT NULL DEFAULT (datetime('now')),
         updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
     );
 ";
 
-/// Key names stored in the secrets table
+/// Key names stored in the secrets table.
 pub const AI_API_KEY: &str = "ai_api_key";
 
-/// Ensure the secrets table exists
+/// Encryption boundary used by credential persistence.
+pub trait SecretCrypto: Send + Sync {
+    fn encrypt(&self, data: &[u8]) -> Result<Vec<u8>, String>;
+    fn decrypt(&self, data: &[u8]) -> Result<Vec<u8>, String>;
+}
+
+/// Windows Data Protection API implementation, bound to the current user.
+pub struct DpapiCrypto;
+
+impl DpapiCrypto {
+    fn blob_for(data: &[u8]) -> Result<CRYPT_INTEGER_BLOB, String> {
+        let length = u32::try_from(data.len())
+            .map_err(|_| "Credential data exceeds the Windows DPAPI size limit".to_string())?;
+
+        Ok(CRYPT_INTEGER_BLOB {
+            cbData: length,
+            pbData: data.as_ptr().cast_mut(),
+        })
+    }
+
+    fn copy_and_free(blob: CRYPT_INTEGER_BLOB) -> Result<Vec<u8>, String> {
+        if blob.cbData == 0 {
+            if !blob.pbData.is_null() {
+                // SAFETY: this is a DPAPI-owned output buffer released exactly once.
+                unsafe {
+                    let _ = LocalFree(blob.pbData.cast());
+                }
+            }
+            return Ok(Vec::new());
+        }
+
+        if blob.cbData > 0 && blob.pbData.is_null() {
+            return Err("Windows DPAPI returned an invalid output buffer".to_string());
+        }
+
+        // SAFETY: DPAPI owns `pbData` and reports its exact byte length in `cbData`.
+        // The bytes are copied before the buffer is released with the matching LocalFree API.
+        let bytes =
+            unsafe { std::slice::from_raw_parts(blob.pbData, blob.cbData as usize) }.to_vec();
+        if !blob.pbData.is_null() {
+            // SAFETY: DPAPI allocates output buffers with LocalAlloc; LocalFree is the
+            // documented matching deallocator, and this pointer is freed exactly once.
+            unsafe {
+                let _ = LocalFree(blob.pbData.cast());
+            }
+        }
+
+        Ok(bytes)
+    }
+}
+
+impl SecretCrypto for DpapiCrypto {
+    fn encrypt(&self, data: &[u8]) -> Result<Vec<u8>, String> {
+        let input = Self::blob_for(data)?;
+        let mut output = CRYPT_INTEGER_BLOB {
+            cbData: 0,
+            pbData: std::ptr::null_mut(),
+        };
+
+        // SAFETY: all pointers refer to valid blobs for the duration of this call;
+        // optional parameters are null, and output ownership is handled by copy_and_free.
+        let succeeded = unsafe {
+            CryptProtectData(
+                &input,
+                std::ptr::null(),
+                std::ptr::null(),
+                std::ptr::null(),
+                std::ptr::null(),
+                CRYPTPROTECT_UI_FORBIDDEN,
+                &mut output,
+            )
+        };
+
+        if succeeded == 0 {
+            return Err(format!(
+                "Windows DPAPI encryption failed: {}",
+                std::io::Error::last_os_error()
+            ));
+        }
+
+        Self::copy_and_free(output)
+    }
+
+    fn decrypt(&self, data: &[u8]) -> Result<Vec<u8>, String> {
+        let input = Self::blob_for(data)?;
+        let mut output = CRYPT_INTEGER_BLOB {
+            cbData: 0,
+            pbData: std::ptr::null_mut(),
+        };
+
+        // SAFETY: all pointers refer to valid blobs for the duration of this call;
+        // optional parameters are null, and output ownership is handled by copy_and_free.
+        let succeeded = unsafe {
+            CryptUnprotectData(
+                &input,
+                std::ptr::null_mut(),
+                std::ptr::null(),
+                std::ptr::null(),
+                std::ptr::null(),
+                CRYPTPROTECT_UI_FORBIDDEN,
+                &mut output,
+            )
+        };
+
+        if succeeded == 0 {
+            return Err(format!(
+                "Windows DPAPI decryption failed: {}",
+                std::io::Error::last_os_error()
+            ));
+        }
+
+        Self::copy_and_free(output)
+    }
+}
+
+/// Ensure the secrets table exists.
 pub fn ensure_table(conn: &Connection) -> Result<(), String> {
     conn.execute(SECRETS_TABLE_SQL, [])
         .map_err(|e| format!("Failed to create secrets table: {}", e))?;
     Ok(())
 }
 
-/// Derive an AES-256 key from the database path (deterministic per installation)
-fn derive_key(db: &Database) -> Result<UnboundKey, String> {
-    // Use the database path as key material - unique per installation
-    // In production, this would use a proper KDF with salt
-    let conn = db.conn.lock().map_err(|e| format!("Lock error: {}", e))?;
-    let path: String = conn
-        .query_row("SELECT file_name FROM pragma_database_list WHERE name='main'", [], |row| row.get(0))
-        .map_err(|e| format!("Failed to get DB path: {}", e))?;
-    
-    // Create a 32-byte key by hashing the path
-    let digest = ring::digest::digest(&ring::digest::SHA256, path.as_bytes());
-    let key_bytes: &[u8; 32] = digest.as_ref().try_into()
-        .map_err(|_| "Failed to derive key".to_string())?;
-    
-    UnboundKey::new(&AES_256_GCM, key_bytes)
-        .map_err(|e| format!("Key creation error: {}", e))
-}
-
-/// Encrypt + store a secret value
+/// Encrypt and store a secret value.
 pub fn store(db: &Database, key_name: &str, value: &str) -> Result<(), String> {
+    let encrypted = db.crypto.encrypt(value.as_bytes())?;
+    let encoded = BASE64.encode(encrypted);
+
     let conn = db.conn.lock().map_err(|e| format!("Lock error: {}", e))?;
     ensure_table(&conn)?;
-    
-    let unbound_key = derive_key(db)?;
-    let key = LessSafeKey::new(unbound_key);
-    
-    // Generate random nonce (96 bits for AES-GCM)
-    let rng = SystemRandom::new();
-    let mut nonce_bytes = [0u8; 12];
-    rng.fill(&mut nonce_bytes)
-        .map_err(|e| format!("RNG error: {}", e))?;
-    let nonce = Nonce::assume_unique_for_key(nonce_bytes);
-    
-    // Encrypt
-    let mut in_out = value.as_bytes().to_vec();
-    key.seal_in_place_append_tag(nonce, Aad::empty(), &mut in_out)
-        .map_err(|e| format!("Encryption error: {}", e))?;
-    
-    // Store as: base64(nonce || ciphertext)
-    let mut combined = nonce_bytes.to_vec();
-    combined.extend_from_slice(&in_out);
-    let encoded = BASE64.encode(&combined);
-    
     conn.execute(
         "INSERT INTO secrets (key, value, updated_at) VALUES (?1, ?2, datetime('now'))
          ON CONFLICT(key) DO UPDATE SET value = ?2, updated_at = datetime('now')",
         rusqlite::params![key_name, encoded],
     )
     .map_err(|e| format!("Failed to store secret: {}", e))?;
-    
+
     Ok(())
 }
 
-/// Decrypt + retrieve a secret value
+/// Retrieve and decrypt a secret value.
 pub fn get(db: &Database, key_name: &str) -> Result<Option<String>, String> {
-    let conn = db.conn.lock().map_err(|e| format!("Lock error: {}", e))?;
-    ensure_table(&conn)?;
-    
-    let encoded: Option<String> = conn
-        .query_row(
+    let encoded: Option<String> = {
+        let conn = db.conn.lock().map_err(|e| format!("Lock error: {}", e))?;
+        ensure_table(&conn)?;
+        conn.query_row(
             "SELECT value FROM secrets WHERE key = ?1",
             [key_name],
             |row| row.get(0),
         )
         .optional()
-        .map_err(|e| format!("Query error: {}", e))?;
-    
-    let encoded = match encoded {
-        Some(e) => e,
-        None => return Ok(None),
+        .map_err(|e| format!("Query error: {}", e))?
     };
-    
-    let combined = BASE64.decode(&encoded)
+
+    let Some(encoded) = encoded else {
+        return Ok(None);
+    };
+
+    let encrypted = BASE64
+        .decode(encoded)
         .map_err(|e| format!("Base64 decode error: {}", e))?;
-    
-    if combined.len() < 12 + 16 {
-        return Err("Invalid secret data".to_string());
-    }
-    
-    let (nonce_bytes, ciphertext) = combined.split_at(12);
-    let nonce = Nonce::assume_unique_for_key(nonce_bytes.try_into()
-        .map_err(|_| "Invalid nonce".to_string())?);
-    
-    let unbound_key = derive_key(db)?;
-    let key = LessSafeKey::new(unbound_key);
-    
-    let mut in_out = ciphertext.to_vec();
-    let plaintext = key.open_in_place(nonce, Aad::empty(), &mut in_out)
-        .map_err(|e| format!("Decryption error: {}", e))?;
-    
-    String::from_utf8(plaintext.to_vec())
-        .map_err(|e| format!("UTF-8 error: {}", e))
+    let plaintext = db.crypto.decrypt(&encrypted)?;
+
+    String::from_utf8(plaintext)
         .map(Some)
+        .map_err(|e| format!("UTF-8 error: {}", e))
 }
 
-/// Delete a stored secret
+/// Delete a stored secret.
 pub fn remove(db: &Database, key_name: &str) -> Result<bool, String> {
     let conn = db.conn.lock().map_err(|e| format!("Lock error: {}", e))?;
     ensure_table(&conn)?;
-    
+
     let deleted = conn
         .execute("DELETE FROM secrets WHERE key = ?1", [key_name])
         .map_err(|e| format!("Failed to delete secret: {}", e))?;
-    
+
     Ok(deleted > 0)
 }
 
-// Helper trait for optional query results
 trait OptionalExt<T> {
     fn optional(self) -> Result<Option<T>, rusqlite::Error>;
 }
@@ -139,24 +205,85 @@ trait OptionalExt<T> {
 impl<T> OptionalExt<T> for Result<T, rusqlite::Error> {
     fn optional(self) -> Result<Option<T>, rusqlite::Error> {
         match self {
-            Ok(v) => Ok(Some(v)),
+            Ok(value) => Ok(Some(value)),
             Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
-            Err(e) => Err(e),
+            Err(error) => Err(error),
         }
+    }
+}
+
+#[cfg(test)]
+struct TestCrypto;
+
+#[cfg(test)]
+impl TestCrypto {
+    const KEY: [u8; 32] = [0xA5; 32];
+}
+
+#[cfg(test)]
+impl SecretCrypto for TestCrypto {
+    fn encrypt(&self, data: &[u8]) -> Result<Vec<u8>, String> {
+        use ring::aead::{Aad, LessSafeKey, Nonce, UnboundKey, AES_256_GCM};
+        use ring::rand::{SecureRandom, SystemRandom};
+
+        let key = UnboundKey::new(&AES_256_GCM, &Self::KEY)
+            .map(LessSafeKey::new)
+            .map_err(|_| "Test key creation failed".to_string())?;
+        let mut nonce_bytes = [0u8; 12];
+        SystemRandom::new()
+            .fill(&mut nonce_bytes)
+            .map_err(|_| "Test nonce generation failed".to_string())?;
+        let mut encrypted = data.to_vec();
+        key.seal_in_place_append_tag(
+            Nonce::assume_unique_for_key(nonce_bytes),
+            Aad::empty(),
+            &mut encrypted,
+        )
+        .map_err(|_| "Test encryption failed".to_string())?;
+
+        let mut result = nonce_bytes.to_vec();
+        result.extend_from_slice(&encrypted);
+        Ok(result)
+    }
+
+    fn decrypt(&self, data: &[u8]) -> Result<Vec<u8>, String> {
+        use ring::aead::{Aad, LessSafeKey, Nonce, UnboundKey, AES_256_GCM};
+
+        if data.len() < 12 + AES_256_GCM.tag_len() {
+            return Err("Invalid test ciphertext".to_string());
+        }
+
+        let (nonce_bytes, ciphertext) = data.split_at(12);
+        let nonce = Nonce::assume_unique_for_key(
+            nonce_bytes
+                .try_into()
+                .map_err(|_| "Invalid test nonce".to_string())?,
+        );
+        let key = UnboundKey::new(&AES_256_GCM, &Self::KEY)
+            .map(LessSafeKey::new)
+            .map_err(|_| "Test key creation failed".to_string())?;
+        let mut plaintext = ciphertext.to_vec();
+        let opened = key
+            .open_in_place(nonce, Aad::empty(), &mut plaintext)
+            .map_err(|_| "Test decryption failed".to_string())?;
+        Ok(opened.to_vec())
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::db::Database;
-    
+    use std::sync::Mutex;
+
     fn test_db() -> Database {
         let conn = Connection::open_in_memory().unwrap();
         conn.pragma_update(None, "foreign_keys", "ON").unwrap();
-        Database { conn: Mutex::new(conn) }
+        Database {
+            conn: Mutex::new(conn),
+            crypto: Box::new(TestCrypto),
+        }
     }
-    
+
     #[test]
     fn test_store_and_get() {
         let db = test_db();
@@ -164,14 +291,14 @@ mod tests {
         let result = get(&db, "test_key").unwrap();
         assert_eq!(result, Some("my-secret-value".to_string()));
     }
-    
+
     #[test]
     fn test_missing_key() {
         let db = test_db();
         let result = get(&db, "nonexistent").unwrap();
         assert_eq!(result, None);
     }
-    
+
     #[test]
     fn test_remove() {
         let db = test_db();
@@ -181,7 +308,7 @@ mod tests {
         let result = get(&db, "test_key").unwrap();
         assert_eq!(result, None);
     }
-    
+
     #[test]
     fn test_overwrite() {
         let db = test_db();

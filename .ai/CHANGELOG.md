@@ -26,6 +26,17 @@ Entries are newest first and use ISO dates. Each entry must reference a handoff 
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-07-31 — `TECH-001` — Windows DPAPI credential hardening
+
+- **Type:** Security fix and refactor
+- **Implemented by:** Codex
+- **Reviewed by:** Pending Hermes review
+- **Summary:** Replaced database-path-derived credential encryption with current-user-bound Windows DPAPI, injected a testable crypto boundary into `Database`, and eliminated the recursive SQLite mutex deadlock.
+- **Files:** `src-tauri/Cargo.toml`, `src-tauri/Cargo.lock`, `src-tauri/src/ai/credentials.rs`, `src-tauri/src/db/mod.rs`, `src-tauri/src/lib.rs`, `.ai/HANDOFF.md`, `.ai/PROJECT_STATE.md`, `.ai/TODO.md`, `.ai/CHANGELOG.md`, `.ai/SESSION_NOTES.md`
+- **Verification:** Rust tests 33/33 pass; production Cargo build passes; frontend typecheck/lint pass; Vitest 7/7 pass; changed Rust files are formatted; no new Clippy warnings in changed modules.
+- **Decisions/deviations:** Followed ADR-006. Included generated `Cargo.lock` as a necessary consequence of the approved dependency addition. Existing repository-wide formatting and Clippy debt remain out of scope as `DEBT-005` and `DEBT-006`.
+- **Follow-up:** Hermes review of draft PR #3.
+
 ## 2026-07-31 — `ENV-001` — Rust MSVC verification restored
 
 - **Type:** Tooling and documentation

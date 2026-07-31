@@ -6,7 +6,7 @@
 | --- | --- |
 | Schema version | 1 |
 | Task ID | `TECH-001` |
-| Status | `ready` |
+| Status | `ready_for_review` |
 | Owner | Codex |
 | Prepared by | Hermes |
 | Last updated | 2026-07-31 |
@@ -83,16 +83,16 @@ Two critical defects in `src-tauri/src/ai/credentials.rs`:
 
 ### Acceptance criteria
 
-- [ ] `test_store_and_get` passes (no deadlock).
-- [ ] `test_remove` passes.
-- [ ] `test_overwrite` passes.
-- [ ] `test_missing_key` passes.
-- [ ] `store()` and `get()` use DPAPI in production builds, not path-derived key.
-- [ ] `SecretCrypto` trait exists with `DpapiCrypto` and `TestCrypto` implementations.
-- [ ] `Database` struct has a `crypto` field injected at construction time.
-- [ ] `derive_key()` function is removed.
-- [ ] No unsafe code beyond the `windows-sys` FFI bindings.
-- [ ] `cargo clippy` produces 0 new warnings in the credential module.
+- [x] `test_store_and_get` passes (no deadlock).
+- [x] `test_remove` passes.
+- [x] `test_overwrite` passes.
+- [x] `test_missing_key` passes.
+- [x] `store()` and `get()` use DPAPI in production builds, not path-derived key.
+- [x] `SecretCrypto` trait exists with `DpapiCrypto` and `TestCrypto` implementations.
+- [x] `Database` struct has a `crypto` field injected at construction time.
+- [x] `derive_key()` function is removed.
+- [x] No unsafe code beyond the `windows-sys` FFI bindings.
+- [x] `cargo clippy` produces 0 new warnings in the credential module.
 
 ### Required verification
 
@@ -113,19 +113,33 @@ Two critical defects in `src-tauri/src/ai/credentials.rs`:
 
 ### Summary
 
-`Not started`
+Implemented ADR-006 with a `SecretCrypto` boundary, Windows DPAPI production encryption, ring-based test encryption, and constructor injection into `Database`. Credential encryption and decryption no longer acquire the SQLite mutex, eliminating the recursive lock.
 
 ### Files changed
 
-- None
+- `src-tauri/Cargo.toml`
+- `src-tauri/Cargo.lock`
+- `src-tauri/src/ai/credentials.rs`
+- `src-tauri/src/db/mod.rs`
+- `src-tauri/src/lib.rs`
+- `.ai/HANDOFF.md`
+- `.ai/PROJECT_STATE.md`
+- `.ai/TODO.md`
+- `.ai/CHANGELOG.md`
+- `.ai/SESSION_NOTES.md`
 
 ### Verification result
 
-`Not run`
+- `cargo test --manifest-path src-tauri/Cargo.toml` — pass, 33/33.
+- `cargo build --manifest-path src-tauri/Cargo.toml` — pass with production `DpapiCrypto`.
+- Frontend typecheck and lint — pass; Vitest — pass, 7/7 (two files run sequentially because Windows workers exceeded the pool startup timeout).
+- Changed-file `rustfmt --check` — pass.
+- Strict Clippy — no findings in changed modules; repository command remains red on pre-existing `DEBT-006` findings outside scope.
+- Repository-wide `cargo fmt --check` — remains red on pre-existing `DEBT-005` files outside scope.
 
 ### Deviations
 
-None
+`src-tauri/Cargo.lock` was not listed explicitly but is included as mandatory generated output of the approved `Cargo.toml` dependency change. No unrelated source files changed.
 
 ## Hermes review
 

@@ -6,6 +6,8 @@ use db::Database;
 use std::path::PathBuf;
 use tauri::Manager;
 
+use crate::ai::credentials::DpapiCrypto;
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -27,7 +29,7 @@ pub fn run() {
             let db_path = app_data_dir.join("aether.db");
 
             // Open database (creates and migrates if needed)
-            let database = Database::open(db_path).map_err(|e| {
+            let database = Database::open(db_path, Box::new(DpapiCrypto)).map_err(|e| {
                 log::error!("Database initialization failed: {}", e);
                 e
             })?;
@@ -36,7 +38,10 @@ pub fn run() {
 
             // Ensure secrets table exists for credential storage
             {
-                let conn = database.conn.lock().map_err(|e| format!("Lock error: {}", e))?;
+                let conn = database
+                    .conn
+                    .lock()
+                    .map_err(|e| format!("Lock error: {}", e))?;
                 crate::ai::credentials::ensure_table(&conn)?;
             }
 
