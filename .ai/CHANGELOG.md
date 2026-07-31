@@ -26,6 +26,17 @@ Entries are newest first and use ISO dates. Each entry must reference a handoff 
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-07-31 — `ENV-001` — Rust MSVC verification restored
+
+- **Type:** Tooling and documentation
+- **Implemented by:** Codex
+- **Reviewed by:** Not required (`direct_codex`)
+- **Summary:** Verified Rust 1.97.1 on the stable MSVC toolchain with Visual Studio 2022 C++ build tools, built both test binaries, ran the Rust quality gates, and replaced the environment blocker with precise code findings.
+- **Files:** `.ai/TODO.md`, `.ai/PROJECT_STATE.md`, `.ai/CHANGELOG.md`, `.ai/SESSION_NOTES.md`
+- **Verification:** `cargo test --no-run` — pass; 29 non-credential tests — pass; `test_missing_key` — pass; `test_store_and_get` — timeout after 30 seconds; `cargo fmt --check` — fail on pre-existing formatting; strict Clippy — fail on 11 library/12 test-build findings.
+- **Decisions/deviations:** Application code was intentionally unchanged. `ENV-001` is complete because local Rust verification is operational; the observed deadlock belongs to the now-unblocked security task `TECH-001`.
+- **Follow-up:** `TECH-001`, `DEBT-005`, `DEBT-006`.
+
 ## 2026-07-31 — `PROC-002` — Automatic GitHub task publication
 
 - **Type:** Process, tooling, and documentation

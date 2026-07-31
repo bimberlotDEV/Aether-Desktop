@@ -5,7 +5,7 @@
 | Field | Value |
 | --- | --- |
 | Schema version | 1 |
-| Last updated | 2026-07-30 |
+| Last updated | 2026-07-31 |
 | Prioritized by | Hermes (initial inventory recorded by Codex) |
 
 ## Responsibility of this file
@@ -30,8 +30,8 @@
 | Priority | ID | Work item | Type | Status | Dependencies | Acceptance summary |
 | --- | --- | --- | --- | --- | --- | --- |
 | P0 | `AIWF-001` | Establish Hermes/Codex collaboration system | Process | `done` | None | Hermes accepted the complete workflow. |
-| P0 | `TECH-001` | Audit and harden AI credential storage and locking | Security | `needs_design` | Rust toolchain | No deadlock; secrets use an approved OS-backed or cryptographically sound design. |
-| P1 | `ENV-001` | Restore Rust verification capability | Tooling | `blocked` | Rust MSVC installation | All Rust tests and Clippy can run locally. |
+| P0 | `TECH-001` | Audit and harden AI credential storage and locking | Security | `needs_design` | `ENV-001` done | No deadlock; secrets use an approved OS-backed or cryptographically sound design. |
+| P1 | `ENV-001` | Restore Rust verification capability | Tooling | `done` | Rust MSVC installation | Rust tests, formatting checks, and Clippy run locally; code findings are tracked separately. |
 | P1 | `DOC-001` | Reconcile version and milestone documentation | Documentation | `done` | `AIWF-001` accepted | README, app metadata, and project state agree. |
 | P1 | `PHASE5-EPIC` | Design and implement Tasks | Product | `needs_design` | Hermes decomposition | Phase 5 requirements are split into bounded vertical slices. |
 | P2 | `AI-UI-EPIC` | Complete the AI user experience | Product | `needs_design` | `TECH-001` | Provider setup, conversations, streaming, cancellation, and explicit context have reviewed UX. |
@@ -45,6 +45,8 @@
 | P2 | `DEBT-002` | Lint | Four non-failing warnings were in utilities, IconPicker, and SpaceDetail. | ~~`pnpm lint` on 2026-07-30~~ Resolved: 0 warnings after fix (commit `28b82ab`). |
 | P2 | `DEBT-003` | Architecture docs | Existing `docs/architecture.md` contains a duplicated Tauri Bridge layer and predates Notes/AI work. | Repository inspection |
 | P2 | `DEBT-004` | Packaging | `Cargo.toml` repository field was empty despite configured Git remote. | ~~Repository inspection~~ Resolved: populated with https://github.com/bimberlotDEV/Aether-Desktop. |
+| P1 | `DEBT-005` | Rust formatting | `cargo fmt --check` reports pre-existing formatting differences across AI, commands, and conversation repository code. | `cargo fmt --manifest-path src-tauri/Cargo.toml -- --check` on 2026-07-31 |
+| P1 | `DEBT-006` | Rust lint | Strict Clippy reports 11 library errors and 12 test-build errors, including unused code and correctness/style lints. | `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings` on 2026-07-31 |
 
 ## Feature status index
 

@@ -8,7 +8,7 @@
 | Last updated | 2026-07-31 |
 | Updated by | Codex |
 | Repository | `bimberlotDEV/Aether-Desktop` |
-| Branch | `master` |
+| Branch | `agent/env-001-rust-verification` |
 | Baseline commit | `312308a` (`ai-backend`) |
 | Product maturity | Alpha |
 
@@ -26,6 +26,7 @@
 | `M-AI-WORKFLOW` | Hermes/Codex collaboration foundation | `complete` | Hermes accepted `AIWF-001` and promoted `DOC-001`. |
 | `M-DOC-VERSIONING` | Version and metadata reconciliation | `complete` | Hermes accepted `DOC-001`. |
 | `M-AUTO-PUBLISH` | Automatic GitHub task publication | `complete` | Draft PR #1 merged into `master`. |
+| `M-RUST-VERIFY` | Restore local Rust verification | `complete` | Rust MSVC builds the test binaries and runs formatting, lint, and tests locally. |
 
 No product feature is active while the collaboration foundation is fresh.
 
@@ -55,19 +56,22 @@ No product feature is active while the collaboration foundation is fresh.
 | Check | Last result | Date | Notes |
 | --- | --- | --- | --- |
 | `pnpm check` | Pass | 2026-07-31 | typecheck clean, lint 0 warnings 0 errors (DEBT-002 resolved), test 7/7. |
-| `cargo test` | Not run | 2026-07-30 | Cargo is not available in the current environment; 33 Rust tests are present. |
+| `cargo test --no-run` | Pass | 2026-07-31 | Both Windows test binaries build with Rust 1.97.1 MSVC. |
+| `cargo test` | Partial: 30/33 verified pass | 2026-07-31 | 29 non-credential tests and `test_missing_key` pass; `test_store_and_get` deadlocks after 30 seconds, and the two remaining credential mutation tests share that path (`TECH-001`). |
+| `cargo fmt --check` | Fail | 2026-07-31 | Pre-existing formatting differences tracked as `DEBT-005`. |
+| `cargo clippy --all-targets -- -D warnings` | Fail | 2026-07-31 | Tooling works; existing 11 library/12 test-build findings tracked as `DEBT-006`. |
 
 ## Active blockers
 
 | ID | Scope | Blocker | Owner | Resolution path |
 | --- | --- | --- | --- | --- |
-| `BLOCK-001` | Rust verification | Rust/Cargo is not installed or not on PATH in the current environment. | Human/environment | Install the supported Rust MSVC toolchain, then run `cargo test --manifest-path src-tauri/Cargo.toml`. |
+None. `BLOCK-001` was resolved by installing Rust 1.97.1 with the stable MSVC toolchain and Visual Studio 2022 C++ build tools.
 
 ## Active risks
 
 | ID | Severity | Summary | Tracking task |
 | --- | --- | --- | --- |
-| `RISK-001` | High | AI credential operations appear to acquire the same non-reentrant database mutex recursively. | `TECH-001` |
+| `RISK-001` | High | AI credential mutation operations acquire the same non-reentrant database mutex recursively; `test_store_and_get` reproducibly exceeded 30 seconds. | `TECH-001` |
 | `RISK-002` | High | The credential encryption key is derived from the database path and is not suitable as production secret storage. | `TECH-001` |
 | `RISK-003` | ~~High~~ Resolved | README, package metadata, Tauri metadata, and agent phase guidance disagree on version/maturity. | `DOC-001` — reconciled all metadata to 0.3.0-alpha. |
 
