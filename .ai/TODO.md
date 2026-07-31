@@ -42,7 +42,7 @@
 | Priority | ID | Area | Description | Evidence |
 | --- | --- | --- | --- | --- |
 | P1 | `DEBT-001` | Testing | Frontend coverage is only 7 tests; Spaces, Notes, and Tauri boundaries need risk-based coverage. | `pnpm test` on 2026-07-30 |
-| P2 | `DEBT-002` | Lint | Four non-failing warnings remain in utilities, IconPicker, and SpaceDetail. | `pnpm lint` on 2026-07-30 |
+| P2 | `DEBT-002` | Lint | Four non-failing warnings were in utilities, IconPicker, and SpaceDetail. | ~~`pnpm lint` on 2026-07-30~~ Resolved: 0 warnings after fix (commit `28b82ab`). |
 | P2 | `DEBT-003` | Architecture docs | Existing `docs/architecture.md` contains a duplicated Tauri Bridge layer and predates Notes/AI work. | Repository inspection |
 | P2 | `DEBT-004` | Packaging | `Cargo.toml` repository field was empty despite configured Git remote. | ~~Repository inspection~~ Resolved: populated with https://github.com/bimberlotDEV/Aether-Desktop. |
 

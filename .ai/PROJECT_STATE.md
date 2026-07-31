@@ -25,7 +25,7 @@
 | --- | --- | --- | --- |
 | `M-AI-WORKFLOW` | Hermes/Codex collaboration foundation | `complete` | Hermes accepted `AIWF-001` and promoted `DOC-001`. |
 | `M-DOC-VERSIONING` | Version and metadata reconciliation | `complete` | Hermes accepted `DOC-001`. |
-| `M-AUTO-PUBLISH` | Automatic GitHub task publication | `ready_for_review` | Draft PR #1 is merged into `master`. |
+| `M-AUTO-PUBLISH` | Automatic GitHub task publication | `complete` | Draft PR #1 merged into `master`. |
 
 No product feature is active while the collaboration foundation is fresh.
 
@@ -54,7 +54,7 @@ No product feature is active while the collaboration foundation is fresh.
 
 | Check | Last result | Date | Notes |
 | --- | --- | --- | --- |
-| `pnpm check` | Pass | 2026-07-30 | typecheck clean, lint 0 errors (4 pre-existing warnings), test 7/7. |
+| `pnpm check` | Pass | 2026-07-31 | typecheck clean, lint 0 warnings 0 errors (DEBT-002 resolved), test 7/7. |
 | `cargo test` | Not run | 2026-07-30 | Cargo is not available in the current environment; 33 Rust tests are present. |
 
 ## Active blockers
