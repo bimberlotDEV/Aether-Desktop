@@ -1,0 +1,36 @@
+#!/bin/sh
+
+# Push every completed commit to its configured upstream. This hook is
+# versioned with the repository and activated by scripts/install-git-hooks.ps1.
+
+if [ "${AETHER_SKIP_AUTO_PUSH:-0}" = "1" ]; then
+  echo "Aether auto-push skipped because AETHER_SKIP_AUTO_PUSH=1."
+  exit 0
+fi
+
+branch="$(git branch --show-current)"
+if [ -z "$branch" ]; then
+  echo "Aether auto-push skipped: detached HEAD."
+  exit 0
+fi
+
+remote="${AETHER_AUTO_PUSH_REMOTE:-origin}"
+if ! git remote get-url "$remote" >/dev/null 2>&1; then
+  echo "Aether auto-push failed: remote '$remote' does not exist." >&2
+  exit 1
+fi
+
+if git rev-parse --abbrev-ref --symbolic-full-name '@{upstream}' >/dev/null 2>&1; then
+  echo "Aether auto-push: pushing '$branch' to its upstream..."
+  git push
+else
+  echo "Aether auto-push: publishing '$branch' to '$remote'..."
+  git push --set-upstream "$remote" "$branch"
+fi
+
+status=$?
+if [ "$status" -ne 0 ]; then
+  echo "Aether auto-push failed. The commit is safe locally; fix authentication or network access and run 'git push'." >&2
+fi
+
+exit "$status"
