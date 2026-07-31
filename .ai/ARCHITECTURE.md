@@ -5,7 +5,7 @@
 | Field | Value |
 | --- | --- |
 | Schema version | 1 |
-| Last updated | 2026-07-30 |
+| Last updated | 2026-07-31 |
 | Architecture owner | Hermes |
 | Implementation verifier | Codex |
 
@@ -90,9 +90,10 @@ SQLite / native capabilities / external providers
 | `ADR-001` | Use Tauri 2 rather than Electron. | Accepted | `docs/architecture.md` |
 | `ADR-002` | Use bundled SQLite through `rusqlite`. | Accepted | `docs/decisions/001-sqlite-rusqlite.md` |
 | `ADR-003` | Use React 19, TypeScript, Vite, Tailwind, and Zustand. | Accepted | `AGENTS.md`, `docs/architecture.md` |
-| `ADR-004` | Separate Hermes planning/review from Codex implementation/verification. | Accepted | `WORKFLOW.md` |
+| `ADR-004` | Use hybrid routing: Codex handles small low-risk tasks directly; Hermes plans and reviews complex or risky tasks. | Accepted | `WORKFLOW.md` |
 | `ADR-005` | Use `.ai/` as the canonical agent state layer. | Accepted | `WORKFLOW.md` |
 | `ADR-006` | Production credential storage mechanism. | Proposed | Must be decided before `TECH-001` becomes ready. |
+| `ADR-007` | Publish verified task commits automatically through a versioned Git hook and guarded publication script. | Accepted | `WORKFLOW.md` |
 
 ## Architecture change protocol
 

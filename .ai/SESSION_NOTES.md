@@ -5,60 +5,48 @@
 | Field | Value |
 | --- | --- |
 | Schema version | 1 |
-| Session date | 2026-07-30 |
-| Active task | None (DOC-001 accepted) |
-| Agent | Hermes (final review) |
-| State | `complete` |
+| Session date | 2026-07-31 |
+| Active task | `PROC-002` |
+| Agent | Codex |
+| Route | `direct_codex` (explicit human authorization) |
+| State | `ready_to_publish` |
 
 ## Session objective
 
-Finalize DOC-001: apply corrections from Codex review, re-verify, accept.
+Ensure verified repository work is committed and published to GitHub automatically at task completion.
 
-## Collaboration cycle
+## Classification
 
-```
-Hermes implementeerde → Codex reviewde → changes_requested → Hermes corrigeerde → Codex verifieerde → Hermes accepteerde
-```
+- Route: `direct_codex` through explicit human authorization.
+- Reason: the change is bounded to collaboration tooling and documentation, but has external GitHub side effects explicitly requested by the repository owner.
+- Application code: out of scope and unchanged.
 
 ## Work completed
 
-### Initial implementation (Hermes)
-- Bumped `package.json`, `Cargo.toml`, `tauri.conf.json` to `0.3.0-alpha`.
-- Populated `Cargo.toml` repository field.
-- Updated `README.md` status line and database schema list.
-- Resolved `RISK-003` and `DEBT-004`.
+- Add a versioned `post-commit` hook that pushes each commit to its upstream.
+- Add a one-time hook installer for each clone.
+- Add a guarded task publisher for scoped commit, push, and draft PR creation.
+- Document publication safety and completion rules.
+- Installed the hook locally with `core.hooksPath=.githooks`, automatic upstream setup, and current-branch push behavior.
 
-### Codex review — 6 findings
-1. Cargo.lock aether entry still at `0.1.0`.
-2. HANDOFF.md status/review inconsistent.
-3. SESSION_NOTES.md claimed pnpm was unavailable.
-4. CHANGELOG.md had trailing whitespace.
-5. Allowed-files list too narrow.
-6. README said "rich-text notes" instead of "Markdown notes".
+## Verification
 
-### Corrections applied (Hermes)
-- Bumped Cargo.lock aether entry to `0.3.0-alpha` (manually, Cargo unavailable).
-- Removed trailing whitespace from CHANGELOG.md.
-- Changed README Notes to "Markdown notes".
-- Updated SESSION_NOTES.md with accurate pnpm results.
-- Made HANDOFF.md status/review consistent.
-- Expanded allowed files to 10.
+| Check | Result |
+| --- | --- |
+| PowerShell parser | Both scripts passed. |
+| Shell parser and hook skip path | Passed. |
+| Sensitive changed-path scan | Passed; none found. |
+| `git diff --check` | Passed. |
+| `pnpm check` | Passed; typecheck and lint have no errors, tests 7/7, four pre-existing warnings. |
+| GitHub authentication | Passed for `bimberlotDEV`. |
 
-### Re-verification (Codex)
-- `pnpm check` — PASS (typecheck clean, lint 0 errors, test 7/7).
-- `pnpm build` — PASS.
-- `git diff --check` — clean.
-- Cargo.lock aether entry confirmed `0.3.0-alpha`.
+## Safety constraints
 
-### Final review (Hermes)
-- All 10 acceptance criteria verified.
-- Handoff accepted. Milestone complete.
-
-## Discoveries
-
-- Cargo was not available; Cargo.lock was corrected manually. Only the aether package entry was changed — no dependency drift.
-- The remaining `0.1.0` entries in Cargo.lock are downstream dependencies (`vswhom`, `windows-threading`), correctly left untouched.
+- No file-save auto-commits or broken intermediate snapshots.
+- No secrets, environment files, databases, credential files, or private keys.
+- No unrelated user changes.
+- Failed checks or pushes remain visible and block completion.
 
 ## Exact resume point
 
-Hermes commits the 5 correction files, then promotes the next priority task from `.ai/TODO.md`.
+Publish the task branch and record the resulting commit and draft PR.

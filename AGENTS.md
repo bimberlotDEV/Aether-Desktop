@@ -75,15 +75,27 @@ Phase 0-2 are complete. Phase 3 (Spaces) and Phase 4 (Notes) are substantially i
 
 ## Multi-agent collaboration
 
-Aether uses a strict Hermes/Codex workflow defined in `WORKFLOW.md`.
+Aether uses the hybrid Hermes/Codex workflow defined in `WORKFLOW.md`. Before work begins, classify the task as `direct_codex` or `hermes_codex`.
 
 - **Hermes** owns analysis, planning, architecture, prioritization, decomposition, and review. Hermes does not write production code unless explicitly requested.
 - **Codex** owns implementation, debugging, refactoring, testing, verification, and implementation documentation. Codex does not redesign architecture unless the active handoff explicitly authorizes it.
-- `.ai/HANDOFF.md` is the only authority for the task Codex may implement.
+- Use **`direct_codex`** for small, clear, low-risk work with no architecture, security, migration, or product decision. Codex implements and verifies it directly; no Hermes handoff or review is required.
+- Use **`hermes_codex`** for features, architecture, database design, security, cross-layer refactors, ambiguous requirements, or high-risk changes. Hermes prepares the handoff, Codex implements, and Hermes reviews.
+- Hermes must never implement and accept the same `hermes_codex` task.
+- `.ai/HANDOFF.md` is the implementation authority only for `hermes_codex` tasks.
 - `.ai/PROJECT_STATE.md` is the canonical current-state snapshot.
 - `.ai/TODO.md` is the prioritized backlog, not implementation authorization.
 
-At the start of every session, read the control documents in the order defined by `WORKFLOW.md`. Do not begin product implementation unless the handoff status is `ready` and its readiness gate is complete.
+At the start of every session, read the control documents in the order defined by `WORKFLOW.md`. A `hermes_codex` task requires a `ready` handoff. A `direct_codex` task may proceed without changing the handoff, but Codex must escalate if hidden design or risk is discovered.
+
+## Automatic GitHub publication
+
+- Completed agent work must be committed and pushed; a local-only commit is not complete.
+- Use a task branch from `main`/`master` and publish through `scripts/publish-task.ps1`.
+- Stage only task-owned paths and use conventional commit messages.
+- The repository's versioned `post-commit` hook automatically pushes ordinary commits after one-time installation with `scripts/install-git-hooks.ps1`.
+- Never publish secrets, `.env*`, databases, private keys, credential files, failed checks, or unrelated user changes.
+- A pushed draft PR is not automatically approved or merged.
 
 ## Database architecture
 

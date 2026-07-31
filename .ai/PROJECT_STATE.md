@@ -5,7 +5,7 @@
 | Field | Value |
 | --- | --- |
 | Schema version | 1 |
-| Last updated | 2026-07-30 |
+| Last updated | 2026-07-31 |
 | Updated by | Codex |
 | Repository | `bimberlotDEV/Aether-Desktop` |
 | Branch | `master` |
@@ -79,8 +79,9 @@ Full rationale belongs in `.ai/ARCHITECTURE.md` or a dedicated ADR under `docs/d
 | `ADR-001` | Tauri 2 is the Windows desktop shell. | Accepted |
 | `ADR-002` | SQLite via bundled `rusqlite` is the local persistence layer. | Accepted |
 | `ADR-003` | Frontend database access goes through typed Tauri invoke wrappers. | Accepted |
-| `ADR-004` | Hermes plans and reviews; Codex implements and verifies. | Accepted |
+| `ADR-004` | Hybrid routing uses `direct_codex` for small low-risk work and `hermes_codex` for complex or risky work. | Accepted |
 | `ADR-005` | `.ai/` documents are the collaboration source of truth. | Accepted |
+| `ADR-007` | Verified task commits are automatically pushed and published through guarded repository tooling. | Accepted |
 
 ## Next: Hermes reviews the backlog and promotes the next task from `.ai/TODO.md`.
 

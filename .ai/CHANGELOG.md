@@ -26,6 +26,28 @@ Entries are newest first and use ISO dates. Each entry must reference a handoff 
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-07-31 — `PROC-002` — Automatic GitHub task publication
+
+- **Type:** Process, tooling, and documentation
+- **Implemented by:** Codex
+- **Reviewed by:** Draft PR pending
+- **Summary:** Added a versioned post-commit auto-push hook, one-time hook installer, and guarded task publisher that validates scope, blocks common sensitive files, commits, pushes, and creates a draft PR.
+- **Files:** `.gitattributes`, `.githooks/post-commit`, `scripts/install-git-hooks.ps1`, `scripts/publish-task.ps1`, `WORKFLOW.md`, `AGENTS.md`, `.ai/ARCHITECTURE.md`, `.ai/PROJECT_STATE.md`, `.ai/CHANGELOG.md`, `.ai/SESSION_NOTES.md`
+- **Verification:** PowerShell and shell syntax passed; hook skip-path passed; local hook configuration passed; sensitive-path scan passed; `git diff --check` passed; `pnpm check` passed with 7/7 tests and four pre-existing warnings. GitHub publication pending.
+- **Decisions/deviations:** Automatic commits occur only at verified task boundaries; unsafe file-save auto-commits are intentionally prohibited.
+- **Follow-up:** Install the hook in each new clone.
+
+## 2026-07-31 — `PROC-001` — Hybrid Hermes/Codex task routing
+
+- **Type:** Process and documentation
+- **Implemented by:** Codex
+- **Reviewed by:** Not required (`direct_codex`)
+- **Summary:** Added a mandatory routing gate that sends small, clear, low-risk work directly to Codex and reserves the full Hermes planning and review cycle for architectural, security-sensitive, cross-cutting, ambiguous, or product-shaping work.
+- **Files:** `WORKFLOW.md`, `AGENTS.md`, `.ai/ARCHITECTURE.md`, `.ai/PROJECT_STATE.md`, `.ai/CHANGELOG.md`, `.ai/SESSION_NOTES.md`
+- **Verification:** Nine policy assertions passed; `git diff --check` passed; changed-file audit confirmed exactly the six intended collaboration documents and no application code.
+- **Decisions/deviations:** `ADR-004` now defines hybrid rather than universal two-agent routing.
+- **Follow-up:** None.
+
 ## 2026-07-30 — `AIWF-001` — Hermes/Codex collaboration control plane
 
 - **Type:** Process and documentation
