@@ -104,8 +104,10 @@ if ($LASTEXITCODE -ne 0) { throw 'Could not resolve GitHub repository metadata.'
 
 $defaultBranch = $repo.defaultBranchRef.name
 if ($branch -ne $defaultBranch) {
-  $existingPr = @(& $gh pr list --head $branch --state open --json number | ConvertFrom-Json)
-  if ($existingPr.Count -eq 0) {
+  $existingPrJson = & $gh pr list --head $branch --state open --json number
+  if ($LASTEXITCODE -ne 0) { throw 'Could not inspect existing pull requests.' }
+  $existingPr = $existingPrJson | ConvertFrom-Json
+  if ($null -eq $existingPr -or @($existingPr).Count -eq 0) {
     & $gh pr create --draft --fill --base $defaultBranch --head $branch
     if ($LASTEXITCODE -ne 0) { throw 'Push succeeded, but draft PR creation failed.' }
   } else {

@@ -9,7 +9,7 @@
 | Active task | `PROC-002` |
 | Agent | Codex |
 | Route | `direct_codex` (explicit human authorization) |
-| State | `ready_to_publish` |
+| State | `publishing_fix` |
 
 ## Session objective
 
@@ -39,6 +39,8 @@ Ensure verified repository work is committed and published to GitHub automatical
 | `git diff --check` | Passed. |
 | `pnpm check` | Passed; typecheck and lint have no errors, tests 7/7, four pre-existing warnings. |
 | GitHub authentication | Passed for `bimberlotDEV`. |
+| Branch push | Passed: `agent/automatic-github-publishing` at `af1eb7d`. |
+| Draft PR | Initial attempt skipped because empty-array detection was incorrect; fix in progress. |
 
 ## Safety constraints
 
@@ -49,4 +51,4 @@ Ensure verified repository work is committed and published to GitHub automatical
 
 ## Exact resume point
 
-Publish the task branch and record the resulting commit and draft PR.
+Publish the PR-detection fix and record the resulting draft PR.
