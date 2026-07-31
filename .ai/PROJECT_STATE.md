@@ -8,7 +8,7 @@
 | Last updated | 2026-07-31 |
 | Updated by | Codex |
 | Repository | `bimberlotDEV/Aether-Desktop` |
-| Branch | `agent/env-001-rust-verification` |
+| Branch | `agent/tech-001-credential-hardening` |
 | Baseline commit | `312308a` (`ai-backend`) |
 | Product maturity | Alpha |
 
@@ -27,6 +27,7 @@
 | `M-DOC-VERSIONING` | Version and metadata reconciliation | `complete` | Hermes accepted `DOC-001`. |
 | `M-AUTO-PUBLISH` | Automatic GitHub task publication | `complete` | Draft PR #1 merged into `master`. |
 | `M-RUST-VERIFY` | Restore local Rust verification | `complete` | Rust MSVC builds the test binaries and runs formatting, lint, and tests locally. |
+| `M-CRED-HARDEN` | Harden AI credential storage and fix deadlock | `active` | Hermes designed ADR-006; Codex implements TECH-001. |
 
 No product feature is active while the collaboration foundation is fresh.
 
