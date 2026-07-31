@@ -9,7 +9,7 @@ import { useSpaceDetail, useSpaces } from '@/hooks/useSpaces'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { cn } from '@/lib/utils'
 import type { Space, ModuleInstance } from '@/lib/db/types'
-import { iconToEmoji } from '@/components/IconPicker'
+import { iconToEmoji } from '@/lib/iconToEmoji'
 import { NotesView } from '@/routes/Notes'
 
 const MODULE_ICONS: Record<string, React.ComponentType<{ size?: number; strokeWidth?: number }>> = {
@@ -142,7 +142,7 @@ export function SpaceDetailLayout() {
       {/* Content area */}
       <div className="flex-1 min-h-0 overflow-y-auto">
         <Routes>
-          <Route index element={<OverviewTab space={space} modules={modules} children={children} />} />
+          <Route index element={<OverviewTab space={space} modules={modules}>{children}</OverviewTab>} />
           {modules.map(m => (
             <Route
               key={m.id}
