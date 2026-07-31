@@ -25,6 +25,7 @@
 | --- | --- | --- | --- |
 | `M-AI-WORKFLOW` | Hermes/Codex collaboration foundation | `complete` | Hermes accepted `AIWF-001` and promoted `DOC-001`. |
 | `M-DOC-VERSIONING` | Version and metadata reconciliation | `complete` | Hermes accepted `DOC-001`. |
+| `M-AUTO-PUBLISH` | Automatic GitHub task publication | `ready_for_review` | Draft PR #1 is merged into `master`. |
 
 No product feature is active while the collaboration foundation is fresh.
 

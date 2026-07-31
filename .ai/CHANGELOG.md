@@ -30,12 +30,12 @@ Entries are newest first and use ISO dates. Each entry must reference a handoff 
 
 - **Type:** Process, tooling, and documentation
 - **Implemented by:** Codex
-- **Reviewed by:** Draft PR pending
+- **Reviewed by:** Draft PR #1 pending merge
 - **Summary:** Added a versioned post-commit auto-push hook, one-time hook installer, and guarded task publisher that validates scope, blocks common sensitive files, commits, pushes, and creates a draft PR.
 - **Files:** `.gitattributes`, `.githooks/post-commit`, `scripts/install-git-hooks.ps1`, `scripts/publish-task.ps1`, `WORKFLOW.md`, `AGENTS.md`, `.ai/ARCHITECTURE.md`, `.ai/PROJECT_STATE.md`, `.ai/CHANGELOG.md`, `.ai/SESSION_NOTES.md`
-- **Verification:** PowerShell and shell syntax passed; hook skip-path passed; local hook configuration passed; sensitive-path scan passed; `git diff --check` passed; `pnpm check` passed with 7/7 tests and four pre-existing warnings; branch commit `af1eb7d` was pushed successfully.
+- **Verification:** PowerShell and shell syntax passed; hook skip-path passed; local hook configuration passed; sensitive-path scan passed; `git diff --check` passed; `pnpm check` passed with 7/7 tests and four pre-existing warnings; automatic pushes passed; draft PR #1 created successfully.
 - **Decisions/deviations:** Automatic commits occur only at verified task boundaries; unsafe file-save auto-commits are intentionally prohibited. Initial PR detection treated GitHub's empty JSON array incorrectly; corrected before final publication.
-- **Follow-up:** Install the hook in each new clone.
+- **Follow-up:** Merge GitHub PR #1; install the hook in each new clone.
 
 ## 2026-07-31 — `PROC-001` — Hybrid Hermes/Codex task routing
 
