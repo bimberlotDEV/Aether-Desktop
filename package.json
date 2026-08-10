@@ -1,7 +1,7 @@
 {
   "name": "aether",
   "private": true,
-  "version": "0.3.0-alpha",
+  "version": "0.3.0",
   "description": "Aether — Your personal operating system.",
   "type": "module",
   "scripts": {

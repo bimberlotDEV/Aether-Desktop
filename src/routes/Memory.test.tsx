@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MemoryItem, Space } from '@/lib/db/types'
@@ -49,29 +49,30 @@ describe('Memory', () => {
     mocks.create.mockReset().mockResolvedValue(undefined)
     mocks.update.mockReset().mockResolvedValue(undefined)
     mocks.remove.mockReset().mockResolvedValue(undefined)
-    mocks.useMemory
-      .mockReset()
-      .mockReturnValue({
-        items: [item],
-        loading: false,
-        error: null,
-        isTauri: true,
-        create: mocks.create,
-        update: mocks.update,
-        remove: mocks.remove,
-      })
+    mocks.useMemory.mockReset().mockReturnValue({
+      items: [item],
+      loading: false,
+      error: null,
+      isTauri: true,
+      create: mocks.create,
+      update: mocks.update,
+      remove: mocks.remove,
+    })
   })
 
   it('creates explicit Space Memory with attribution and reason', async () => {
     const user = userEvent.setup()
     render(<MemoryView spaceId={space.id} spaces={[space]} />)
     await user.click(screen.getByRole('button', { name: 'Remember' }))
-    await user.type(screen.getByLabelText('Title'), 'Preferred tone')
-    await user.type(
-      screen.getByLabelText('What should Aether remember?'),
-      'Keep answers concise',
-    )
-    await user.type(screen.getByLabelText('Why is this useful?'), 'Makes reviews faster')
+    fireEvent.change(screen.getByLabelText('Title'), {
+      target: { value: 'Preferred tone' },
+    })
+    fireEvent.change(screen.getByLabelText('What should Aether remember?'), {
+      target: { value: 'Keep answers concise' },
+    })
+    fireEvent.change(screen.getByLabelText('Why is this useful?'), {
+      target: { value: 'Makes reviews faster' },
+    })
     await user.selectOptions(screen.getByLabelText('Category'), 'preference')
     expect(
       screen.getByText(/never turns chats into permanent Memory automatically/i),

@@ -245,6 +245,17 @@ export const MemoryFilterSchema = z.object({
 })
 export type MemoryFilter = z.infer<typeof MemoryFilterSchema>
 
+// ─── Native Desktop Types ───────────────────────────────
+
+export const NativeStatusSchema = z.object({
+  trayAvailable: z.boolean(),
+  shortcut: z.string(),
+  shortcutRegistered: z.boolean(),
+  notificationsAvailable: z.boolean(),
+  updaterConfigured: z.boolean(),
+})
+export type NativeStatus = z.infer<typeof NativeStatusSchema>
+
 // ─── AI Types ────────────────────────────────────────────
 
 export const AiConversationSchema = z.object({

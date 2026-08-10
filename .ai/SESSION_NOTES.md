@@ -4,25 +4,25 @@
 | --- | --- |
 | Schema version | 2 |
 | Session date | 2026-08-10 |
-| Active task | `PHASE8-001` |
+| Active task | `PHASE9-001` |
 | Agent | Codex |
-| Route | `planned_codex` |
 | State | `complete` |
 
 ## Work completed
 
-- Merged the complete AI experience through PR #12 at `7838599`.
-- Accepted ADR-012 and added migration `008_memory` with explicit global/Space ownership, user attribution, categories, reason, and cascade semantics.
-- Added tested repository, transactional commands, privacy-safe Activity events, typed IPC, synchronized hook, global route, optional Space module, editor, filters, and confirmed delete.
-- Added explicit Memory choices to AI context; global Memory applies in Space conversations while Space-owned Memory remains isolated.
-- Self-review added cleanup of polymorphic AI attachments after direct or cascading Memory deletion.
+- Merged Memory through PR #13 at `fca59e3`.
+- Added native tray Open/Quit, hide-on-close, Ctrl+Shift+Space show/focus, notification service, window-state persistence, and visible Settings readiness.
+- Added ADR-013 and an explicit signed-update activation gate without placeholder trust material.
+- Added publisher/descriptions/category metadata and normalized package/Cargo/Tauri versions to MSI-compatible 0.3.0 while retaining Alpha as product maturity.
+- Generated and verified x64 MSI and NSIS installers; release executable startup smoke test passed.
 
 ## Verification
 
-- Frontend check/build pass; 39/39 tests.
-- Rust format, strict Clippy, and 58/58 tests pass.
-- `git diff --check` passes.
+- Frontend check/build: pass; 41/41 tests.
+- Rust format, strict Clippy, and 59/59 tests: pass.
+- `pnpm tauri:build`: pass with both Windows bundles.
+- MSI manufacturer: `bimberlotDEV`; executable/setup version: 0.3.0.
 
 ## Exact resume point
 
-Publish and merge `PHASE8-001`, synchronize `master`, then audit and implement `PHASE9-001` native Windows features.
+Publish and merge `PHASE9-001`, synchronize `master`, then run `PHASE10-001` release audit, CI, backup/export foundations, documentation, and final installer validation.
