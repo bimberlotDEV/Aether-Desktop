@@ -4,6 +4,7 @@ use crate::ai::context;
 use crate::ai::credentials;
 use crate::ai::provider::{self, ChatCompletionRequest, ChatMessage, ProviderConfig};
 use crate::ai::runtime::AiRuntime;
+use crate::backup;
 use crate::db::repositories::{self, with_conn};
 use crate::db::Database;
 use crate::native::NativeStatus;
@@ -40,6 +41,19 @@ pub fn native_test_notification(app: AppHandle) -> Result<(), String> {
         .body("You can close Aether to the tray and reopen it with Ctrl+Shift+Space.")
         .show()
         .map_err(|error| format!("Native notification error: {}", error))
+}
+
+#[tauri::command]
+pub fn export_workspace_backup(
+    db: State<Database>,
+    destination: String,
+) -> Result<backup::BackupResult, String> {
+    let destination = PathBuf::from(destination);
+    let conn = db
+        .conn
+        .lock()
+        .map_err(|error| format!("Lock error: {error}"))?;
+    backup::export(&conn, &destination)
 }
 
 // ─── Settings ───────────────────────────────────────────

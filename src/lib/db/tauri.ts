@@ -28,6 +28,7 @@ import type {
   MemoryInput,
   MemoryItem,
   NativeStatus,
+  BackupResult,
 } from './types'
 
 // ─── Native desktop ─────────────────────────────────────
@@ -36,6 +37,9 @@ export async function getNativeStatus(): Promise<NativeStatus> {
 }
 export async function sendTestNotification(): Promise<void> {
   return invoke('native_test_notification')
+}
+export async function exportWorkspaceBackup(destination: string): Promise<BackupResult> {
+  return invoke('export_workspace_backup', { destination })
 }
 
 // ─── Settings ────────────────────────────────────────────

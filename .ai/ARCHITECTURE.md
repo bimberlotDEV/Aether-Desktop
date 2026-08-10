@@ -48,6 +48,7 @@ SQLite / native capabilities / external providers
 | `src-tauri/src/db/repositories/` | Persistent domain operations | Codex within task scope |
 | `src-tauri/src/db/migrations.rs` | Append-only schema evolution | Codex; migration design requires a planned task and ADR when durable |
 | `src-tauri/src/ai/` | Provider abstraction and credential security | Codex; security work requires `planned_codex` |
+| `src-tauri/src/backup.rs` | Sanitized, consistent SQLite workspace export | Codex; restore semantics require a separate planned task |
 | `docs/` | Human-facing architecture and decisions | Codex owns verified technical intent and implementation facts |
 | `.ai/` | Codex planning, execution, and live engineering state | Codex, governed by `WORKFLOW.md` |
 
@@ -63,6 +64,7 @@ SQLite / native capabilities / external providers
 8. Design tokens are preferred over scattered raw CSS values.
 9. Architecture changes require a `planned_codex` task contract and accepted ADR before implementation.
 10. AI retries reference an existing persisted user turn; generated Task proposals require strict validation and explicit transactional confirmation.
+11. Workspace exports use SQLite backup semantics, omit credentials, verify integrity, and disclose that Vault file bytes are excluded.
 
 ## UI and design constraints
 
@@ -101,6 +103,7 @@ SQLite / native capabilities / external providers
 | `ADR-011` | Use cancellable typed AI streams and explicit Space-isolated context resolved in Rust. | Accepted | `docs/decisions/011-ai-streaming-and-context.md` |
 | `ADR-012` | Use explicit, user-authored, scoped Memory with opt-in AI attachment. | Accepted | `docs/decisions/012-explicit-memory.md` |
 | `ADR-013` | Use a persistent native Windows tray lifecycle with visible shortcut/notification readiness and gated signed updates. | Accepted | `docs/decisions/013-native-windows-lifecycle.md` |
+| `ADR-014` | Export a sanitized SQLite workspace snapshot; defer restore and Vault-byte archives. | Accepted | `docs/decisions/014-workspace-backup.md` |
 
 ## Architecture change protocol
 

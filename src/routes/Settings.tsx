@@ -3,6 +3,7 @@ import { useThemeStore } from '@/stores/themeStore'
 import type { Theme } from '@/stores/themeStore'
 import { AiSettings } from '@/components/ai/AiSettings'
 import { NativeSettings } from '@/components/NativeSettings'
+import { BackupSettings } from '@/components/BackupSettings'
 
 const themeOptions: { value: Theme; label: string; icon: typeof Sun }[] = [
   { value: 'light', label: 'Light', icon: Sun },
@@ -53,6 +54,8 @@ export function Settings() {
               return (
                 <button
                   key={opt.value}
+                  type="button"
+                  aria-pressed={isActive}
                   onClick={() => setTheme(opt.value)}
                   className="flex items-center gap-3 w-full px-4 py-3 rounded-lg text-left transition-colors duration-100"
                   style={{
@@ -79,6 +82,8 @@ export function Settings() {
         <AiSettings />
 
         <NativeSettings />
+
+        <BackupSettings />
 
         {/* About */}
         <section>

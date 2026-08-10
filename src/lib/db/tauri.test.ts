@@ -34,6 +34,7 @@ import {
   deleteMemory,
   getNativeStatus,
   sendTestNotification,
+  exportWorkspaceBackup,
 } from '@/lib/db/tauri'
 
 describe('Tauri database boundary', () => {
@@ -65,6 +66,14 @@ describe('Tauri database boundary', () => {
 
     expect(invoke).toHaveBeenNthCalledWith(1, 'native_get_status')
     expect(invoke).toHaveBeenNthCalledWith(2, 'native_test_notification')
+  })
+
+  it('passes only the chosen destination to the backup command', async () => {
+    await exportWorkspaceBackup('C:\\Backups\\workspace.aether-backup.db')
+
+    expect(invoke).toHaveBeenCalledWith('export_workspace_backup', {
+      destination: 'C:\\Backups\\workspace.aether-backup.db',
+    })
   })
 
   it('maps cleared optional Space fields to empty persisted values', async () => {

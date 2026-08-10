@@ -256,6 +256,12 @@ export const NativeStatusSchema = z.object({
 })
 export type NativeStatus = z.infer<typeof NativeStatusSchema>
 
+export const BackupResultSchema = z.object({
+  sizeBytes: z.number().nonnegative(),
+  createdAt: z.string(),
+})
+export type BackupResult = z.infer<typeof BackupResultSchema>
+
 // ─── AI Types ────────────────────────────────────────────
 
 export const AiConversationSchema = z.object({

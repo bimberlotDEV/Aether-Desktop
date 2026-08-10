@@ -8,8 +8,8 @@
 | Last updated | 2026-08-10 |
 | Updated by | Codex |
 | Repository | `bimberlotDEV/Aether-Desktop` |
-| Branch | `codex/phase9-native-windows` |
-| Baseline commit | `fca59e3` (PR #13 merge) |
+| Branch | `codex/phase10-release-quality` |
+| Baseline commit | `68937f8` (PR #14 merge) |
 | Product maturity | Alpha |
 
 ## Responsibility of this file
@@ -39,8 +39,9 @@
 | `PHASE7-002` | Complete AI user experience | `complete` | Merged through PR #12 at `7838599`. |
 | `PHASE8-001` | Explicit scoped Memory | `complete` | Persistence, global/Space management, AI attachment, tests, and quality gates pass. |
 | `PHASE9-001` | Native Windows lifecycle and packaging | `complete` | Tray, shortcut, notifications, window state, MSI/NSIS build, and startup smoke test pass. |
+| `PHASE10-001` | Quality and release preparation | `complete` | CI, sanitized export, audits, documentation, packaging, hashes, and startup verification pass. |
 
-The completed task is `PHASE9-001`, governed by the contract in `.ai/HANDOFF.md`.
+The completed task is `PHASE10-001`, governed by the contract in `.ai/HANDOFF.md`.
 
 ## Completed product milestones
 
@@ -61,18 +62,21 @@ The completed task is `PHASE9-001`, governed by the contract in `.ai/HANDOFF.md`
 | Phase 6 — Vault | `mvp_complete` | Safe linked/managed storage, global/Space UI, metadata, filters, open/reveal, and removal workflows pass all gates. |
 | Phase 8 — Memory | `mvp_complete` | Explicit user-authored global/Space Memory, management UI, safe deletion, and AI context integration are implemented. |
 | Phase 9 — Native desktop | `complete` | Tray lifecycle, shortcut, notifications, window-state, icons/metadata, MSI and NSIS installers are verified. |
-| Phase 10 — Release quality | `not_started` | No complete release audit or release pipeline verified. |
+| Phase 10 — Release quality | `complete` | Windows CI, dependency monitoring, sanitized export, accessibility/security/performance review, release docs, MSI/NSIS bundles, hashes, and startup smoke are verified. |
 
 ## Quality snapshot
 
 | Check | Last result | Date | Notes |
 | --- | --- | --- | --- |
-| `pnpm check` | Pass | 2026-08-10 | Typecheck and lint clean; Vitest 41/41 across 15 files. |
-| `pnpm build` | Pass | 2026-08-10 | TypeScript and Vite production build pass. |
-| `cargo test` | Pass | 2026-08-10 | 59/59 tests pass, including native status, Memory scope/cascade, AI isolation, and Vault safety. |
+| `pnpm check` | Pass | 2026-08-10 | Typecheck and lint clean; Vitest 45/45 across 17 files. |
+| `pnpm build` | Pass | 2026-08-10 | Production build is 490.10 kB JS / 135.83 kB gzip and has no chunk-size warning. |
+| `pnpm audit --audit-level high` | Pass | 2026-08-10 | No known vulnerabilities after patched Router and transitive dependency updates. |
+| `cargo test` | Pass | 2026-08-10 | 61/61 tests pass, including sanitized backup, native status, AI isolation, Memory, and Vault safety. |
 | `cargo build` | Pass | 2026-08-10 | Windows production build compiles with DPAPI. |
 | `cargo fmt --check` | Pass | 2026-08-10 | Repository Rust formatting is clean; `DEBT-005` resolved. |
 | `cargo clippy --all-targets -- -D warnings` | Pass | 2026-08-10 | Library, binary, and test targets are warning-free; `DEBT-006` resolved. |
+| `pnpm tauri:build` | Pass | 2026-08-10 | x64 MSI and NSIS bundles built; hashes recorded in `docs/release-artifacts-0.3.0.md`. |
+| Release startup smoke | Pass | 2026-08-10 | Release executable remained alive after eight seconds and was then stopped by the verifier. |
 
 ## Active blockers
 
@@ -106,8 +110,11 @@ Full rationale belongs in `.ai/ARCHITECTURE.md` or a dedicated ADR under `docs/d
 | `ADR-011` | AI uses cancellable typed streams and explicit Space-isolated context resolved in Rust. | Accepted |
 | `ADR-012` | Memory is explicit, user-authored, scoped, attributable, and attached to AI only by choice. | Accepted |
 | `ADR-013` | Native Windows lifecycle uses tray persistence, non-fatal shortcut registration, OS notifications, and gated signed updates. | Accepted |
+| `ADR-014` | Workspace export uses a sanitized, integrity-checked SQLite snapshot and excludes credentials and Vault file bytes. | Accepted |
 
-## Next: Publish `PHASE9-001`, then complete the Phase 10 release audit and pipeline.
+## Next
+
+The Alpha 0.3.0 roadmap through Phase 10 is complete. Future work requires a new owner-approved roadmap item; public signing and updater activation remain owner-controlled release operations.
 
 ## Reusable update template
 

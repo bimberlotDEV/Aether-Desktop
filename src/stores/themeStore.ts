@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { getSetting, setSetting } from '@/lib/db/tauri'
 
 export type Theme = 'light' | 'dark' | 'system'
 
@@ -32,7 +33,6 @@ async function persistTheme(theme: Theme) {
 
   // Try Tauri database persistence
   try {
-    const { setSetting } = await import('@/lib/db/tauri')
     await setSetting('theme', theme, 'string')
   } catch {
     // Not running in Tauri — that's fine
@@ -76,7 +76,6 @@ export async function initTheme() {
 
   // Try Tauri database first
   try {
-    const { getSetting } = await import('@/lib/db/tauri')
     const setting = await getSetting('theme')
     if (setting && ['light', 'dark', 'system'].includes(setting.value)) {
       theme = setting.value as Theme
