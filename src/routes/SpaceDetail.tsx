@@ -24,6 +24,7 @@ import { NotesView } from '@/routes/Notes'
 import { EditSpaceModal } from '@/components/EditSpaceModal'
 import { TaskView } from '@/components/tasks/TaskView'
 import { VaultView } from '@/components/vault/VaultView'
+import { AiView } from '@/components/ai/AiView'
 
 const MODULE_ICONS: Record<
   string,
@@ -257,6 +258,8 @@ export function SpaceDetailLayout() {
                         : []),
                     ]}
                   />
+                ) : m.module_type === 'ai' ? (
+                  <AiView spaceId={space.id} />
                 ) : (
                   <ModulePlaceholder moduleType={m.module_type} />
                 )

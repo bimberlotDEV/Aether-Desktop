@@ -62,6 +62,7 @@ SQLite / native capabilities / external providers
 7. Secrets must never be committed, logged, placed in handoff files, or stored using reversible project-derived key material.
 8. Design tokens are preferred over scattered raw CSS values.
 9. Architecture changes require a `planned_codex` task contract and accepted ADR before implementation.
+10. AI retries reference an existing persisted user turn; generated Task proposals require strict validation and explicit transactional confirmation.
 
 ## UI and design constraints
 

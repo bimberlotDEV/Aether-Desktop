@@ -6,34 +6,30 @@
 | --- | --- |
 | Schema version | 2 |
 | Session date | 2026-08-10 |
-| Active task | `PHASE7-001` |
+| Active task | `PHASE7-002` |
 | Agent | Codex |
 | Route | `planned_codex` |
 | State | `self_review_complete` |
 
 ## Session objective
 
-Replace the AI prototype with a secure, current, cancellable streaming and explicit-context foundation.
+Complete the secure, usable AI interface on top of the merged streaming and context foundation.
 
 ## Work completed
 
-- Merged Phase 5 through PR #8; `master` advanced to `820952e`.
-- Audited Vault requirements, the existing empty route, database patterns, Tauri capabilities, and application-data setup.
-- Verified current official Tauri dialog and opener APIs and their permission model.
-- Accepted ADR-010 and prepared the bounded `PHASE6-001` implementation contract.
-- Implemented migration `006_vault`, the Vault repository, safe linked/managed filesystem ownership, transactional commands, native plugins, typed IPC, and documentation.
-- Self-review removed unnecessary frontend opener authority, kept storage paths Rust-only, and hardened controlled directories against junction escape.
-- Implemented and verified the global and Space-scoped Vault interface with explicit ownership and deletion consequences.
-- Self-review improved accessible action naming and ownership visibility.
-- Replaced the retired blocking AI prototype with current DeepSeek V4 async streaming, cancellation, terminal persistence, and explicit Space-isolated context.
-- Corrected SSE UTF-8 framing, latest-history selection, context structure injection, model validation, and API-key input validation during self-review.
+- Added DeepSeek key status, save/replace, connection test, explicit removal, DPAPI explanation, and privacy disclosure to Settings.
+- Added global and Space-scoped conversations with create, rename, archive, delete, model selection, streaming, cancellation, and retry.
+- Added explicit Note, Task, and metadata-only Vault context selection with visible removable attachments.
+- Added Ask, Summarize, Explain, Plan, Rewrite, and Propose Tasks modes.
+- Added strict proposal parsing, preview/selection, a 20-item limit, and transactional batch Task creation with Activity events.
+- Added AI routing, sidebar/command-palette navigation, Space-module rendering, IPC contracts, and regression coverage.
 
 ## Verification
 
-- Frontend: `pnpm check` pass (31/31 tests); `pnpm build` pass.
-- Rust: format pass; strict Clippy pass; 56/56 tests pass; build pass.
+- Frontend: `pnpm check` pass (36/36 tests); `pnpm build` pass.
+- Rust: format pass; strict Clippy pass; 56/56 tests pass.
 - Repository: `git diff --check` pass.
 
 ## Exact resume point
 
-Run the final PHASE7-001 matrix, publish/merge it, then begin the AI interface slice.
+Publish and merge `PHASE7-002`, synchronize `master`, then create the `PHASE8-001` Memory task contract from `IDEA.md`.

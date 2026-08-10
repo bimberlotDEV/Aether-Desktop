@@ -259,6 +259,16 @@ export const AiResolvedContextItemSchema = z.object({
 })
 export type AiResolvedContextItem = z.infer<typeof AiResolvedContextItemSchema>
 
+export const AiModeSchema = z.enum([
+  'ask',
+  'summarize',
+  'explain',
+  'plan',
+  'rewrite',
+  'create_tasks',
+])
+export type AiMode = z.infer<typeof AiModeSchema>
+
 export const KeyStatusSchema = z.object({
   configured: z.boolean(),
   status: z.enum(['configured', 'missing', 'unavailable']),

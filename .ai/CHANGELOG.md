@@ -26,6 +26,17 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-08-10 — `PHASE7-002` — Complete AI experience
+
+- **Type:** Feature, security, and test
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review
+- **Summary:** Added secure DeepSeek Settings, synchronized global and Space chat, model selection, streamed progress/cancel/retry, explicit visible context, six response modes, and strictly validated transactional Task proposals.
+- **Files:** `src/components/ai/*`, `src/hooks/useAi.ts`, `src/routes/AI.tsx`, navigation and Space integration, AI commands, TypeScript IPC/types/tests, `.ai/*`
+- **Verification:** Frontend check/build pass with 36/36 tests; Rust format, strict Clippy, and 56/56 tests pass; `git diff --check` pass.
+- **Decisions/deviations:** Vault stays metadata-only; retry reuses an existing user turn; proposal creation is capped at 20 and atomic.
+- **Follow-up:** `PHASE8-001`
+
 ## 2026-08-10 — `PHASE7-001` — Cancellable AI streaming foundation
 
 - **Type:** Security, feature, refactor, and test

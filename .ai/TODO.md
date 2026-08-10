@@ -38,9 +38,12 @@
 | P1 | `PHASE5-EPIC` | Design and implement Tasks | Product | `done` | Codex decomposition | ADR-009, persistence, Space/global UI, and Pulse attention are complete. |
 | P1 | `PHASE5-001` | Build Task persistence and IPC foundation | Product and architecture | `done` | ADR-009 | Migration, repository, commands, types, wrappers, and tests pass. |
 | P1 | `PHASE5-002` | Build Tasks UI and Pulse integration | Product | `done` | `PHASE5-001` | Space Tasks and calm global due views meet Phase 5 acceptance. |
-| P1 | `AI-UI-EPIC` | Complete the AI user experience | Product | `active` | `TECH-001` | Provider setup, conversations, streaming, cancellation, and explicit context have reviewed UX. |
+| P1 | `AI-UI-EPIC` | Complete the AI user experience | Product | `done` | `TECH-001` | Provider setup, conversations, streaming, cancellation, explicit context, modes, and Task proposals have reviewed UX. |
 | P1 | `PHASE7-001` | Harden AI streaming and explicit context foundation | Security and architecture | `done` | ADR-011 | Current provider, cancellation, terminal persistence, and Space isolation pass tests. |
-| P1 | `PHASE7-002` | Build AI Settings, chat, context, summary, and proposal UI | Product | `planned` | `PHASE7-001` | DeepSeek is usable with visible context, retry/cancel, and previewed proposals. |
+| P1 | `PHASE7-002` | Build AI Settings, chat, context, summary, and proposal UI | Product | `done` | `PHASE7-001` | DeepSeek is usable with visible context, retry/cancel, modes, and previewed transactional proposals. |
+| P1 | `PHASE8-001` | Design and implement Memory | Product and architecture | `planned` | `PHASE7-002` | Global and Space Memory is manageable and may be explicitly attached to AI. |
+| P1 | `PHASE9-001` | Complete native Windows features | Product and packaging | `planned` | `PHASE8-001` | Tray, notifications, shortcut, installer metadata, and native smoke tests pass. |
+| P1 | `PHASE10-001` | Complete release audit and pipeline | Quality and release | `planned` | `PHASE9-001` | CI, packaging, documentation, security/privacy, and alpha release gates pass. |
 | P1 | `VAULT-EPIC` | Design and implement Vault | Product | `done` | ADR-010 | Safe storage and complete global/Space MVP are implemented. |
 | P1 | `PHASE6-001` | Build Vault persistence and native filesystem foundation | Product and security | `done` | ADR-010 | Safe linked/managed storage commands and tests pass. |
 | P1 | `PHASE6-002` | Build Vault UI and Space integration | Product | `done` | `PHASE6-001` | Import, metadata, search, open/reveal, and safe removal are usable. |
@@ -64,8 +67,8 @@
 | Notes | `mvp_complete` | Extend only when a later roadmap phase requires it. |
 | Tasks | `mvp_complete` | Extend only when a later roadmap phase requires it. |
 | Vault | `mvp_complete` | Extend only when a later roadmap phase requires previews or indexing. |
-| AI | `prototype` | Resolve security design before UI expansion. |
-| Memory | `not_started` | Defer until AI context semantics are stable. |
+| AI | `mvp_complete` | Validate live provider behavior during the release smoke test. |
+| Memory | `planned` | Design the persistent domain and explicit AI attachment semantics. |
 
 ## New item template
 
