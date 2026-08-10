@@ -96,6 +96,7 @@ SQLite / native capabilities / external providers
 | `ADR-007` | Publish verified task commits automatically through a versioned Git hook and guarded publication script. | Accepted | `WORKFLOW.md` |
 | `ADR-008` | Use Codex as the sole engineering agent with planned-task contracts and evidence-based self-review. | Accepted | `docs/decisions/008-codex-only-workflow.md` |
 | `ADR-009` | Use a self-referencing Task table, local calendar due dates, JSON tags, and full-state IPC updates. | Accepted | `docs/decisions/009-task-domain-model.md` |
+| `ADR-010` | Enforce Vault linked/managed ownership and safe deletion in trusted Rust code. | Accepted | `docs/decisions/010-vault-file-ownership.md` |
 
 ## Architecture change protocol
 

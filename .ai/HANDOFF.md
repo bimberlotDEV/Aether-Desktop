@@ -5,12 +5,12 @@
 | Field | Value |
 | --- | --- |
 | Schema version | 2 |
-| Task ID | `PHASE5-002` |
-| Status | `complete` |
+| Task ID | `PHASE6-001` |
+| Status | `self_review` |
 | Owner | Codex |
 | Prepared by | Codex |
 | Last updated | 2026-08-10 |
-| Related milestone | Phase 5 — Tasks and Pulse |
+| Related milestone | Phase 6 — Vault foundation |
 
 ## Responsibility of this file
 
@@ -36,70 +36,66 @@
 
 ```text
 Classification: planned_codex
-Reason: This task completes a product phase across shared hooks, Space module UI, Pulse aggregation, navigation, and interaction tests.
+Reason: Vault adds a persistent cross-layer domain, native filesystem access, security-sensitive ownership rules, and append-only migration.
 ```
 
 ## Current task
 
 ### Objective
 
-Deliver the complete lightweight Tasks experience inside Spaces and surface due attention on Pulse without turning either screen into a project-management dashboard.
+Deliver the verified Vault persistence, storage-safety, native-dialog, open, and reveal foundation required for the Phase 6 UI.
 
 ### Context
 
-- `PHASE5-001` established the persistent Task tree, validation, filters, archive lifecycle, attention query, Activity events, TypeScript contracts, and IPC wrappers.
-- ADR-009 is the binding domain model; this slice must not change its statuses, priority values, ownership, or date semantics.
-- Tasks belong to a Space in the Space module; Pulse may also show global Inbox tasks created through the quick-capture path.
-- The UI must follow existing Aether tokens and restrained interaction patterns.
+- Vault is currently a static empty state with no persistence or native file operations.
+- ADR-010 defines linked versus managed ownership, relative managed paths, safe removal, and trusted Rust-side open/reveal commands.
+- The official Tauri dialog plugin returns native paths; the official opener plugin supports default-app opening and Explorer reveal.
+- UI delivery is intentionally separated into `PHASE6-002` so filesystem safety can be independently tested and published.
 
 ### Implementation plan
 
-1. Add a reusable Tasks hook with synchronized mutation invalidation and deterministic browser fallback data.
-2. Build a Space Tasks view with quick capture, search, status and priority filtering, completion, editing, subtasks, archive, and archived recovery.
-3. Add a focused Task editor surface for full-state fields and tags.
-4. Add a Pulse attention section for overdue and upcoming incomplete Tasks with direct completion and navigation.
-5. Add global Tasks navigation and command-palette entry where it improves capture and discovery.
-6. Add hook and component interaction tests, run all quality gates, and complete a separate self-review pass.
+1. Add append-only migration `006_vault` with ownership constraints, metadata fields, search indexes, and nullable Space association.
+2. Implement the validated Vault repository and filters.
+3. Implement a filesystem service for canonical source inspection, atomic managed copies, containment checks, and quarantined safe deletion.
+4. Add transactional Tauri commands for import, list, metadata update, remove, open, and reveal with Activity events.
+5. Configure the official dialog and opener plugins with least-privilege frontend capabilities.
+6. Add strict TypeScript contracts and invoke wrappers.
+7. Document the schema and architecture, test storage/repository/IPC behavior, run all quality gates, and self-review.
 
 ### Allowed files
 
-- `.ai/HANDOFF.md`
-- `.ai/PROJECT_STATE.md`
-- `.ai/TODO.md`
-- `.ai/CHANGELOG.md`
-- `.ai/SESSION_NOTES.md`
-- `src/App.tsx`
-- `src/components/CommandPalette.tsx`
-- `src/components/CommandPalette.test.tsx`
-- `src/components/Sidebar.tsx`
-- `src/components/tasks/*`
-- `src/hooks/useTasks.ts`
-- `src/hooks/useTasks.test.ts`
-- `src/routes/Pulse.tsx`
-- `src/routes/Pulse.test.tsx`
-- `src/routes/SpaceDetail.tsx`
-- `src/routes/Tasks.tsx`
-- `src/routes/Tasks.test.tsx`
+- `package.json`, `pnpm-lock.yaml`
+- `src-tauri/Cargo.toml`, `src-tauri/Cargo.lock`
+- `src-tauri/capabilities/default.json`
+- `src-tauri/src/lib.rs`, `src-tauri/src/commands.rs`
+- `src-tauri/src/vault.rs`
+- `src-tauri/src/db/migrations.rs`
+- `src-tauri/src/db/repositories/mod.rs`
+- `src-tauri/src/db/repositories/vault.rs`
+- `src/lib/db/types.ts`, `src/lib/db/tauri.ts`, `src/lib/db/tauri.test.ts`
+- `docs/database.md`, `docs/decisions/010-vault-file-ownership.md`
+- `.ai/ARCHITECTURE.md`, `.ai/HANDOFF.md`, `.ai/PROJECT_STATE.md`, `.ai/TODO.md`, `.ai/CHANGELOG.md`, `.ai/SESSION_NOTES.md`
 
 ### Out of scope
 
-- Database, Rust command, or ADR-009 changes.
-- Recurrence, reminders, dependencies, estimates, Kanban, drag-and-drop, or collaboration.
-- AI-generated Task proposals.
-- Notifications and OS calendar integration.
+- Vault list/grid UI and import dialogs (`PHASE6-002`).
+- Content parsing, full-text content indexing, thumbnails, previews, OCR, or DOCX support.
+- Relinking moved external files, checksums, versioning, or duplicate-content detection.
+- Cloud files, sync, or sharing.
 
 ### Acceptance criteria
 
-- [x] A user can create a Task quickly in a Space and through the global Inbox view.
-- [x] A user can edit title, description, status, priority, due date, Space ownership, and tags.
-- [x] A user can create and view subtasks without losing tree context.
-- [x] Search and status/priority filters update the visible list and preserve a calm empty state.
-- [x] Completion is one click, visibly reversible, and synchronized across Tasks and Pulse views.
-- [x] Archive, archived filtering, restore, and permanent deletion are available with clear destructive confirmation.
-- [x] Pulse separates overdue from upcoming Tasks and never shows completed or archived items.
-- [x] Loading, validation, mutation, empty, and non-Tauri browser fallback states are handled.
-- [x] Keyboard and screen-reader basics are present: labels, focus styles, semantic controls, and Escape-close behavior.
-- [x] Frontend regression tests cover hook invalidation and core Task interactions; all repository gates remain green.
+- [x] Migration `006_vault` is transactional, idempotent, constrained, and indexed.
+- [x] Records distinguish `linked` and `managed`, support optional Space, title, source filename, media type, size, tags, paths, and timestamps.
+- [x] Source imports canonicalize a real regular file and reject directories or paths already owned by the Vault.
+- [x] Managed copies are written below the canonical Vault root without blocking React and are cleaned up if persistence fails.
+- [x] Linked removal never deletes or modifies the external source file.
+- [x] Managed deletion cannot escape the owned item directory and uses quarantine/rollback around database deletion.
+- [x] Metadata CRUD, Space filtering, ownership filtering, and search are covered by Rust tests.
+- [x] Open and reveal accept only a Vault item ID, resolve its authoritative stored path in Rust, and fail clearly when unavailable.
+- [x] Official plugins are initialized; frontend receives only native dialog-open permission, not arbitrary opener-path permission.
+- [x] TypeScript contracts and invoke wrappers exactly match the Rust command boundary.
+- [x] Existing frontend and Rust quality gates remain green.
 
 ### Required verification
 
@@ -107,54 +103,53 @@ Deliver the complete lightweight Tasks experience inside Spaces and surface due 
 - `pnpm build` — pass.
 - `cargo fmt --manifest-path src-tauri/Cargo.toml -- --check` — pass.
 - `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings` — pass.
-- `cargo test --manifest-path src-tauri/Cargo.toml` — all tests pass.
+- `cargo test --manifest-path src-tauri/Cargo.toml` — all tests pass, including temporary-directory ownership tests.
 - `cargo build --manifest-path src-tauri/Cargo.toml` — pass.
 - `git diff --check` — pass.
-- Tauri desktop smoke test — create, edit, complete, filter, archive/restore, subtask, and Pulse attention flows pass.
 
 ### Risks and rollback
 
 | Risk | Mitigation or rollback |
 | --- | --- |
-| Multiple views show stale Task state. | Use one module-level invalidation subscription and reload all mounted Task consumers after mutations. |
-| Full-state edits accidentally erase fields. | Derive every mutation input from the current Task and override only the intended field. |
-| Task trees become visually noisy. | Limit nesting treatment to compact indentation and keep filters outside individual rows. |
-| Pulse becomes a widget grid. | Add one ranked attention section, capped by the repository query, within the existing single-column hierarchy. |
-| Browser development becomes unusable without Tauri. | Provide deterministic in-memory fallback operations in the hook, matching the existing Spaces approach. |
+| An external original is accidentally deleted. | Linked removal contains no filesystem delete path; tests assert the source survives. |
+| A crafted relative path escapes managed storage. | Normalize and canonicalize against `<vault>/items/<id>` before every operation; reject containment failures. |
+| A large copy freezes the interface. | Execute source inspection and copying through `tauri::async_runtime::spawn_blocking`. |
+| Database failure leaves ownership inconsistent. | Clean failed imports; quarantine managed deletion and restore it when the transaction fails. |
+| Broad plugin permissions expose arbitrary local paths. | Grant only dialog open to the frontend; opener calls occur in Rust after ID lookup. |
 
 ## Implementation result
 
 ### Summary
 
-Completed the Phase 5 user experience with a global Inbox, Space Tasks module, synchronized data hook, full editor, lightweight task tree, filtering, archive lifecycle, due attention on Pulse, navigation, and focused regression coverage.
+Implemented a complete Vault foundation spanning migration, validated repository, safe linked/managed storage, transactional commands, native dialog/open/reveal integration, and typed frontend IPC. Authoritative storage paths remain private to Rust.
 
 ### Files changed
 
-- `src/hooks/useTasks.ts`, `src/hooks/useTasks.test.ts`
-- `src/components/tasks/TaskEditor.tsx`, `src/components/tasks/TaskView.tsx`
-- `src/routes/Tasks.tsx`, `src/routes/Tasks.test.tsx`
-- `src/routes/Pulse.tsx`, `src/routes/Pulse.test.tsx`, `src/routes/SpaceDetail.tsx`
-- `src/App.tsx`, `src/components/Sidebar.tsx`, `src/components/CommandPalette.tsx`, `src/components/CommandPalette.test.tsx`
-- `.ai/HANDOFF.md`, `.ai/PROJECT_STATE.md`, `.ai/TODO.md`, `.ai/CHANGELOG.md`, `.ai/SESSION_NOTES.md`
+- Added `src-tauri/src/vault.rs`, `src-tauri/src/db/repositories/vault.rs`, and ADR-010.
+- Updated the migration, Tauri commands/plugins/capability, Rust and TypeScript contracts, tests, dependency locks, database documentation, and control documents listed in the allowed scope.
 
 ### Verification result
 
-- Frontend: `pnpm check` passed with 24/24 tests across nine files; `pnpm build` passed with a 369.66 kB main bundle.
-- Rust: format check, strict Clippy, 39/39 tests, and build all passed.
-- Repository: `git diff --check` passed.
-- Desktop shell: Aether launched successfully and exposed the new Tasks navigation in its accessibility tree. The remaining interactive smoke sequence was interrupted when the window was minimized on the active desktop; equivalent workflows pass automated UI, IPC, and repository tests.
+- `pnpm check` - pass; 25/25 tests.
+- `pnpm build` - pass.
+- `cargo fmt --manifest-path src-tauri/Cargo.toml -- --check` - pass.
+- `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings` - pass.
+- `cargo test --manifest-path src-tauri/Cargo.toml` - pass; 48/48 tests.
+- `cargo build --manifest-path src-tauri/Cargo.toml` - pass.
+- `git diff --check` - pass.
 
 ### Deviations
 
-The full interactive desktop smoke sequence could not be completed without competing for the user's active desktop. No product scope changed; automated coverage was expanded to 24 tests to cover capture, metadata, subtasks, completion synchronization, archive recovery/deletion, Pulse grouping, and BrowserRouter command navigation.
+- The JavaScript opener package and opener capability were deliberately omitted: open/reveal remain trusted Rust commands keyed only by Vault item ID.
+- Stored paths are deliberately omitted from serialized Vault items; the frontend does not need filesystem authority.
 
 ## Codex self-review
 
 | Field | Value |
 | --- | --- |
-| Decision | `pass_with_noted_manual_gap` |
-| Reviewed at | `2026-08-10` |
-| Acceptance evidence | 24 frontend tests, 39 Rust tests, strict static checks, both production builds, clean diff validation, and successful desktop launch/accessibility inspection. |
-| Findings | Command palette used stale hash navigation; Pulse hid global Tasks when no Space existed; missing backend records could close editors silently; browser fallback only cascaded one subtask level. |
-| Corrections | Switched commands to BrowserRouter-compatible history events, exposed Pulse Tasks independently of Spaces, surfaced missing-record errors, and made mock tree operations recursive. |
-| Residual risks | A manual end-to-end desktop interaction pass remains desirable because active-desktop minimization interrupted automation after launch; all constituent flows are covered at component, hook, IPC, and Rust repository boundaries. |
+| Decision | `approved_for_publication` |
+| Reviewed at | 2026-08-10 |
+| Acceptance evidence | All eleven criteria pass; 48 Rust tests and 25 frontend tests pass with strict build/lint gates. |
+| Findings | Initial Windows path assertion compared canonical and non-canonical temp paths; controlled child directories also needed explicit junction-escape protection; frontend opener access and serialized paths were unnecessary authority. |
+| Corrections | Corrected canonical-path test, added controlled-directory canonical checks, removed JavaScript opener access, hid stored paths at IPC, and added regression tests. |
+| Residual risks | Full native command orchestration is not end-to-end UI-tested until `PHASE6-002`; repository and filesystem primitives are independently covered. |

@@ -112,6 +112,28 @@ Indexes: `space_id`, `parent_task_id`, `status`, `priority`, `due_date`, `archiv
 
 Repository filters own Task search and enum filtering. Pulse uses a bounded due-attention query for overdue and upcoming top-level Tasks.
 
+### vault_items
+
+Metadata and ownership records for local files. Filesystem behavior is governed by ADR-010.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | TEXT PK | UUIDv7; also owns the managed item directory |
+| `space_id` | TEXT FK | Optional; references spaces(id) ON DELETE SET NULL |
+| `storage_mode` | TEXT | linked or managed |
+| `display_title` | TEXT | User-editable title, 1 to 200 characters |
+| `original_name` | TEXT | Filename captured at import |
+| `stored_path` | TEXT | Canonical absolute path for linked items; Vault-relative path for managed items |
+| `media_type` | TEXT | Extension-derived MIME classification; unsupported formats remain octet-stream |
+| `size_bytes` | INTEGER | Non-negative source size at import |
+| `tags_json` | TEXT | Validated JSON array; exposed as `tags: string[]` |
+| `created_at` | TEXT | ISO 8601 timestamp |
+| `updated_at` | TEXT | ISO 8601 timestamp |
+
+Indexes: `space_id`, `storage_mode`, `display_title`, `updated_at`. `stored_path` is unique.
+
+Managed files live below `%APPDATA%/Aether/vault/items/<item-id>/`. Linked originals are never mutated or deleted by Vault removal. `stored_path` remains internal to Rust; native open and reveal operations resolve a database item rather than accepting or returning arbitrary frontend paths.
+
 ## Migrations
 
 Versioned in `src-tauri/src/db/migrations.rs`. Each migration has a name and SQL. Applied migrations are tracked in `_migrations` table. Migrations run in a transaction — all or nothing.

@@ -1,6 +1,7 @@
 mod ai;
 mod commands;
 mod db;
+mod vault;
 
 use db::Database;
 use std::path::PathBuf;
@@ -11,6 +12,8 @@ use crate::ai::credentials::DpapiCrypto;
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_opener::init())
         .setup(|app| {
             if cfg!(debug_assertions) {
                 app.handle().plugin(
@@ -96,6 +99,13 @@ pub fn run() {
             commands::archive_task,
             commands::restore_task,
             commands::delete_task,
+            commands::import_vault_item,
+            commands::get_vault_item,
+            commands::list_vault_items,
+            commands::update_vault_item,
+            commands::remove_vault_item,
+            commands::open_vault_item,
+            commands::reveal_vault_item,
             commands::record_activity,
             commands::list_activity,
             // AI

@@ -26,6 +26,17 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-08-10 — `PHASE6-001` — Safe Vault foundation
+
+- **Type:** Feature, security, and test
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review
+- **Summary:** Added linked and managed Vault persistence, canonical path containment, atomic managed imports, quarantined deletion with rollback, metadata/search filters, native dialog/open/reveal integration, and Rust-private storage paths.
+- **Files:** `src-tauri/src/vault.rs`, `src-tauri/src/db/repositories/vault.rs`, `src-tauri/src/db/migrations.rs`, `src-tauri/src/commands.rs`, `src-tauri/src/lib.rs`, `src-tauri/capabilities/default.json`, `src/lib/db/types.ts`, `src/lib/db/tauri.ts`, `src/lib/db/tauri.test.ts`, dependency manifests, ADR-010, database docs, `.ai/*`
+- **Verification:** Frontend check/build pass with 25/25 tests; Rust format, strict Clippy, test, and build pass with 48/48 tests; `git diff --check` pass.
+- **Decisions/deviations:** Open/reveal stay behind ID-only Rust commands; frontend opener authority and serialized storage paths were intentionally excluded.
+- **Follow-up:** `PHASE6-002`
+
 ## 2026-08-10 — `PHASE5-002` — Tasks and Pulse MVP complete
 
 - **Type:** Feature, fix, and test

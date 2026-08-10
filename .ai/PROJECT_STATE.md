@@ -8,8 +8,8 @@
 | Last updated | 2026-08-10 |
 | Updated by | Codex |
 | Repository | `bimberlotDEV/Aether-Desktop` |
-| Branch | `codex/phase5-task-ui` |
-| Baseline commit | `59fec20` (PR #7 merge) |
+| Branch | `codex/phase6-vault-foundation` |
+| Baseline commit | `820952e` (PR #8 merge) |
 | Product maturity | Alpha |
 
 ## Responsibility of this file
@@ -33,8 +33,9 @@
 | `PHASE34-CLOSEOUT` | Close Spaces and Notes MVP gaps | `complete` | All contract acceptance criteria pass with regression coverage. |
 | `PHASE5-001` | Task persistence and IPC foundation | `complete` | ADR-009 acceptance criteria and all quality gates pass. |
 | `PHASE5-002` | Tasks UI and Pulse integration | `complete` | Space and global Task workflows, Pulse attention, tests, and quality gates pass. |
+| `PHASE6-001` | Vault persistence and native filesystem foundation | `self_review` | ADR-010 safety criteria and all quality gates pass; publication is pending. |
 
-No implementation task is active. Phase 5 is complete; the next planned milestone is Phase 6 Vault design and implementation.
+The active task is `PHASE6-001`, approved by Codex self-review and awaiting publication. `PHASE6-002` is next.
 
 ## Completed product milestones
 
@@ -52,7 +53,7 @@ No implementation task is active. Phase 5 is complete; the next planned mileston
 | Milestone | Status | Notes |
 | --- | --- | --- |
 | Phase 5 — Tasks | `complete` | Global and Space Tasks, subtasks, full editing, search/filtering, completion, archive recovery, Pulse attention, persistence, and Activity events are implemented. |
-| Phase 6 — Vault | `placeholder` | Empty-state UI only. |
+| Phase 6 — Vault | `foundation_complete` | Safe linked/managed persistence and native commands pass all gates; UI follows in `PHASE6-002`. |
 | Phase 8 — Memory | `not_started` | No explicit memory domain located. |
 | Phase 9 — Native desktop | `partial` | Icons, Tauri bundle config, and a built executable exist; remaining native features are not verified. |
 | Phase 10 — Release quality | `not_started` | No complete release audit or release pipeline verified. |
@@ -61,9 +62,9 @@ No implementation task is active. Phase 5 is complete; the next planned mileston
 
 | Check | Last result | Date | Notes |
 | --- | --- | --- | --- |
-| `pnpm check` | Pass | 2026-08-10 | Typecheck and lint clean; Vitest 24/24 across nine files. |
+| `pnpm check` | Pass | 2026-08-10 | Typecheck and lint clean; Vitest 25/25 across nine files. |
 | `pnpm build` | Pass | 2026-08-10 | TypeScript and Vite production build pass. |
-| `cargo test` | Pass | 2026-08-10 | 39/39 tests pass. |
+| `cargo test` | Pass | 2026-08-10 | 48/48 tests pass, including Vault ownership and containment. |
 | `cargo build` | Pass | 2026-08-10 | Windows production build compiles with DPAPI. |
 | `cargo fmt --check` | Pass | 2026-08-10 | Repository Rust formatting is clean; `DEBT-005` resolved. |
 | `cargo clippy --all-targets -- -D warnings` | Pass | 2026-08-10 | Library, binary, and test targets are warning-free; `DEBT-006` resolved. |
@@ -96,8 +97,9 @@ Full rationale belongs in `.ai/ARCHITECTURE.md` or a dedicated ADR under `docs/d
 | `ADR-007` | Verified task commits are automatically pushed and published through guarded repository tooling. | Accepted |
 | `ADR-008` | Codex is the sole engineering agent; complex work uses task contracts and evidence-based self-review. | Accepted |
 | `ADR-009` | Tasks use one persistent tree with nullable Space ownership and local-date due semantics. | Accepted |
+| `ADR-010` | Vault distinguishes linked and managed ownership and enforces deletion safety in Rust. | Accepted |
 
-## Next: Codex designs and implements Phase 6 Vault as a bounded `planned_codex` slice.
+## Next: Publish `PHASE6-001`, then implement the Vault UI and Space integration in `PHASE6-002`.
 
 ## Reusable update template
 
