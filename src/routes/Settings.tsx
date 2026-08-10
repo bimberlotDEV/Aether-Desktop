@@ -1,6 +1,7 @@
 import { Settings as SettingsIcon, Sun, Moon, Monitor } from 'lucide-react'
 import { useThemeStore } from '@/stores/themeStore'
 import type { Theme } from '@/stores/themeStore'
+import { AiSettings } from '@/components/ai/AiSettings'
 
 const themeOptions: { value: Theme; label: string; icon: typeof Sun }[] = [
   { value: 'light', label: 'Light', icon: Sun },
@@ -73,6 +74,8 @@ export function Settings() {
             })}
           </div>
         </section>
+
+        <AiSettings />
 
         {/* About */}
         <section>

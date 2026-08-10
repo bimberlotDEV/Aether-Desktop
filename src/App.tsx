@@ -9,6 +9,7 @@ import { Vault } from '@/routes/Vault'
 import { Activity } from '@/routes/Activity'
 import { Settings } from '@/routes/Settings'
 import { Tasks } from '@/routes/Tasks'
+import { AI } from '@/routes/AI'
 
 export function App() {
   return (
@@ -25,6 +26,7 @@ export function App() {
           <Route path="/spaces/:spaceId/*" element={<SpaceDetailLayout />} />
           <Route path="/tasks" element={<Tasks />} />
           <Route path="/vault" element={<Vault />} />
+          <Route path="/ai" element={<AI />} />
           <Route path="/activity" element={<Activity />} />
           <Route path="/settings" element={<Settings />} />
         </Routes>

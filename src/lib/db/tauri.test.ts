@@ -27,6 +27,7 @@ import {
   streamAiMessage,
   addAiContext,
   cancelAiRequest,
+  createTasksBatch,
 } from '@/lib/db/tauri'
 
 describe('Tauri database boundary', () => {
@@ -192,6 +193,8 @@ describe('Tauri database boundary', () => {
         requestId: 'request-1',
         conversationId: 'conversation-1',
         content: 'Summarise this',
+        retryUserMessageId: null,
+        mode: 'ask',
         onEvent: expect.objectContaining({ onmessage: onEvent }),
       }),
     )
@@ -203,5 +206,24 @@ describe('Tauri database boundary', () => {
       entityType: 'note',
       entityId: 'note-1',
     })
+  })
+
+  it('passes AI-approved Tasks through the transactional batch boundary', async () => {
+    const inputs = [
+      {
+        spaceId: 'space-1',
+        parentTaskId: null,
+        title: 'Review proposal',
+        description: 'Confirm the generated implementation plan.',
+        status: 'inbox' as const,
+        priority: 'high' as const,
+        dueDate: '2026-08-12',
+        tags: ['ai', 'review'],
+      },
+    ]
+
+    await createTasksBatch(inputs)
+
+    expect(invoke).toHaveBeenCalledWith('create_tasks_batch', { inputs })
   })
 })

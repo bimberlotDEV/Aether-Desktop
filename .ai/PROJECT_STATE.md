@@ -8,8 +8,8 @@
 | Last updated | 2026-08-10 |
 | Updated by | Codex |
 | Repository | `bimberlotDEV/Aether-Desktop` |
-| Branch | `codex/phase6-vault-foundation` |
-| Baseline commit | `820952e` (PR #8 merge) |
+| Branch | `codex/phase7-ai-experience` |
+| Baseline commit | `7569d3f` (PR #11 merge) |
 | Product maturity | Alpha |
 
 ## Responsibility of this file
@@ -35,9 +35,10 @@
 | `PHASE5-002` | Tasks UI and Pulse integration | `complete` | Space and global Task workflows, Pulse attention, tests, and quality gates pass. |
 | `PHASE6-001` | Vault persistence and native filesystem foundation | `complete` | Merged through PR #9 at `b202c8e`. |
 | `PHASE6-002` | Vault UI and Space integration | `complete` | Merged through PR #10 at `c352e67`. |
-| `PHASE7-001` | AI streaming and context foundation | `self_review` | Current provider, cancellation, persistence, and explicit context gates pass; publication pending. |
+| `PHASE7-001` | AI streaming and context foundation | `complete` | Merged through PR #11 at `7569d3f`. |
+| `PHASE7-002` | Complete AI user experience | `self_review` | Settings, chat, context, response modes, proposals, tests, and all quality gates pass; publication pending. |
 
-The active task is `PHASE7-001`, governed by the self-review contract in `.ai/HANDOFF.md`.
+The active task is `PHASE7-002`, governed by the self-review contract in `.ai/HANDOFF.md`.
 
 ## Completed product milestones
 
@@ -48,7 +49,7 @@ The active task is `PHASE7-001`, governed by the self-review contract in `.ai/HA
 | Phase 2 — Local database | `complete` | SQLite, migrations, repositories, commands, TS wrappers, and tests exist. |
 | Phase 3 — Spaces | `complete` | CRUD, hierarchy, templates, module editing, archive/restore, favourite, duplication, deletion, synchronized views, and accessible reorder flows are implemented. |
 | Phase 4 — Notes | `complete` | Persistence, serialized autosave with teardown flush, current-Space full-content search, pin, archive/restore/delete, move, and duplication are implemented. |
-| Phase 7 — AI integration | `prototype` | DeepSeek provider, conversation persistence, context commands, and credential prototype exist; UI and production hardening do not. |
+| Phase 7 — AI integration | `mvp_complete` | Secure credentials, current cancellable streaming, persisted conversations, explicit Space-isolated context, response modes, and confirmed Task proposals are implemented. |
 
 ## Not started or placeholder milestones
 
@@ -64,7 +65,7 @@ The active task is `PHASE7-001`, governed by the self-review contract in `.ai/HA
 
 | Check | Last result | Date | Notes |
 | --- | --- | --- | --- |
-| `pnpm check` | Pass | 2026-08-10 | Typecheck and lint clean; Vitest 31/31 across ten files. |
+| `pnpm check` | Pass | 2026-08-10 | Typecheck and lint clean; Vitest 36/36 across 13 files. |
 | `pnpm build` | Pass | 2026-08-10 | TypeScript and Vite production build pass. |
 | `cargo test` | Pass | 2026-08-10 | 56/56 tests pass, including AI streaming, cancellation, context isolation, and Vault safety. |
 | `cargo build` | Pass | 2026-08-10 | Windows production build compiles with DPAPI. |
@@ -102,7 +103,7 @@ Full rationale belongs in `.ai/ARCHITECTURE.md` or a dedicated ADR under `docs/d
 | `ADR-010` | Vault distinguishes linked and managed ownership and enforces deletion safety in Rust. | Accepted |
 | `ADR-011` | AI uses cancellable typed streams and explicit Space-isolated context resolved in Rust. | Accepted |
 
-## Next: Publish `PHASE7-001`, then build the complete AI Settings/chat/context/proposal UI in `PHASE7-002`.
+## Next: Publish `PHASE7-002`, then design and implement Phase 8 Memory.
 
 ## Reusable update template
 

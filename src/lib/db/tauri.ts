@@ -19,6 +19,7 @@ import type {
   AiContextItem,
   AiConversation,
   AiMessage,
+  AiMode,
   AiModel,
   AiResolvedContextItem,
   AiStreamEvent,
@@ -257,6 +258,9 @@ export async function duplicateNote(id: string): Promise<Note> {
 export async function createTask(input: TaskInput): Promise<Task> {
   return invoke('create_task', { input })
 }
+export async function createTasksBatch(inputs: TaskInput[]): Promise<Task[]> {
+  return invoke('create_tasks_batch', { inputs })
+}
 export async function getTask(id: string): Promise<Task | null> {
   return invoke('get_task', { id })
 }
@@ -378,6 +382,8 @@ export async function streamAiMessage(
   conversationId: string,
   content: string,
   onEvent: (event: AiStreamEvent) => void,
+  retryUserMessageId?: string,
+  mode: AiMode = 'ask',
 ): Promise<void> {
   const channel = new Channel<AiStreamEvent>()
   channel.onmessage = onEvent
@@ -385,6 +391,8 @@ export async function streamAiMessage(
     requestId,
     conversationId,
     content,
+    retryUserMessageId: retryUserMessageId ?? null,
+    mode,
     onEvent: channel,
   })
 }

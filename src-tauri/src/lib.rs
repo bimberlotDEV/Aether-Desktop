@@ -94,6 +94,7 @@ pub fn run() {
             commands::move_note,
             commands::duplicate_note,
             commands::create_task,
+            commands::create_tasks_batch,
             commands::get_task,
             commands::list_tasks,
             commands::update_task,

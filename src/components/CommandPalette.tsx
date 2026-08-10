@@ -12,6 +12,7 @@ import {
   LayoutDashboard,
   Layers,
   FolderOpen,
+  Sparkles,
   type LucideIcon,
 } from 'lucide-react'
 import { useThemeStore } from '@/stores/themeStore'
@@ -51,6 +52,13 @@ const defaultCommands: Command[] = [
     description: 'View recent activity',
     keywords: ['history', 'timeline'],
     action: () => navigateTo('/activity'),
+  },
+  {
+    id: 'ai',
+    label: 'Open AI',
+    description: 'Start or continue a DeepSeek conversation',
+    keywords: ['chat', 'deepseek', 'assistant'],
+    action: () => navigateTo('/ai'),
   },
   {
     id: 'create-note',
@@ -115,6 +123,7 @@ const iconMap: Record<string, LucideIcon> = {
   Browse: FolderOpen,
   View: Layers,
   Open: Settings,
+  AI: Sparkles,
   Create: Plus,
   Tasks: CheckSquare,
   Switch: Sun,
@@ -124,6 +133,7 @@ const iconMap: Record<string, LucideIcon> = {
 }
 
 function getIcon(label: string): LucideIcon {
+  if (label.includes('AI')) return Sparkles
   for (const [key, icon] of Object.entries(iconMap)) {
     if (label.includes(key)) return icon
   }

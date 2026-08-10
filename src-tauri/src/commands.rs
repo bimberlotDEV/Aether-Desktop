@@ -702,6 +702,45 @@ pub fn create_task(
 }
 
 #[tauri::command]
+pub fn create_tasks_batch(
+    db: State<Database>,
+    inputs: Vec<repositories::tasks::TaskInput>,
+) -> Result<Vec<serde_json::Value>, String> {
+    if inputs.is_empty() || inputs.len() > 20 {
+        return Err("A task proposal must contain 1 to 20 Tasks.".to_string());
+    }
+    with_conn(&db.conn, |conn| {
+        let transaction = conn
+            .unchecked_transaction()
+            .map_err(|error| format!("Task batch transaction error: {}", error))?;
+        let mut values = Vec::with_capacity(inputs.len());
+        for input in &inputs {
+            let task = repositories::tasks::create(&transaction, input)?;
+            repositories::activity::record(
+                &transaction,
+                &repositories::activity::ActivityEvent {
+                    id: Uuid::now_v7().to_string(),
+                    event_type: "task_created_from_ai_proposal".to_string(),
+                    entity_type: Some("task".to_string()),
+                    entity_id: Some(task.id.clone()),
+                    space_id: task.space_id.clone(),
+                    metadata_json: None,
+                    created_at: String::new(),
+                },
+            )?;
+            values.push(
+                serde_json::to_value(task)
+                    .map_err(|error| format!("Task serialization error: {}", error))?,
+            );
+        }
+        transaction
+            .commit()
+            .map_err(|error| format!("Task batch commit error: {}", error))?;
+        Ok(values)
+    })
+}
+
+#[tauri::command]
 pub fn get_task(db: State<Database>, id: String) -> Result<Option<serde_json::Value>, String> {
     with_conn(&db.conn, |conn| {
         repositories::tasks::get_by_id(conn, &id)?
@@ -1228,15 +1267,27 @@ pub async fn ai_stream_message(
     request_id: String,
     conversation_id: String,
     content: String,
+    retry_user_message_id: Option<String>,
+    mode: Option<String>,
     on_event: Channel<AiStreamEvent>,
 ) -> Result<(), String> {
-    let content = content.trim().to_string();
-    if content.is_empty() || content.chars().count() > 32_000 {
+    let mut content = content.trim().to_string();
+    if retry_user_message_id.is_none() && (content.is_empty() || content.chars().count() > 32_000) {
         return Err("Message must contain 1 to 32,000 characters.".to_string());
     }
     let key = credentials::get(&db, credentials::AI_API_KEY)?.ok_or_else(|| {
         "No API key configured. Configure DeepSeek in Settings first.".to_string()
     })?;
+    let mode = mode.unwrap_or_else(|| "ask".to_string());
+    let mode_instruction = match mode.as_str() {
+        "ask" => None,
+        "summarize" => Some("Summarize the attached context or the user's text concisely. Preserve important facts and uncertainties."),
+        "explain" => Some("Explain the topic clearly in plain language. Use the attached context only when relevant."),
+        "plan" => Some("Create a practical ordered plan with clear next actions. Do not claim to execute actions."),
+        "rewrite" => Some("Rewrite the supplied text while preserving its meaning. Return the rewritten text without unnecessary preamble."),
+        "create_tasks" => Some("Propose tasks but do not execute them. Return only valid JSON shaped as {\"tasks\":[{\"title\":\"...\",\"description\":\"...\",\"priority\":\"none|low|medium|high\",\"dueDate\":null,\"tags\":[]}]} with at most 20 tasks."),
+        _ => return Err("Unsupported AI response mode.".to_string()),
+    };
     let conversation = with_conn(&db.conn, |conn| {
         repositories::conversations::get_conversation(conn, &conversation_id)?
             .ok_or_else(|| "Conversation not found.".to_string())
@@ -1244,6 +1295,19 @@ pub async fn ai_stream_message(
     if conversation.archived_at.is_some() {
         return Err("Restore this conversation before sending a message.".to_string());
     }
+    let retry_user = if let Some(message_id) = retry_user_message_id.as_deref() {
+        let message = with_conn(&db.conn, |conn| {
+            repositories::conversations::get_message(conn, message_id)?
+                .ok_or_else(|| "Retry source message not found.".to_string())
+        })?;
+        if message.conversation_id != conversation_id || message.role != "user" {
+            return Err("Retry source must be a user message from this conversation.".to_string());
+        }
+        content.clone_from(&message.content);
+        Some(message)
+    } else {
+        None
+    };
     let mut config = ProviderConfig::default_deepseek(key);
     config.model = conversation.model.clone();
     let provider = provider::create_provider(config).map_err(|error| error.message)?;
@@ -1257,13 +1321,17 @@ pub async fn ai_stream_message(
         let transaction = conn
             .unchecked_transaction()
             .map_err(|error| format!("AI transaction error: {}", error))?;
-        let user_message = repositories::conversations::add_message(
-            &transaction,
-            &conversation_id,
-            "user",
-            &content,
-            "complete",
-        )?;
+        let user_message = if let Some(message) = retry_user.clone() {
+            message
+        } else {
+            repositories::conversations::add_message(
+                &transaction,
+                &conversation_id,
+                "user",
+                &content,
+                "complete",
+            )?
+        };
         let assistant_message = repositories::conversations::add_message(
             &transaction,
             &conversation_id,
@@ -1271,7 +1339,7 @@ pub async fn ai_stream_message(
             "",
             "streaming",
         )?;
-        if conversation.title == "New conversation" {
+        if retry_user.is_none() && conversation.title == "New conversation" {
             let title: String = content.chars().take(60).collect();
             repositories::conversations::update_conversation(
                 &transaction,
@@ -1291,6 +1359,12 @@ pub async fn ai_stream_message(
             chat_messages.push(ChatMessage {
                 role: "system".to_string(),
                 content: system,
+            });
+        }
+        if let Some(instruction) = mode_instruction {
+            chat_messages.push(ChatMessage {
+                role: "system".to_string(),
+                content: instruction.to_string(),
             });
         }
         chat_messages.extend(
@@ -1354,13 +1428,14 @@ pub async fn ai_stream_message(
 
     let terminal = match result {
         Ok(()) => {
+            let metadata = serde_json::json!({ "mode": mode }).to_string();
             let message = with_conn(&db.conn, |conn| {
                 repositories::conversations::finish_message(
                     conn,
                     &assistant_message.id,
                     &final_content,
                     "complete",
-                    None,
+                    Some(&metadata),
                     None,
                 )?
                 .ok_or_else(|| "Assistant message no longer exists.".to_string())
@@ -1370,6 +1445,7 @@ pub async fn ai_stream_message(
             }
         }
         Err(error) if error.code == "cancelled" => {
+            let metadata = serde_json::json!({ "mode": mode }).to_string();
             let message = with_conn(&db.conn, |conn| {
                 repositories::conversations::finish_message(
                     conn,
@@ -1377,7 +1453,7 @@ pub async fn ai_stream_message(
                     &final_content,
                     "cancelled",
                     Some(error.code),
-                    None,
+                    Some(&metadata),
                 )?
                 .ok_or_else(|| "Assistant message no longer exists.".to_string())
             })?;
@@ -1386,6 +1462,7 @@ pub async fn ai_stream_message(
             }
         }
         Err(error) => {
+            let metadata = serde_json::json!({ "mode": mode }).to_string();
             let assistant_message = with_conn(&db.conn, |conn| {
                 repositories::conversations::finish_message(
                     conn,
@@ -1393,7 +1470,7 @@ pub async fn ai_stream_message(
                     &final_content,
                     "error",
                     Some(error.code),
-                    None,
+                    Some(&metadata),
                 )?
                 .ok_or_else(|| "Assistant message no longer exists.".to_string())
             })?;
