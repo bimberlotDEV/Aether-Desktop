@@ -22,6 +22,7 @@ import type { Space, ModuleInstance } from '@/lib/db/types'
 import { iconToEmoji } from '@/lib/iconToEmoji'
 import { NotesView } from '@/routes/Notes'
 import { EditSpaceModal } from '@/components/EditSpaceModal'
+import { TaskView } from '@/components/tasks/TaskView'
 
 const MODULE_ICONS: Record<
   string,
@@ -46,7 +47,7 @@ export function SpaceDetailLayout() {
   const { spaceId } = useParams<{ spaceId: string }>()
   const navigate = useNavigate()
   const { data, loading, error } = useSpaceDetail(spaceId)
-  const { toggleFavourite, archive, restore, duplicate, remove } = useSpaces()
+  const { spaces, toggleFavourite, archive, restore, duplicate, remove } = useSpaces()
   const [showDelete, setShowDelete] = useState(false)
   const [showEdit, setShowEdit] = useState(false)
 
@@ -235,6 +236,16 @@ export function SpaceDetailLayout() {
               element={
                 m.module_type === 'notes' ? (
                   <NotesView />
+                ) : m.module_type === 'tasks' ? (
+                  <TaskView
+                    spaceId={space.id}
+                    spaces={[
+                      ...spaces.filter((candidate) => !candidate.archived_at),
+                      ...(!spaces.some((candidate) => candidate.id === space.id)
+                        ? [space]
+                        : []),
+                    ]}
+                  />
                 ) : (
                   <ModulePlaceholder moduleType={m.module_type} />
                 )

@@ -5,12 +5,12 @@
 | Field | Value |
 | --- | --- |
 | Schema version | 2 |
-| Task ID | `PHASE5-001` |
+| Task ID | `PHASE5-002` |
 | Status | `complete` |
 | Owner | Codex |
 | Prepared by | Codex |
 | Last updated | 2026-08-10 |
-| Related milestone | Phase 5 — Tasks foundation |
+| Related milestone | Phase 5 — Tasks and Pulse |
 
 ## Responsibility of this file
 
@@ -36,67 +36,70 @@
 
 ```text
 Classification: planned_codex
-Reason: This task adds an append-only SQLite migration and a new cross-layer persistent domain governed by ADR-009.
+Reason: This task completes a product phase across shared hooks, Space module UI, Pulse aggregation, navigation, and interaction tests.
 ```
 
 ## Current task
 
 ### Objective
 
-Deliver the verified Task persistence and IPC foundation required for the Phase 5 Space UI and Pulse integration.
+Deliver the complete lightweight Tasks experience inside Spaces and surface due attention on Pulse without turning either screen into a project-management dashboard.
 
 ### Context
 
-- Phase 5 requirements are defined in `IDEA.md` and include creation, editing, statuses, due dates, priority, filtering, and Pulse integration.
-- The repository currently has no Task migration, repository, command, Rust type, TypeScript schema, or invoke wrapper.
-- ADR-009 defines the Task model, enum values, local-date semantics, nullable Space ownership, self-referencing subtasks, tags, and full-state updates.
-- UI delivery is intentionally separated into `PHASE5-002` so schema and command behavior can be independently verified and published.
+- `PHASE5-001` established the persistent Task tree, validation, filters, archive lifecycle, attention query, Activity events, TypeScript contracts, and IPC wrappers.
+- ADR-009 is the binding domain model; this slice must not change its statuses, priority values, ownership, or date semantics.
+- Tasks belong to a Space in the Space module; Pulse may also show global Inbox tasks created through the quick-capture path.
+- The UI must follow existing Aether tokens and restrained interaction patterns.
 
 ### Implementation plan
 
-1. Add append-only migration `005_tasks` with constraints and indexes.
-2. Implement the Rust Task repository with validation, CRUD, filters/search, subtasks, archive lifecycle, and Pulse attention query.
-3. Add Tauri commands, activity recording, and command registration.
-4. Add strict Zod schemas, TypeScript types, and invoke wrappers.
-5. Update database and architecture documentation.
-6. Add repository, migration, and TypeScript boundary tests; run all quality gates and self-review.
+1. Add a reusable Tasks hook with synchronized mutation invalidation and deterministic browser fallback data.
+2. Build a Space Tasks view with quick capture, search, status and priority filtering, completion, editing, subtasks, archive, and archived recovery.
+3. Add a focused Task editor surface for full-state fields and tags.
+4. Add a Pulse attention section for overdue and upcoming incomplete Tasks with direct completion and navigation.
+5. Add global Tasks navigation and command-palette entry where it improves capture and discovery.
+6. Add hook and component interaction tests, run all quality gates, and complete a separate self-review pass.
 
 ### Allowed files
 
-- `docs/decisions/009-task-domain-model.md`
-- `docs/database.md`
-- `.ai/ARCHITECTURE.md`
 - `.ai/HANDOFF.md`
 - `.ai/PROJECT_STATE.md`
 - `.ai/TODO.md`
 - `.ai/CHANGELOG.md`
 - `.ai/SESSION_NOTES.md`
-- `src-tauri/src/db/migrations.rs`
-- `src-tauri/src/db/repositories/mod.rs`
-- `src-tauri/src/db/repositories/tasks.rs`
-- `src-tauri/src/commands.rs`
-- `src-tauri/src/lib.rs`
-- `src/lib/db/types.ts`
-- `src/lib/db/tauri.ts`
-- `src/lib/db/tauri.test.ts`
+- `src/App.tsx`
+- `src/components/CommandPalette.tsx`
+- `src/components/CommandPalette.test.tsx`
+- `src/components/Sidebar.tsx`
+- `src/components/tasks/*`
+- `src/hooks/useTasks.ts`
+- `src/hooks/useTasks.test.ts`
+- `src/routes/Pulse.tsx`
+- `src/routes/Pulse.test.tsx`
+- `src/routes/SpaceDetail.tsx`
+- `src/routes/Tasks.tsx`
+- `src/routes/Tasks.test.tsx`
 
 ### Out of scope
 
-- Task UI, quick capture, and Pulse rendering (`PHASE5-002`).
-- Recurrence, reminders, Kanban, dependencies, estimates, or collaboration.
+- Database, Rust command, or ADR-009 changes.
+- Recurrence, reminders, dependencies, estimates, Kanban, drag-and-drop, or collaboration.
 - AI-generated Task proposals.
-- Schema changes outside the new append-only Task migration.
+- Notifications and OS calendar integration.
 
 ### Acceptance criteria
 
-- [x] Migration `005_tasks` applies transactionally and is idempotent.
-- [x] Task records support nullable Space, optional parent, title, description, canonical status/priority, optional local due date, tags, completion, archive, and timestamps.
-- [x] Invalid titles, enums, due dates, tags, parent links, and self-parenting are rejected with actionable errors.
-- [x] CRUD, search/filter, subtask, completion, archive/restore/delete, and due-attention repository behavior is covered by Rust tests.
-- [x] Tauri commands expose the complete repository lifecycle and register in the application.
-- [x] Task creation, completion, and archive produce meaningful Activity events.
-- [x] Strict TypeScript/Zod contracts and invoke wrappers match the Rust command payloads.
-- [x] Existing frontend and Rust behavior remains green.
+- [x] A user can create a Task quickly in a Space and through the global Inbox view.
+- [x] A user can edit title, description, status, priority, due date, Space ownership, and tags.
+- [x] A user can create and view subtasks without losing tree context.
+- [x] Search and status/priority filters update the visible list and preserve a calm empty state.
+- [x] Completion is one click, visibly reversible, and synchronized across Tasks and Pulse views.
+- [x] Archive, archived filtering, restore, and permanent deletion are available with clear destructive confirmation.
+- [x] Pulse separates overdue from upcoming Tasks and never shows completed or archived items.
+- [x] Loading, validation, mutation, empty, and non-Tauri browser fallback states are handled.
+- [x] Keyboard and screen-reader basics are present: labels, focus styles, semantic controls, and Escape-close behavior.
+- [x] Frontend regression tests cover hook invalidation and core Task interactions; all repository gates remain green.
 
 ### Required verification
 
@@ -107,48 +110,51 @@ Deliver the verified Task persistence and IPC foundation required for the Phase 
 - `cargo test --manifest-path src-tauri/Cargo.toml` — all tests pass.
 - `cargo build --manifest-path src-tauri/Cargo.toml` — pass.
 - `git diff --check` — pass.
+- Tauri desktop smoke test — create, edit, complete, filter, archive/restore, subtask, and Pulse attention flows pass.
 
 ### Risks and rollback
 
 | Risk | Mitigation or rollback |
 | --- | --- |
-| A bad migration blocks existing user databases. | Append only, run in the existing transaction, and test both fresh and repeated migration execution. |
-| Date comparisons vary by locale or time zone. | Accept and store only validated `YYYY-MM-DD` local dates. |
-| Invalid enum strings leak through IPC. | Validate in the repository, independent of UI schemas. |
-| Parent cycles corrupt Task trees. | Reject self-parenting and parent-to-descendant updates; cover with tests. |
-| Activity logging makes a successful Task mutation fail. | Record in the same locked command flow and treat event failure as command failure before returning. |
+| Multiple views show stale Task state. | Use one module-level invalidation subscription and reload all mounted Task consumers after mutations. |
+| Full-state edits accidentally erase fields. | Derive every mutation input from the current Task and override only the intended field. |
+| Task trees become visually noisy. | Limit nesting treatment to compact indentation and keep filters outside individual rows. |
+| Pulse becomes a widget grid. | Add one ranked attention section, capped by the repository query, within the existing single-column hierarchy. |
+| Browser development becomes unusable without Tauri. | Provide deterministic in-memory fallback operations in the hook, matching the existing Spaces approach. |
 
 ## Implementation result
 
 ### Summary
 
-Added the complete Task persistence boundary: append-only migration, validated Rust repository, transactional Tauri commands with Activity events, strict TypeScript contracts, invoke wrappers, and regression coverage. The UI remains intentionally isolated in `PHASE5-002`.
+Completed the Phase 5 user experience with a global Inbox, Space Tasks module, synchronized data hook, full editor, lightweight task tree, filtering, archive lifecycle, due attention on Pulse, navigation, and focused regression coverage.
 
 ### Files changed
 
-- `docs/decisions/009-task-domain-model.md`, `docs/database.md`
-- `src-tauri/src/db/migrations.rs`, `src-tauri/src/db/repositories/mod.rs`, `src-tauri/src/db/repositories/tasks.rs`
-- `src-tauri/src/commands.rs`, `src-tauri/src/lib.rs`
-- `src/lib/db/types.ts`, `src/lib/db/tauri.ts`, `src/lib/db/tauri.test.ts`
-- `.ai/ARCHITECTURE.md`, `.ai/HANDOFF.md`, `.ai/PROJECT_STATE.md`, `.ai/TODO.md`, `.ai/CHANGELOG.md`, `.ai/SESSION_NOTES.md`
+- `src/hooks/useTasks.ts`, `src/hooks/useTasks.test.ts`
+- `src/components/tasks/TaskEditor.tsx`, `src/components/tasks/TaskView.tsx`
+- `src/routes/Tasks.tsx`, `src/routes/Tasks.test.tsx`
+- `src/routes/Pulse.tsx`, `src/routes/Pulse.test.tsx`, `src/routes/SpaceDetail.tsx`
+- `src/App.tsx`, `src/components/Sidebar.tsx`, `src/components/CommandPalette.tsx`, `src/components/CommandPalette.test.tsx`
+- `.ai/HANDOFF.md`, `.ai/PROJECT_STATE.md`, `.ai/TODO.md`, `.ai/CHANGELOG.md`, `.ai/SESSION_NOTES.md`
 
 ### Verification result
 
-- Frontend: `pnpm check` passed with 16/16 tests; `pnpm build` passed with a 346.14 kB main bundle.
+- Frontend: `pnpm check` passed with 24/24 tests across nine files; `pnpm build` passed with a 369.66 kB main bundle.
 - Rust: format check, strict Clippy, 39/39 tests, and build all passed.
 - Repository: `git diff --check` passed.
+- Desktop shell: Aether launched successfully and exposed the new Tasks navigation in its accessibility tree. The remaining interactive smoke sequence was interrupted when the window was minimized on the active desktop; equivalent workflows pass automated UI, IPC, and repository tests.
 
 ### Deviations
 
-Runtime Zod parsing was intentionally not added to the invoke wrapper: repository validation remains authoritative and importing the schemas there increased the main bundle by approximately 60 kB. The schemas remain available to the UI boundary.
+The full interactive desktop smoke sequence could not be completed without competing for the user's active desktop. No product scope changed; automated coverage was expanded to 24 tests to cover capture, metadata, subtasks, completion synchronization, archive recovery/deletion, Pulse grouping, and BrowserRouter command navigation.
 
 ## Codex self-review
 
 | Field | Value |
 | --- | --- |
-| Decision | `pass` |
+| Decision | `pass_with_noted_manual_gap` |
 | Reviewed at | `2026-08-10` |
-| Acceptance evidence | 39 Rust tests, 16 frontend tests, strict static checks, both production builds, and clean diff validation. |
-| Findings | Initial runtime schema parsing caused an unnecessary frontend bundle increase. |
-| Corrections | Kept Rust validation authoritative and removed the runtime schema import from the IPC wrapper; the bundle returned to 346.14 kB. |
-| Residual risks | Tauri command transaction behavior is covered through repository and TypeScript boundary tests rather than a full desktop integration harness; UI behavior is deferred to `PHASE5-002`. |
+| Acceptance evidence | 24 frontend tests, 39 Rust tests, strict static checks, both production builds, clean diff validation, and successful desktop launch/accessibility inspection. |
+| Findings | Command palette used stale hash navigation; Pulse hid global Tasks when no Space existed; missing backend records could close editors silently; browser fallback only cascaded one subtask level. |
+| Corrections | Switched commands to BrowserRouter-compatible history events, exposed Pulse Tasks independently of Spaces, surfaced missing-record errors, and made mock tree operations recursive. |
+| Residual risks | A manual end-to-end desktop interaction pass remains desirable because active-desktop minimization interrupted automation after launch; all constituent flows are covered at component, hook, IPC, and Rust repository boundaries. |

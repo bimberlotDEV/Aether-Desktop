@@ -8,10 +8,19 @@ import {
   Moon,
   Monitor,
   Plus,
+  CheckSquare,
+  LayoutDashboard,
+  Layers,
+  FolderOpen,
   type LucideIcon,
 } from 'lucide-react'
 import { useThemeStore } from '@/stores/themeStore'
 import { useSpaces } from '@/hooks/useSpaces'
+
+function navigateTo(path: string) {
+  window.history.pushState({}, '', path)
+  window.dispatchEvent(new PopStateEvent('popstate'))
+}
 
 // Default commands
 const defaultCommands: Command[] = [
@@ -20,84 +29,98 @@ const defaultCommands: Command[] = [
     label: 'Go to Pulse',
     description: 'Navigate to the home dashboard',
     keywords: ['home', 'dashboard'],
-    action: () => { window.location.hash = '#/' },
+    action: () => navigateTo('/'),
   },
   {
     id: 'spaces',
     label: 'Go to Spaces',
     description: 'View and manage your spaces',
     keywords: ['workspaces'],
-    action: () => { window.location.hash = '#/spaces' },
+    action: () => navigateTo('/spaces'),
   },
   {
     id: 'vault',
     label: 'Go to Vault',
     description: 'Browse files and knowledge',
     keywords: ['files', 'documents'],
-    action: () => { window.location.hash = '#/vault' },
+    action: () => navigateTo('/vault'),
   },
   {
     id: 'activity',
     label: 'Go to Activity',
     description: 'View recent activity',
     keywords: ['history', 'timeline'],
-    action: () => { window.location.hash = '#/activity' },
+    action: () => navigateTo('/activity'),
   },
   {
     id: 'create-note',
     label: 'Create Note',
     description: 'Create a new note',
     keywords: ['note', 'new', 'write'],
-    action: () => { window.location.hash = '#/spaces' },
+    action: () => navigateTo('/spaces'),
+  },
+  {
+    id: 'tasks',
+    label: 'Go to Tasks',
+    description: 'Open your global Task Inbox',
+    keywords: ['tasks', 'todo', 'inbox'],
+    action: () => navigateTo('/tasks'),
   },
   {
     id: 'search-notes',
     label: 'Search Notes',
     description: 'Search through all notes',
     keywords: ['find', 'note', 'text'],
-    action: () => { window.location.hash = '#/spaces' },
+    action: () => navigateTo('/spaces'),
   },
   {
     id: 'settings',
     label: 'Open Settings',
     description: 'Configure Aether preferences',
     keywords: ['preferences', 'config'],
-    action: () => { window.location.hash = '#/settings' },
+    action: () => navigateTo('/settings'),
   },
   {
     id: 'theme-light',
     label: 'Light Theme',
     description: 'Switch to light mode',
     keywords: ['appearance', 'mode'],
-    action: () => { useThemeStore.getState().setTheme('light') },
+    action: () => {
+      useThemeStore.getState().setTheme('light')
+    },
   },
   {
     id: 'theme-dark',
     label: 'Dark Theme',
     description: 'Switch to dark mode',
     keywords: ['appearance', 'mode'],
-    action: () => { useThemeStore.getState().setTheme('dark') },
+    action: () => {
+      useThemeStore.getState().setTheme('dark')
+    },
   },
   {
     id: 'theme-system',
     label: 'System Theme',
     description: 'Follow system preference',
     keywords: ['appearance', 'auto'],
-    action: () => { useThemeStore.getState().setTheme('system') },
+    action: () => {
+      useThemeStore.getState().setTheme('system')
+    },
   },
 ]
 
 const iconMap: Record<string, LucideIcon> = {
   'Go to': Layers,
-  'Navigate': LayoutDashboard,
-  'Browse': FolderOpen,
-  'View': Layers,
-  'Open': Settings,
-  'Create': Plus,
-  'Switch': Sun,
-  'Light': Sun,
-  'Dark': Moon,
-  'System': Monitor,
+  Navigate: LayoutDashboard,
+  Browse: FolderOpen,
+  View: Layers,
+  Open: Settings,
+  Create: Plus,
+  Tasks: CheckSquare,
+  Switch: Sun,
+  Light: Sun,
+  Dark: Moon,
+  System: Monitor,
 }
 
 function getIcon(label: string): LucideIcon {
@@ -106,8 +129,6 @@ function getIcon(label: string): LucideIcon {
   }
   return Search
 }
-
-import { LayoutDashboard, Layers, FolderOpen } from 'lucide-react'
 
 export function CommandPalette() {
   const { isOpen, query, close, setQuery } = useCommandStore()
@@ -118,13 +139,13 @@ export function CommandPalette() {
   const { spaces } = useSpaces()
   const spaceCommands = useMemo(() => {
     return spaces
-      .filter(s => !s.archived_at)
-      .map(s => ({
+      .filter((s) => !s.archived_at)
+      .map((s) => ({
         id: `space-${s.id}`,
         label: s.name,
         description: s.description || `Open ${s.name}`,
         keywords: [s.name, s.template_type || ''],
-        action: () => { window.location.hash = `#/spaces/${s.id}` },
+        action: () => navigateTo(`/spaces/${s.id}`),
       }))
   }, [spaces])
 
@@ -139,7 +160,7 @@ export function CommandPalette() {
       (c) =>
         c.label.toLowerCase().includes(q) ||
         c.description?.toLowerCase().includes(q) ||
-        c.keywords?.some((k) => k.toLowerCase().includes(q))
+        c.keywords?.some((k) => k.toLowerCase().includes(q)),
     )
   }, [query, allCommands])
 
@@ -160,7 +181,7 @@ export function CommandPalette() {
       cmd.action()
       close()
     },
-    [close]
+    [close],
   )
 
   const handleKeyDown = useCallback(
@@ -179,7 +200,7 @@ export function CommandPalette() {
         if (filtered[selectedIndex]) execute(filtered[selectedIndex])
       }
     },
-    [filtered, selectedIndex, execute, close]
+    [filtered, selectedIndex, execute, close],
   )
 
   // Global keyboard shortcut
@@ -247,10 +268,7 @@ export function CommandPalette() {
         </div>
 
         {/* Results */}
-        <div
-          ref={listRef}
-          className="max-h-[320px] overflow-y-auto p-2"
-        >
+        <div ref={listRef} className="max-h-[320px] overflow-y-auto p-2">
           {filtered.length === 0 ? (
             <div
               className="py-8 text-center text-sm"
@@ -268,7 +286,7 @@ export function CommandPalette() {
                     'flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-left transition-colors duration-75',
                     i === selectedIndex
                       ? 'bg-[var(--color-accent-muted)]'
-                      : 'hover:bg-[var(--color-bg-tertiary)]'
+                      : 'hover:bg-[var(--color-bg-tertiary)]',
                   )}
                   onClick={() => execute(cmd)}
                   onMouseEnter={() => setSelectedIndex(i)}

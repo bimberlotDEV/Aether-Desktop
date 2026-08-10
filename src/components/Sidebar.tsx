@@ -5,6 +5,7 @@ import {
   FolderOpen,
   Activity,
   Settings,
+  CheckSquare,
   type LucideIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -18,6 +19,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { to: '/', icon: LayoutDashboard, label: 'Pulse' },
   { to: '/spaces', icon: Layers, label: 'Spaces' },
+  { to: '/tasks', icon: CheckSquare, label: 'Tasks' },
   { to: '/vault', icon: FolderOpen, label: 'Vault' },
   { to: '/activity', icon: Activity, label: 'Activity' },
   { to: '/settings', icon: Settings, label: 'Settings' },
