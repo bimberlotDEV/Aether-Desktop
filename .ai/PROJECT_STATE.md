@@ -8,7 +8,7 @@
 | Last updated | 2026-07-31 |
 | Updated by | Codex |
 | Repository | `bimberlotDEV/Aether-Desktop` |
-| Branch | `agent/env-001-rust-verification` |
+| Branch | `agent/tech-001-credential-hardening` |
 | Baseline commit | `312308a` (`ai-backend`) |
 | Product maturity | Alpha |
 
@@ -27,6 +27,7 @@
 | `M-DOC-VERSIONING` | Version and metadata reconciliation | `complete` | Hermes accepted `DOC-001`. |
 | `M-AUTO-PUBLISH` | Automatic GitHub task publication | `complete` | Draft PR #1 merged into `master`. |
 | `M-RUST-VERIFY` | Restore local Rust verification | `complete` | Rust MSVC builds the test binaries and runs formatting, lint, and tests locally. |
+| `M-CRED-HARDEN` | Harden AI credential storage and fix deadlock | `ready_for_review` | Codex implemented ADR-006; Hermes reviews TECH-001. |
 
 No product feature is active while the collaboration foundation is fresh.
 
@@ -57,7 +58,8 @@ No product feature is active while the collaboration foundation is fresh.
 | --- | --- | --- | --- |
 | `pnpm check` | Pass | 2026-07-31 | typecheck clean, lint 0 warnings 0 errors (DEBT-002 resolved), test 7/7. |
 | `cargo test --no-run` | Pass | 2026-07-31 | Both Windows test binaries build with Rust 1.97.1 MSVC. |
-| `cargo test` | Partial: 30/33 verified pass | 2026-07-31 | 29 non-credential tests and `test_missing_key` pass; `test_store_and_get` deadlocks after 30 seconds, and the two remaining credential mutation tests share that path (`TECH-001`). |
+| `cargo test` | Pass | 2026-07-31 | 33/33 tests pass; all four credential tests complete in 0.01 seconds. |
+| `cargo build` | Pass | 2026-07-31 | Production build compiles with Windows DPAPI. |
 | `cargo fmt --check` | Fail | 2026-07-31 | Pre-existing formatting differences tracked as `DEBT-005`. |
 | `cargo clippy --all-targets -- -D warnings` | Fail | 2026-07-31 | Tooling works; existing 11 library/12 test-build findings tracked as `DEBT-006`. |
 
@@ -71,8 +73,8 @@ None. `BLOCK-001` was resolved by installing Rust 1.97.1 with the stable MSVC to
 
 | ID | Severity | Summary | Tracking task |
 | --- | --- | --- | --- |
-| `RISK-001` | High | AI credential mutation operations acquire the same non-reentrant database mutex recursively; `test_store_and_get` reproducibly exceeded 30 seconds. | `TECH-001` |
-| `RISK-002` | High | The credential encryption key is derived from the database path and is not suitable as production secret storage. | `TECH-001` |
+| `RISK-001` | ~~High~~ Resolved, pending review | Credential crypto no longer acquires the database mutex; 33/33 tests pass. | `TECH-001` |
+| `RISK-002` | ~~High~~ Resolved, pending review | Path-derived encryption was replaced with current-user-bound Windows DPAPI. | `TECH-001` |
 | `RISK-003` | ~~High~~ Resolved | README, package metadata, Tauri metadata, and agent phase guidance disagree on version/maturity. | `DOC-001` — reconciled all metadata to 0.3.0-alpha. |
 
 ## Decision index

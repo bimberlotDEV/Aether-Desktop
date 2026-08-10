@@ -6,37 +6,45 @@
 | --- | --- |
 | Schema version | 1 |
 | Session date | 2026-07-31 |
-| Active task | `ENV-001` |
+| Active task | `TECH-001` |
 | Agent | Codex |
-| State | `complete` |
+| Route | `hermes_codex` |
+| State | `ready_for_review` |
 
 ## Session objective
 
-Restore and verify the local Rust MSVC validation capability without changing application code.
+Implement ADR-006: eliminate the recursive credential mutex deadlock and replace path-derived encryption with Windows DPAPI.
 
 ## Work completed
 
-- Located Rust under `C:\Users\rawan\.cargo\bin`; the open Codex process had a stale inherited `PATH`.
-- Verified stable `x86_64-pc-windows-msvc` as the default toolchain: `rustc 1.97.1`, `cargo 1.97.1`.
-- Verified Visual Studio 2022 Community with the C++ build tools is installed.
-- Built both Rust test binaries successfully and enumerated all 33 tests.
-- Verified 29 non-credential tests plus `test_missing_key` pass.
-- Reproduced the credential mutation deadlock: `test_store_and_get` exceeded 30 seconds.
-- Recorded pre-existing Rust formatting debt (`DEBT-005`) and strict Clippy debt (`DEBT-006`).
-- Marked `ENV-001` done and removed the environment blocker; `TECH-001` is now unblocked for Hermes design.
+- Added `windows-sys 0.59` with the Windows Foundation and Security Cryptography features.
+- Added `SecretCrypto`, production `DpapiCrypto`, and test-only `TestCrypto` implementations.
+- Wrapped `CryptProtectData`, `CryptUnprotectData`, and DPAPI buffer release behind safe `Result`-returning methods.
+- Injected `Box<dyn SecretCrypto>` into `Database`; production startup supplies `DpapiCrypto`.
+- Moved encryption before the SQLite lock and decryption after releasing it.
+- Removed `derive_key()` and every database-path/SHA-256 key derivation path.
+- Updated the generated Cargo lockfile for the approved direct dependency.
 
 ## Verification
 
 | Check | Result |
 | --- | --- |
-| `rustup show active-toolchain` | Pass — `stable-x86_64-pc-windows-msvc` (default) |
-| `cargo test --no-run` | Pass — both test binaries built |
-| `cargo test -- --skip ai::credentials::tests` | Pass — 29/29 |
-| `cargo test ... test_missing_key` | Pass — 1/1 |
-| `cargo test ... test_store_and_get` | Timeout after 30 seconds — confirmed `TECH-001` deadlock |
-| `cargo fmt --check` | Fail — pre-existing `DEBT-005` |
-| `cargo clippy --all-targets -- -D warnings` | Fail — pre-existing 11 library/12 test-build findings (`DEBT-006`) |
+| Four credential tests | Pass — 4/4 in 0.01 seconds; no deadlock |
+| `cargo test --manifest-path src-tauri/Cargo.toml` | Pass — 33/33 |
+| `cargo build --manifest-path src-tauri/Cargo.toml` | Pass — production DPAPI build |
+| Frontend typecheck | Pass |
+| Frontend lint | Pass — 0 warnings/errors |
+| Vitest | Pass — 7/7, files run sequentially after Windows pool startup timeout |
+| Changed-file `rustfmt --check` | Pass |
+| Strict Clippy | No changed-module findings; pre-existing `DEBT-006` findings remain outside scope |
+| Repository `cargo fmt --check` | Pre-existing `DEBT-005` differences remain outside scope |
+| `git diff --check` | Pass |
+
+## Deviations
+
+- `src-tauri/Cargo.lock` was not explicitly listed in the handoff but is mandatory generated output for the approved `Cargo.toml` dependency addition.
+- Vitest's pooled workers twice exceeded the Windows startup timeout; both test files passed when run sequentially with one worker.
 
 ## Exact resume point
 
-Hermes reviews the now-unblocked P0 `TECH-001`, chooses an approved Windows secret-storage/key-management design, and prepares a bounded `hermes_codex` handoff that fixes both the recursive mutex deadlock and weak database-path-derived key.
+Hermes reviews TECH-001 on draft PR #3 against all ten acceptance criteria. If accepted, Hermes marks the handoff and milestone complete and merges PR #3.

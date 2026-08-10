@@ -30,7 +30,7 @@
 | Priority | ID | Work item | Type | Status | Dependencies | Acceptance summary |
 | --- | --- | --- | --- | --- | --- | --- |
 | P0 | `AIWF-001` | Establish Hermes/Codex collaboration system | Process | `done` | None | Hermes accepted the complete workflow. |
-| P0 | `TECH-001` | Audit and harden AI credential storage and locking | Security | `needs_design` | `ENV-001` done | No deadlock; secrets use an approved OS-backed or cryptographically sound design. |
+| P0 | `TECH-001` | Audit and harden AI credential storage and locking | Security | `active` | `ENV-001` done | Implemented by Codex; awaiting Hermes review with 33/33 Rust tests passing. |
 | P1 | `ENV-001` | Restore Rust verification capability | Tooling | `done` | Rust MSVC installation | Rust tests, formatting checks, and Clippy run locally; code findings are tracked separately. |
 | P1 | `DOC-001` | Reconcile version and milestone documentation | Documentation | `done` | `AIWF-001` accepted | README, app metadata, and project state agree. |
 | P1 | `PHASE5-EPIC` | Design and implement Tasks | Product | `needs_design` | Hermes decomposition | Phase 5 requirements are split into bounded vertical slices. |

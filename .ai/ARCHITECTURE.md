@@ -92,7 +92,7 @@ SQLite / native capabilities / external providers
 | `ADR-003` | Use React 19, TypeScript, Vite, Tailwind, and Zustand. | Accepted | `AGENTS.md`, `docs/architecture.md` |
 | `ADR-004` | Use hybrid routing: Codex handles small low-risk tasks directly; Hermes plans and reviews complex or risky tasks. | Accepted | `WORKFLOW.md` |
 | `ADR-005` | Use `.ai/` as the canonical agent state layer. | Accepted | `WORKFLOW.md` |
-| `ADR-006` | Production credential storage mechanism. | Proposed | Must be decided before `TECH-001` becomes ready. |
+| `ADR-006` | Use Windows DPAPI (`CryptProtectData`/`CryptUnprotectData`) bound to the current user for production credential encryption; provide a parallel test-only ring-based crypto for in-memory tests. | Accepted | `docs/decisions/006-dpapi-credential-storage.md` |
 | `ADR-007` | Publish verified task commits automatically through a versioned Git hook and guarded publication script. | Accepted | `WORKFLOW.md` |
 
 ## Architecture change protocol
