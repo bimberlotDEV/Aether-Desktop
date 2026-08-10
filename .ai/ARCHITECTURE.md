@@ -97,6 +97,7 @@ SQLite / native capabilities / external providers
 | `ADR-008` | Use Codex as the sole engineering agent with planned-task contracts and evidence-based self-review. | Accepted | `docs/decisions/008-codex-only-workflow.md` |
 | `ADR-009` | Use a self-referencing Task table, local calendar due dates, JSON tags, and full-state IPC updates. | Accepted | `docs/decisions/009-task-domain-model.md` |
 | `ADR-010` | Enforce Vault linked/managed ownership and safe deletion in trusted Rust code. | Accepted | `docs/decisions/010-vault-file-ownership.md` |
+| `ADR-011` | Use cancellable typed AI streams and explicit Space-isolated context resolved in Rust. | Accepted | `docs/decisions/011-ai-streaming-and-context.md` |
 
 ## Architecture change protocol
 

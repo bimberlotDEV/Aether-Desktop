@@ -26,6 +26,17 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-08-10 — `PHASE7-001` — Cancellable AI streaming foundation
+
+- **Type:** Security, feature, refactor, and test
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review
+- **Summary:** Replaced retired DeepSeek aliases and blocking chat with current V4 models, async Rustls SSE streaming, typed Tauri channels, network-racing cancellation, persistent terminal messages, classified errors, and explicit bounded Space-isolated context.
+- **Files:** `src-tauri/src/ai/*`, `src-tauri/src/commands.rs`, `src-tauri/src/lib.rs`, AI migration/repository, Rust dependencies, `src/lib/db/types.ts`, `src/lib/db/tauri.ts`, `src/lib/db/tauri.test.ts`, ADR-011, `.ai/*`
+- **Verification:** Frontend check/build pass with 31/31 tests; Rust format, strict Clippy, test, and build pass with 56/56 tests; `git diff --check` pass.
+- **Decisions/deviations:** `deepseek-v4-flash` is the default; Vault context is metadata-only; raw provider bodies and credentials never cross IPC.
+- **Follow-up:** `PHASE7-002`
+
 ## 2026-08-10 — `PHASE6-002` — Vault MVP complete
 
 - **Type:** Feature, accessibility, and test

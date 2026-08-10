@@ -242,14 +242,54 @@ export const AiContextItemSchema = z.object({
 })
 export type AiContextItem = z.infer<typeof AiContextItemSchema>
 
+export const AiModelSchema = z.object({
+  id: z.enum(['deepseek-v4-flash', 'deepseek-v4-pro']),
+  provider: z.literal('deepseek'),
+  supportsStreaming: z.boolean(),
+  supportsThinking: z.boolean(),
+})
+export type AiModel = z.infer<typeof AiModelSchema>
+
+export const AiResolvedContextItemSchema = z.object({
+  attachmentId: z.string(),
+  entityType: z.enum(['note', 'task', 'vault']),
+  entityId: z.string(),
+  title: z.string(),
+  detail: z.string(),
+})
+export type AiResolvedContextItem = z.infer<typeof AiResolvedContextItemSchema>
+
 export const KeyStatusSchema = z.object({
   configured: z.boolean(),
   status: z.enum(['configured', 'missing', 'unavailable']),
 })
 export type KeyStatus = z.infer<typeof KeyStatusSchema>
 
-export const AiChatResponseSchema = z.object({
-  content: z.string(),
-  usage: z.any().nullable(),
-})
-export type AiChatResponse = z.infer<typeof AiChatResponseSchema>
+export const AiStreamEventSchema = z.discriminatedUnion('event', [
+  z.object({
+    event: z.literal('started'),
+    data: z.object({
+      requestId: z.string(),
+      userMessage: AiMessageSchema,
+      assistantMessage: AiMessageSchema,
+    }),
+  }),
+  z.object({ event: z.literal('delta'), data: z.object({ content: z.string() }) }),
+  z.object({
+    event: z.literal('complete'),
+    data: z.object({ message: AiMessageSchema }),
+  }),
+  z.object({
+    event: z.literal('cancelled'),
+    data: z.object({ message: AiMessageSchema }),
+  }),
+  z.object({
+    event: z.literal('failed'),
+    data: z.object({
+      code: z.string(),
+      message: z.string(),
+      assistantMessage: AiMessageSchema,
+    }),
+  }),
+])
+export type AiStreamEvent = z.infer<typeof AiStreamEventSchema>

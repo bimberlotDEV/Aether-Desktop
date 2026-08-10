@@ -1,4 +1,4 @@
-import { invoke } from '@tauri-apps/api/core'
+import { Channel, invoke } from '@tauri-apps/api/core'
 import type {
   AppSetting,
   UserProfile,
@@ -16,6 +16,13 @@ import type {
   VaultImportInput,
   VaultItem,
   VaultUpdateInput,
+  AiContextItem,
+  AiConversation,
+  AiMessage,
+  AiModel,
+  AiResolvedContextItem,
+  AiStreamEvent,
+  KeyStatus,
 } from './types'
 
 // ─── Settings ────────────────────────────────────────────
@@ -306,6 +313,104 @@ export async function openVaultItem(id: string): Promise<void> {
 }
 export async function revealVaultItem(id: string): Promise<void> {
   return invoke('reveal_vault_item', { id })
+}
+
+// ─── AI ─────────────────────────────────────────────────
+export async function getAiKeyStatus(): Promise<KeyStatus> {
+  return invoke('ai_get_key_status')
+}
+export async function setAiApiKey(apiKey: string): Promise<void> {
+  return invoke('ai_set_api_key', { apiKey })
+}
+export async function removeAiApiKey(): Promise<boolean> {
+  return invoke('ai_remove_api_key')
+}
+export async function testAiConnection(): Promise<string> {
+  return invoke('ai_test_connection')
+}
+export async function listAiModels(): Promise<AiModel[]> {
+  return invoke('ai_list_models')
+}
+export async function createAiConversation(params: {
+  spaceId?: string
+  title?: string
+  model?: string
+}): Promise<AiConversation> {
+  return invoke('ai_create_conversation', {
+    spaceId: params.spaceId ?? null,
+    title: params.title ?? null,
+    model: params.model ?? null,
+  })
+}
+export async function getAiConversation(id: string): Promise<AiConversation | null> {
+  return invoke('ai_get_conversation', { id })
+}
+export async function listAiConversations(
+  spaceId?: string,
+  includeArchived = false,
+): Promise<AiConversation[]> {
+  return invoke('ai_list_conversations', {
+    spaceId: spaceId ?? null,
+    includeArchived,
+  })
+}
+export async function updateAiConversation(
+  id: string,
+  params: { title?: string; archived?: boolean },
+): Promise<AiConversation | null> {
+  return invoke('ai_update_conversation', {
+    id,
+    title: params.title ?? null,
+    archived: params.archived ?? null,
+  })
+}
+export async function deleteAiConversation(id: string): Promise<boolean> {
+  return invoke('ai_delete_conversation', { id })
+}
+export async function listAiMessages(
+  conversationId: string,
+  limit?: number,
+): Promise<AiMessage[]> {
+  return invoke('ai_list_messages', { conversationId, limit: limit ?? null })
+}
+export async function streamAiMessage(
+  requestId: string,
+  conversationId: string,
+  content: string,
+  onEvent: (event: AiStreamEvent) => void,
+): Promise<void> {
+  const channel = new Channel<AiStreamEvent>()
+  channel.onmessage = onEvent
+  return invoke('ai_stream_message', {
+    requestId,
+    conversationId,
+    content,
+    onEvent: channel,
+  })
+}
+export async function cancelAiRequest(requestId: string): Promise<boolean> {
+  return invoke('ai_cancel_request', { requestId })
+}
+export async function addAiContext(
+  conversationId: string,
+  entityType: 'note' | 'task' | 'vault',
+  entityId: string,
+): Promise<AiContextItem> {
+  return invoke('ai_add_context', { conversationId, entityType, entityId })
+}
+export async function listAiContext(conversationId: string): Promise<AiContextItem[]> {
+  return invoke('ai_list_context', { conversationId })
+}
+export async function resolveAiContext(
+  conversationId: string,
+): Promise<AiResolvedContextItem[]> {
+  return invoke('ai_resolve_context', { conversationId })
+}
+export async function removeAiContext(id: string): Promise<boolean> {
+  return invoke('ai_remove_context', { id })
+}
+export async function clearAiContext(conversationId: string): Promise<number> {
+  return invoke('ai_clear_context', { conversationId })
 }
 
 // ─── Activity ────────────────────────────────────────────

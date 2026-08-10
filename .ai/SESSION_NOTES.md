@@ -6,14 +6,14 @@
 | --- | --- |
 | Schema version | 2 |
 | Session date | 2026-08-10 |
-| Active task | `PHASE6-002` |
+| Active task | `PHASE7-001` |
 | Agent | Codex |
 | Route | `planned_codex` |
 | State | `self_review_complete` |
 
 ## Session objective
 
-Build the global and Space-scoped Vault interface on the merged safe storage foundation.
+Replace the AI prototype with a secure, current, cancellable streaming and explicit-context foundation.
 
 ## Work completed
 
@@ -25,13 +25,15 @@ Build the global and Space-scoped Vault interface on the merged safe storage fou
 - Self-review removed unnecessary frontend opener authority, kept storage paths Rust-only, and hardened controlled directories against junction escape.
 - Implemented and verified the global and Space-scoped Vault interface with explicit ownership and deletion consequences.
 - Self-review improved accessible action naming and ownership visibility.
+- Replaced the retired blocking AI prototype with current DeepSeek V4 async streaming, cancellation, terminal persistence, and explicit Space-isolated context.
+- Corrected SSE UTF-8 framing, latest-history selection, context structure injection, model validation, and API-key input validation during self-review.
 
 ## Verification
 
-- Frontend: `pnpm check` pass (30/30 tests); `pnpm build` pass.
-- Rust: format pass; strict Clippy pass; 48/48 tests pass; build pass.
+- Frontend: `pnpm check` pass (31/31 tests); `pnpm build` pass.
+- Rust: format pass; strict Clippy pass; 56/56 tests pass; build pass.
 - Repository: `git diff --check` pass.
 
 ## Exact resume point
 
-Publish and merge `PHASE6-002`, then prepare the Phase 7 AI completion contract.
+Run the final PHASE7-001 matrix, publish/merge it, then begin the AI interface slice.

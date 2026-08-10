@@ -49,6 +49,16 @@ pub fn create_conversation(
     provider: &str,
     model: &str,
 ) -> Result<AiConversation, String> {
+    let title = title.trim();
+    if title.is_empty() || title.chars().count() > 200 {
+        return Err("Conversation title must contain 1 to 200 characters.".to_string());
+    }
+    if provider != "deepseek" {
+        return Err("Unsupported AI provider.".to_string());
+    }
+    if !["deepseek-v4-flash", "deepseek-v4-pro"].contains(&model) {
+        return Err("Unsupported DeepSeek model.".to_string());
+    }
     let id = Uuid::now_v7().to_string();
     let now = chrono::Utc::now().to_rfc3339();
 
@@ -161,6 +171,10 @@ pub fn update_conversation(
     let now = chrono::Utc::now().to_rfc3339();
 
     if let Some(title) = title {
+        let title = title.trim();
+        if title.is_empty() || title.chars().count() > 200 {
+            return Err("Conversation title must contain 1 to 200 characters.".to_string());
+        }
         conn.execute(
             "UPDATE ai_conversations SET title = ?1, updated_at = ?2 WHERE id = ?3",
             params![title, now, id],
@@ -210,6 +224,12 @@ pub fn add_message(
     content: &str,
     status: &str,
 ) -> Result<AiMessage, String> {
+    if !["user", "assistant", "system"].contains(&role) {
+        return Err("Invalid AI message role.".to_string());
+    }
+    if !["pending", "streaming", "complete", "error", "cancelled"].contains(&status) {
+        return Err("Invalid AI message status.".to_string());
+    }
     let id = Uuid::now_v7().to_string();
     let now = chrono::Utc::now().to_rfc3339();
 
@@ -266,31 +286,22 @@ pub fn list_messages(
     conversation_id: &str,
     limit: Option<i64>,
 ) -> Result<Vec<AiMessage>, String> {
-    let sql = if let Some(lim) = limit {
-        format!(
-            "SELECT id, conversation_id, role, content, status, provider_message_id,
-                    error_code, metadata_json, created_at, updated_at
-             FROM ai_messages
-             WHERE conversation_id = ?1
-             ORDER BY created_at ASC
-             LIMIT {}",
-            lim
-        )
-    } else {
-        "SELECT id, conversation_id, role, content, status, provider_message_id,
-                error_code, metadata_json, created_at, updated_at
-         FROM ai_messages
-         WHERE conversation_id = ?1
-         ORDER BY created_at ASC"
-            .to_string()
-    };
+    let sql = "SELECT id, conversation_id, role, content, status, provider_message_id,
+                      error_code, metadata_json, created_at, updated_at
+               FROM (
+                 SELECT id, conversation_id, role, content, status, provider_message_id,
+                        error_code, metadata_json, created_at, updated_at
+                 FROM ai_messages WHERE conversation_id = ?1
+                 ORDER BY created_at DESC LIMIT ?2
+               ) ORDER BY created_at ASC";
+    let limit = limit.unwrap_or(200).clamp(1, 500);
 
     let mut stmt = conn
-        .prepare(&sql)
+        .prepare(sql)
         .map_err(|e| format!("Query error: {}", e))?;
 
     let rows = stmt
-        .query_map(params![conversation_id], |row| {
+        .query_map(params![conversation_id, limit], |row| {
             Ok(AiMessage {
                 id: row.get(0)?,
                 conversation_id: row.get(1)?,
@@ -310,21 +321,24 @@ pub fn list_messages(
         .map_err(|e| format!("Row error: {}", e))
 }
 
-#[allow(dead_code)] // Reserved for streamed message updates in the Phase 7 AI UI.
-pub fn update_message_content(
+pub fn finish_message(
     conn: &Connection,
     id: &str,
     content: &str,
     status: &str,
+    error_code: Option<&str>,
+    metadata_json: Option<&str>,
 ) -> Result<Option<AiMessage>, String> {
+    if !["complete", "error", "cancelled"].contains(&status) {
+        return Err("Invalid terminal AI message status.".to_string());
+    }
     let now = chrono::Utc::now().to_rfc3339();
-
     conn.execute(
-        "UPDATE ai_messages SET content = ?1, status = ?2, updated_at = ?3 WHERE id = ?4",
-        params![content, status, now, id],
+        "UPDATE ai_messages SET content = ?1, status = ?2, error_code = ?3,
+         metadata_json = ?4, updated_at = ?5 WHERE id = ?6",
+        params![content, status, error_code, metadata_json, now, id],
     )
-    .map_err(|e| format!("Update message error: {}", e))?;
-
+    .map_err(|e| format!("Finish message error: {}", e))?;
     get_message(conn, id)
 }
 
@@ -345,6 +359,12 @@ pub fn add_context_item(
     entity_id: &str,
     context_mode: &str,
 ) -> Result<AiContextItem, String> {
+    if let Some(existing) = list_context_items(conn, conversation_id)?
+        .into_iter()
+        .find(|item| item.entity_type == entity_type && item.entity_id == entity_id)
+    {
+        return Ok(existing);
+    }
     let id = Uuid::now_v7().to_string();
     let now = chrono::Utc::now().to_rfc3339();
 
@@ -456,7 +476,7 @@ mod tests {
             Some("space1"),
             "Test Chat",
             "deepseek",
-            "deepseek-chat",
+            "deepseek-v4-flash",
         )
         .unwrap();
         assert_eq!(conv.title, "Test Chat");
@@ -464,18 +484,20 @@ mod tests {
 
         let fetched = get_conversation(&conn, &conv.id).unwrap().unwrap();
         assert_eq!(fetched.id, conv.id);
+        assert!(create_conversation(&conn, None, " ", "deepseek", "deepseek-v4-flash").is_err());
+        assert!(create_conversation(&conn, None, "Chat", "deepseek", "deepseek-chat").is_err());
     }
 
     #[test]
     fn test_list_conversations() {
         let conn = setup_db();
-        create_conversation(&conn, None, "Global Chat", "deepseek", "deepseek-chat").unwrap();
+        create_conversation(&conn, None, "Global Chat", "deepseek", "deepseek-v4-flash").unwrap();
         create_conversation(
             &conn,
             Some("space1"),
             "Space Chat",
             "deepseek",
-            "deepseek-chat",
+            "deepseek-v4-flash",
         )
         .unwrap();
 
@@ -489,7 +511,8 @@ mod tests {
     #[test]
     fn test_messages() {
         let conn = setup_db();
-        let conv = create_conversation(&conn, None, "Chat", "deepseek", "deepseek-chat").unwrap();
+        let conv =
+            create_conversation(&conn, None, "Chat", "deepseek", "deepseek-v4-flash").unwrap();
 
         let msg1 = add_message(&conn, &conv.id, "user", "Hello", "complete").unwrap();
         assert_eq!(msg1.content, "Hello");
@@ -499,16 +522,35 @@ mod tests {
         let messages = list_messages(&conn, &conv.id, None).unwrap();
         assert_eq!(messages.len(), 2);
 
-        let updated = update_message_content(&conn, &msg1.id, "Hello world", "complete")
+        let updated = finish_message(&conn, &msg1.id, "Hello world", "complete", None, None)
             .unwrap()
             .unwrap();
         assert_eq!(updated.content, "Hello world");
+
+        add_message(&conn, &conv.id, "user", "Last", "complete").unwrap();
+        let latest = list_messages(&conn, &conv.id, Some(2)).unwrap();
+        assert_eq!(latest.len(), 2);
+        assert_eq!(latest[1].content, "Last");
+
+        let failed = finish_message(
+            &conn,
+            &latest[1].id,
+            "partial",
+            "error",
+            Some("network"),
+            None,
+        )
+        .unwrap()
+        .unwrap();
+        assert_eq!(failed.status, "error");
+        assert_eq!(failed.error_code.as_deref(), Some("network"));
     }
 
     #[test]
     fn test_archive() {
         let conn = setup_db();
-        let conv = create_conversation(&conn, None, "Chat", "deepseek", "deepseek-chat").unwrap();
+        let conv =
+            create_conversation(&conn, None, "Chat", "deepseek", "deepseek-v4-flash").unwrap();
 
         update_conversation(&conn, &conv.id, None, Some(true)).unwrap();
         let archived = get_conversation(&conn, &conv.id).unwrap().unwrap();
@@ -521,9 +563,12 @@ mod tests {
     #[test]
     fn test_context_items() {
         let conn = setup_db();
-        let conv = create_conversation(&conn, None, "Chat", "deepseek", "deepseek-chat").unwrap();
+        let conv =
+            create_conversation(&conn, None, "Chat", "deepseek", "deepseek-v4-flash").unwrap();
 
-        add_context_item(&conn, &conv.id, "note", "note1", "attached").unwrap();
+        let first = add_context_item(&conn, &conv.id, "note", "note1", "attached").unwrap();
+        let duplicate = add_context_item(&conn, &conv.id, "note", "note1", "attached").unwrap();
+        assert_eq!(first.id, duplicate.id);
         add_context_item(&conn, &conv.id, "task", "task1", "attached").unwrap();
 
         let items = list_context_items(&conn, &conv.id).unwrap();
@@ -541,7 +586,8 @@ mod tests {
     #[test]
     fn test_delete_conversation_cascades() {
         let conn = setup_db();
-        let conv = create_conversation(&conn, None, "Chat", "deepseek", "deepseek-chat").unwrap();
+        let conv =
+            create_conversation(&conn, None, "Chat", "deepseek", "deepseek-v4-flash").unwrap();
         add_message(&conn, &conv.id, "user", "msg", "complete").unwrap();
         add_context_item(&conn, &conv.id, "note", "note1", "attached").unwrap();
 

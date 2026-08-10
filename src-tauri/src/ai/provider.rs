@@ -1,9 +1,9 @@
+use async_trait::async_trait;
+use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
-use std::io::Read;
+use tokio_util::sync::CancellationToken;
 
-// Provider-neutral types
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ChatMessage {
     pub role: String,
     pub content: String,
@@ -31,46 +31,26 @@ pub struct ThinkingConfig {
     pub thinking_type: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ChatCompletionResponse {
-    pub id: Option<String>,
-    pub model: Option<String>,
-    pub choices: Vec<Choice>,
-    pub usage: Option<Usage>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Choice {
-    pub index: u32,
-    pub message: Option<ChoiceMessage>,
-    pub delta: Option<ChoiceDelta>,
-    #[serde(rename = "finish_reason")]
-    pub finish_reason: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ChoiceMessage {
-    pub role: String,
-    pub content: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ChoiceDelta {
+#[derive(Debug, Clone, Deserialize)]
+struct ChatCompletionResponse {
     #[serde(default)]
-    pub content: Option<String>,
+    choices: Vec<Choice>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+struct Choice {
     #[serde(default)]
-    pub role: Option<String>,
+    delta: Option<ChoiceDelta>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Usage {
-    pub prompt_tokens: Option<u32>,
-    pub completion_tokens: Option<u32>,
-    pub total_tokens: Option<u32>,
+#[derive(Debug, Clone, Deserialize)]
+struct ChoiceDelta {
+    #[serde(default)]
+    content: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[allow(dead_code)] // Constructed through the Phase 7 model-selection API.
+#[derive(Debug, Clone, Serialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
 pub struct ModelInfo {
     pub id: String,
     pub provider: String,
@@ -78,35 +58,30 @@ pub struct ModelInfo {
     pub supports_thinking: bool,
 }
 
-// Provider trait
-
-#[allow(dead_code)] // Phase 7 exposes the remaining provider capabilities to the UI.
-pub trait AiProvider: Send + Sync {
-    fn name(&self) -> &str;
-    fn chat_completion(
-        &self,
-        request: &ChatCompletionRequest,
-    ) -> Result<ChatCompletionResponse, String>;
-    fn chat_completion_stream(
-        &self,
-        request: &ChatCompletionRequest,
-    ) -> Result<Box<dyn Iterator<Item = Result<String, String>> + '_>, String>;
-    fn test_connection(&self) -> Result<(), String>;
-    fn available_models(&self) -> Vec<ModelInfo>;
+#[derive(Debug, Clone, PartialEq)]
+pub struct ProviderError {
+    pub code: &'static str,
+    pub message: String,
 }
 
-// Provider configuration
+impl ProviderError {
+    fn new(code: &'static str, message: impl Into<String>) -> Self {
+        Self {
+            code,
+            message: message.into(),
+        }
+    }
+}
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct ProviderConfig {
     pub provider: String,
     pub api_key: String,
     pub model: String,
-    pub base_url: Option<String>,
+    pub base_url: String,
     pub temperature: Option<f32>,
     pub max_tokens: Option<u32>,
-    pub top_p: Option<f32>,
-    pub thinking_enabled: Option<bool>,
+    pub thinking_enabled: bool,
 }
 
 impl ProviderConfig {
@@ -114,239 +89,324 @@ impl ProviderConfig {
         Self {
             provider: "deepseek".to_string(),
             api_key,
-            model: "deepseek-chat".to_string(),
-            base_url: Some("https://api.deepseek.com/v1".to_string()),
-            temperature: Some(0.1),
+            model: "deepseek-v4-flash".to_string(),
+            base_url: "https://api.deepseek.com".to_string(),
+            temperature: Some(0.2),
             max_tokens: Some(4096),
-            top_p: Some(1.0),
-            thinking_enabled: Some(true),
+            thinking_enabled: false,
         }
     }
 }
 
-// DeepSeek Provider
+#[async_trait]
+pub trait AiProvider: Send + Sync {
+    fn name(&self) -> &str;
+    fn available_models(&self) -> Vec<ModelInfo>;
+    async fn test_connection(&self) -> Result<(), ProviderError>;
+    async fn stream_chat(
+        &self,
+        request: &ChatCompletionRequest,
+        cancellation: CancellationToken,
+        on_delta: &(dyn Fn(String) -> Result<(), String> + Send + Sync),
+    ) -> Result<(), ProviderError>;
+}
 
 pub struct DeepSeekProvider {
     config: ProviderConfig,
+    client: reqwest::Client,
 }
 
 impl DeepSeekProvider {
-    pub fn new(config: ProviderConfig) -> Self {
-        Self { config }
+    pub fn new(config: ProviderConfig) -> Result<Self, ProviderError> {
+        let client = reqwest::Client::builder()
+            .connect_timeout(std::time::Duration::from_secs(15))
+            .timeout(std::time::Duration::from_secs(300))
+            .build()
+            .map_err(|_| {
+                ProviderError::new("provider_setup", "Could not initialize AI networking.")
+            })?;
+        Ok(Self { config, client })
     }
 
-    fn build_chat_request(&self, request: &ChatCompletionRequest) -> ChatCompletionRequest {
-        let mut req = request.clone();
-        if req.model.is_empty() {
-            req.model = self.config.model.clone();
+    fn build_request(
+        &self,
+        request: &ChatCompletionRequest,
+        stream: bool,
+    ) -> ChatCompletionRequest {
+        let mut request = request.clone();
+        if request.model.is_empty() {
+            request.model.clone_from(&self.config.model);
         }
-        if req.temperature.is_none() {
-            req.temperature = self.config.temperature;
+        if request.temperature.is_none() {
+            request.temperature = self.config.temperature;
         }
-        if req.max_tokens.is_none() {
-            req.max_tokens = self.config.max_tokens;
+        if request.max_tokens.is_none() {
+            request.max_tokens = self.config.max_tokens;
         }
-        if req.top_p.is_none() {
-            req.top_p = self.config.top_p;
+        request.stream = Some(stream);
+        if request.thinking.is_none() {
+            request.thinking = Some(ThinkingConfig {
+                thinking_type: if self.config.thinking_enabled {
+                    "enabled"
+                } else {
+                    "disabled"
+                }
+                .to_string(),
+            });
         }
-        req
+        request
+    }
+
+    async fn send(
+        &self,
+        request: &ChatCompletionRequest,
+        stream: bool,
+    ) -> Result<reqwest::Response, ProviderError> {
+        let response = self
+            .client
+            .post(format!("{}/chat/completions", self.config.base_url))
+            .bearer_auth(&self.config.api_key)
+            .json(&self.build_request(request, stream))
+            .send()
+            .await
+            .map_err(classify_network_error)?;
+        if !response.status().is_success() {
+            return Err(classify_status(response.status()));
+        }
+        Ok(response)
     }
 }
 
+#[async_trait]
 impl AiProvider for DeepSeekProvider {
     fn name(&self) -> &str {
         "deepseek"
     }
 
-    fn chat_completion(
-        &self,
-        request: &ChatCompletionRequest,
-    ) -> Result<ChatCompletionResponse, String> {
-        let req = self.build_chat_request(request);
-        let body =
-            serde_json::to_string(&req).map_err(|e| format!("Serialization error: {}", e))?;
-
-        let url = format!(
-            "{}/chat/completions",
-            self.config
-                .base_url
-                .as_deref()
-                .unwrap_or("https://api.deepseek.com/v1")
-        );
-
-        let response = ureq::post(&url)
-            .set("Content-Type", "application/json")
-            .set("Authorization", &format!("Bearer {}", self.config.api_key))
-            .send_string(&body)
-            .map_err(|e| format!("HTTP error: {}", e))?;
-
-        let status = response.status();
-        let resp_body = response
-            .into_string()
-            .map_err(|e| format!("Read error: {}", e))?;
-
-        if status != 200 {
-            return Err(format!("API error {}: {}", status, resp_body));
-        }
-
-        serde_json::from_str(&resp_body).map_err(|e| format!("Parse error: {}", e))
+    fn available_models(&self) -> Vec<ModelInfo> {
+        ["deepseek-v4-flash", "deepseek-v4-pro"]
+            .into_iter()
+            .map(|id| ModelInfo {
+                id: id.to_string(),
+                provider: "deepseek".to_string(),
+                supports_streaming: true,
+                supports_thinking: true,
+            })
+            .collect()
     }
 
-    fn chat_completion_stream(
-        &self,
-        request: &ChatCompletionRequest,
-    ) -> Result<Box<dyn Iterator<Item = Result<String, String>> + '_>, String> {
-        let mut req = self.build_chat_request(request);
-        req.stream = Some(true);
-
-        let body =
-            serde_json::to_string(&req).map_err(|e| format!("Serialization error: {}", e))?;
-
-        let url = format!(
-            "{}/chat/completions",
-            self.config
-                .base_url
-                .as_deref()
-                .unwrap_or("https://api.deepseek.com/v1")
-        );
-
-        let response = ureq::post(&url)
-            .set("Content-Type", "application/json")
-            .set("Authorization", &format!("Bearer {}", self.config.api_key))
-            .send_string(&body)
-            .map_err(|e| format!("HTTP error: {}", e))?;
-
-        let status = response.status();
-        if status != 200 {
-            let resp_body = response.into_string().unwrap_or_default();
-            return Err(format!("API error {}: {}", status, resp_body));
-        }
-
-        let reader = response.into_reader();
-        Ok(Box::new(SseIterator {
-            reader,
-            buffer: String::new(),
-        }))
-    }
-
-    fn test_connection(&self) -> Result<(), String> {
+    async fn test_connection(&self) -> Result<(), ProviderError> {
         let request = ChatCompletionRequest {
             model: self.config.model.clone(),
             messages: vec![ChatMessage {
                 role: "user".to_string(),
-                content: "Hi".to_string(),
+                content: "Reply with OK.".to_string(),
             }],
-            temperature: None,
-            max_tokens: Some(1),
+            temperature: Some(0.0),
+            max_tokens: Some(2),
             top_p: None,
-            stream: None,
-            thinking: None,
+            stream: Some(false),
+            thinking: Some(ThinkingConfig {
+                thinking_type: "disabled".to_string(),
+            }),
         };
-        self.chat_completion(&request)?;
+        self.send(&request, false).await?;
         Ok(())
     }
 
-    fn available_models(&self) -> Vec<ModelInfo> {
-        vec![
-            ModelInfo {
-                id: "deepseek-chat".to_string(),
-                provider: "deepseek".to_string(),
-                supports_streaming: true,
-                supports_thinking: true,
-            },
-            ModelInfo {
-                id: "deepseek-reasoner".to_string(),
-                provider: "deepseek".to_string(),
-                supports_streaming: true,
-                supports_thinking: true,
-            },
-        ]
-    }
-}
-
-// SSE Iterator
-
-#[allow(dead_code)] // Instantiated when Phase 7 enables streaming commands.
-struct SseIterator {
-    reader: Box<dyn Read + 'static>,
-    buffer: String,
-}
-
-impl Iterator for SseIterator {
-    type Item = Result<String, String>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let mut chunk = [0u8; 4096];
+    async fn stream_chat(
+        &self,
+        request: &ChatCompletionRequest,
+        cancellation: CancellationToken,
+        on_delta: &(dyn Fn(String) -> Result<(), String> + Send + Sync),
+    ) -> Result<(), ProviderError> {
+        let response = tokio::select! {
+            _ = cancellation.cancelled() => return Err(cancelled()),
+            response = self.send(request, true) => response?,
+        };
+        let mut stream = response.bytes_stream();
+        let mut decoder = SseDecoder::default();
         loop {
-            match self.reader.read(&mut chunk) {
-                Ok(0) => {
-                    if self.buffer.contains("[DONE]") {
-                        return None;
-                    }
-                    if self.buffer.is_empty() {
-                        return None;
-                    }
-                    return self.process_buffer();
+            let next = tokio::select! {
+                _ = cancellation.cancelled() => return Err(cancelled()),
+                next = stream.next() => next,
+            };
+            let Some(chunk) = next else { break };
+            let chunk = chunk.map_err(classify_network_error)?;
+            for event in decoder.push(&chunk)? {
+                match event {
+                    SseEvent::Delta(content) => on_delta(content).map_err(|_| cancelled())?,
+                    SseEvent::Done => return Ok(()),
                 }
-                Ok(n) => {
-                    self.buffer.push_str(&String::from_utf8_lossy(&chunk[..n]));
-                    if let Some(result) = self.process_buffer() {
-                        return Some(result);
-                    }
-                }
-                Err(e) => return Some(Err(format!("Read error: {}", e))),
             }
         }
+        Err(ProviderError::new(
+            "network",
+            "The DeepSeek stream ended before completion. Try again.",
+        ))
     }
 }
 
-#[allow(dead_code)] // Used by SseIterator once streaming is exposed in Phase 7.
-impl SseIterator {
-    fn process_buffer(&mut self) -> Option<Result<String, String>> {
-        let separator = "\n\n";
-        if let Some(pos) = self.buffer.find(separator) {
-            let message = self.buffer[..pos].to_string();
-            self.buffer = self.buffer[pos + 2..].to_string();
+fn cancelled() -> ProviderError {
+    ProviderError::new("cancelled", "The AI response was cancelled.")
+}
 
-            for line in message.lines() {
-                let line = line.trim();
-                if line.is_empty() || line.starts_with(':') {
+fn classify_network_error(error: reqwest::Error) -> ProviderError {
+    if error.is_timeout() {
+        ProviderError::new("timeout", "DeepSeek took too long to respond. Try again.")
+    } else if error.is_connect() {
+        ProviderError::new(
+            "offline",
+            "Could not connect to DeepSeek. Check your connection.",
+        )
+    } else {
+        ProviderError::new("network", "The connection to DeepSeek was interrupted.")
+    }
+}
+
+fn classify_status(status: reqwest::StatusCode) -> ProviderError {
+    match status.as_u16() {
+        401 | 403 => ProviderError::new("invalid_api_key", "DeepSeek rejected the API key."),
+        402 => ProviderError::new(
+            "insufficient_balance",
+            "The DeepSeek account has insufficient credit.",
+        ),
+        429 => ProviderError::new(
+            "rate_limited",
+            "DeepSeek is rate limiting requests. Try again shortly.",
+        ),
+        500..=599 => ProviderError::new(
+            "provider_unavailable",
+            "DeepSeek is temporarily unavailable.",
+        ),
+        _ => ProviderError::new(
+            "provider_error",
+            format!("DeepSeek returned HTTP {}.", status.as_u16()),
+        ),
+    }
+}
+
+#[derive(Debug, PartialEq)]
+enum SseEvent {
+    Delta(String),
+    Done,
+}
+
+#[derive(Default)]
+struct SseDecoder {
+    buffer: Vec<u8>,
+}
+
+impl SseDecoder {
+    fn push(&mut self, bytes: &[u8]) -> Result<Vec<SseEvent>, ProviderError> {
+        self.buffer.extend_from_slice(bytes);
+        let mut events = Vec::new();
+        while let Some((end, delimiter_len)) = event_boundary(&self.buffer) {
+            let block = String::from_utf8(self.buffer[..end].to_vec()).map_err(|_| {
+                ProviderError::new("invalid_response", "DeepSeek returned invalid UTF-8.")
+            })?;
+            self.buffer.drain(..end + delimiter_len);
+            for line in block.lines().map(str::trim) {
+                let Some(data) = line.strip_prefix("data:").map(str::trim) else {
+                    continue;
+                };
+                if data == "[DONE]" {
+                    events.push(SseEvent::Done);
                     continue;
                 }
-                if line == "data: [DONE]" {
-                    return None;
-                }
-                if let Some(data) = line.strip_prefix("data: ") {
-                    match serde_json::from_str::<ChatCompletionResponse>(data) {
-                        Ok(response) => {
-                            for choice in &response.choices {
-                                if let Some(ref delta) = choice.delta {
-                                    if let Some(ref content) = delta.content {
-                                        return Some(Ok(content.clone()));
-                                    }
-                                }
-                            }
-                            return Some(Ok(String::new()));
-                        }
-                        Err(e) => {
-                            log::warn!("SSE parse error: {}", e);
-                            continue;
-                        }
-                    }
-                }
+                let response: ChatCompletionResponse =
+                    serde_json::from_str(data).map_err(|_| {
+                        ProviderError::new(
+                            "invalid_response",
+                            "DeepSeek returned an invalid stream event.",
+                        )
+                    })?;
+                events.extend(response.choices.into_iter().filter_map(|choice| {
+                    choice
+                        .delta
+                        .and_then(|delta| delta.content)
+                        .filter(|content| !content.is_empty())
+                        .map(SseEvent::Delta)
+                }));
             }
-            Some(Ok(String::new()))
-        } else {
-            None
         }
+        Ok(events)
     }
 }
 
-// Factory
+fn event_boundary(bytes: &[u8]) -> Option<(usize, usize)> {
+    let lf = bytes
+        .windows(2)
+        .position(|window| window == b"\n\n")
+        .map(|pos| (pos, 2));
+    let crlf = bytes
+        .windows(4)
+        .position(|window| window == b"\r\n\r\n")
+        .map(|pos| (pos, 4));
+    match (lf, crlf) {
+        (Some(left), Some(right)) => Some(if left.0 <= right.0 { left } else { right }),
+        (left, right) => left.or(right),
+    }
+}
 
-pub fn create_provider(config: ProviderConfig) -> Result<Box<dyn AiProvider>, String> {
+pub fn create_provider(config: ProviderConfig) -> Result<Box<dyn AiProvider>, ProviderError> {
     match config.provider.as_str() {
-        "deepseek" => Ok(Box::new(DeepSeekProvider::new(config))),
-        other => Err(format!("Unknown provider: {}", other)),
+        "deepseek" => Ok(Box::new(DeepSeekProvider::new(config)?)),
+        _ => Err(ProviderError::new(
+            "unknown_provider",
+            "Unknown AI provider.",
+        )),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn decoder_handles_split_crlf_events_and_done() {
+        let mut decoder = SseDecoder::default();
+        assert!(decoder
+            .push(b"data: {\"choices\":[{\"delta\":{\"content\":\"Hel")
+            .unwrap()
+            .is_empty());
+        let events = decoder
+            .push(b"lo\"}}]}\r\n\r\ndata: [DONE]\r\n\r\n")
+            .unwrap();
+        assert_eq!(
+            events,
+            vec![SseEvent::Delta("Hello".to_string()), SseEvent::Done]
+        );
+    }
+
+    #[test]
+    fn decoder_ignores_keep_alive_and_reasoning_only_chunks() {
+        let mut decoder = SseDecoder::default();
+        let events = decoder.push(b": keep-alive\n\ndata: {\"choices\":[{\"delta\":{\"reasoning_content\":\"private\"}}]}\n\n").unwrap();
+        assert!(events.is_empty());
+    }
+
+    #[test]
+    fn decoder_preserves_utf8_split_between_network_chunks() {
+        let payload = "data: {\"choices\":[{\"delta\":{\"content\":\"hé 👋\"}}]}\n\n".as_bytes();
+        let split = payload.iter().position(|byte| *byte >= 0x80).unwrap() + 1;
+        let mut decoder = SseDecoder::default();
+        assert!(decoder.push(&payload[..split]).unwrap().is_empty());
+        assert_eq!(
+            decoder.push(&payload[split..]).unwrap(),
+            vec![SseEvent::Delta("hé 👋".to_string())]
+        );
+    }
+
+    #[test]
+    fn current_models_replace_retired_aliases() {
+        let provider =
+            DeepSeekProvider::new(ProviderConfig::default_deepseek("secret".to_string())).unwrap();
+        let ids: Vec<_> = provider
+            .available_models()
+            .into_iter()
+            .map(|model| model.id)
+            .collect();
+        assert_eq!(ids, vec!["deepseek-v4-flash", "deepseek-v4-pro"]);
     }
 }

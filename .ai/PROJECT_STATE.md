@@ -34,9 +34,10 @@
 | `PHASE5-001` | Task persistence and IPC foundation | `complete` | ADR-009 acceptance criteria and all quality gates pass. |
 | `PHASE5-002` | Tasks UI and Pulse integration | `complete` | Space and global Task workflows, Pulse attention, tests, and quality gates pass. |
 | `PHASE6-001` | Vault persistence and native filesystem foundation | `complete` | Merged through PR #9 at `b202c8e`. |
-| `PHASE6-002` | Vault UI and Space integration | `self_review` | Global and Space file workflows pass interaction and quality gates; publication pending. |
+| `PHASE6-002` | Vault UI and Space integration | `complete` | Merged through PR #10 at `c352e67`. |
+| `PHASE7-001` | AI streaming and context foundation | `self_review` | Current provider, cancellation, persistence, and explicit context gates pass; publication pending. |
 
-The active task is `PHASE6-002`, governed by the ready contract in `.ai/HANDOFF.md`.
+The active task is `PHASE7-001`, governed by the self-review contract in `.ai/HANDOFF.md`.
 
 ## Completed product milestones
 
@@ -63,9 +64,9 @@ The active task is `PHASE6-002`, governed by the ready contract in `.ai/HANDOFF.
 
 | Check | Last result | Date | Notes |
 | --- | --- | --- | --- |
-| `pnpm check` | Pass | 2026-08-10 | Typecheck and lint clean; Vitest 30/30 across ten files. |
+| `pnpm check` | Pass | 2026-08-10 | Typecheck and lint clean; Vitest 31/31 across ten files. |
 | `pnpm build` | Pass | 2026-08-10 | TypeScript and Vite production build pass. |
-| `cargo test` | Pass | 2026-08-10 | 48/48 tests pass, including Vault ownership and containment. |
+| `cargo test` | Pass | 2026-08-10 | 56/56 tests pass, including AI streaming, cancellation, context isolation, and Vault safety. |
 | `cargo build` | Pass | 2026-08-10 | Windows production build compiles with DPAPI. |
 | `cargo fmt --check` | Pass | 2026-08-10 | Repository Rust formatting is clean; `DEBT-005` resolved. |
 | `cargo clippy --all-targets -- -D warnings` | Pass | 2026-08-10 | Library, binary, and test targets are warning-free; `DEBT-006` resolved. |
@@ -99,8 +100,9 @@ Full rationale belongs in `.ai/ARCHITECTURE.md` or a dedicated ADR under `docs/d
 | `ADR-008` | Codex is the sole engineering agent; complex work uses task contracts and evidence-based self-review. | Accepted |
 | `ADR-009` | Tasks use one persistent tree with nullable Space ownership and local-date due semantics. | Accepted |
 | `ADR-010` | Vault distinguishes linked and managed ownership and enforces deletion safety in Rust. | Accepted |
+| `ADR-011` | AI uses cancellable typed streams and explicit Space-isolated context resolved in Rust. | Accepted |
 
-## Next: Publish `PHASE6-002`, then design and complete the Phase 7 AI experience.
+## Next: Publish `PHASE7-001`, then build the complete AI Settings/chat/context/proposal UI in `PHASE7-002`.
 
 ## Reusable update template
 
