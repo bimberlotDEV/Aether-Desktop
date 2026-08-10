@@ -8,8 +8,8 @@
 | Last updated | 2026-08-10 |
 | Updated by | Codex |
 | Repository | `bimberlotDEV/Aether-Desktop` |
-| Branch | `agent/codex-only-workflow` |
-| Baseline commit | `2bee084` (PR #3 merge) |
+| Branch | `agent/rust-quality-gates` |
+| Baseline commit | `03942fa` (PR #4 merge) |
 | Product maturity | Alpha |
 
 ## Responsibility of this file
@@ -29,8 +29,9 @@
 | `M-RUST-VERIFY` | Restore local Rust verification | `complete` | Rust MSVC builds the test binaries and runs formatting, lint, and tests locally. |
 | `M-CRED-HARDEN` | Harden AI credential storage and fix deadlock | `complete` | PR #3 merged; 33/33 Rust tests pass with Windows DPAPI. |
 | `M-CODEX-ONLY` | Codex-only engineering workflow | `complete` | ADR-008, repository instructions, workflow, and control templates require no second AI agent. |
+| `M-RUST-QUALITY` | Restore Rust formatting and strict lint gates | `complete` | Formatting, Clippy, tests, and production builds all pass. |
 
-No product feature is active. Codex selects and contracts the next roadmap slice from `.ai/TODO.md`.
+The next active work is a regression and acceptance audit of the substantially implemented Spaces and Notes phases before Phase 5 begins.
 
 ## Completed product milestones
 
@@ -57,12 +58,12 @@ No product feature is active. Codex selects and contracts the next roadmap slice
 
 | Check | Last result | Date | Notes |
 | --- | --- | --- | --- |
-| `pnpm check` | Pass | 2026-07-31 | typecheck clean, lint 0 warnings 0 errors (DEBT-002 resolved), test 7/7. |
-| `cargo test --no-run` | Pass | 2026-07-31 | Both Windows test binaries build with Rust 1.97.1 MSVC. |
-| `cargo test` | Pass | 2026-07-31 | 33/33 tests pass; all four credential tests complete in 0.01 seconds. |
-| `cargo build` | Pass | 2026-07-31 | Production build compiles with Windows DPAPI. |
-| `cargo fmt --check` | Fail | 2026-07-31 | Pre-existing formatting differences tracked as `DEBT-005`. |
-| `cargo clippy --all-targets -- -D warnings` | Fail | 2026-07-31 | Tooling works; existing 11 library/12 test-build findings tracked as `DEBT-006`. |
+| `pnpm check` | Pass | 2026-08-10 | Typecheck and lint clean; Vitest 7/7. |
+| `pnpm build` | Pass | 2026-08-10 | TypeScript and Vite production build pass. |
+| `cargo test` | Pass | 2026-08-10 | 33/33 tests pass. |
+| `cargo build` | Pass | 2026-08-10 | Windows production build compiles with DPAPI. |
+| `cargo fmt --check` | Pass | 2026-08-10 | Repository Rust formatting is clean; `DEBT-005` resolved. |
+| `cargo clippy --all-targets -- -D warnings` | Pass | 2026-08-10 | Library, binary, and test targets are warning-free; `DEBT-006` resolved. |
 
 ## Active blockers
 
@@ -92,7 +93,7 @@ Full rationale belongs in `.ai/ARCHITECTURE.md` or a dedicated ADR under `docs/d
 | `ADR-007` | Verified task commits are automatically pushed and published through guarded repository tooling. | Accepted |
 | `ADR-008` | Codex is the sole engineering agent; complex work uses task contracts and evidence-based self-review. | Accepted |
 
-## Next: Codex prioritizes the next roadmap slice from `.ai/TODO.md` and uses `planned_codex` when architecture or risk requires a task contract.
+## Next: Codex audits Spaces and Notes acceptance and regression coverage, then contracts Phase 5 Tasks as `planned_codex`.
 
 ## Reusable update template
 

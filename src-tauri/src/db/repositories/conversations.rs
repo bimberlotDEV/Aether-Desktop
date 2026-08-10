@@ -51,14 +51,14 @@ pub fn create_conversation(
 ) -> Result<AiConversation, String> {
     let id = Uuid::now_v7().to_string();
     let now = chrono::Utc::now().to_rfc3339();
-    
+
     conn.execute(
         "INSERT INTO ai_conversations (id, space_id, title, provider, model, created_at, updated_at)
          VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?6)",
         params![id, space_id, title, provider, model, now],
     )
     .map_err(|e| format!("Create conversation error: {}", e))?;
-    
+
     get_conversation(conn, &id)?.ok_or("Conversation not found after insert".to_string())
 }
 
@@ -70,23 +70,22 @@ pub fn get_conversation(conn: &Connection, id: &str) -> Result<Option<AiConversa
              FROM ai_conversations WHERE id = ?1",
         )
         .map_err(|e| format!("Query error: {}", e))?;
-    
-    let result = stmt
-        .query_row(params![id], |row| {
-            Ok(AiConversation {
-                id: row.get(0)?,
-                space_id: row.get(1)?,
-                title: row.get(2)?,
-                provider: row.get(3)?,
-                model: row.get(4)?,
-                system_context_version: row.get(5)?,
-                archived_at: row.get(6)?,
-                created_at: row.get(7)?,
-                updated_at: row.get(8)?,
-                last_opened_at: row.get(9)?,
-            })
-        });
-    
+
+    let result = stmt.query_row(params![id], |row| {
+        Ok(AiConversation {
+            id: row.get(0)?,
+            space_id: row.get(1)?,
+            title: row.get(2)?,
+            provider: row.get(3)?,
+            model: row.get(4)?,
+            system_context_version: row.get(5)?,
+            archived_at: row.get(6)?,
+            created_at: row.get(7)?,
+            updated_at: row.get(8)?,
+            last_opened_at: row.get(9)?,
+        })
+    });
+
     match result {
         Ok(c) => Ok(Some(c)),
         Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
@@ -118,19 +117,26 @@ pub fn list_conversations(
                     archived_at, created_at, updated_at, last_opened_at
              FROM ai_conversations WHERE archived_at IS NULL ORDER BY updated_at DESC",
     };
-    
-    let mut stmt = conn.prepare(sql).map_err(|e| format!("Query error: {}", e))?;
-    
+
+    let mut stmt = conn
+        .prepare(sql)
+        .map_err(|e| format!("Query error: {}", e))?;
+
     let map_row = |row: &rusqlite::Row| -> rusqlite::Result<AiConversation> {
         Ok(AiConversation {
-            id: row.get(0)?, space_id: row.get(1)?, title: row.get(2)?,
-            provider: row.get(3)?, model: row.get(4)?,
-            system_context_version: row.get(5)?, archived_at: row.get(6)?,
-            created_at: row.get(7)?, updated_at: row.get(8)?,
+            id: row.get(0)?,
+            space_id: row.get(1)?,
+            title: row.get(2)?,
+            provider: row.get(3)?,
+            model: row.get(4)?,
+            system_context_version: row.get(5)?,
+            archived_at: row.get(6)?,
+            created_at: row.get(7)?,
+            updated_at: row.get(8)?,
             last_opened_at: row.get(9)?,
         })
     };
-    
+
     let rows: Vec<AiConversation> = if let Some(sid) = space_id {
         stmt.query_map(params![sid], map_row)
             .map_err(|e| format!("Query error: {}", e))?
@@ -142,7 +148,7 @@ pub fn list_conversations(
             .collect::<Result<Vec<_>, _>>()
             .map_err(|e| format!("Row error: {}", e))?
     };
-    
+
     Ok(rows)
 }
 
@@ -153,7 +159,7 @@ pub fn update_conversation(
     archived: Option<bool>,
 ) -> Result<Option<AiConversation>, String> {
     let now = chrono::Utc::now().to_rfc3339();
-    
+
     if let Some(title) = title {
         conn.execute(
             "UPDATE ai_conversations SET title = ?1, updated_at = ?2 WHERE id = ?3",
@@ -161,7 +167,7 @@ pub fn update_conversation(
         )
         .map_err(|e| format!("Update error: {}", e))?;
     }
-    
+
     if let Some(archive) = archived {
         if archive {
             conn.execute(
@@ -177,14 +183,14 @@ pub fn update_conversation(
             .map_err(|e| format!("Restore error: {}", e))?;
         }
     }
-    
+
     // Touch last_opened_at
     conn.execute(
         "UPDATE ai_conversations SET last_opened_at = ?1 WHERE id = ?2",
         params![now, id],
     )
     .map_err(|e| format!("Touch error: {}", e))?;
-    
+
     get_conversation(conn, id)
 }
 
@@ -206,21 +212,21 @@ pub fn add_message(
 ) -> Result<AiMessage, String> {
     let id = Uuid::now_v7().to_string();
     let now = chrono::Utc::now().to_rfc3339();
-    
+
     conn.execute(
         "INSERT INTO ai_messages (id, conversation_id, role, content, status, created_at, updated_at)
          VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?6)",
         params![id, conversation_id, role, content, status, now],
     )
     .map_err(|e| format!("Add message error: {}", e))?;
-    
+
     // Update conversation timestamp
     conn.execute(
         "UPDATE ai_conversations SET updated_at = ?1 WHERE id = ?2",
         params![now, conversation_id],
     )
     .map_err(|e| format!("Touch conversation error: {}", e))?;
-    
+
     get_message(conn, &id)?.ok_or("Message not found after insert".to_string())
 }
 
@@ -232,17 +238,22 @@ pub fn get_message(conn: &Connection, id: &str) -> Result<Option<AiMessage>, Str
              FROM ai_messages WHERE id = ?1",
         )
         .map_err(|e| format!("Query error: {}", e))?;
-    
+
     let result = stmt.query_row(params![id], |row| {
         Ok(AiMessage {
-            id: row.get(0)?, conversation_id: row.get(1)?, role: row.get(2)?,
-            content: row.get(3)?, status: row.get(4)?,
-            provider_message_id: row.get(5)?, error_code: row.get(6)?,
-            metadata_json: row.get(7)?, created_at: row.get(8)?,
+            id: row.get(0)?,
+            conversation_id: row.get(1)?,
+            role: row.get(2)?,
+            content: row.get(3)?,
+            status: row.get(4)?,
+            provider_message_id: row.get(5)?,
+            error_code: row.get(6)?,
+            metadata_json: row.get(7)?,
+            created_at: row.get(8)?,
             updated_at: row.get(9)?,
         })
     });
-    
+
     match result {
         Ok(m) => Ok(Some(m)),
         Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
@@ -270,26 +281,36 @@ pub fn list_messages(
                 error_code, metadata_json, created_at, updated_at
          FROM ai_messages
          WHERE conversation_id = ?1
-         ORDER BY created_at ASC".to_string()
+         ORDER BY created_at ASC"
+            .to_string()
     };
-    
-    let mut stmt = conn.prepare(&sql).map_err(|e| format!("Query error: {}", e))?;
-    
-    let rows = stmt.query_map(params![conversation_id], |row| {
-        Ok(AiMessage {
-            id: row.get(0)?, conversation_id: row.get(1)?, role: row.get(2)?,
-            content: row.get(3)?, status: row.get(4)?,
-            provider_message_id: row.get(5)?, error_code: row.get(6)?,
-            metadata_json: row.get(7)?, created_at: row.get(8)?,
-            updated_at: row.get(9)?,
+
+    let mut stmt = conn
+        .prepare(&sql)
+        .map_err(|e| format!("Query error: {}", e))?;
+
+    let rows = stmt
+        .query_map(params![conversation_id], |row| {
+            Ok(AiMessage {
+                id: row.get(0)?,
+                conversation_id: row.get(1)?,
+                role: row.get(2)?,
+                content: row.get(3)?,
+                status: row.get(4)?,
+                provider_message_id: row.get(5)?,
+                error_code: row.get(6)?,
+                metadata_json: row.get(7)?,
+                created_at: row.get(8)?,
+                updated_at: row.get(9)?,
+            })
         })
-    })
-    .map_err(|e| format!("Query error: {}", e))?;
-    
+        .map_err(|e| format!("Query error: {}", e))?;
+
     rows.collect::<Result<Vec<_>, _>>()
         .map_err(|e| format!("Row error: {}", e))
 }
 
+#[allow(dead_code)] // Reserved for streamed message updates in the Phase 7 AI UI.
 pub fn update_message_content(
     conn: &Connection,
     id: &str,
@@ -297,16 +318,17 @@ pub fn update_message_content(
     status: &str,
 ) -> Result<Option<AiMessage>, String> {
     let now = chrono::Utc::now().to_rfc3339();
-    
+
     conn.execute(
         "UPDATE ai_messages SET content = ?1, status = ?2, updated_at = ?3 WHERE id = ?4",
         params![content, status, now, id],
     )
     .map_err(|e| format!("Update message error: {}", e))?;
-    
+
     get_message(conn, id)
 }
 
+#[allow(dead_code)] // Reserved for explicit message deletion in the Phase 7 AI UI.
 pub fn delete_message(conn: &Connection, id: &str) -> Result<bool, String> {
     let deleted = conn
         .execute("DELETE FROM ai_messages WHERE id = ?1", params![id])
@@ -325,14 +347,14 @@ pub fn add_context_item(
 ) -> Result<AiContextItem, String> {
     let id = Uuid::now_v7().to_string();
     let now = chrono::Utc::now().to_rfc3339();
-    
+
     conn.execute(
         "INSERT INTO ai_context_items (id, conversation_id, entity_type, entity_id, context_mode, added_at)
          VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
         params![id, conversation_id, entity_type, entity_id, context_mode, now],
     )
     .map_err(|e| format!("Add context error: {}", e))?;
-    
+
     Ok(AiContextItem {
         id,
         conversation_id: conversation_id.to_string(),
@@ -355,17 +377,20 @@ pub fn list_context_items(
              ORDER BY added_at ASC",
         )
         .map_err(|e| format!("Query error: {}", e))?;
-    
+
     let rows = stmt
         .query_map(params![conversation_id], |row| {
             Ok(AiContextItem {
-                id: row.get(0)?, conversation_id: row.get(1)?,
-                entity_type: row.get(2)?, entity_id: row.get(3)?,
-                context_mode: row.get(4)?, added_at: row.get(5)?,
+                id: row.get(0)?,
+                conversation_id: row.get(1)?,
+                entity_type: row.get(2)?,
+                entity_id: row.get(3)?,
+                context_mode: row.get(4)?,
+                added_at: row.get(5)?,
             })
         })
         .map_err(|e| format!("Query error: {}", e))?;
-    
+
     rows.collect::<Result<Vec<_>, _>>()
         .map_err(|e| format!("Row error: {}", e))
 }
@@ -391,7 +416,7 @@ pub fn clear_context(conn: &Connection, conversation_id: &str) -> Result<usize, 
 mod tests {
     use super::*;
     use rusqlite::Connection;
-    
+
     fn setup_db() -> Connection {
         let conn = Connection::open_in_memory().unwrap();
         conn.pragma_update(None, "foreign_keys", "ON").unwrap();
@@ -422,90 +447,106 @@ mod tests {
         conn.execute("INSERT INTO spaces (id, name, created_at, updated_at) VALUES ('space1', 'Test', datetime('now'), datetime('now'))", []).unwrap();
         conn
     }
-    
+
     #[test]
     fn test_create_and_get_conversation() {
         let conn = setup_db();
-        let conv = create_conversation(&conn, Some("space1"), "Test Chat", "deepseek", "deepseek-chat").unwrap();
+        let conv = create_conversation(
+            &conn,
+            Some("space1"),
+            "Test Chat",
+            "deepseek",
+            "deepseek-chat",
+        )
+        .unwrap();
         assert_eq!(conv.title, "Test Chat");
         assert_eq!(conv.space_id, Some("space1".to_string()));
-        
+
         let fetched = get_conversation(&conn, &conv.id).unwrap().unwrap();
         assert_eq!(fetched.id, conv.id);
     }
-    
+
     #[test]
     fn test_list_conversations() {
         let conn = setup_db();
         create_conversation(&conn, None, "Global Chat", "deepseek", "deepseek-chat").unwrap();
-        create_conversation(&conn, Some("space1"), "Space Chat", "deepseek", "deepseek-chat").unwrap();
-        
+        create_conversation(
+            &conn,
+            Some("space1"),
+            "Space Chat",
+            "deepseek",
+            "deepseek-chat",
+        )
+        .unwrap();
+
         let all = list_conversations(&conn, None, false).unwrap();
         assert_eq!(all.len(), 2);
-        
+
         let space = list_conversations(&conn, Some("space1"), false).unwrap();
         assert_eq!(space.len(), 1);
     }
-    
+
     #[test]
     fn test_messages() {
         let conn = setup_db();
         let conv = create_conversation(&conn, None, "Chat", "deepseek", "deepseek-chat").unwrap();
-        
+
         let msg1 = add_message(&conn, &conv.id, "user", "Hello", "complete").unwrap();
         assert_eq!(msg1.content, "Hello");
-        
-        let msg2 = add_message(&conn, &conv.id, "assistant", "Hi there!", "complete").unwrap();
-        
+
+        add_message(&conn, &conv.id, "assistant", "Hi there!", "complete").unwrap();
+
         let messages = list_messages(&conn, &conv.id, None).unwrap();
         assert_eq!(messages.len(), 2);
-        
-        let updated = update_message_content(&conn, &msg1.id, "Hello world", "complete").unwrap().unwrap();
+
+        let updated = update_message_content(&conn, &msg1.id, "Hello world", "complete")
+            .unwrap()
+            .unwrap();
         assert_eq!(updated.content, "Hello world");
     }
-    
+
     #[test]
     fn test_archive() {
         let conn = setup_db();
         let conv = create_conversation(&conn, None, "Chat", "deepseek", "deepseek-chat").unwrap();
-        
+
         update_conversation(&conn, &conv.id, None, Some(true)).unwrap();
         let archived = get_conversation(&conn, &conv.id).unwrap().unwrap();
         assert!(archived.archived_at.is_some());
-        
+
         let active = list_conversations(&conn, None, false).unwrap();
         assert!(active.is_empty());
     }
-    
+
     #[test]
     fn test_context_items() {
         let conn = setup_db();
         let conv = create_conversation(&conn, None, "Chat", "deepseek", "deepseek-chat").unwrap();
-        
+
         add_context_item(&conn, &conv.id, "note", "note1", "attached").unwrap();
         add_context_item(&conn, &conv.id, "task", "task1", "attached").unwrap();
-        
+
         let items = list_context_items(&conn, &conv.id).unwrap();
         assert_eq!(items.len(), 2);
-        
+
         remove_context_item(&conn, &items[0].id).unwrap();
         let remaining = list_context_items(&conn, &conv.id).unwrap();
         assert_eq!(remaining.len(), 1);
-        
+
         clear_context(&conn, &conv.id).unwrap();
         let empty = list_context_items(&conn, &conv.id).unwrap();
         assert_eq!(empty.len(), 0);
     }
-    
+
     #[test]
     fn test_delete_conversation_cascades() {
         let conn = setup_db();
         let conv = create_conversation(&conn, None, "Chat", "deepseek", "deepseek-chat").unwrap();
         add_message(&conn, &conv.id, "user", "msg", "complete").unwrap();
         add_context_item(&conn, &conv.id, "note", "note1", "attached").unwrap();
-        
+
         delete_conversation(&conn, &conv.id).unwrap();
-        
+
         let msgs = list_messages(&conn, &conv.id, None).unwrap();
         let ctx = list_context_items(&conn, &conv.id).unwrap();
         assert!(msgs.is_empty());

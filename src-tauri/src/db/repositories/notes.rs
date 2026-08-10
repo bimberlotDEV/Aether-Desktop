@@ -270,7 +270,7 @@ pub fn list_archived(
     conn: &Connection,
     space_id: Option<&str>,
 ) -> Result<Vec<NoteListItem>, String> {
-    let sql = if let Some(_sid) = space_id {
+    let sql = if space_id.is_some() {
         format!(
             "SELECT {} FROM notes WHERE space_id = ?1 AND archived_at IS NOT NULL ORDER BY archived_at DESC",
             NOTE_LIST_COLS
@@ -284,8 +284,8 @@ pub fn list_archived(
     let mut stmt = conn
         .prepare(&sql)
         .map_err(|e| format!("Note archived error: {}", e))?;
-    let rows = if space_id.is_some() {
-        stmt.query_map(params![space_id.unwrap()], row_to_list_item)
+    let rows = if let Some(space_id) = space_id {
+        stmt.query_map(params![space_id], row_to_list_item)
     } else {
         stmt.query_map([], row_to_list_item)
     }

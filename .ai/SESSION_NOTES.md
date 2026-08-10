@@ -6,37 +6,34 @@
 | --- | --- |
 | Schema version | 2 |
 | Session date | 2026-08-10 |
-| Active task | `PROC-003` |
+| Active task | `DEBT-005/DEBT-006` |
 | Agent | Codex |
-| Route | `direct_codex` (explicit project-owner process decision) |
+| Route | `direct_codex` |
 | State | `complete` |
 
 ## Session objective
 
-Remove the Hermes dependency and make Codex the sole engineering agent for Aether while preserving planning, safety, verification, and review discipline.
+Restore repository-wide Rust formatting and strict Clippy gates before continuing product work.
 
 ## Work completed
 
-- Marked PR #3 ready and merged the already verified TECH-001 implementation into `master`.
-- Added ADR-008 accepting a Codex-only engineering workflow.
-- Replaced `hermes_codex` with `planned_codex` for complex or risky work.
-- Retained `direct_codex` for bounded, low-risk work.
-- Assigned analysis, planning, architecture, prioritization, implementation, testing, documentation, self-review, and publication to Codex.
-- Converted `.ai/HANDOFF.md` into an idle Codex task-contract template while retaining its filename for compatibility.
-- Added an explicit human approval gate for destructive, irreversible, materially product-shaping, externally coordinated, or scope-expanding choices.
-- Updated live project state, backlog ownership, architecture authority, changelog templates, and repository instructions.
+- Applied canonical Rust formatting to the AI provider, command layer, and database repositories.
+- Removed unused imports, bindings, mutability, an unnecessary unwrap, and needless result wrapping.
+- Added narrow documentation-backed allowances for Phase 7 APIs that exist but are not exposed yet.
+- Kept application behavior unchanged while restoring all Rust quality gates.
 
 ## Verification
 
 | Check | Result |
 | --- | --- |
-| PR #3 | Merged into `master` as `2bee084` |
-| Active-policy Hermes scan | Pass — no Hermes requirement remains outside historical records |
-| Workflow vocabulary | Pass — `direct_codex`, `planned_codex`, and Codex self-review are defined |
-| Control-file consistency | Pass — task contract is `idle`; TECH-001 and M-CRED-HARDEN are complete |
-| Changed-path audit | Pass — documentation and control files only |
+| `cargo fmt --manifest-path src-tauri/Cargo.toml -- --check` | Pass |
+| `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings` | Pass |
+| `cargo test --manifest-path src-tauri/Cargo.toml` | Pass — 33/33 tests |
+| `cargo build --manifest-path src-tauri/Cargo.toml` | Pass |
+| `pnpm check` | Pass — typecheck, lint, and 7/7 tests |
+| `pnpm build` | Pass |
 | `git diff --check` | Pass |
 
 ## Exact resume point
 
-Codex reads the control documents, selects the next priority from `.ai/TODO.md`, classifies it as `direct_codex` or `planned_codex`, and continues without Hermes.
+Publish and merge the Rust quality task, then audit Phase 3 Spaces and Phase 4 Notes against their acceptance requirements and add risk-based regression coverage before designing Phase 5 Tasks.
