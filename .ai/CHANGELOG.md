@@ -26,6 +26,17 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-08-10 — `PHASE6-002` — Vault MVP complete
+
+- **Type:** Feature, accessibility, and test
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review
+- **Summary:** Replaced the Vault placeholder with synchronized global and Space-scoped workflows for native import, linked/managed ownership, search and filters, metadata editing, open/reveal, and ownership-specific safe removal.
+- **Files:** `src/hooks/useVault.ts`, `src/components/vault/VaultEditor.tsx`, `src/components/vault/VaultView.tsx`, `src/routes/Vault.tsx`, `src/routes/Vault.test.tsx`, `src/routes/SpaceDetail.tsx`, `.ai/*`
+- **Verification:** Frontend check/build pass with 30/30 tests; Rust format, strict Clippy, and 48/48 tests pass; `git diff --check` pass.
+- **Decisions/deviations:** Browser mode remains read-only rather than fabricating user files; native actions stay behind the PHASE6-001 trusted command boundary.
+- **Follow-up:** `AI-UI-EPIC`
+
 ## 2026-08-10 — `PHASE6-001` — Safe Vault foundation
 
 - **Type:** Feature, security, and test

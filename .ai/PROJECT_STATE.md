@@ -33,9 +33,10 @@
 | `PHASE34-CLOSEOUT` | Close Spaces and Notes MVP gaps | `complete` | All contract acceptance criteria pass with regression coverage. |
 | `PHASE5-001` | Task persistence and IPC foundation | `complete` | ADR-009 acceptance criteria and all quality gates pass. |
 | `PHASE5-002` | Tasks UI and Pulse integration | `complete` | Space and global Task workflows, Pulse attention, tests, and quality gates pass. |
-| `PHASE6-001` | Vault persistence and native filesystem foundation | `self_review` | ADR-010 safety criteria and all quality gates pass; publication is pending. |
+| `PHASE6-001` | Vault persistence and native filesystem foundation | `complete` | Merged through PR #9 at `b202c8e`. |
+| `PHASE6-002` | Vault UI and Space integration | `self_review` | Global and Space file workflows pass interaction and quality gates; publication pending. |
 
-The active task is `PHASE6-001`, approved by Codex self-review and awaiting publication. `PHASE6-002` is next.
+The active task is `PHASE6-002`, governed by the ready contract in `.ai/HANDOFF.md`.
 
 ## Completed product milestones
 
@@ -53,7 +54,7 @@ The active task is `PHASE6-001`, approved by Codex self-review and awaiting publ
 | Milestone | Status | Notes |
 | --- | --- | --- |
 | Phase 5 — Tasks | `complete` | Global and Space Tasks, subtasks, full editing, search/filtering, completion, archive recovery, Pulse attention, persistence, and Activity events are implemented. |
-| Phase 6 — Vault | `foundation_complete` | Safe linked/managed persistence and native commands pass all gates; UI follows in `PHASE6-002`. |
+| Phase 6 — Vault | `mvp_complete` | Safe linked/managed storage, global/Space UI, metadata, filters, open/reveal, and removal workflows pass all gates. |
 | Phase 8 — Memory | `not_started` | No explicit memory domain located. |
 | Phase 9 — Native desktop | `partial` | Icons, Tauri bundle config, and a built executable exist; remaining native features are not verified. |
 | Phase 10 — Release quality | `not_started` | No complete release audit or release pipeline verified. |
@@ -62,7 +63,7 @@ The active task is `PHASE6-001`, approved by Codex self-review and awaiting publ
 
 | Check | Last result | Date | Notes |
 | --- | --- | --- | --- |
-| `pnpm check` | Pass | 2026-08-10 | Typecheck and lint clean; Vitest 25/25 across nine files. |
+| `pnpm check` | Pass | 2026-08-10 | Typecheck and lint clean; Vitest 30/30 across ten files. |
 | `pnpm build` | Pass | 2026-08-10 | TypeScript and Vite production build pass. |
 | `cargo test` | Pass | 2026-08-10 | 48/48 tests pass, including Vault ownership and containment. |
 | `cargo build` | Pass | 2026-08-10 | Windows production build compiles with DPAPI. |
@@ -99,7 +100,7 @@ Full rationale belongs in `.ai/ARCHITECTURE.md` or a dedicated ADR under `docs/d
 | `ADR-009` | Tasks use one persistent tree with nullable Space ownership and local-date due semantics. | Accepted |
 | `ADR-010` | Vault distinguishes linked and managed ownership and enforces deletion safety in Rust. | Accepted |
 
-## Next: Publish `PHASE6-001`, then implement the Vault UI and Space integration in `PHASE6-002`.
+## Next: Publish `PHASE6-002`, then design and complete the Phase 7 AI experience.
 
 ## Reusable update template
 

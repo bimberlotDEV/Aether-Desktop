@@ -23,6 +23,7 @@ import { iconToEmoji } from '@/lib/iconToEmoji'
 import { NotesView } from '@/routes/Notes'
 import { EditSpaceModal } from '@/components/EditSpaceModal'
 import { TaskView } from '@/components/tasks/TaskView'
+import { VaultView } from '@/components/vault/VaultView'
 
 const MODULE_ICONS: Record<
   string,
@@ -238,6 +239,16 @@ export function SpaceDetailLayout() {
                   <NotesView />
                 ) : m.module_type === 'tasks' ? (
                   <TaskView
+                    spaceId={space.id}
+                    spaces={[
+                      ...spaces.filter((candidate) => !candidate.archived_at),
+                      ...(!spaces.some((candidate) => candidate.id === space.id)
+                        ? [space]
+                        : []),
+                    ]}
+                  />
+                ) : m.module_type === 'files' ? (
+                  <VaultView
                     spaceId={space.id}
                     spaces={[
                       ...spaces.filter((candidate) => !candidate.archived_at),

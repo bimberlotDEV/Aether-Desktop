@@ -5,12 +5,12 @@
 | Field | Value |
 | --- | --- |
 | Schema version | 2 |
-| Task ID | `PHASE6-001` |
+| Task ID | `PHASE6-002` |
 | Status | `self_review` |
 | Owner | Codex |
 | Prepared by | Codex |
 | Last updated | 2026-08-10 |
-| Related milestone | Phase 6 — Vault foundation |
+| Related milestone | Phase 6 — Vault UI and Space integration |
 
 ## Responsibility of this file
 
@@ -36,66 +36,55 @@
 
 ```text
 Classification: planned_codex
-Reason: Vault adds a persistent cross-layer domain, native filesystem access, security-sensitive ownership rules, and append-only migration.
+Reason: The Vault UI coordinates native file selection, ownership choices, destructive confirmation, metadata, global filters, and embedded Space context.
 ```
 
 ## Current task
 
 ### Objective
 
-Deliver the verified Vault persistence, storage-safety, native-dialog, open, and reveal foundation required for the Phase 6 UI.
+Deliver a complete, accessible Vault experience for global and Space-scoped file workflows on top of the verified PHASE6-001 foundation.
 
 ### Context
 
-- Vault is currently a static empty state with no persistence or native file operations.
-- ADR-010 defines linked versus managed ownership, relative managed paths, safe removal, and trusted Rust-side open/reveal commands.
-- The official Tauri dialog plugin returns native paths; the official opener plugin supports default-app opening and Explorer reveal.
-- UI delivery is intentionally separated into `PHASE6-002` so filesystem safety can be independently tested and published.
+- PHASE6-001 and ADR-010 are merged through PR #9 and provide all persistence and safe native operations.
+- The global Vault route is still a static empty state and Space `files` modules still render a placeholder.
+- The interface must explain linked versus managed ownership before import and must make removal consequences explicit.
+- Browser-mode fallbacks may support UI tests but must not manufacture realistic user files.
 
 ### Implementation plan
 
-1. Add append-only migration `006_vault` with ownership constraints, metadata fields, search indexes, and nullable Space association.
-2. Implement the validated Vault repository and filters.
-3. Implement a filesystem service for canonical source inspection, atomic managed copies, containment checks, and quarantined safe deletion.
-4. Add transactional Tauri commands for import, list, metadata update, remove, open, and reveal with Activity events.
-5. Configure the official dialog and opener plugins with least-privilege frontend capabilities.
-6. Add strict TypeScript contracts and invoke wrappers.
-7. Document the schema and architecture, test storage/repository/IPC behavior, run all quality gates, and self-review.
+1. Add a synchronized `useVault` domain hook with predictable browser-test behavior and actionable errors.
+2. Build reusable Vault view/editor/import UI for global and Space-scoped use.
+3. Add search, storage-mode and Space filters, metadata editing, open, reveal, and ownership-specific removal confirmation.
+4. Replace the Space `files` placeholder with the Space-scoped Vault view.
+5. Add interaction tests, update project documentation, run all gates, and self-review.
 
 ### Allowed files
 
-- `package.json`, `pnpm-lock.yaml`
-- `src-tauri/Cargo.toml`, `src-tauri/Cargo.lock`
-- `src-tauri/capabilities/default.json`
-- `src-tauri/src/lib.rs`, `src-tauri/src/commands.rs`
-- `src-tauri/src/vault.rs`
-- `src-tauri/src/db/migrations.rs`
-- `src-tauri/src/db/repositories/mod.rs`
-- `src-tauri/src/db/repositories/vault.rs`
-- `src/lib/db/types.ts`, `src/lib/db/tauri.ts`, `src/lib/db/tauri.test.ts`
-- `docs/database.md`, `docs/decisions/010-vault-file-ownership.md`
+- `src/hooks/useVault.ts`, `src/hooks/useVault.test.ts`
+- `src/components/vault/*`
+- `src/routes/Vault.tsx`, `src/routes/Vault.test.tsx`, `src/routes/SpaceDetail.tsx`
 - `.ai/ARCHITECTURE.md`, `.ai/HANDOFF.md`, `.ai/PROJECT_STATE.md`, `.ai/TODO.md`, `.ai/CHANGELOG.md`, `.ai/SESSION_NOTES.md`
 
 ### Out of scope
 
-- Vault list/grid UI and import dialogs (`PHASE6-002`).
-- Content parsing, full-text content indexing, thumbnails, previews, OCR, or DOCX support.
+- Content parsing, full-text content indexing, thumbnails, previews, OCR, or DOCX rendering.
 - Relinking moved external files, checksums, versioning, or duplicate-content detection.
-- Cloud files, sync, or sharing.
+- Drag-and-drop, multi-file import, cloud files, sync, or sharing.
 
 ### Acceptance criteria
 
-- [x] Migration `006_vault` is transactional, idempotent, constrained, and indexed.
-- [x] Records distinguish `linked` and `managed`, support optional Space, title, source filename, media type, size, tags, paths, and timestamps.
-- [x] Source imports canonicalize a real regular file and reject directories or paths already owned by the Vault.
-- [x] Managed copies are written below the canonical Vault root without blocking React and are cleaned up if persistence fails.
-- [x] Linked removal never deletes or modifies the external source file.
-- [x] Managed deletion cannot escape the owned item directory and uses quarantine/rollback around database deletion.
-- [x] Metadata CRUD, Space filtering, ownership filtering, and search are covered by Rust tests.
-- [x] Open and reveal accept only a Vault item ID, resolve its authoritative stored path in Rust, and fail clearly when unavailable.
-- [x] Official plugins are initialized; frontend receives only native dialog-open permission, not arbitrary opener-path permission.
-- [x] TypeScript contracts and invoke wrappers exactly match the Rust command boundary.
-- [x] Existing frontend and Rust quality gates remain green.
+- [x] Global Vault lists items with clear ownership, filename, size, Space, tags, and updated metadata.
+- [x] Native import requires a linked/managed choice and supports optional title, tags, and Space assignment.
+- [x] Search, ownership filter, and Space filter use backend filter contracts.
+- [x] Metadata editing validates title/tags and supports moving between unassigned and active Spaces.
+- [x] Open and reveal actions surface native failures without losing UI state.
+- [x] Removal confirmation states that linked originals remain or that the managed Vault copy is deleted.
+- [x] Empty, loading, error, and no-results states are distinct and accessible.
+- [x] Space `files` modules render the same Vault experience prefiltered and imported into that Space.
+- [x] Interaction tests cover import, metadata update, filters, open/reveal, and both removal messages.
+- [x] Frontend and Rust quality gates remain green.
 
 ### Required verification
 
@@ -111,37 +100,36 @@ Deliver the verified Vault persistence, storage-safety, native-dialog, open, and
 
 | Risk | Mitigation or rollback |
 | --- | --- |
-| An external original is accidentally deleted. | Linked removal contains no filesystem delete path; tests assert the source survives. |
-| A crafted relative path escapes managed storage. | Normalize and canonicalize against `<vault>/items/<id>` before every operation; reject containment failures. |
-| A large copy freezes the interface. | Execute source inspection and copying through `tauri::async_runtime::spawn_blocking`. |
-| Database failure leaves ownership inconsistent. | Clean failed imports; quarantine managed deletion and restore it when the transaction fails. |
-| Broad plugin permissions expose arbitrary local paths. | Grant only dialog open to the frontend; opener calls occur in Rust after ID lookup. |
+| Ownership consequences are unclear. | Explain modes in the import flow and repeat the exact consequence in removal confirmation. |
+| Multiple mounted views become stale. | Central change notification reloads every active Vault hook. |
+| Native selection is cancelled or fails. | Treat cancel as a no-op and expose actionable command failures inline. |
+| Space context is lost during import/edit. | Lock the embedded view filter to its Space while keeping metadata behavior explicit. |
 
 ## Implementation result
 
 ### Summary
 
-Implemented a complete Vault foundation spanning migration, validated repository, safe linked/managed storage, transactional commands, native dialog/open/reveal integration, and typed frontend IPC. Authoritative storage paths remain private to Rust.
+Implemented a reusable global and Space-scoped Vault experience with synchronized domain state, native file selection, explicit ownership, metadata workflows, backend filters, open/reveal actions, accessible states, and safe removal messaging.
 
 ### Files changed
 
-- Added `src-tauri/src/vault.rs`, `src-tauri/src/db/repositories/vault.rs`, and ADR-010.
-- Updated the migration, Tauri commands/plugins/capability, Rust and TypeScript contracts, tests, dependency locks, database documentation, and control documents listed in the allowed scope.
+- Added `src/hooks/useVault.ts`, `src/components/vault/VaultEditor.tsx`, `src/components/vault/VaultView.tsx`, and `src/routes/Vault.test.tsx`.
+- Replaced the global empty state in `src/routes/Vault.tsx` and the Space files placeholder in `src/routes/SpaceDetail.tsx`.
+- Updated the scoped control documents.
 
 ### Verification result
 
-- `pnpm check` - pass; 25/25 tests.
+- `pnpm check` - pass; 30/30 tests across ten files.
 - `pnpm build` - pass.
 - `cargo fmt --manifest-path src-tauri/Cargo.toml -- --check` - pass.
 - `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings` - pass.
 - `cargo test --manifest-path src-tauri/Cargo.toml` - pass; 48/48 tests.
-- `cargo build --manifest-path src-tauri/Cargo.toml` - pass.
 - `git diff --check` - pass.
 
 ### Deviations
 
-- The JavaScript opener package and opener capability were deliberately omitted: open/reveal remain trusted Rust commands keyed only by Vault item ID.
-- Stored paths are deliberately omitted from serialized Vault items; the frontend does not need filesystem authority.
+- Browser mode remains intentionally read-only and shows an explicit desktop-app requirement instead of inventing mock user files.
+- Content previews and drag-and-drop remain deferred as scoped.
 
 ## Codex self-review
 
@@ -149,7 +137,7 @@ Implemented a complete Vault foundation spanning migration, validated repository
 | --- | --- |
 | Decision | `approved_for_publication` |
 | Reviewed at | 2026-08-10 |
-| Acceptance evidence | All eleven criteria pass; 48 Rust tests and 25 frontend tests pass with strict build/lint gates. |
-| Findings | Initial Windows path assertion compared canonical and non-canonical temp paths; controlled child directories also needed explicit junction-escape protection; frontend opener access and serialized paths were unnecessary authority. |
-| Corrections | Corrected canonical-path test, added controlled-directory canonical checks, removed JavaScript opener access, hid stored paths at IPC, and added regression tests. |
-| Residual risks | Full native command orchestration is not end-to-end UI-tested until `PHASE6-002`; repository and filesystem primitives are independently covered. |
+| Acceptance evidence | Ten criteria pass; five Vault interaction tests, 30 total frontend tests, and 48 Rust tests pass. |
+| Findings | Initial action labels were ambiguous to assistive technology; ownership was not sufficiently visible in list rows. |
+| Corrections | Added explicit `Open <title>` labels, distinct `Add to Vault` confirmation, and linked/managed labels with curated icons. |
+| Residual risks | Native Windows picker/open/reveal behavior is covered at the command boundary but still requires final packaged-app smoke testing in Phase 9/10. |

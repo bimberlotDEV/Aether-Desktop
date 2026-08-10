@@ -39,9 +39,9 @@
 | P1 | `PHASE5-001` | Build Task persistence and IPC foundation | Product and architecture | `done` | ADR-009 | Migration, repository, commands, types, wrappers, and tests pass. |
 | P1 | `PHASE5-002` | Build Tasks UI and Pulse integration | Product | `done` | `PHASE5-001` | Space Tasks and calm global due views meet Phase 5 acceptance. |
 | P2 | `AI-UI-EPIC` | Complete the AI user experience | Product | `needs_design` | `TECH-001` | Provider setup, conversations, streaming, cancellation, and explicit context have reviewed UX. |
-| P1 | `VAULT-EPIC` | Design and implement Vault | Product | `active` | ADR-010 | Foundation and UI slices are tracked below. |
+| P1 | `VAULT-EPIC` | Design and implement Vault | Product | `done` | ADR-010 | Safe storage and complete global/Space MVP are implemented. |
 | P1 | `PHASE6-001` | Build Vault persistence and native filesystem foundation | Product and security | `done` | ADR-010 | Safe linked/managed storage commands and tests pass. |
-| P1 | `PHASE6-002` | Build Vault UI and Space integration | Product | `planned` | `PHASE6-001` | Import, metadata, search, open/reveal, and safe removal are usable. |
+| P1 | `PHASE6-002` | Build Vault UI and Space integration | Product | `done` | `PHASE6-001` | Import, metadata, search, open/reveal, and safe removal are usable. |
 
 ## Technical debt
 
@@ -61,7 +61,7 @@
 | Spaces | `mvp_complete` | Extend only when a later roadmap phase requires it. |
 | Notes | `mvp_complete` | Extend only when a later roadmap phase requires it. |
 | Tasks | `mvp_complete` | Extend only when a later roadmap phase requires it. |
-| Vault | `foundation_complete` | Implement `PHASE6-002` UI and Space integration. |
+| Vault | `mvp_complete` | Extend only when a later roadmap phase requires previews or indexing. |
 | AI | `prototype` | Resolve security design before UI expansion. |
 | Memory | `not_started` | Defer until AI context semantics are stable. |
 
