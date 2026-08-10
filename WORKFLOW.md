@@ -1,192 +1,146 @@
-# Aether Multi-Agent Development Workflow
+# Aether Codex Development Workflow
 
-This document defines how Hermes and Codex collaborate on Aether. The system separates design authority from implementation authority while keeping both agents synchronized through small, canonical state files.
+This document defines the single-agent engineering workflow for Aether. Codex owns analysis, planning, architecture, implementation, verification, self-review, documentation, and GitHub publication. The human owner supplies product direction and approval only when a decision cannot be safely inferred or would be destructive, irreversible, or materially expand scope.
 
 ## Operating principles
 
-1. One source of truth exists for each kind of information.
-2. Every task is classified as `direct_codex` or `hermes_codex` before work begins.
-3. Hermes decides what and why for `hermes_codex` work; Codex executes how within approved boundaries.
-4. Exactly one handoff is active for `hermes_codex` implementation at a time.
-5. A `direct_codex` task does not require a Hermes handoff or review unless Codex escalates it.
-6. No `hermes_codex` implementation begins from chat context alone.
-7. Verification evidence is part of the implementation, not optional follow-up.
-8. Architecture changes stop execution until Hermes explicitly approves them.
-9. Documentation is updated in the same task as the behavior it describes.
+1. One canonical source exists for each kind of project information.
+2. Every task is classified as `direct_codex` or `planned_codex` before implementation.
+3. Codex may make reversible technical decisions that follow existing constraints and records durable decisions in an ADR.
+4. Complex or risky work requires a written task contract before code changes.
+5. Verification evidence and explicit self-review are part of implementation.
+6. Failed checks, risks, assumptions, and deviations are never hidden.
+7. Documentation changes ship with the behavior they describe.
+8. Completed work is committed, pushed, and represented by a GitHub pull request.
 
-## Mandatory task routing
+## Task classification
 
-Before planning or implementation, classify the request using exactly one of these values:
+| Route | Use when | Task contract | Review |
+| --- | --- | --- | --- |
+| `direct_codex` | Small, bounded, low-risk work with no unresolved design decision | Not required | Proportionate Codex self-check |
+| `planned_codex` | Features, architecture, security, migrations, cross-layer changes, ambiguity, or high risk | Required in `.ai/HANDOFF.md` | Formal Codex self-review against acceptance criteria |
 
-| Route | Use when | Process owner | Handoff required | Hermes review required |
-| --- | --- | --- | --- | --- |
-| `direct_codex` | Small, bounded, low-risk work with no unresolved design decision | Codex | No | No, unless requested or escalated |
-| `hermes_codex` | Architectural, security-sensitive, cross-cutting, ambiguous, or product-shaping work | Hermes -> Codex -> Hermes | Yes | Yes |
+### `direct_codex`
 
-### `direct_codex` criteria
+Use this route only when all are true:
 
-Use `direct_codex` when all of the following are true:
+- The requested outcome is clear.
+- Existing repository conventions determine the approach.
+- No unresolved security, privacy, migration, data-lifecycle, or product decision exists.
+- The change is small enough to implement and verify in one focused cycle.
+- The work is reversible and does not materially change a public interface.
 
-- The requested outcome and expected behavior are already clear.
-- No architecture, product, security, privacy, or data-lifecycle decision is required.
-- No irreversible migration or broad public interface change is involved.
-- The change is small enough for Codex to implement and verify in one focused cycle.
-- Existing repository conventions determine the implementation approach.
+Codex reads the control documents, inspects the smallest relevant scope, implements, verifies, updates durable state, self-checks the diff, and publishes.
 
-Typical examples:
+### `planned_codex`
 
-- Fixing lint, formatting, or type errors.
-- Correcting documentation or version metadata.
-- Adding a focused regression test.
-- Fixing a small bug with a verified cause.
-- Performing a local, behavior-preserving refactor.
+Use this route when any are true:
 
-For this route, Hermes must not create an elaborate handoff or implement the task. If asked to assess the work, Hermes responds with:
+- A feature, domain, architecture boundary, migration, or shared interface changes.
+- Security, credentials, privacy, destructive behavior, or external data access is involved.
+- The task crosses layers or several ownership boundaries.
+- Requirements contain material trade-offs or ambiguity.
+- Failure could cause data loss, security exposure, or difficult rollback.
 
-```text
-Classification: direct_codex
-Reason: <one sentence>
-Next action: Codex may implement and verify directly.
-```
+Codex first analyses the repository and writes a bounded task contract in `.ai/HANDOFF.md`. The contract must reach `ready` before implementation begins. After implementation and verification, Codex performs a separate self-review pass and records its evidence before marking the task `complete`.
 
-Codex reads the control documents, checks the working tree, implements the bounded change, runs proportionate verification, and records durable changes in the changelog. If Codex discovers a missing design decision or increased risk, Codex stops and reclassifies the work as `hermes_codex`.
+### Human approval gate
 
-### `hermes_codex` criteria
+Codex asks the human owner only when completion requires:
 
-Use `hermes_codex` when any of the following is true:
+- An irreversible or destructive action not already authorized.
+- A product choice with materially different user outcomes.
+- New external credentials, spending, publication, or coordination authority.
+- A scope expansion beyond the request.
+- Resolution of conflicting acceptance criteria that repository evidence cannot settle.
 
-- A new product feature, domain, or multi-step epic is being introduced.
-- Architecture, database schema, migration strategy, or shared interfaces must be designed.
-- Security, credentials, privacy, destructive data behavior, or external AI access is involved.
-- A refactor crosses several layers or ownership boundaries.
-- Requirements are ambiguous or trade-offs materially affect product behavior.
-- Independent architectural review materially reduces delivery risk.
+Ordinary architecture, implementation, testing, refactoring, documentation, commit, push, and draft-PR work remains Codex-owned.
 
-For this route, Hermes responds with:
+## Codex responsibilities
 
-```text
-Classification: hermes_codex
-Reason: <one sentence>
-Next action: Hermes prepares or updates .ai/HANDOFF.md; Codex implements; Hermes reviews.
-```
+Codex owns the complete engineering cycle:
 
-Hermes may plan and review but does not implement the handoff. Codex may implement and verify but does not accept its own work. Hermes must never both implement and accept the same `hermes_codex` task.
+- Repository analysis and current-state verification.
+- Prioritization within the user-approved roadmap.
+- Architecture, ADRs, interfaces, and trade-off documentation.
+- Breaking epics into bounded, independently verifiable tasks.
+- Implementation, debugging, refactoring, migrations, and performance work.
+- Automated tests, static checks, builds, and runtime verification.
+- Security and scope review of its own diff after implementation.
+- Maintenance of all `.ai/` control documents.
+- Conventional commits, pushes, and draft pull requests.
+- Clear escalation to the human owner when the approval gate applies.
 
-### Routing precedence
-
-When uncertain, choose `hermes_codex` only because a concrete risk or unresolved decision requires it, not merely because two agents are available. The human may explicitly override the route. Record the override and its reason in session notes.
-
-## Agent responsibilities
-
-### Hermes — planner, architect, and reviewer
-
-Hermes owns:
-
-- Repository analysis and system-level reasoning.
-- Product and technical prioritization.
-- Architecture, boundaries, interfaces, and significant trade-offs.
-- Breaking epics into independently verifiable tasks.
-- Writing acceptance criteria and identifying risks.
-- Maintaining `.ai/ARCHITECTURE.md` and prioritizing `.ai/TODO.md`.
-- Preparing implementation-ready `.ai/HANDOFF.md` assignments.
-- Reviewing Codex's code, tests, evidence, and deviations.
-- Accepting work or returning precise findings.
-- Classifying incoming work as `direct_codex` or `hermes_codex` when Hermes is consulted.
-
-Hermes never writes production code unless the human explicitly requests it. Hermes may edit planning, architecture, decision, and review documentation. For `direct_codex` tasks, Hermes routes the task to Codex without creating unnecessary planning artifacts. For `hermes_codex` tasks, Hermes never implements and accepts the same task.
-
-### Codex — implementer, executor, and verifier
-
-Codex owns:
-
-- Implementing the active handoff.
-- Debugging, scoped refactoring, migrations, and performance improvements.
-- Adding or updating automated tests.
-- Running required static checks, tests, and builds.
-- Reporting evidence, deviations, risks, and blockers.
-- Updating implementation facts in `.ai/PROJECT_STATE.md`.
-- Appending completed work to `.ai/CHANGELOG.md`.
-- Updating `.ai/HANDOFF.md` implementation results and `.ai/SESSION_NOTES.md`.
-- Executing `direct_codex` tasks without waiting for a handoff when the routing criteria are satisfied.
-
-Codex never redesigns architecture, changes product scope, or reprioritizes the backlog unless a `hermes_codex` handoff explicitly authorizes it. When a direct task reveals architecture or scope uncertainty, Codex stops and escalates it to Hermes.
+Self-review must be evidence-based. Codex re-reads the task contract, inspects the final diff, maps each acceptance criterion to evidence, checks scope and unsafe/destructive behavior, and reruns the relevant gates. It must not treat implementation completion as automatic acceptance.
 
 ## Source-of-truth map
 
-| Question | Canonical file | Primary owner | Update timing |
-| --- | --- | --- | --- |
-| What is true now? | `.ai/PROJECT_STATE.md` | Shared; Codex updates implementation facts | After verified change or blocker |
-| What should be done next? | `.ai/TODO.md` | Hermes | During planning and review |
-| Which route applies and what may Codex implement? | `WORKFLOW.md`; `.ai/HANDOFF.md` only for `hermes_codex` | Hermes classifies complex work; Codex executes | Before work and at multi-agent transitions |
-| What architecture is binding? | `.ai/ARCHITECTURE.md` | Hermes | When decisions change |
-| What was completed? | `.ai/CHANGELOG.md` | Codex | After verification |
-| What helps resume this session? | `.ai/SESSION_NOTES.md` | Active agent | During work; replace next session |
-| What is the collaboration process? | `WORKFLOW.md` | Hermes | Rarely, through reviewed process changes |
-| What repository rules always apply? | `AGENTS.md` | Project maintainers | When durable coding rules change |
-
-Information must not be duplicated in full. Link to the canonical owner when another document needs context.
+| Question | Canonical file | Update timing |
+| --- | --- | --- |
+| What is true now? | `.ai/PROJECT_STATE.md` | After a verified change, decision, or blocker |
+| What should be done next? | `.ai/TODO.md` | During prioritization and task closure |
+| What may be implemented for a planned task? | `.ai/HANDOFF.md` | Before and during `planned_codex` work |
+| What architecture is binding? | `.ai/ARCHITECTURE.md` and ADRs | When a durable decision changes |
+| What was completed? | `.ai/CHANGELOG.md` | After verification and self-review |
+| What helps resume the current session? | `.ai/SESSION_NOTES.md` | During work; replace next session |
+| What is the engineering process? | `WORKFLOW.md` | Rarely, with an explicit process decision |
+| What rules always apply? | `AGENTS.md` | When durable repository rules change |
 
 ## Mandatory session startup
 
-Both agents begin by reading, in order:
+Codex reads these files in order before inspecting implementation code:
 
-1. `AGENTS.md` for non-negotiable repository instructions.
-2. `.ai/PROJECT_STATE.md` for the current verified state.
-3. `.ai/HANDOFF.md` for the active task and ownership.
-4. `.ai/ARCHITECTURE.md` for binding boundaries.
-5. `.ai/TODO.md` for priority and dependencies.
-6. `.ai/SESSION_NOTES.md` for transient continuation context.
-7. The newest relevant entry in `.ai/CHANGELOG.md`.
+1. `AGENTS.md`
+2. `.ai/PROJECT_STATE.md`
+3. `.ai/HANDOFF.md`
+4. `.ai/ARCHITECTURE.md`
+5. `.ai/TODO.md`
+6. `.ai/SESSION_NOTES.md`
+7. The newest relevant `.ai/CHANGELOG.md` entry
 
-“Codex reads the AI files first” means Codex establishes task context from these control documents before inspecting or editing implementation files. For `direct_codex`, Codex then inspects the smallest relevant implementation scope. For `hermes_codex`, Codex proceeds only after the handoff readiness gate passes.
+Then Codex checks the Git worktree, current branch, remote synchronization, and relevant open pull request.
 
-## `hermes_codex` delivery cycle
+## Planned-task readiness gate
 
-### 1. Hermes analyses
+A `planned_codex` task may move from `draft` to `ready` only when all are present:
 
-Hermes inspects the repository, relevant implementation, tests, documentation, current state, and existing decisions. Hermes distinguishes verified facts from assumptions.
+- Stable task ID, objective, context, and classification.
+- Observable acceptance criteria.
+- Explicit allowed paths or bounded directories.
+- Out-of-scope behavior and non-goals.
+- Dependencies, risks, rollback considerations, and blocking decisions.
+- Required validation commands.
+- Accepted ADR when the task changes a durable architecture boundary.
+- Confirmation that user-owned worktree changes do not conflict.
 
-### 2. Hermes plans
+If any item cannot be safely inferred, Codex marks the contract `blocked` and asks the human for the smallest necessary decision.
 
-Hermes updates:
+## Delivery cycle
 
-- `.ai/ARCHITECTURE.md` only when a binding design changes.
-- `.ai/TODO.md` with priority, dependencies, and readiness.
-- `.ai/PROJECT_STATE.md` if the milestone, blocker, or decision index changed.
-- `.ai/HANDOFF.md` with one bounded, implementation-ready task.
-- `.ai/SESSION_NOTES.md` with useful planning context.
+### 1. Analyse and plan
 
-### 3. Readiness gate
+Codex verifies repository facts, separates assumptions from evidence, selects a route, and for `planned_codex` work updates:
 
-Codex may set the handoff to `in_progress` only when all are true:
+- `.ai/ARCHITECTURE.md` and an ADR when architecture changes.
+- `.ai/TODO.md` with priority, dependencies, and task status.
+- `.ai/PROJECT_STATE.md` with the active milestone or blocker.
+- `.ai/HANDOFF.md` with a bounded task contract.
+- `.ai/SESSION_NOTES.md` with the exact resume point.
 
-- Task ID, objective, context, and owner are present.
-- Allowed files or bounded directories are explicit.
-- Out-of-scope behavior is explicit.
-- Acceptance criteria are observable.
-- Required validation commands are listed.
-- Dependencies and blocking decisions are resolved.
-- Architecture changes, if any, have an accepted decision.
-- The working tree has been inspected for user-owned changes.
-
-If any item is missing and cannot be safely inferred, Codex marks the handoff `blocked` and asks Hermes for the smallest necessary decision.
-
-This readiness gate applies to `hermes_codex` tasks. A correctly classified `direct_codex` task does not create or replace `.ai/HANDOFF.md`.
-
-### 4. Codex implements
+### 2. Implement
 
 Codex:
 
-1. Marks the handoff `in_progress` and records the session start.
-2. Reads only the relevant implementation paths and dependencies.
-3. Makes the smallest cohesive change satisfying the acceptance criteria.
+1. Sets a planned task to `in_progress`.
+2. Reads only relevant implementation paths and dependencies.
+3. Makes the smallest cohesive change satisfying the contract.
 4. Preserves unrelated user changes.
-5. Adds or updates tests close to the behavior owner.
-6. Does not expand scope because adjacent work is convenient.
+5. Adds tests closest to the behavior owner.
+6. Avoids opportunistic scope expansion.
 
-### 5. Codex verifies
+### 3. Verify
 
-The default frontend gate is:
+Default frontend gate:
 
 ```bash
 pnpm typecheck
@@ -203,144 +157,124 @@ cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
 cargo test --manifest-path src-tauri/Cargo.toml
 ```
 
-For migrations, verify a fresh database, upgrade from the previous schema, idempotence, and relevant repository tests. For UI changes, perform visual and interaction verification at supported window sizes and themes. The handoff may add stricter commands.
+For migrations, verify fresh creation, upgrade from the prior schema, idempotence, and repository behavior. For UI work, verify supported window sizes, keyboard behavior, and dark/light/system themes. A task contract may add stricter checks.
 
-A failed check is not hidden. Codex either fixes an in-scope failure or records the exact failure, suspected ownership, and blocking impact.
+An in-scope failure is fixed. A pre-existing or external failure is recorded with its exact command, impact, and tracking ID.
 
-### 6. Codex hands back
+### 4. Self-review
+
+Codex performs a distinct final review pass:
+
+1. Inspect the complete diff and changed-path list.
+2. Map every acceptance criterion to code or test evidence.
+3. Check architecture compliance, security boundaries, error paths, and rollback implications.
+4. Confirm no unrelated changes or secrets are staged.
+5. Record findings and corrections in `.ai/HANDOFF.md` for planned tasks.
+6. Rerun affected checks after any correction.
+
+Possible outcomes are `complete`, `changes_required`, or `blocked`. Codex may correct its own findings, but it must record material findings and their resolution.
+
+### 5. Update project memory
 
 Codex updates, in order:
 
-1. `.ai/CHANGELOG.md` with completed, verified work.
-2. `.ai/PROJECT_STATE.md` with new facts and check results.
-3. `.ai/HANDOFF.md` with files changed, verification evidence, deviations, and status `ready_for_review`.
-4. `.ai/SESSION_NOTES.md` with the exact review/resume point.
-5. `.ai/TODO.md` only for newly discovered debt or defects; Codex does not reprioritize them.
+1. `.ai/CHANGELOG.md`
+2. `.ai/PROJECT_STATE.md`
+3. `.ai/HANDOFF.md` for planned tasks
+4. `.ai/SESSION_NOTES.md`
+5. `.ai/TODO.md`
 
-### 7. Hermes reviews
+Completed contract detail moves to the changelog; `.ai/HANDOFF.md` returns to the `idle` template when no planned task is active.
 
-Hermes reviews the diff against architecture and acceptance criteria, then chooses one outcome:
+### 6. Publish
 
-- `accepted`: all criteria pass; update milestone/backlog and prepare the next handoff.
-- `changes_requested`: add precise findings to the same handoff and return ownership to Codex.
-- `blocked`: record the external dependency or decision required.
-- `superseded`: close the task with rationale and create a replacement task ID.
-
-Hermes does not silently rewrite Codex's implementation during review.
+Codex commits and pushes only after verification and self-review. A draft PR remains the default so the human can inspect or merge it, but no second AI reviewer is required.
 
 ## State model
 
 ```text
 TODO candidate
-    -> needs_design
-    -> ready_for_handoff
-    -> HANDOFF ready
+    -> planned
+    -> HANDOFF draft
+    -> ready
     -> in_progress
-    -> ready_for_review
-    -> accepted
+    -> self_review
+    -> complete
     -> CHANGELOG + PROJECT_STATE
 ```
 
-`blocked` is an interrupt state with an owner and explicit resolution path. `changes_requested` returns to `in_progress` under the same task ID unless scope materially changes.
+`blocked` is an interrupt state with evidence, impact, attempted alternatives, and one concrete request to the human owner. `changes_required` returns to `in_progress` under the same task ID.
 
-## Task design standard
+## Task design and scaling
 
-Every task must:
+- One task delivers one coherent outcome and uses a stable ID.
+- Epics are decomposed into ordered vertical slices before implementation.
+- One worktree has at most one active planned task contract.
+- Parallel Codex sessions use separate branches/worktrees and non-overlapping file ownership.
+- Migrations, global types, routing, native state, and design tokens are serialization points.
+- Cross-cutting work begins with an ADR and ordered implementation slices.
+- Integration work receives its own verification and self-review pass.
 
-- Deliver one coherent outcome.
-- Use a stable ID such as `SPACE-012`, `AI-004`, `TECH-001`, or `DOC-003`.
-- Be small enough to implement and review in one focused cycle.
-- State dependencies and non-goals.
-- Prefer vertical slices that include types, persistence, commands, UI, and tests when appropriate.
-- Separate irreversible migrations, security redesigns, and broad refactors into explicitly reviewed tasks.
+## Blocking rules
 
-An epic is never placed directly in `HANDOFF.md`; Hermes decomposes it in `.ai/TODO.md` first. Small direct tasks do not need backlog promotion unless they were already tracked or produce durable follow-up work.
+Codex stops and records a blocker when:
 
-## Scaling and parallel work
-
-- One repository worktree has one active `HANDOFF.md` and one Codex owner.
-- Parallel work uses separate Git branches and worktrees with non-overlapping file ownership.
-- Each worktree carries its own handoff state; integration happens through a dedicated review/integration task.
-- Shared migrations, global types, routing, and design tokens are serialization points and must not be edited concurrently without an integration plan.
-- Cross-cutting changes use an architecture task first, followed by ordered implementation tasks.
-- Completed handoff detail moves to the changelog; live state files remain short.
-
-## Blocking and escalation
-
-Codex stops when:
-
-- A required architecture decision is missing.
-- The safe solution exceeds allowed paths or scope.
+- A required human product decision is missing.
+- A safe solution exceeds authorized scope.
 - User-owned changes overlap required edits.
-- A destructive migration or data-loss risk was not authorized.
-- Required credentials, tools, or external services are unavailable.
+- An unauthorized destructive or data-loss risk appears.
+- Credentials, tools, or external services are unavailable.
 - Acceptance criteria conflict.
 
-For `hermes_codex`, Codex marks the handoff `blocked`. For `direct_codex`, Codex records the evidence in session notes and requests reclassification to `hermes_codex`. Every block report contains evidence, impact, attempted safe alternatives, the decision owner, and one concrete resolution request.
+Difficulty, long runtime, or an initially failed check is not itself a blocker; Codex first exhausts safe in-scope diagnostics and alternatives.
 
 ## Documentation hygiene
 
-- Use ISO dates (`YYYY-MM-DD`) and stable task/decision IDs.
-- Use the literal `None` instead of omitting a required field.
-- Label assumptions and replace them with evidence as soon as possible.
+- Use ISO dates and stable task/decision IDs.
+- Use `None` for intentionally empty required fields.
+- Label assumptions until replaced by evidence.
 - Never store secrets or personal data in `.ai/`.
-- Keep `SESSION_NOTES.md` temporary; promote durable facts to their canonical file.
-- Keep `CHANGELOG.md` append-only and newest first.
-- Update state in the same pull request or commit as implementation.
+- Keep `SESSION_NOTES.md` temporary.
+- Keep `CHANGELOG.md` append-only and newest first, except factual corrections.
+- Update state in the same PR as the implementation it describes.
 
 ## Automatic GitHub publication
 
-Every completed task is published to GitHub. Automation happens at verified task boundaries, never on every file save.
+Every completed task is published at a verified task boundary:
 
-1. Work on a task branch named `agent/<short-description>` when starting from `main` or `master`.
-2. Run all task-specific verification before committing.
-3. Stage only the paths owned by the task; never use an unreviewed blanket stage in a mixed worktree.
+1. Start from current `master` on `agent/<short-description>`.
+2. Run task-specific verification and self-review.
+3. Stage only task-owned paths.
 4. Use a conventional commit message.
-5. Run `scripts/publish-task.ps1`, which validates the staged scope, blocks common secret/database files, commits, pushes, and opens a draft PR when needed.
-6. The versioned `.githooks/post-commit` hook also pushes ordinary commits automatically.
-7. A task is not published until the branch exists on GitHub. If push or PR creation fails, report it and retry; do not claim completion.
+5. Publish with `scripts/publish-task.ps1`.
+6. The versioned post-commit hook also pushes ordinary commits automatically.
+7. Confirm the branch and draft PR exist on GitHub.
 
-One-time setup per clone:
+One-time hook setup:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/install-git-hooks.ps1
 ```
 
-Standard task publication:
+Standard publication:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts/publish-task.ps1 `
-  -Message "docs(workflow): describe task routing" `
+  -Message "docs(workflow): adopt Codex-only delivery" `
   -Paths WORKFLOW.md, AGENTS.md
 ```
 
-Safety rules:
-
-- Never publish `.env*`, databases, private keys, credential files, or secrets.
-- Never auto-commit unrelated user changes.
-- Never bypass failed verification merely to synchronize GitHub.
-- Use `AETHER_SKIP_AUTO_PUSH=1` only for an explicit, temporary local-only commit; the task remains incomplete until manually pushed.
-- GitHub publication does not imply merge approval. Draft PRs remain subject to the applicable `direct_codex` or `hermes_codex` review policy.
+Never publish `.env*`, databases, private keys, actual secret material, failed in-scope checks, or unrelated changes. GitHub publication does not imply human approval or automatic merge.
 
 ## Definition of done
 
-A `direct_codex` task is complete when:
+A task is complete when:
 
-- The requested bounded outcome is implemented.
-- Proportionate checks pass or a limitation is reported.
-- Relevant durable documentation is updated.
-- No architecture or scope question remains that requires escalation.
-- The commit is pushed to GitHub and a draft PR exists when working off the default branch.
+- The requested outcome and all acceptance criteria are satisfied.
+- Required tests and checks pass, or an authorized/pre-existing limitation is precisely documented.
+- Relevant tests and documentation are current.
+- Codex completed and recorded its self-review.
+- No unresolved scope, architecture, security, or data-safety issue remains.
+- The task-owned commit is pushed and a draft PR exists when working off `master`.
 
-A `hermes_codex` task is complete only when:
-
-- Acceptance criteria are satisfied.
-- Required tests and checks pass, or an authorized exception is documented.
-- New behavior has appropriate tests.
-- No unapproved scope or architecture changes remain.
-- Relevant documentation is current.
-- Changelog, project state, handoff, and session notes are updated.
-- Hermes records `accepted` in the handoff.
-- The accepted commits are pushed to GitHub and the PR state is accurately reported.
-
-Until Hermes accepts it, Codex's work is `ready_for_review`, not complete.
+No Hermes handoff, review, or acceptance is required.

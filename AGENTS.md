@@ -73,20 +73,22 @@ Use conventional commits:
 
 Phase 0-2 are complete. Phase 3 (Spaces) and Phase 4 (Notes) are substantially implemented. Phase 7 (AI integration) has a backend prototype but is not production-ready. The canonical live status is `.ai/PROJECT_STATE.md`.
 
-## Multi-agent collaboration
+## Codex-only collaboration
 
-Aether uses the hybrid Hermes/Codex workflow defined in `WORKFLOW.md`. Before work begins, classify the task as `direct_codex` or `hermes_codex`.
+Aether uses the single-agent Codex workflow defined in `WORKFLOW.md`. Codex owns analysis, planning, architecture, prioritization, implementation, testing, documentation, self-review, and GitHub publication.
 
-- **Hermes** owns analysis, planning, architecture, prioritization, decomposition, and review. Hermes does not write production code unless explicitly requested.
-- **Codex** owns implementation, debugging, refactoring, testing, verification, and implementation documentation. Codex does not redesign architecture unless the active handoff explicitly authorizes it.
-- Use **`direct_codex`** for small, clear, low-risk work with no architecture, security, migration, or product decision. Codex implements and verifies it directly; no Hermes handoff or review is required.
-- Use **`hermes_codex`** for features, architecture, database design, security, cross-layer refactors, ambiguous requirements, or high-risk changes. Hermes prepares the handoff, Codex implements, and Hermes reviews.
-- Hermes must never implement and accept the same `hermes_codex` task.
-- `.ai/HANDOFF.md` is the implementation authority only for `hermes_codex` tasks.
+- Classify each task as `direct_codex` or `planned_codex` before implementation.
+- Use `direct_codex` for small, clear, reversible, low-risk work governed by existing conventions.
+- Use `planned_codex` for features, architecture, security, migrations, cross-layer changes, ambiguity, or high risk.
+- A `planned_codex` task requires a complete `.ai/HANDOFF.md` task contract with status `ready` before production code changes begin.
+- Codex performs a distinct self-review after implementation and maps every acceptance criterion to evidence.
+- Codex may create or update ADRs and make reversible technical decisions consistent with the user-approved roadmap.
+- Ask the human owner only for destructive, irreversible, materially product-shaping, externally coordinated, or scope-expanding decisions that cannot be safely inferred.
+- No Hermes planning, handoff, review, or acceptance is required.
 - `.ai/PROJECT_STATE.md` is the canonical current-state snapshot.
-- `.ai/TODO.md` is the prioritized backlog, not implementation authorization.
+- `.ai/TODO.md` is the prioritized backlog; Codex may prioritize within the user-approved roadmap.
 
-At the start of every session, read the control documents in the order defined by `WORKFLOW.md`. A `hermes_codex` task requires a `ready` handoff. A `direct_codex` task may proceed without changing the handoff, but Codex must escalate if hidden design or risk is discovered.
+At the start of every session, read the control documents in the order defined by `WORKFLOW.md`. If a direct task reveals hidden architecture, security, migration, or product risk, reclassify it as `planned_codex`, write the task contract, and continue only after the readiness gate passes.
 
 ## Automatic GitHub publication
 

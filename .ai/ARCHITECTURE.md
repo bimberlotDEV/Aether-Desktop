@@ -5,9 +5,9 @@
 | Field | Value |
 | --- | --- |
 | Schema version | 1 |
-| Last updated | 2026-07-31 |
-| Architecture owner | Hermes |
-| Implementation verifier | Codex |
+| Last updated | 2026-08-10 |
+| Architecture owner | Codex |
+| Implementation verifier | Codex self-review |
 
 ## Responsibility of this file
 
@@ -38,18 +38,18 @@ SQLite / native capabilities / external providers
 
 | Path | Responsibility | Change authority |
 | --- | --- | --- |
-| `src/routes/` | Routed product surfaces and page composition | Codex within handoff scope |
-| `src/components/` | Reusable UI components | Codex within handoff scope |
-| `src/hooks/` | UI-facing orchestration and async state | Codex within handoff scope |
-| `src/stores/` | Cross-component client state | Codex within handoff scope |
-| `src/lib/db/` | TypeScript schemas and Tauri invoke wrappers | Codex within handoff scope |
-| `src/styles/index.css` | Design tokens and shared styling foundation | Codex; token changes require Hermes approval |
-| `src-tauri/src/commands.rs` | IPC boundary and command orchestration | Codex within handoff scope |
-| `src-tauri/src/db/repositories/` | Persistent domain operations | Codex within handoff scope |
-| `src-tauri/src/db/migrations.rs` | Append-only schema evolution | Codex; migration design must be in handoff |
-| `src-tauri/src/ai/` | Provider abstraction and credentials prototype | Codex; security redesign requires Hermes handoff |
-| `docs/` | Human-facing architecture and decisions | Hermes owns intent; Codex updates implementation facts |
-| `.ai/` | Agent coordination and live engineering state | Split ownership defined in `WORKFLOW.md` |
+| `src/routes/` | Routed product surfaces and page composition | Codex within task scope |
+| `src/components/` | Reusable UI components | Codex within task scope |
+| `src/hooks/` | UI-facing orchestration and async state | Codex within task scope |
+| `src/stores/` | Cross-component client state | Codex within task scope |
+| `src/lib/db/` | TypeScript schemas and Tauri invoke wrappers | Codex within task scope |
+| `src/styles/index.css` | Design tokens and shared styling foundation | Codex; token changes require a planned task |
+| `src-tauri/src/commands.rs` | IPC boundary and command orchestration | Codex within task scope |
+| `src-tauri/src/db/repositories/` | Persistent domain operations | Codex within task scope |
+| `src-tauri/src/db/migrations.rs` | Append-only schema evolution | Codex; migration design requires a planned task and ADR when durable |
+| `src-tauri/src/ai/` | Provider abstraction and credential security | Codex; security work requires `planned_codex` |
+| `docs/` | Human-facing architecture and decisions | Codex owns verified technical intent and implementation facts |
+| `.ai/` | Codex planning, execution, and live engineering state | Codex, governed by `WORKFLOW.md` |
 
 ## Binding architecture rules
 
@@ -61,7 +61,7 @@ SQLite / native capabilities / external providers
 6. External AI context is explicit and scoped; no implicit bulk access to user data.
 7. Secrets must never be committed, logged, placed in handoff files, or stored using reversible project-derived key material.
 8. Design tokens are preferred over scattered raw CSS values.
-9. Architecture changes require an explicit Hermes decision in the handoff before Codex implements them.
+9. Architecture changes require a `planned_codex` task contract and accepted ADR before implementation.
 
 ## UI and design constraints
 
@@ -90,18 +90,19 @@ SQLite / native capabilities / external providers
 | `ADR-001` | Use Tauri 2 rather than Electron. | Accepted | `docs/architecture.md` |
 | `ADR-002` | Use bundled SQLite through `rusqlite`. | Accepted | `docs/decisions/001-sqlite-rusqlite.md` |
 | `ADR-003` | Use React 19, TypeScript, Vite, Tailwind, and Zustand. | Accepted | `AGENTS.md`, `docs/architecture.md` |
-| `ADR-004` | Use hybrid routing: Codex handles small low-risk tasks directly; Hermes plans and reviews complex or risky tasks. | Accepted | `WORKFLOW.md` |
+| `ADR-004` | Use hybrid Hermes/Codex task routing. | Superseded by `ADR-008` | `WORKFLOW.md` history |
 | `ADR-005` | Use `.ai/` as the canonical agent state layer. | Accepted | `WORKFLOW.md` |
 | `ADR-006` | Use Windows DPAPI (`CryptProtectData`/`CryptUnprotectData`) bound to the current user for production credential encryption; provide a parallel test-only ring-based crypto for in-memory tests. | Accepted | `docs/decisions/006-dpapi-credential-storage.md` |
 | `ADR-007` | Publish verified task commits automatically through a versioned Git hook and guarded publication script. | Accepted | `WORKFLOW.md` |
+| `ADR-008` | Use Codex as the sole engineering agent with planned-task contracts and evidence-based self-review. | Accepted | `docs/decisions/008-codex-only-workflow.md` |
 
 ## Architecture change protocol
 
-1. Hermes records the problem, constraints, options, and decision ID.
-2. For material or irreversible decisions, Hermes creates an ADR under `docs/decisions/`.
-3. Hermes updates this decision registry and creates a bounded handoff.
-4. Codex implements the accepted decision without substituting a different design.
-5. If implementation evidence invalidates the design, Codex stops, marks the handoff `blocked`, and records the evidence; Hermes decides the revision.
+1. Codex records the problem, constraints, options, and decision ID.
+2. For durable or high-risk decisions, Codex creates an ADR under `docs/decisions/`.
+3. Codex updates this registry and writes a bounded task contract in `.ai/HANDOFF.md`.
+4. Codex implements the accepted decision, verifies it, and performs a separate self-review pass.
+5. If implementation evidence invalidates the design, Codex updates or supersedes the ADR before continuing; human input is requested only when the approval gate applies.
 
 ## Decision template
 
