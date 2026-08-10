@@ -8,8 +8,8 @@
 | Last updated | 2026-08-10 |
 | Updated by | Codex |
 | Repository | `bimberlotDEV/Aether-Desktop` |
-| Branch | `codex/phase7-ai-experience` |
-| Baseline commit | `7569d3f` (PR #11 merge) |
+| Branch | `codex/phase8-memory` |
+| Baseline commit | `7838599` (PR #12 merge) |
 | Product maturity | Alpha |
 
 ## Responsibility of this file
@@ -36,9 +36,10 @@
 | `PHASE6-001` | Vault persistence and native filesystem foundation | `complete` | Merged through PR #9 at `b202c8e`. |
 | `PHASE6-002` | Vault UI and Space integration | `complete` | Merged through PR #10 at `c352e67`. |
 | `PHASE7-001` | AI streaming and context foundation | `complete` | Merged through PR #11 at `7569d3f`. |
-| `PHASE7-002` | Complete AI user experience | `self_review` | Settings, chat, context, response modes, proposals, tests, and all quality gates pass; publication pending. |
+| `PHASE7-002` | Complete AI user experience | `complete` | Merged through PR #12 at `7838599`. |
+| `PHASE8-001` | Explicit scoped Memory | `complete` | Persistence, global/Space management, AI attachment, tests, and quality gates pass. |
 
-The active task is `PHASE7-002`, governed by the self-review contract in `.ai/HANDOFF.md`.
+The completed task is `PHASE8-001`, governed by the contract in `.ai/HANDOFF.md`.
 
 ## Completed product milestones
 
@@ -57,7 +58,7 @@ The active task is `PHASE7-002`, governed by the self-review contract in `.ai/HA
 | --- | --- | --- |
 | Phase 5 — Tasks | `complete` | Global and Space Tasks, subtasks, full editing, search/filtering, completion, archive recovery, Pulse attention, persistence, and Activity events are implemented. |
 | Phase 6 — Vault | `mvp_complete` | Safe linked/managed storage, global/Space UI, metadata, filters, open/reveal, and removal workflows pass all gates. |
-| Phase 8 — Memory | `not_started` | No explicit memory domain located. |
+| Phase 8 — Memory | `mvp_complete` | Explicit user-authored global/Space Memory, management UI, safe deletion, and AI context integration are implemented. |
 | Phase 9 — Native desktop | `partial` | Icons, Tauri bundle config, and a built executable exist; remaining native features are not verified. |
 | Phase 10 — Release quality | `not_started` | No complete release audit or release pipeline verified. |
 
@@ -65,9 +66,9 @@ The active task is `PHASE7-002`, governed by the self-review contract in `.ai/HA
 
 | Check | Last result | Date | Notes |
 | --- | --- | --- | --- |
-| `pnpm check` | Pass | 2026-08-10 | Typecheck and lint clean; Vitest 36/36 across 13 files. |
+| `pnpm check` | Pass | 2026-08-10 | Typecheck and lint clean; Vitest 39/39 across 14 files. |
 | `pnpm build` | Pass | 2026-08-10 | TypeScript and Vite production build pass. |
-| `cargo test` | Pass | 2026-08-10 | 56/56 tests pass, including AI streaming, cancellation, context isolation, and Vault safety. |
+| `cargo test` | Pass | 2026-08-10 | 58/58 tests pass, including Memory scope/cascade, AI isolation, and Vault safety. |
 | `cargo build` | Pass | 2026-08-10 | Windows production build compiles with DPAPI. |
 | `cargo fmt --check` | Pass | 2026-08-10 | Repository Rust formatting is clean; `DEBT-005` resolved. |
 | `cargo clippy --all-targets -- -D warnings` | Pass | 2026-08-10 | Library, binary, and test targets are warning-free; `DEBT-006` resolved. |
@@ -102,8 +103,9 @@ Full rationale belongs in `.ai/ARCHITECTURE.md` or a dedicated ADR under `docs/d
 | `ADR-009` | Tasks use one persistent tree with nullable Space ownership and local-date due semantics. | Accepted |
 | `ADR-010` | Vault distinguishes linked and managed ownership and enforces deletion safety in Rust. | Accepted |
 | `ADR-011` | AI uses cancellable typed streams and explicit Space-isolated context resolved in Rust. | Accepted |
+| `ADR-012` | Memory is explicit, user-authored, scoped, attributable, and attached to AI only by choice. | Accepted |
 
-## Next: Publish `PHASE7-002`, then design and implement Phase 8 Memory.
+## Next: Publish `PHASE8-001`, then complete Phase 9 native Windows features.
 
 ## Reusable update template
 

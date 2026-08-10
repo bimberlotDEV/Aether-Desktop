@@ -202,6 +202,49 @@ export const VaultFilterSchema = z.object({
 })
 export type VaultFilter = z.infer<typeof VaultFilterSchema>
 
+// ─── Memory Types ───────────────────────────────────────
+
+export const MemoryCategorySchema = z.enum([
+  'preference',
+  'decision',
+  'recurring_context',
+  'terminology',
+  'goal',
+  'constraint',
+])
+export type MemoryCategory = z.infer<typeof MemoryCategorySchema>
+
+export const MemoryItemSchema = z.object({
+  id: z.string(),
+  space_id: z.string().nullable(),
+  title: z.string(),
+  content: z.string(),
+  reason: z.string(),
+  category: MemoryCategorySchema,
+  source: z.literal('user'),
+  created_at: z.string(),
+  updated_at: z.string(),
+})
+export type MemoryItem = z.infer<typeof MemoryItemSchema>
+
+export const MemoryInputSchema = z.object({
+  spaceId: z.string().nullable(),
+  title: z.string().trim().min(1).max(200),
+  content: z.string().trim().min(1).max(20_000),
+  reason: z.string().trim().min(1).max(500),
+  category: MemoryCategorySchema,
+})
+export type MemoryInput = z.infer<typeof MemoryInputSchema>
+
+export const MemoryFilterSchema = z.object({
+  spaceId: z.string().optional(),
+  globalOnly: z.boolean().optional(),
+  category: MemoryCategorySchema.optional(),
+  search: z.string().optional(),
+  limit: z.number().int().min(1).max(500).optional(),
+})
+export type MemoryFilter = z.infer<typeof MemoryFilterSchema>
+
 // ─── AI Types ────────────────────────────────────────────
 
 export const AiConversationSchema = z.object({
@@ -252,7 +295,7 @@ export type AiModel = z.infer<typeof AiModelSchema>
 
 export const AiResolvedContextItemSchema = z.object({
   attachmentId: z.string(),
-  entityType: z.enum(['note', 'task', 'vault']),
+  entityType: z.enum(['note', 'task', 'vault', 'memory']),
   entityId: z.string(),
   title: z.string(),
   detail: z.string(),

@@ -7,6 +7,7 @@ import {
   Settings,
   CheckSquare,
   Sparkles,
+  Brain,
   type LucideIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -23,6 +24,7 @@ const navItems: NavItem[] = [
   { to: '/tasks', icon: CheckSquare, label: 'Tasks' },
   { to: '/vault', icon: FolderOpen, label: 'Vault' },
   { to: '/ai', icon: Sparkles, label: 'AI' },
+  { to: '/memory', icon: Brain, label: 'Memory' },
   { to: '/activity', icon: Activity, label: 'Activity' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ]

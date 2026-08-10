@@ -1,11 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Check, CheckSquare, File, FileText, Search, X } from 'lucide-react'
-import type { AiContextItem, NoteListItem, Task, VaultItem } from '@/lib/db/types'
+import { Brain, Check, CheckSquare, File, FileText, Search, X } from 'lucide-react'
+import type {
+  AiContextItem,
+  MemoryItem,
+  NoteListItem,
+  Task,
+  VaultItem,
+} from '@/lib/db/types'
 import * as db from '@/lib/db/tauri'
 
 type Candidate = {
   id: string
-  type: 'note' | 'task' | 'vault'
+  type: 'note' | 'task' | 'vault' | 'memory'
   title: string
   detail: string
 }
@@ -18,7 +24,7 @@ export function AiContextPicker({
 }: {
   spaceId?: string
   attached: AiContextItem[]
-  onAttach: (type: 'note' | 'task' | 'vault', id: string) => Promise<void>
+  onAttach: (type: 'note' | 'task' | 'vault' | 'memory', id: string) => Promise<void>
   onClose: () => void
 }) {
   const [candidates, setCandidates] = useState<Candidate[]>([])
@@ -33,8 +39,14 @@ export function AiContextPicker({
       db.listRecentNotes(spaceId, 100),
       db.listTasks({ ...(spaceId ? { spaceId } : {}), limit: 100 }),
       db.listVaultItems({ ...(spaceId ? { spaceId } : {}), limit: 100 }),
+      spaceId
+        ? Promise.all([
+            db.listMemory({ spaceId, limit: 100 }),
+            db.listMemory({ globalOnly: true, limit: 100 }),
+          ]).then((groups) => groups.flat())
+        : db.listMemory({ limit: 100 }),
     ])
-      .then(([notes, tasks, files]) => {
+      .then(([notes, tasks, files, memories]) => {
         if (!active) return
         setCandidates([
           ...notes.map((note: NoteListItem) => ({
@@ -54,6 +66,12 @@ export function AiContextPicker({
             type: 'vault' as const,
             title: file.display_title,
             detail: `${file.original_name} · metadata only`,
+          })),
+          ...memories.map((memory: MemoryItem) => ({
+            id: memory.id,
+            type: 'memory' as const,
+            title: memory.title,
+            detail: `${memory.category.replace('_', ' ')} · ${memory.space_id ? 'Space' : 'global'}`,
           })),
         ])
       })
@@ -83,7 +101,7 @@ export function AiContextPicker({
       : candidates
   }, [candidates, search])
 
-  const icons = { note: FileText, task: CheckSquare, vault: File }
+  const icons = { note: FileText, task: CheckSquare, vault: File, memory: Brain }
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -104,7 +122,7 @@ export function AiContextPicker({
             </h2>
             <p className="mt-1 text-xs text-[var(--color-text-tertiary)]">
               Only items you attach here are sent with this conversation. Vault files
-              share metadata, never file content.
+              share metadata, never file content. Memory is sent only when selected.
             </p>
           </div>
           <button
@@ -121,7 +139,7 @@ export function AiContextPicker({
           <input
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search Notes, Tasks, and Vault"
+            placeholder="Search Notes, Tasks, Vault, and Memory"
             className="w-full bg-transparent text-sm outline-none"
             autoFocus
           />

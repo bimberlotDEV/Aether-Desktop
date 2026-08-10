@@ -134,6 +134,24 @@ Indexes: `space_id`, `storage_mode`, `display_title`, `updated_at`. `stored_path
 
 Managed files live below `%APPDATA%/Aether/vault/items/<item-id>/`. Linked originals are never mutated or deleted by Vault removal. `stored_path` remains internal to Rust; native open and reveal operations resolve a database item rather than accepting or returning arbitrary frontend paths.
 
+### memory_items
+
+Explicit user-authored durable context, governed by ADR-012.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | TEXT PK | UUIDv7 |
+| `space_id` | TEXT FK | Optional global scope; Space rows use ON DELETE CASCADE |
+| `title` | TEXT | Required, 1 to 200 characters |
+| `content` | TEXT | Required, maximum 20,000 characters |
+| `reason` | TEXT | Required user-visible attribution, maximum 500 characters |
+| `category` | TEXT | preference, decision, recurring_context, terminology, goal, constraint |
+| `source` | TEXT | MVP is strictly user-authored |
+| `created_at` | TEXT | ISO 8601 timestamp |
+| `updated_at` | TEXT | ISO 8601 timestamp |
+
+Indexes: `space_id`, `category`, `updated_at`. A cleanup trigger removes polymorphic AI context attachments when an item is deleted. Content is sent externally only after explicit attachment and Rust scope validation.
+
 ## Migrations
 
 Versioned in `src-tauri/src/db/migrations.rs`. Each migration has a name and SQL. Applied migrations are tracked in `_migrations` table. Migrations run in a transaction — all or nothing.

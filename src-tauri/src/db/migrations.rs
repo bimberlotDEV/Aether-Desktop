@@ -243,6 +243,31 @@ const MIGRATIONS: &[(&str, &str)] = &[
         ON ai_context_items(conversation_id, entity_type, entity_id);
         ",
     ),
+    // Migration 008: Explicit Memory
+    (
+        "008_memory",
+        "
+        CREATE TABLE IF NOT EXISTS memory_items (
+            id          TEXT PRIMARY KEY NOT NULL,
+            space_id    TEXT REFERENCES spaces(id) ON DELETE CASCADE,
+            title       TEXT NOT NULL CHECK(length(trim(title)) BETWEEN 1 AND 200),
+            content     TEXT NOT NULL CHECK(length(trim(content)) BETWEEN 1 AND 20000),
+            reason      TEXT NOT NULL CHECK(length(trim(reason)) BETWEEN 1 AND 500),
+            category    TEXT NOT NULL CHECK(category IN ('preference', 'decision', 'recurring_context', 'terminology', 'goal', 'constraint')),
+            source      TEXT NOT NULL DEFAULT 'user' CHECK(source = 'user'),
+            created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_memory_items_space ON memory_items(space_id);
+        CREATE INDEX IF NOT EXISTS idx_memory_items_category ON memory_items(category);
+        CREATE INDEX IF NOT EXISTS idx_memory_items_updated ON memory_items(updated_at);
+
+        CREATE TRIGGER IF NOT EXISTS memory_items_context_cleanup AFTER DELETE ON memory_items BEGIN
+            DELETE FROM ai_context_items WHERE entity_type = 'memory' AND entity_id = old.id;
+        END;
+        ",
+    ),
 ];
 
 fn ensure_migrations_table(conn: &Connection) -> Result<(), String> {
@@ -325,6 +350,7 @@ mod tests {
         assert!(tables.contains(&"activity_events".to_string()));
         assert!(tables.contains(&"tasks".to_string()));
         assert!(tables.contains(&"vault_items".to_string()));
+        assert!(tables.contains(&"memory_items".to_string()));
     }
 
     #[test]

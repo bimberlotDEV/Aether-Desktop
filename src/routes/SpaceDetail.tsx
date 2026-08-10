@@ -14,6 +14,7 @@ import {
   Sparkles,
   Activity as ActivityIcon,
   LayoutDashboard,
+  Brain,
 } from 'lucide-react'
 import { useSpaceDetail, useSpaces } from '@/hooks/useSpaces'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
@@ -25,6 +26,7 @@ import { EditSpaceModal } from '@/components/EditSpaceModal'
 import { TaskView } from '@/components/tasks/TaskView'
 import { VaultView } from '@/components/vault/VaultView'
 import { AiView } from '@/components/ai/AiView'
+import { MemoryView } from '@/components/memory/MemoryView'
 
 const MODULE_ICONS: Record<
   string,
@@ -34,6 +36,7 @@ const MODULE_ICONS: Record<
   tasks: CheckSquare,
   files: FolderOpen,
   ai: Sparkles,
+  memory: Brain,
   activity: ActivityIcon,
 }
 
@@ -42,6 +45,7 @@ const MODULE_LABELS: Record<string, string> = {
   tasks: 'Tasks',
   files: 'Files',
   ai: 'AI',
+  memory: 'Memory',
   activity: 'Activity',
 }
 
@@ -260,6 +264,8 @@ export function SpaceDetailLayout() {
                   />
                 ) : m.module_type === 'ai' ? (
                   <AiView spaceId={space.id} />
+                ) : m.module_type === 'memory' ? (
+                  <MemoryView spaceId={space.id} spaces={[space]} />
                 ) : (
                   <ModulePlaceholder moduleType={m.module_type} />
                 )
