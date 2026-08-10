@@ -1,11 +1,25 @@
 import { invoke } from '@tauri-apps/api/core'
-import type { AppSetting, UserProfile, Space, ModuleInstance, SpaceWithDetails, ActivityEvent, Note, NoteListItem, NoteSearchResult } from './types'
+import type {
+  AppSetting,
+  UserProfile,
+  Space,
+  ModuleInstance,
+  SpaceWithDetails,
+  ActivityEvent,
+  Note,
+  NoteListItem,
+  NoteSearchResult,
+} from './types'
 
 // ─── Settings ────────────────────────────────────────────
 export async function getSetting(key: string): Promise<AppSetting | null> {
   return invoke('get_setting', { key })
 }
-export async function setSetting(key: string, value: string, valueType?: string): Promise<void> {
+export async function setSetting(
+  key: string,
+  value: string,
+  valueType?: string,
+): Promise<void> {
   return invoke('set_setting', { key, value, valueType })
 }
 export async function deleteSetting(key: string): Promise<boolean> {
@@ -22,43 +36,68 @@ export async function getProfile(): Promise<UserProfile | null> {
 export async function createProfile(): Promise<UserProfile> {
   return invoke('create_profile')
 }
-export async function updateProfile(id: string, displayName?: string, onboardingCompleted?: boolean): Promise<UserProfile | null> {
+export async function updateProfile(
+  id: string,
+  displayName?: string,
+  onboardingCompleted?: boolean,
+): Promise<UserProfile | null> {
   return invoke('update_profile', { id, displayName, onboardingCompleted })
 }
 
 // ─── Spaces ──────────────────────────────────────────────
 export async function createSpace(params: {
-  name: string; description?: string; icon?: string; accent?: string;
-  templateType?: string; parentSpaceId?: string;
+  name: string
+  description?: string
+  icon?: string
+  accent?: string
+  templateType?: string
+  parentSpaceId?: string
 }): Promise<Space> {
   return invoke('create_space', {
-    name: params.name, description: params.description ?? null,
-    icon: params.icon ?? null, accent: params.accent ?? null,
-    templateType: params.templateType ?? null, parentSpaceId: params.parentSpaceId ?? null,
+    name: params.name,
+    description: params.description ?? null,
+    icon: params.icon ?? null,
+    accent: params.accent ?? null,
+    templateType: params.templateType ?? null,
+    parentSpaceId: params.parentSpaceId ?? null,
   })
 }
 
 export async function createSpaceWithModules(params: {
-  name: string; description?: string; icon?: string; accent?: string;
-  templateType?: string; parentSpaceId?: string; moduleTypes: string[];
+  name: string
+  description?: string
+  icon?: string
+  accent?: string
+  templateType?: string
+  parentSpaceId?: string
+  moduleTypes: string[]
 }): Promise<{ space: Space; modules: ModuleInstance[] }> {
   return invoke('create_space_with_modules', {
-    name: params.name, description: params.description ?? null,
-    icon: params.icon ?? null, accent: params.accent ?? null,
-    templateType: params.templateType ?? null, parentSpaceId: params.parentSpaceId ?? null,
+    name: params.name,
+    description: params.description ?? null,
+    icon: params.icon ?? null,
+    accent: params.accent ?? null,
+    templateType: params.templateType ?? null,
+    parentSpaceId: params.parentSpaceId ?? null,
     moduleTypes: params.moduleTypes,
   })
 }
 
 export async function createSchoolSpace(params: {
-  name: string; description?: string; icon?: string; accent?: string;
-  moduleTypes: string[];
-  subjects: { name: string; icon?: string; accent?: string }[];
+  name: string
+  description?: string
+  icon?: string
+  accent?: string
+  moduleTypes: string[]
+  subjects: { name: string; icon?: string; accent?: string }[]
 }): Promise<{ school: Space; subjects: Space[] }> {
   return invoke('create_school_space', {
-    name: params.name, description: params.description ?? null,
-    icon: params.icon ?? null, accent: params.accent ?? null,
-    moduleTypes: params.moduleTypes, subjects: params.subjects,
+    name: params.name,
+    description: params.description ?? null,
+    icon: params.icon ?? null,
+    accent: params.accent ?? null,
+    moduleTypes: params.moduleTypes,
+    subjects: params.subjects,
   })
 }
 
@@ -78,18 +117,32 @@ export async function listChildSpaces(parentId: string): Promise<Space[]> {
   return invoke('list_child_spaces', { parentId })
 }
 
-export async function updateSpace(id: string, params: {
-  name?: string; description?: string | null; icon?: string | null;
-  accent?: string | null; settingsJson?: string | null; parentSpaceId?: string | null;
-}): Promise<Space | null> {
+export async function updateSpace(
+  id: string,
+  params: {
+    name?: string
+    description?: string | null
+    icon?: string | null
+    accent?: string | null
+    settingsJson?: string | null
+    parentSpaceId?: string | null
+  },
+): Promise<Space | null> {
   return invoke('update_space', {
-    id, name: params.name ?? null, description: params.description ?? null,
-    icon: params.icon ?? null, accent: params.accent ?? null,
-    settingsJson: params.settingsJson ?? null, parentSpaceId: params.parentSpaceId ?? null,
+    id,
+    name: params.name ?? null,
+    description: params.description === null ? '' : (params.description ?? null),
+    icon: params.icon === null ? '' : (params.icon ?? null),
+    accent: params.accent === null ? '' : (params.accent ?? null),
+    settingsJson: params.settingsJson ?? null,
+    parentSpaceId: params.parentSpaceId ?? null,
   })
 }
 
-export async function setSpaceModules(spaceId: string, moduleTypes: string[]): Promise<ModuleInstance[]> {
+export async function setSpaceModules(
+  spaceId: string,
+  moduleTypes: string[],
+): Promise<ModuleInstance[]> {
   return invoke('set_space_modules', { spaceId, moduleTypes })
 }
 
@@ -121,7 +174,6 @@ export async function duplicateSpace(id: string): Promise<Space> {
   return invoke('duplicate_space', { id })
 }
 
-
 // ─── Notes ───────────────────────────────────────────────
 export async function createNote(spaceId: string): Promise<Note> {
   return invoke('create_note', { spaceId })
@@ -131,17 +183,28 @@ export async function getNote(id: string): Promise<Note | null> {
 }
 export async function updateNote(
   id: string,
-  params: { title?: string; content?: string; excerpt?: string; expectedRevision?: number }
+  params: {
+    title?: string
+    content?: string
+    excerpt?: string
+    expectedRevision?: number
+  },
 ): Promise<Note | null> {
   return invoke('update_note', {
-    id, title: params.title ?? null, content: params.content ?? null,
-    excerpt: params.excerpt ?? null, expectedRevision: params.expectedRevision ?? null,
+    id,
+    title: params.title ?? null,
+    content: params.content ?? null,
+    excerpt: params.excerpt ?? null,
+    expectedRevision: params.expectedRevision ?? null,
   })
 }
 export async function listNotesBySpace(spaceId: string): Promise<NoteListItem[]> {
   return invoke('list_notes_by_space', { spaceId })
 }
-export async function listRecentNotes(spaceId?: string, limit?: number): Promise<NoteListItem[]> {
+export async function listRecentNotes(
+  spaceId?: string,
+  limit?: number,
+): Promise<NoteListItem[]> {
   return invoke('list_recent_notes', { spaceId: spaceId ?? null, limit: limit ?? null })
 }
 export async function listPinnedNotes(spaceId?: string): Promise<NoteListItem[]> {
@@ -150,7 +213,11 @@ export async function listPinnedNotes(spaceId?: string): Promise<NoteListItem[]>
 export async function listArchivedNotes(spaceId?: string): Promise<NoteListItem[]> {
   return invoke('list_archived_notes', { spaceId: spaceId ?? null })
 }
-export async function searchNotes(query: string, spaceId?: string, limit?: number): Promise<NoteSearchResult[]> {
+export async function searchNotes(
+  query: string,
+  spaceId?: string,
+  limit?: number,
+): Promise<NoteSearchResult[]> {
   return invoke('search_notes', { query, spaceId: spaceId ?? null, limit: limit ?? null })
 }
 export async function pinNote(id: string, pinned: boolean): Promise<boolean> {
@@ -174,16 +241,27 @@ export async function duplicateNote(id: string): Promise<Note> {
 
 // ─── Activity ────────────────────────────────────────────
 export async function recordActivity(params: {
-  eventType: string; entityType?: string; entityId?: string;
-  spaceId?: string; metadataJson?: string;
+  eventType: string
+  entityType?: string
+  entityId?: string
+  spaceId?: string
+  metadataJson?: string
 }): Promise<ActivityEvent> {
   return invoke('record_activity', {
-    eventType: params.eventType, entityType: params.entityType ?? null,
-    entityId: params.entityId ?? null, spaceId: params.spaceId ?? null,
+    eventType: params.eventType,
+    entityType: params.entityType ?? null,
+    entityId: params.entityId ?? null,
+    spaceId: params.spaceId ?? null,
     metadataJson: params.metadataJson ?? null,
   })
 }
 
-export async function listActivity(params?: { spaceId?: string; limit?: number }): Promise<ActivityEvent[]> {
-  return invoke('list_activity', { spaceId: params?.spaceId ?? null, limit: params?.limit ?? null })
+export async function listActivity(params?: {
+  spaceId?: string
+  limit?: number
+}): Promise<ActivityEvent[]> {
+  return invoke('list_activity', {
+    spaceId: params?.spaceId ?? null,
+    limit: params?.limit ?? null,
+  })
 }

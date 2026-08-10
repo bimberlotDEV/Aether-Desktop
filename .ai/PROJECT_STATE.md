@@ -8,8 +8,8 @@
 | Last updated | 2026-08-10 |
 | Updated by | Codex |
 | Repository | `bimberlotDEV/Aether-Desktop` |
-| Branch | `agent/rust-quality-gates` |
-| Baseline commit | `03942fa` (PR #4 merge) |
+| Branch | `codex/spaces-notes-audit` |
+| Baseline commit | `f2e3b0e` (PR #5 merge) |
 | Product maturity | Alpha |
 
 ## Responsibility of this file
@@ -30,8 +30,9 @@
 | `M-CRED-HARDEN` | Harden AI credential storage and fix deadlock | `complete` | PR #3 merged; 33/33 Rust tests pass with Windows DPAPI. |
 | `M-CODEX-ONLY` | Codex-only engineering workflow | `complete` | ADR-008, repository instructions, workflow, and control templates require no second AI agent. |
 | `M-RUST-QUALITY` | Restore Rust formatting and strict lint gates | `complete` | Formatting, Clippy, tests, and production builds all pass. |
+| `PHASE34-CLOSEOUT` | Close Spaces and Notes MVP gaps | `complete` | All contract acceptance criteria pass with regression coverage. |
 
-The next active work is a regression and acceptance audit of the substantially implemented Spaces and Notes phases before Phase 5 begins.
+No product task is active. Phase 5 Tasks is the next planned roadmap milestone.
 
 ## Completed product milestones
 
@@ -40,8 +41,8 @@ The next active work is a regression and acceptance audit of the substantially i
 | Phase 0 — Foundation | `complete` | Repository structure, product specification, tooling, and Tauri foundation exist. |
 | Phase 1 — Shell and design system | `complete` | App shell, routes, sidebar, command palette, tokens, and themes exist. |
 | Phase 2 — Local database | `complete` | SQLite, migrations, repositories, commands, TS wrappers, and tests exist. |
-| Phase 3 — Spaces | `substantially_complete` | Space CRUD, hierarchy, templates, modules, archive, favourite, and reorder flows exist. |
-| Phase 4 — Notes | `substantially_complete` | Notes persistence, editor, autosave, search, pin, archive, move, and duplicate flows exist. |
+| Phase 3 — Spaces | `complete` | CRUD, hierarchy, templates, module editing, archive/restore, favourite, duplication, deletion, synchronized views, and accessible reorder flows are implemented. |
+| Phase 4 — Notes | `complete` | Persistence, serialized autosave with teardown flush, current-Space full-content search, pin, archive/restore/delete, move, and duplication are implemented. |
 | Phase 7 — AI integration | `prototype` | DeepSeek provider, conversation persistence, context commands, and credential prototype exist; UI and production hardening do not. |
 
 ## Not started or placeholder milestones
@@ -58,7 +59,7 @@ The next active work is a regression and acceptance audit of the substantially i
 
 | Check | Last result | Date | Notes |
 | --- | --- | --- | --- |
-| `pnpm check` | Pass | 2026-08-10 | Typecheck and lint clean; Vitest 7/7. |
+| `pnpm check` | Pass | 2026-08-10 | Typecheck and lint clean; Vitest 14/14 across five files. |
 | `pnpm build` | Pass | 2026-08-10 | TypeScript and Vite production build pass. |
 | `cargo test` | Pass | 2026-08-10 | 33/33 tests pass. |
 | `cargo build` | Pass | 2026-08-10 | Windows production build compiles with DPAPI. |
@@ -93,7 +94,7 @@ Full rationale belongs in `.ai/ARCHITECTURE.md` or a dedicated ADR under `docs/d
 | `ADR-007` | Verified task commits are automatically pushed and published through guarded repository tooling. | Accepted |
 | `ADR-008` | Codex is the sole engineering agent; complex work uses task contracts and evidence-based self-review. | Accepted |
 
-## Next: Codex audits Spaces and Notes acceptance and regression coverage, then contracts Phase 5 Tasks as `planned_codex`.
+## Next: Codex designs and contracts Phase 5 Tasks and Pulse integration as `planned_codex`.
 
 ## Reusable update template
 

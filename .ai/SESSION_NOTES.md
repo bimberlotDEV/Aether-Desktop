@@ -6,34 +6,39 @@
 | --- | --- |
 | Schema version | 2 |
 | Session date | 2026-08-10 |
-| Active task | `DEBT-005/DEBT-006` |
+| Active task | `PHASE34-CLOSEOUT` |
 | Agent | Codex |
-| Route | `direct_codex` |
+| Route | `planned_codex` |
 | State | `complete` |
 
 ## Session objective
 
-Restore repository-wide Rust formatting and strict Clippy gates before continuing product work.
+Close the remaining Phase 3 Spaces and Phase 4 Notes MVP acceptance and regression gaps.
 
 ## Work completed
 
-- Applied canonical Rust formatting to the AI provider, command layer, and database repositories.
-- Removed unused imports, bindings, mutability, an unnecessary unwrap, and needless result wrapping.
-- Added narrow documentation-backed allowances for Phase 7 APIs that exist but are not exposed yet.
-- Kept application behavior unchanged while restoring all Rust quality gates.
+- Added Space edit and module configuration UI.
+- Added accessible top-level Space reordering and shared mutation invalidation across list, archive, and detail hooks.
+- Corrected archived Space restoration from detail and list views.
+- Added archived Note discovery, restoration, and confirmed permanent deletion.
+- Added current-Space full-content search while keeping immediate title/excerpt filtering.
+- Replaced cancellable Note timers with serialized autosave that flushes pending or failed drafts on teardown.
+- Added race, teardown, Space invalidation, and Tauri boundary regression tests.
+- Corrected stale `0.1.0` version labels to Alpha 0.3.0.
 
 ## Verification
 
 | Check | Result |
 | --- | --- |
-| `cargo fmt --manifest-path src-tauri/Cargo.toml -- --check` | Pass |
-| `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings` | Pass |
-| `cargo test --manifest-path src-tauri/Cargo.toml` | Pass — 33/33 tests |
-| `cargo build --manifest-path src-tauri/Cargo.toml` | Pass |
-| `pnpm check` | Pass — typecheck, lint, and 7/7 tests |
+| `pnpm check` | Pass — typecheck, lint, 14/14 tests |
 | `pnpm build` | Pass |
+| `cargo fmt --check` | Pass |
+| Strict `cargo clippy` | Pass |
+| `cargo test` | Pass — 33/33 tests |
+| `cargo build` | Pass |
+| Browser smoke test | Pass — create, edit, archive, restore; no console errors |
 | `git diff --check` | Pass |
 
 ## Exact resume point
 
-Publish and merge the Rust quality task, then audit Phase 3 Spaces and Phase 4 Notes against their acceptance requirements and add risk-based regression coverage before designing Phase 5 Tasks.
+Publish and merge `PHASE34-CLOSEOUT`, synchronize `master`, then create a `planned_codex` architecture and implementation contract for Phase 5 Tasks and Pulse integration.

@@ -58,7 +58,7 @@ export function Sidebar() {
                 'flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-sm font-medium transition-colors duration-100',
                 isActive
                   ? 'bg-[var(--color-sidebar-active)] text-[var(--color-accent)]'
-                  : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-sidebar-hover)] hover:text-[var(--color-text-primary)]'
+                  : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-sidebar-hover)] hover:text-[var(--color-text-primary)]',
               )
             }
           >
@@ -73,11 +73,8 @@ export function Sidebar() {
         className="px-4 py-3 shrink-0"
         style={{ borderTop: `1px solid var(--color-sidebar-border)` }}
       >
-        <p
-          className="text-xs"
-          style={{ color: 'var(--color-text-tertiary)' }}
-        >
-          Alpha · v0.1.0
+        <p className="text-xs" style={{ color: 'var(--color-text-tertiary)' }}>
+          Alpha · v0.3.0
         </p>
       </div>
     </aside>

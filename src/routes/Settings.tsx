@@ -19,7 +19,11 @@ export function Settings() {
         style={{ borderBottom: `1px solid var(--color-border)` }}
       >
         <div className="flex items-center gap-3">
-          <SettingsIcon size={20} strokeWidth={1.75} style={{ color: 'var(--color-text-secondary)' }} />
+          <SettingsIcon
+            size={20}
+            strokeWidth={1.75}
+            style={{ color: 'var(--color-text-secondary)' }}
+          />
           <h1
             className="text-xl font-semibold tracking-tight"
             style={{ color: 'var(--color-text-primary)' }}
@@ -53,9 +57,7 @@ export function Settings() {
                     backgroundColor: isActive
                       ? 'var(--color-accent-muted)'
                       : 'transparent',
-                    color: isActive
-                      ? 'var(--color-accent)'
-                      : 'var(--color-text-primary)',
+                    color: isActive ? 'var(--color-accent)' : 'var(--color-text-primary)',
                   }}
                 >
                   <Icon size={17} strokeWidth={1.75} />
@@ -91,15 +93,21 @@ export function Settings() {
               <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
                 Version
               </span>
-              <span className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
-                Alpha 0.1.0
+              <span
+                className="text-sm font-medium"
+                style={{ color: 'var(--color-text-primary)' }}
+              >
+                Alpha 0.3.0
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm" style={{ color: 'var(--color-text-secondary)' }}>
                 Storage
               </span>
-              <span className="text-sm font-medium" style={{ color: 'var(--color-text-primary)' }}>
+              <span
+                className="text-sm font-medium"
+                style={{ color: 'var(--color-text-primary)' }}
+              >
                 Local
               </span>
             </div>

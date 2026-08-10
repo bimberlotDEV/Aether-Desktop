@@ -1,10 +1,20 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import {
-  FileText, Plus, Search, Pin, PinOff, Archive, Copy, Trash2,
+  FileText,
+  Plus,
+  Search,
+  Pin,
+  PinOff,
+  Archive,
+  Copy,
+  Trash2,
   MoreHorizontal,
+  ChevronDown,
+  ChevronRight,
+  RotateCcw,
 } from 'lucide-react'
-import { useNotes, useNote } from '@/hooks/useNotes'
+import { useNotes, useNote, useNoteSearch } from '@/hooks/useNotes'
 import type { NoteListItem } from '@/lib/db/types'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { cn } from '@/lib/utils'
@@ -18,21 +28,41 @@ const SAVE_STATUS: Record<string, { label: string; color: string }> = {
 
 export function NotesView() {
   const { spaceId } = useParams<{ spaceId: string }>()
-  const { notes, loading, create, remove, pin, archive, duplicate } = useNotes(spaceId)
+  const {
+    notes,
+    archivedNotes,
+    loading,
+    create,
+    remove,
+    pin,
+    archive,
+    restore,
+    duplicate,
+  } = useNotes(spaceId)
+  const { results: searchResults, searching, search } = useNoteSearch()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [menuOpen, setMenuOpen] = useState<string | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<NoteListItem | null>(null)
+  const [showArchived, setShowArchived] = useState(false)
 
-  const filtered = searchQuery.trim()
-    ? notes.filter(n =>
-        n.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        n.excerpt.toLowerCase().includes(searchQuery.toLowerCase())
+  useEffect(() => {
+    void search(searchQuery, spaceId)
+  }, [searchQuery, search, spaceId])
+
+  const normalizedQuery = searchQuery.trim().toLowerCase()
+  const backendMatches = new Set(searchResults.map((result) => result.id))
+  const filtered = normalizedQuery
+    ? notes.filter(
+        (note) =>
+          backendMatches.has(note.id) ||
+          note.title.toLowerCase().includes(normalizedQuery) ||
+          note.excerpt.toLowerCase().includes(normalizedQuery),
       )
     : notes
 
-  const pinnedNotes = filtered.filter(n => n.pinned)
-  const otherNotes = filtered.filter(n => !n.pinned)
+  const pinnedNotes = filtered.filter((n) => n.pinned)
+  const otherNotes = filtered.filter((n) => !n.pinned)
 
   const handleCreate = async () => {
     const note = await create()
@@ -60,7 +90,7 @@ export function NotesView() {
             <input
               type="text"
               value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
+              onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search notes…"
               className="w-full pl-8 pr-3 py-1.5 rounded-md text-sm outline-none"
               style={{
@@ -82,13 +112,20 @@ export function NotesView() {
         {/* Note list */}
         <div className="flex-1 overflow-y-auto py-1">
           {loading ? (
-            <p className="px-4 py-8 text-sm text-center" style={{ color: 'var(--color-text-tertiary)' }}>
+            <p
+              className="px-4 py-8 text-sm text-center"
+              style={{ color: 'var(--color-text-tertiary)' }}
+            >
               Loading…
             </p>
           ) : filtered.length === 0 ? (
             <div className="px-4 py-10 text-center">
               <p className="text-sm" style={{ color: 'var(--color-text-tertiary)' }}>
-                {searchQuery ? 'No notes match your search' : 'No notes yet'}
+                {searchQuery
+                  ? searching
+                    ? 'Searching…'
+                    : 'No notes match your search'
+                  : 'No notes yet'}
               </p>
               {!searchQuery && (
                 <button
@@ -110,14 +147,17 @@ export function NotesView() {
                   >
                     Pinned
                   </div>
-                  {pinnedNotes.map(n => (
+                  {pinnedNotes.map((n) => (
                     <NoteRow
                       key={n.id}
                       note={n}
                       isActive={selectedId === n.id}
                       onSelect={() => setSelectedId(n.id)}
                       onPin={() => pin(n.id, false)}
-                      onArchive={() => { archive(n.id); if (selectedId === n.id) setSelectedId(null) }}
+                      onArchive={() => {
+                        archive(n.id)
+                        if (selectedId === n.id) setSelectedId(null)
+                      }}
                       onDuplicate={() => duplicate(n.id)}
                       onDelete={() => setDeleteTarget(n)}
                       menuOpen={menuOpen}
@@ -136,14 +176,17 @@ export function NotesView() {
                       Notes
                     </div>
                   )}
-                  {otherNotes.map(n => (
+                  {otherNotes.map((n) => (
                     <NoteRow
                       key={n.id}
                       note={n}
                       isActive={selectedId === n.id}
                       onSelect={() => setSelectedId(n.id)}
                       onPin={() => pin(n.id, true)}
-                      onArchive={() => { archive(n.id); if (selectedId === n.id) setSelectedId(null) }}
+                      onArchive={() => {
+                        archive(n.id)
+                        if (selectedId === n.id) setSelectedId(null)
+                      }}
                       onDuplicate={() => duplicate(n.id)}
                       onDelete={() => setDeleteTarget(n)}
                       menuOpen={menuOpen}
@@ -154,13 +197,61 @@ export function NotesView() {
               )}
             </>
           )}
+          {!loading && archivedNotes.length > 0 && (
+            <div
+              className="mt-2 pt-2"
+              style={{ borderTop: '1px solid var(--color-border)' }}
+            >
+              <button
+                onClick={() => setShowArchived((current) => !current)}
+                className="w-full flex items-center gap-1.5 px-4 py-1 text-[10px] font-semibold uppercase tracking-wider"
+                style={{ color: 'var(--color-text-tertiary)' }}
+              >
+                {showArchived ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                Archived ({archivedNotes.length})
+              </button>
+              {showArchived &&
+                archivedNotes.map((note) => (
+                  <div
+                    key={note.id}
+                    className="flex items-center gap-2 px-4 py-2 opacity-70 hover:opacity-100"
+                  >
+                    <Archive size={14} style={{ color: 'var(--color-text-tertiary)' }} />
+                    <span
+                      className="flex-1 min-w-0 truncate text-sm"
+                      style={{ color: 'var(--color-text-secondary)' }}
+                    >
+                      {note.title || 'Untitled note'}
+                    </span>
+                    <button
+                      onClick={() => restore(note.id)}
+                      className="p-1 rounded-md hover:bg-[var(--color-bg-tertiary)]"
+                      title="Restore Note"
+                      aria-label={`Restore ${note.title || 'Untitled note'}`}
+                      style={{ color: 'var(--color-text-tertiary)' }}
+                    >
+                      <RotateCcw size={13} />
+                    </button>
+                    <button
+                      onClick={() => setDeleteTarget(note)}
+                      className="p-1 rounded-md hover:bg-[var(--color-bg-tertiary)]"
+                      title="Delete permanently"
+                      aria-label={`Delete ${note.title || 'Untitled note'} permanently`}
+                      style={{ color: 'var(--color-danger)' }}
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                ))}
+            </div>
+          )}
         </div>
       </div>
 
       {/* Editor panel */}
       <div className="flex-1 flex flex-col min-w-0 h-full">
         {selectedId ? (
-          <NoteEditor noteId={selectedId} />
+          <NoteEditor key={selectedId} noteId={selectedId} />
         ) : (
           <div className="flex-1 flex items-center justify-center">
             <div className="text-center">
@@ -168,7 +259,11 @@ export function NotesView() {
                 className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4"
                 style={{ backgroundColor: 'var(--color-accent-muted)' }}
               >
-                <FileText size={22} strokeWidth={1.75} style={{ color: 'var(--color-accent)' }} />
+                <FileText
+                  size={22}
+                  strokeWidth={1.75}
+                  style={{ color: 'var(--color-accent)' }}
+                />
               </div>
               <p className="text-sm" style={{ color: 'var(--color-text-tertiary)' }}>
                 Select a note or create a new one
@@ -198,22 +293,45 @@ export function NotesView() {
 }
 
 function NoteRow({
-  note, isActive, onSelect, onPin, onArchive, onDuplicate, onDelete, menuOpen, setMenuOpen,
+  note,
+  isActive,
+  onSelect,
+  onPin,
+  onArchive,
+  onDuplicate,
+  onDelete,
+  menuOpen,
+  setMenuOpen,
 }: {
-  note: NoteListItem; isActive: boolean; onSelect: () => void;
-  onPin: () => void; onArchive: () => void; onDuplicate: () => void; onDelete: () => void;
-  menuOpen: string | null; setMenuOpen: (id: string | null) => void;
+  note: NoteListItem
+  isActive: boolean
+  onSelect: () => void
+  onPin: () => void
+  onArchive: () => void
+  onDuplicate: () => void
+  onDelete: () => void
+  menuOpen: string | null
+  setMenuOpen: (id: string | null) => void
 }) {
   const isMenuOpen = menuOpen === note.id
   return (
     <div
       className={cn(
         'group flex items-center gap-2.5 px-4 py-2 cursor-pointer transition-colors duration-75',
-        isActive ? 'bg-[var(--color-accent-muted)]' : 'hover:bg-[var(--color-bg-tertiary)]'
+        isActive
+          ? 'bg-[var(--color-accent-muted)]'
+          : 'hover:bg-[var(--color-bg-tertiary)]',
       )}
       onClick={onSelect}
     >
-      <FileText size={15} strokeWidth={1.75} style={{ color: isActive ? 'var(--color-accent)' : 'var(--color-text-tertiary)', flexShrink: 0 }} />
+      <FileText
+        size={15}
+        strokeWidth={1.75}
+        style={{
+          color: isActive ? 'var(--color-accent)' : 'var(--color-text-tertiary)',
+          flexShrink: 0,
+        }}
+      />
       <div className="flex-1 min-w-0">
         <div
           className="text-sm font-medium truncate"
@@ -230,8 +348,14 @@ function NoteRow({
           </p>
         )}
       </div>
-      {note.pinned && <Pin size={10} fill="var(--color-warning)" style={{ color: 'var(--color-warning)', flexShrink: 0 }} />}
-      <div className="relative shrink-0" onClick={e => e.stopPropagation()}>
+      {note.pinned && (
+        <Pin
+          size={10}
+          fill="var(--color-warning)"
+          style={{ color: 'var(--color-warning)', flexShrink: 0 }}
+        />
+      )}
+      <div className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
         <button
           onClick={() => setMenuOpen(isMenuOpen ? null : note.id)}
           className="p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-[var(--color-bg-tertiary)]"
@@ -244,13 +368,45 @@ function NoteRow({
             <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(null)} />
             <div
               className="absolute right-0 top-7 z-20 w-44 py-1 rounded-lg shadow-lg border"
-              style={{ backgroundColor: 'var(--color-bg-elevated)', borderColor: 'var(--color-border)' }}
+              style={{
+                backgroundColor: 'var(--color-bg-elevated)',
+                borderColor: 'var(--color-border)',
+              }}
             >
-              <RowMenuItem icon={note.pinned ? PinOff : Pin} label={note.pinned ? 'Unpin' : 'Pin'} onClick={() => { setMenuOpen(null); onPin() }} />
-              <RowMenuItem icon={Archive} label="Archive" onClick={() => { setMenuOpen(null); onArchive() }} />
-              <RowMenuItem icon={Copy} label="Duplicate" onClick={() => { setMenuOpen(null); onDuplicate() }} />
+              <RowMenuItem
+                icon={note.pinned ? PinOff : Pin}
+                label={note.pinned ? 'Unpin' : 'Pin'}
+                onClick={() => {
+                  setMenuOpen(null)
+                  onPin()
+                }}
+              />
+              <RowMenuItem
+                icon={Archive}
+                label="Archive"
+                onClick={() => {
+                  setMenuOpen(null)
+                  onArchive()
+                }}
+              />
+              <RowMenuItem
+                icon={Copy}
+                label="Duplicate"
+                onClick={() => {
+                  setMenuOpen(null)
+                  onDuplicate()
+                }}
+              />
               <div style={{ borderTop: '1px solid var(--color-border)' }} />
-              <RowMenuItem icon={Trash2} label="Delete" danger onClick={() => { setMenuOpen(null); onDelete() }} />
+              <RowMenuItem
+                icon={Trash2}
+                label="Delete"
+                danger
+                onClick={() => {
+                  setMenuOpen(null)
+                  onDelete()
+                }}
+              />
             </div>
           </>
         )}
@@ -259,8 +415,16 @@ function NoteRow({
   )
 }
 
-function RowMenuItem({ icon: Icon, label, danger, onClick }: {
-  icon: React.ComponentType<{ size?: number }>; label: string; danger?: boolean; onClick: () => void;
+function RowMenuItem({
+  icon: Icon,
+  label,
+  danger,
+  onClick,
+}: {
+  icon: React.ComponentType<{ size?: number }>
+  label: string
+  danger?: boolean
+  onClick: () => void
 }) {
   return (
     <button
@@ -274,7 +438,8 @@ function RowMenuItem({ icon: Icon, label, danger, onClick }: {
 }
 
 function NoteEditor({ noteId }: { noteId: string }) {
-  const { note, loading, error, saveState, debouncedSave, forceSave, setError } = useNote(noteId)
+  const { note, loading, error, saveState, debouncedSave, forceSave, setError } =
+    useNote(noteId)
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const titleRef = useRef<HTMLInputElement>(null)
@@ -327,7 +492,9 @@ function NoteEditor({ noteId }: { noteId: string }) {
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center">
-        <p className="text-sm" style={{ color: 'var(--color-text-tertiary)' }}>Loading…</p>
+        <p className="text-sm" style={{ color: 'var(--color-text-tertiary)' }}>
+          Loading…
+        </p>
       </div>
     )
   }
@@ -336,7 +503,9 @@ function NoteEditor({ noteId }: { noteId: string }) {
     return (
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-sm mb-4" style={{ color: 'var(--color-danger)' }}>{error}</p>
+          <p className="text-sm mb-4" style={{ color: 'var(--color-danger)' }}>
+            {error}
+          </p>
           <button
             onClick={() => window.location.reload()}
             className="text-sm font-medium"
@@ -372,7 +541,7 @@ function NoteEditor({ noteId }: { noteId: string }) {
             ref={titleRef}
             type="text"
             value={title}
-            onChange={e => handleTitleChange(e.target.value)}
+            onChange={(e) => handleTitleChange(e.target.value)}
             placeholder="Untitled note"
             className="w-full text-2xl font-semibold bg-transparent outline-none mb-4 tracking-tight"
             style={{ color: 'var(--color-text-primary)' }}
@@ -383,7 +552,7 @@ function NoteEditor({ noteId }: { noteId: string }) {
           <textarea
             ref={contentRef}
             value={content}
-            onChange={e => handleContentChange(e.target.value)}
+            onChange={(e) => handleContentChange(e.target.value)}
             placeholder="Start writing…"
             className="w-full flex-1 min-h-[400px] bg-transparent outline-none resize-none text-sm leading-relaxed"
             style={{ color: 'var(--color-text-primary)' }}
@@ -396,7 +565,10 @@ function NoteEditor({ noteId }: { noteId: string }) {
       {error && (
         <div
           className="px-6 py-2 text-xs shrink-0 flex items-center gap-2"
-          style={{ backgroundColor: 'rgb(220 38 38 / 0.08)', color: 'var(--color-danger)' }}
+          style={{
+            backgroundColor: 'rgb(220 38 38 / 0.08)',
+            color: 'var(--color-danger)',
+          }}
         >
           <span>{error}</span>
           <button

@@ -26,6 +26,17 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-08-10 — `PHASE34-CLOSEOUT` — Spaces and Notes MVP complete
+
+- **Type:** Feature, fix, and test
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review
+- **Summary:** Completed Space editing, module selection, accessible reordering, cross-view mutation refresh, and correct archive restoration. Added recoverable archived Notes, full-content current-Space search, and serialized autosave that flushes pending edits on navigation. Corrected stale UI version labels.
+- **Files:** `src/components/CreateSpaceModal.tsx`, `src/components/EditSpaceModal.tsx`, `src/components/Sidebar.tsx`, `src/components/spaceOptions.ts`, `src/hooks/useNotes.ts`, `src/hooks/useSpaces.ts`, `src/hooks/useSpaces.test.ts`, `src/lib/autosave.ts`, `src/lib/autosave.test.ts`, `src/lib/db/tauri.ts`, `src/lib/db/tauri.test.ts`, `src/routes/Notes.tsx`, `src/routes/Settings.tsx`, `src/routes/SpaceDetail.tsx`, `src/routes/Spaces.tsx`, `.ai/HANDOFF.md`, `.ai/PROJECT_STATE.md`, `.ai/TODO.md`, `.ai/CHANGELOG.md`, `.ai/SESSION_NOTES.md`
+- **Verification:** `pnpm check` — pass with 14/14 tests; `pnpm build` — pass; Rust format, strict Clippy, 33/33 tests, and build — pass; local browser create/edit/archive/restore smoke test — pass with no console errors; `git diff --check` — pass.
+- **Decisions/deviations:** Cleared optional Space display fields persist as empty strings because the existing optional Tauri command payload cannot distinguish omitted from explicit SQL `NULL`; behavior and schemas remain correct.
+- **Follow-up:** `PHASE5-EPIC`.
+
 ## 2026-08-10 — `DEBT-005/DEBT-006` — Rust quality gates restored
 
 - **Type:** Fix and refactor
