@@ -8,6 +8,7 @@ import { SpaceDetailLayout } from '@/routes/SpaceDetail'
 import { Vault } from '@/routes/Vault'
 import { Activity } from '@/routes/Activity'
 import { Settings } from '@/routes/Settings'
+import { Tasks } from '@/routes/Tasks'
 
 export function App() {
   return (
@@ -22,6 +23,7 @@ export function App() {
           <Route path="/spaces" element={<Spaces />} />
           <Route path="/spaces/archived" element={<ArchivedSpaces />} />
           <Route path="/spaces/:spaceId/*" element={<SpaceDetailLayout />} />
+          <Route path="/tasks" element={<Tasks />} />
           <Route path="/vault" element={<Vault />} />
           <Route path="/activity" element={<Activity />} />
           <Route path="/settings" element={<Settings />} />

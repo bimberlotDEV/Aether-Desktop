@@ -26,6 +26,17 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-08-10 — `PHASE5-002` — Tasks and Pulse MVP complete
+
+- **Type:** Feature, fix, and test
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review
+- **Summary:** Added a global Task Inbox, full Space Tasks module, synchronized mutations, quick capture, full metadata editing, subtasks, search/filtering, one-click completion, archive recovery and deletion, and calm overdue/upcoming Task attention on Pulse. Added Tasks navigation and repaired command-palette routing for BrowserRouter.
+- **Files:** `src/hooks/useTasks.ts`, `src/hooks/useTasks.test.ts`, `src/components/tasks/*`, `src/routes/Tasks.tsx`, `src/routes/Tasks.test.tsx`, `src/routes/Pulse.tsx`, `src/routes/Pulse.test.tsx`, `src/routes/SpaceDetail.tsx`, `src/App.tsx`, `src/components/Sidebar.tsx`, `src/components/CommandPalette.tsx`, `src/components/CommandPalette.test.tsx`, `.ai/*`
+- **Verification:** `pnpm check` — pass with 24/24 tests; `pnpm build` — pass; Rust format, strict Clippy, 39/39 tests, and build — pass; `git diff --check` — pass; desktop launch and accessibility discovery — pass.
+- **Decisions/deviations:** The active desktop minimized Aether during UI automation, so the remaining manual clicks were replaced with expanded automated interaction coverage; no feature or architecture scope changed.
+- **Follow-up:** `VAULT-EPIC`.
+
 ## 2026-08-10 — `PHASE5-001` — Task persistence and IPC foundation
 
 - **Type:** Feature, architecture, and test
