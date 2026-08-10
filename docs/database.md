@@ -160,3 +160,7 @@ To add a migration:
 1. Add a new entry to `MIGRATIONS` array with unique name
 2. Write the SQL
 3. No migration may modify a previously-applied migration
+
+## Workspace export
+
+Settings can create a consistent `.aether-backup.db` snapshot through SQLite's online backup API. The export retains workspace tables and Vault metadata, removes the `secrets` table, runs `PRAGMA integrity_check`, and only then replaces the selected destination with rollback protection. Managed Vault file bytes and linked external files are not included. Automated restore is intentionally out of scope for the alpha; see ADR-014.

@@ -26,6 +26,17 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-08-10 — `PHASE10-001` — Alpha release quality complete
+
+- **Type:** Feature, security, accessibility, CI, packaging, and documentation
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review
+- **Summary:** Added sanitized workspace export, Windows CI and dependency monitoring, closed dependency advisories, improved dialog/theme accessibility, reconciled release documentation, and produced verified MSI/NSIS candidates.
+- **Files:** Backup Rust/IPC/Settings/tests, `.github/*`, release/security/license/architecture docs, dependency manifests, accessibility tests, `.ai/*`
+- **Verification:** Frontend check/build pass with 45/45 tests; Rust format/strict Clippy/61 tests pass; npm audit clean; MSI/NSIS build and executable startup pass; artifact hashes recorded.
+- **Decisions/deviations:** Backup excludes API credentials and Vault file bytes. Signing, updater activation, and automatic restore remain gated on owner-controlled trust or separately designed semantics.
+- **Follow-up:** None within the approved Alpha 0.3.0 roadmap.
+
 ## 2026-08-10 — `PHASE9-001` — Native Windows lifecycle and installers
 
 - **Type:** Feature, packaging, and test

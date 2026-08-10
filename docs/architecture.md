@@ -1,46 +1,48 @@
-# Aether Architecture
+# Aether architecture
 
-## Layers
+## System boundaries
 
-```
-┌─────────────────────────────────────────┐
-│  React UI (components, routes, stores)  │
-├─────────────────────────────────────────┤
-│  Database Layer (TS types, Zod, invoke)  │
-├─────────────────────────────────────────┤
-│  Tauri Commands (typed wrappers)        │
-├─────────────────────────────────────────┤
-│  Repository Layer (settings, spaces...)  │
-├─────────────────────────────────────────┤
-│  SQLite via rusqlite (bundled)           │
-├─────────────────────────────────────────┤
-│  Tauri Bridge (IPC, native APIs)        │
-├─────────────────────────────────────────┤
-│  Tauri Bridge (IPC, native APIs)        │
-├─────────────────────────────────────────┤
-│  Windows OS (WebView2, filesystem)      │
-└─────────────────────────────────────────┘
+```text
+React routes and components
+  -> hooks and Zustand stores
+  -> strict TypeScript types and Tauri invoke wrappers
+  -> registered Rust commands
+  -> repositories and domain/native services
+  -> SQLite, Windows APIs, local files, or the configured AI provider
 ```
 
-## Data Flow
+The webview is untrusted relative to native resources. It never executes SQL, receives credential values, or receives internal Vault storage paths. Narrow Tauri commands validate external input and delegate persistence to Rust repositories.
 
-1. **React components** render UI and dispatch actions
-2. **Zustand stores** manage client state
-3. **Tauri commands** (Rust) handle native operations
-4. **SQLite** stores persistent data (Phase 2)
+## Domains
 
-## Key Decisions
+| Domain | Persistent owner | UI entry points |
+| --- | --- | --- |
+| Spaces and modules | SQLite repositories | Pulse, Spaces, Space detail |
+| Notes | SQLite repository and FTS | Space Notes |
+| Tasks | SQLite repository | Tasks, Pulse, Space Tasks |
+| Vault | SQLite metadata plus Rust filesystem service | Vault, Space Vault |
+| Memory | SQLite repository | Memory, Space Memory, explicit AI context |
+| AI | SQLite conversations/context plus Rust provider service | AI, Space AI, Settings |
+| Native lifecycle | Tauri plugins and `native.rs` | tray, shortcut, notifications, Settings |
+| Backup | `backup.rs` and SQLite online backup API | Settings |
 
-- **Tauri 2 over Electron:** Smaller bundle, better performance, native feel
-- **React 19 + Vite 8:** Modern, fast HMR, TypeScript-native
-- **Tailwind CSS v4:** Utility-first with CSS custom properties for theming
-- **Zustand:** Simple, performant state management
-- **SQLite (rusqlite):** Local-first, reliable, zero-config, versioned migrations (Phase 2 ✅)
+## Data and concurrency
 
-## Security Model
+SQLite is bundled with `rusqlite`; versioned migrations are append-only. The live connection uses WAL, foreign keys, and normal synchronization. A single mutex protects the connection. Credential encryption deliberately operates outside re-entrant database locking. Note autosave is serialized and revision-aware; AI streams have explicit cancellation and terminal persistence.
 
-- CSP restricts script sources
-- Tauri capabilities use least privilege
-- No unrestricted filesystem access
-- API keys stored in OS credential storage (planned)
-- AI context is explicit and user-controlled
+Workspace export uses SQLite's online backup API while holding the connection boundary. It writes a sibling partial database, removes the `secrets` table, verifies integrity, and finalizes with rollback protection for an existing destination. See ADR-014.
+
+## Security and privacy
+
+- Tauri CSP restricts scripts to the application and capabilities expose only required native actions.
+- DeepSeek credentials are protected with Windows DPAPI and never returned to the frontend.
+- AI context is user-selected, bounded, and Space-isolated in Rust.
+- Linked Vault files are never deleted; managed deletion is containment-checked and recoverable during the operation.
+- Database exports exclude secrets and disclose that Vault file bytes are out of scope.
+- There is no telemetry, account backend, active updater, or embedded signing secret.
+
+## Quality and delivery
+
+Pull requests and `master` run Windows frontend typecheck/lint/tests/build plus Rust format, strict Clippy, and tests. Task branches are published with `scripts/publish-task.ps1`. MSI and NSIS packages are built locally for alpha candidates; signing and auto-update activation require owner-controlled infrastructure.
+
+Durable rationale is indexed in `.ai/ARCHITECTURE.md` and stored under `docs/decisions/`.

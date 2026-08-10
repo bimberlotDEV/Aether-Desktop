@@ -68,17 +68,26 @@ export function IconPicker({ value, onChange }: Props) {
 
   const allIcons = Object.values(ICONS).flat()
   const filtered = search
-    ? allIcons.filter(i => i.label.toLowerCase().includes(search.toLowerCase()) || i.icon.toLowerCase().includes(search.toLowerCase()))
+    ? allIcons.filter(
+        (i) =>
+          i.label.toLowerCase().includes(search.toLowerCase()) ||
+          i.icon.toLowerCase().includes(search.toLowerCase()),
+      )
     : ICONS[activeCategory] || []
 
   return (
     <div>
       {/* Search */}
-      <div className="flex items-center gap-2 px-3 py-2 rounded-lg mb-3" style={{ backgroundColor: 'var(--color-bg-tertiary)' }}>
+      <div
+        className="flex items-center gap-2 px-3 py-2 rounded-lg mb-3"
+        style={{ backgroundColor: 'var(--color-bg-tertiary)' }}
+      >
         <Search size={14} style={{ color: 'var(--color-text-tertiary)' }} />
         <input
-          value={search} onChange={e => setSearch(e.target.value)}
-          placeholder="Search icons…" className="flex-1 bg-transparent outline-none text-sm"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search icons…"
+          className="flex-1 bg-transparent outline-none text-sm"
           style={{ color: 'var(--color-text-primary)' }}
         />
       </div>
@@ -86,14 +95,18 @@ export function IconPicker({ value, onChange }: Props) {
       {/* Categories (hide when searching) */}
       {!search && (
         <div className="flex gap-1 mb-3 flex-wrap">
-          {Object.keys(ICONS).map(cat => (
+          {Object.keys(ICONS).map((cat) => (
             <button
               key={cat}
               onClick={() => setActiveCategory(cat)}
               className="px-2.5 py-1 rounded-md text-xs font-medium transition-colors"
               style={{
-                backgroundColor: cat === activeCategory ? 'var(--color-accent-muted)' : 'transparent',
-                color: cat === activeCategory ? 'var(--color-accent)' : 'var(--color-text-tertiary)',
+                backgroundColor:
+                  cat === activeCategory ? 'var(--color-accent-muted)' : 'transparent',
+                color:
+                  cat === activeCategory
+                    ? 'var(--color-accent)'
+                    : 'var(--color-text-tertiary)',
               }}
             >
               {cat}
@@ -111,11 +124,19 @@ export function IconPicker({ value, onChange }: Props) {
             title={label}
             className={cn(
               'flex flex-col items-center gap-1 p-2 rounded-lg transition-colors',
-              value === icon ? 'bg-[var(--color-accent-muted)]' : 'hover:bg-[var(--color-bg-tertiary)]'
+              value === icon
+                ? 'bg-[var(--color-accent-muted)]'
+                : 'hover:bg-[var(--color-bg-tertiary)]',
             )}
           >
             <span className="text-lg">{iconToEmoji(icon)}</span>
-            <span className="text-[9px] truncate max-w-full" style={{ color: value === icon ? 'var(--color-accent)' : 'var(--color-text-tertiary)' }}>
+            <span
+              className="text-[9px] truncate max-w-full"
+              style={{
+                color:
+                  value === icon ? 'var(--color-accent)' : 'var(--color-text-tertiary)',
+              }}
+            >
               {label}
             </span>
           </button>

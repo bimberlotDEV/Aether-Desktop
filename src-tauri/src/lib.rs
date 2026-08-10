@@ -1,4 +1,5 @@
 mod ai;
+mod backup;
 mod commands;
 mod db;
 mod native;
@@ -72,6 +73,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::native_get_status,
             commands::native_test_notification,
+            commands::export_workspace_backup,
             commands::get_setting,
             commands::set_setting,
             commands::delete_setting,

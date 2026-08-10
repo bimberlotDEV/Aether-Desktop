@@ -43,7 +43,7 @@
 | P1 | `PHASE7-002` | Build AI Settings, chat, context, summary, and proposal UI | Product | `done` | `PHASE7-001` | DeepSeek is usable with visible context, retry/cancel, modes, and previewed transactional proposals. |
 | P1 | `PHASE8-001` | Design and implement Memory | Product and architecture | `done` | `PHASE7-002` | Global and Space Memory is manageable and may be explicitly attached to AI. |
 | P1 | `PHASE9-001` | Complete native Windows features | Product and packaging | `done` | `PHASE8-001` | Tray, notifications, shortcut, installer metadata, and native smoke tests pass. |
-| P1 | `PHASE10-001` | Complete release audit and pipeline | Quality and release | `planned` | `PHASE9-001` | CI, packaging, documentation, security/privacy, and alpha release gates pass. |
+| P1 | `PHASE10-001` | Complete release audit and pipeline | Quality and release | `done` | `PHASE9-001` | CI, packaging, documentation, security/privacy, backup export, and alpha release gates pass. |
 | P1 | `VAULT-EPIC` | Design and implement Vault | Product | `done` | ADR-010 | Safe storage and complete global/Space MVP are implemented. |
 | P1 | `PHASE6-001` | Build Vault persistence and native filesystem foundation | Product and security | `done` | ADR-010 | Safe linked/managed storage commands and tests pass. |
 | P1 | `PHASE6-002` | Build Vault UI and Space integration | Product | `done` | `PHASE6-001` | Import, metadata, search, open/reveal, and safe removal are usable. |
@@ -69,6 +69,8 @@
 | Vault | `mvp_complete` | Extend only when a later roadmap phase requires previews or indexing. |
 | AI | `mvp_complete` | Validate live provider behavior during the release smoke test. |
 | Memory | `mvp_complete` | Extend only after a separately reviewed automatic-suggestion consent design. |
+| Native desktop | `alpha_complete` | Activate signing/updater only after owner-controlled trust infrastructure exists. |
+| Backup/export | `foundation_complete` | Design restore and Vault-byte archive semantics as a separate later task. |
 
 ## New item template
 
