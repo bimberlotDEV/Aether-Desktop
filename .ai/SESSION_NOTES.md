@@ -6,32 +6,30 @@
 | --- | --- |
 | Schema version | 2 |
 | Session date | 2026-08-10 |
-| Active task | `PHASE5-002` |
+| Active task | `PHASE6-001` |
 | Agent | Codex |
 | Route | `planned_codex` |
-| State | `complete` |
+| State | `self_review_complete` |
 
 ## Session objective
 
-Complete Phase 5 with a polished Tasks experience and calm Pulse attention view.
+Build the Vault persistence and native filesystem foundation without risking deletion of user-owned files.
 
 ## Work completed
 
-- Added synchronized Task hooks with full-state mutations and recursive browser fallback behavior.
-- Added a global Inbox and Space Tasks module with quick capture, editor, subtasks, search/filtering, one-click completion, and archive lifecycle.
-- Added overdue/upcoming attention to Pulse, including the no-Spaces state.
-- Added Tasks navigation and corrected command-palette navigation for BrowserRouter.
-- Added hook and interaction coverage for invalidation, attention, capture, metadata, subtasks, archive recovery/deletion, Pulse, and command navigation.
-- Completed a distinct self-review and corrected four integration issues.
+- Merged Phase 5 through PR #8; `master` advanced to `820952e`.
+- Audited Vault requirements, the existing empty route, database patterns, Tauri capabilities, and application-data setup.
+- Verified current official Tauri dialog and opener APIs and their permission model.
+- Accepted ADR-010 and prepared the bounded `PHASE6-001` implementation contract.
+- Implemented migration `006_vault`, the Vault repository, safe linked/managed filesystem ownership, transactional commands, native plugins, typed IPC, and documentation.
+- Self-review removed unnecessary frontend opener authority, kept storage paths Rust-only, and hardened controlled directories against junction escape.
 
 ## Verification
 
-- `pnpm check`: pass, 24/24 tests across nine files.
-- `pnpm build`: pass, main bundle 369.66 kB.
-- Rust format, strict Clippy, 39/39 tests, and build: pass.
-- `git diff --check`: pass.
-- Aether desktop launch and Tasks accessibility discovery: pass; remaining active-window smoke actions were interrupted by desktop minimization and are covered by automated boundary tests.
+- Frontend: `pnpm check` pass (25/25 tests); `pnpm build` pass.
+- Rust: format pass; strict Clippy pass; 48/48 tests pass; build pass.
+- Repository: `git diff --check` pass.
 
 ## Exact resume point
 
-Publish and merge `PHASE5-002`, synchronize `master`, then audit and contract Phase 6 Vault.
+Publish and merge `PHASE6-001`, then begin `PHASE6-002` on a fresh task branch.

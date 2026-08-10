@@ -158,6 +158,50 @@ export const TaskFilterSchema = z.object({
 })
 export type TaskFilter = z.infer<typeof TaskFilterSchema>
 
+// ─── Vault Types ─────────────────────────────────────────
+
+export const VaultStorageModeSchema = z.enum(['linked', 'managed'])
+export type VaultStorageMode = z.infer<typeof VaultStorageModeSchema>
+
+export const VaultItemSchema = z.object({
+  id: z.string(),
+  space_id: z.string().nullable(),
+  storage_mode: VaultStorageModeSchema,
+  display_title: z.string(),
+  original_name: z.string(),
+  media_type: z.string(),
+  size_bytes: z.number().int().nonnegative(),
+  tags: z.array(z.string()),
+  created_at: z.string(),
+  updated_at: z.string(),
+})
+export type VaultItem = z.infer<typeof VaultItemSchema>
+
+export const VaultImportInputSchema = z.object({
+  path: z.string().min(1),
+  storageMode: VaultStorageModeSchema,
+  spaceId: z.string().nullable(),
+  displayTitle: z.string().trim().min(1).max(200).optional(),
+  tags: z.array(z.string().trim().min(1).max(40)).max(20),
+})
+export type VaultImportInput = z.infer<typeof VaultImportInputSchema>
+
+export const VaultUpdateInputSchema = z.object({
+  spaceId: z.string().nullable(),
+  displayTitle: z.string().trim().min(1).max(200),
+  tags: z.array(z.string().trim().min(1).max(40)).max(20),
+})
+export type VaultUpdateInput = z.infer<typeof VaultUpdateInputSchema>
+
+export const VaultFilterSchema = z.object({
+  spaceId: z.string().optional(),
+  unassignedOnly: z.boolean().optional(),
+  storageMode: VaultStorageModeSchema.optional(),
+  search: z.string().optional(),
+  limit: z.number().int().min(1).max(500).optional(),
+})
+export type VaultFilter = z.infer<typeof VaultFilterSchema>
+
 // ─── AI Types ────────────────────────────────────────────
 
 export const AiConversationSchema = z.object({

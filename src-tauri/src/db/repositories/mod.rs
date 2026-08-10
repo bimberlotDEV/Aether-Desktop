@@ -5,6 +5,7 @@ pub mod profile;
 pub mod settings;
 pub mod spaces;
 pub mod tasks;
+pub mod vault;
 
 use rusqlite::Connection;
 use std::sync::Mutex;

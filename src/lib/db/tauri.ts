@@ -12,6 +12,10 @@ import type {
   Task,
   TaskFilter,
   TaskInput,
+  VaultFilter,
+  VaultImportInput,
+  VaultItem,
+  VaultUpdateInput,
 } from './types'
 
 // ─── Settings ────────────────────────────────────────────
@@ -270,6 +274,38 @@ export async function restoreTask(id: string): Promise<boolean> {
 }
 export async function deleteTask(id: string): Promise<boolean> {
   return invoke('delete_task', { id })
+}
+
+// ─── Vault ───────────────────────────────────────────────
+export async function importVaultItem(input: VaultImportInput): Promise<VaultItem> {
+  return invoke('import_vault_item', {
+    path: input.path,
+    storageMode: input.storageMode,
+    spaceId: input.spaceId,
+    displayTitle: input.displayTitle ?? null,
+    tags: input.tags,
+  })
+}
+export async function getVaultItem(id: string): Promise<VaultItem | null> {
+  return invoke('get_vault_item', { id })
+}
+export async function listVaultItems(filter?: VaultFilter): Promise<VaultItem[]> {
+  return invoke('list_vault_items', { filter: filter ?? null })
+}
+export async function updateVaultItem(
+  id: string,
+  input: VaultUpdateInput,
+): Promise<VaultItem | null> {
+  return invoke('update_vault_item', { id, input })
+}
+export async function removeVaultItem(id: string): Promise<boolean> {
+  return invoke('remove_vault_item', { id })
+}
+export async function openVaultItem(id: string): Promise<void> {
+  return invoke('open_vault_item', { id })
+}
+export async function revealVaultItem(id: string): Promise<void> {
+  return invoke('reveal_vault_item', { id })
 }
 
 // ─── Activity ────────────────────────────────────────────

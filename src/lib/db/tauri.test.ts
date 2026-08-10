@@ -12,6 +12,12 @@ import {
   updateNote,
   updateSpace,
   updateTask,
+  importVaultItem,
+  listVaultItems,
+  updateVaultItem,
+  removeVaultItem,
+  openVaultItem,
+  revealVaultItem,
 } from '@/lib/db/tauri'
 
 describe('Tauri database boundary', () => {
@@ -118,5 +124,43 @@ describe('Tauri database boundary', () => {
       horizon: '2026-08-17',
       limit: 12,
     })
+  })
+
+  it('passes Vault ownership and ID-only native operations at the invoke boundary', async () => {
+    const input = {
+      path: 'C:\\Users\\Aether\\document.md',
+      storageMode: 'managed' as const,
+      spaceId: 'space-1',
+      displayTitle: 'Research document',
+      tags: ['research'],
+    }
+    await importVaultItem(input)
+    await listVaultItems({ storageMode: 'linked', search: 'brief', limit: 20 })
+    await updateVaultItem('vault-1', {
+      spaceId: null,
+      displayTitle: 'Updated title',
+      tags: ['updated'],
+    })
+    await openVaultItem('vault-1')
+    await revealVaultItem('vault-1')
+    await removeVaultItem('vault-1')
+
+    expect(invoke).toHaveBeenNthCalledWith(1, 'import_vault_item', {
+      path: input.path,
+      storageMode: 'managed',
+      spaceId: 'space-1',
+      displayTitle: 'Research document',
+      tags: ['research'],
+    })
+    expect(invoke).toHaveBeenNthCalledWith(2, 'list_vault_items', {
+      filter: { storageMode: 'linked', search: 'brief', limit: 20 },
+    })
+    expect(invoke).toHaveBeenNthCalledWith(3, 'update_vault_item', {
+      id: 'vault-1',
+      input: { spaceId: null, displayTitle: 'Updated title', tags: ['updated'] },
+    })
+    expect(invoke).toHaveBeenNthCalledWith(4, 'open_vault_item', { id: 'vault-1' })
+    expect(invoke).toHaveBeenNthCalledWith(5, 'reveal_vault_item', { id: 'vault-1' })
+    expect(invoke).toHaveBeenNthCalledWith(6, 'remove_vault_item', { id: 'vault-1' })
   })
 })

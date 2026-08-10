@@ -6,7 +6,10 @@ use crate::ai::provider::{
 };
 use crate::db::repositories::{self, with_conn};
 use crate::db::Database;
-use tauri::State;
+use crate::vault as vault_storage;
+use std::path::PathBuf;
+use tauri::{AppHandle, Manager, State};
+use tauri_plugin_opener::OpenerExt;
 use uuid::Uuid;
 
 // ─── Settings ───────────────────────────────────────────
@@ -372,6 +375,243 @@ pub fn duplicate_space(db: State<Database>, id: String) -> Result<serde_json::Va
     with_conn(&db.conn, |conn| {
         Ok(json_space(&repositories::spaces::duplicate(conn, &id)?))
     })
+}
+
+// ─── Vault ───────────────────────────────────────────────
+
+fn vault_root(app: &AppHandle) -> Result<PathBuf, String> {
+    app.path()
+        .app_data_dir()
+        .map(|path| path.join("vault"))
+        .map_err(|error| format!("Failed to resolve Vault storage: {}", error))
+}
+
+fn json_vault_item(item: &repositories::vault::VaultItem) -> serde_json::Value {
+    serde_json::json!({
+        "id": item.id,
+        "space_id": item.space_id,
+        "storage_mode": item.storage_mode,
+        "display_title": item.display_title,
+        "original_name": item.original_name,
+        "media_type": item.media_type,
+        "size_bytes": item.size_bytes,
+        "tags": item.tags,
+        "created_at": item.created_at,
+        "updated_at": item.updated_at,
+    })
+}
+
+#[tauri::command]
+pub async fn import_vault_item(
+    app: AppHandle,
+    db: State<'_, Database>,
+    path: String,
+    storage_mode: String,
+    space_id: Option<String>,
+    display_title: Option<String>,
+    tags: Vec<String>,
+) -> Result<serde_json::Value, String> {
+    let id = Uuid::now_v7().to_string();
+    let root = vault_root(&app)?;
+    let worker_root = root.clone();
+    let worker_id = id.clone();
+    let worker_mode = storage_mode.clone();
+    let prepared = tauri::async_runtime::spawn_blocking(move || {
+        vault_storage::prepare_import(&worker_root, &worker_id, &PathBuf::from(path), &worker_mode)
+    })
+    .await
+    .map_err(|error| format!("Vault import worker failed: {}", error))??;
+
+    let title = display_title
+        .as_deref()
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .unwrap_or(&prepared.original_name)
+        .to_string();
+    let new_item = repositories::vault::NewVaultItem {
+        id,
+        space_id,
+        storage_mode,
+        display_title: title,
+        original_name: prepared.original_name,
+        stored_path: prepared.stored_path,
+        media_type: prepared.media_type,
+        size_bytes: prepared.size_bytes,
+        tags,
+    };
+    let result = with_conn(&db.conn, |conn| {
+        let transaction = conn
+            .unchecked_transaction()
+            .map_err(|error| format!("Vault transaction error: {}", error))?;
+        let item = repositories::vault::create(&transaction, &new_item)?;
+        repositories::activity::record(
+            &transaction,
+            &repositories::activity::ActivityEvent {
+                id: Uuid::now_v7().to_string(),
+                event_type: "vault_imported".to_string(),
+                entity_type: Some("vault_item".to_string()),
+                entity_id: Some(item.id.clone()),
+                space_id: item.space_id.clone(),
+                metadata_json: Some(
+                    serde_json::json!({ "storageMode": item.storage_mode }).to_string(),
+                ),
+                created_at: String::new(),
+            },
+        )?;
+        transaction
+            .commit()
+            .map_err(|error| format!("Vault transaction commit error: {}", error))?;
+        Ok(json_vault_item(&item))
+    });
+    if result.is_err() {
+        vault_storage::discard_import(prepared.managed_directory.as_deref());
+    }
+    result
+}
+
+#[tauri::command]
+pub fn get_vault_item(
+    db: State<Database>,
+    id: String,
+) -> Result<Option<serde_json::Value>, String> {
+    with_conn(&db.conn, |conn| {
+        Ok(repositories::vault::get_by_id(conn, &id)?.map(|item| json_vault_item(&item)))
+    })
+}
+
+#[tauri::command]
+pub fn list_vault_items(
+    db: State<Database>,
+    filter: Option<repositories::vault::VaultFilter>,
+) -> Result<Vec<serde_json::Value>, String> {
+    with_conn(&db.conn, |conn| {
+        Ok(
+            repositories::vault::list(conn, &filter.unwrap_or_default())?
+                .iter()
+                .map(json_vault_item)
+                .collect(),
+        )
+    })
+}
+
+#[tauri::command]
+pub fn update_vault_item(
+    db: State<Database>,
+    id: String,
+    input: repositories::vault::VaultUpdateInput,
+) -> Result<Option<serde_json::Value>, String> {
+    with_conn(&db.conn, |conn| {
+        let transaction = conn
+            .unchecked_transaction()
+            .map_err(|error| format!("Vault transaction error: {}", error))?;
+        let item = repositories::vault::update(&transaction, &id, &input)?;
+        if let Some(item) = item.as_ref() {
+            repositories::activity::record(
+                &transaction,
+                &repositories::activity::ActivityEvent {
+                    id: Uuid::now_v7().to_string(),
+                    event_type: "vault_updated".to_string(),
+                    entity_type: Some("vault_item".to_string()),
+                    entity_id: Some(item.id.clone()),
+                    space_id: item.space_id.clone(),
+                    metadata_json: None,
+                    created_at: String::new(),
+                },
+            )?;
+        }
+        transaction
+            .commit()
+            .map_err(|error| format!("Vault transaction commit error: {}", error))?;
+        Ok(item.as_ref().map(json_vault_item))
+    })
+}
+
+#[tauri::command]
+pub async fn remove_vault_item(
+    app: AppHandle,
+    db: State<'_, Database>,
+    id: String,
+) -> Result<bool, String> {
+    let item = with_conn(&db.conn, |conn| repositories::vault::get_by_id(conn, &id))?;
+    let Some(item) = item else {
+        return Ok(false);
+    };
+    let root = vault_root(&app)?;
+    let worker_root = root.clone();
+    let worker_item = item.clone();
+    let quarantine = tauri::async_runtime::spawn_blocking(move || {
+        vault_storage::quarantine_managed(&worker_root, &worker_item)
+    })
+    .await
+    .map_err(|error| format!("Vault removal worker failed: {}", error))??;
+
+    let deletion = with_conn(&db.conn, |conn| {
+        let transaction = conn
+            .unchecked_transaction()
+            .map_err(|error| format!("Vault transaction error: {}", error))?;
+        let removed = repositories::vault::delete(&transaction, &id)?;
+        if removed {
+            repositories::activity::record(
+                &transaction,
+                &repositories::activity::ActivityEvent {
+                    id: Uuid::now_v7().to_string(),
+                    event_type: "vault_removed".to_string(),
+                    entity_type: Some("vault_item".to_string()),
+                    entity_id: Some(id),
+                    space_id: item.space_id.clone(),
+                    metadata_json: Some(
+                        serde_json::json!({ "storageMode": item.storage_mode }).to_string(),
+                    ),
+                    created_at: String::new(),
+                },
+            )?;
+        }
+        transaction
+            .commit()
+            .map_err(|error| format!("Vault transaction commit error: {}", error))?;
+        Ok(removed)
+    });
+
+    if let Err(error) = deletion {
+        if let Some((quarantined, original)) = quarantine.as_ref() {
+            vault_storage::restore_quarantine(quarantined, original)?;
+        }
+        return Err(error);
+    }
+    if let Some((quarantined, _)) = quarantine {
+        let cleanup_root = root;
+        if let Err(error) = tauri::async_runtime::spawn_blocking(move || {
+            vault_storage::finalize_quarantine(&cleanup_root, &quarantined)
+        })
+        .await
+        .map_err(|error| format!("Vault cleanup worker failed: {}", error))?
+        {
+            log::warn!("{}", error);
+        }
+    }
+    deletion
+}
+
+fn resolve_vault_item_path(app: &AppHandle, db: &Database, id: &str) -> Result<PathBuf, String> {
+    let item = with_conn(&db.conn, |conn| repositories::vault::get_by_id(conn, id))?
+        .ok_or_else(|| "Vault item does not exist".to_string())?;
+    vault_storage::resolve_item_path(&vault_root(app)?, &item)
+}
+
+#[tauri::command]
+pub fn open_vault_item(app: AppHandle, db: State<Database>, id: String) -> Result<(), String> {
+    let path = resolve_vault_item_path(&app, &db, &id)?;
+    app.opener()
+        .open_path(path.to_string_lossy(), None::<&str>)
+        .map_err(|error| format!("Failed to open Vault file: {}", error))
+}
+
+#[tauri::command]
+pub fn reveal_vault_item(app: AppHandle, db: State<Database>, id: String) -> Result<(), String> {
+    let path = resolve_vault_item_path(&app, &db, &id)?;
+    app.opener()
+        .reveal_item_in_dir(path)
+        .map_err(|error| format!("Failed to reveal Vault file: {}", error))
 }
 
 // ─── Activity ───────────────────────────────────────────
@@ -1065,4 +1305,29 @@ pub fn ai_clear_context(db: State<Database>, conversation_id: String) -> Result<
     with_conn(&db.conn, |conn| {
         repositories::conversations::clear_context(conn, &conversation_id)
     })
+}
+
+#[cfg(test)]
+mod vault_command_tests {
+    use super::*;
+
+    #[test]
+    fn vault_json_keeps_storage_paths_inside_rust() {
+        let item = repositories::vault::VaultItem {
+            id: "vault-1".to_string(),
+            space_id: None,
+            storage_mode: "linked".to_string(),
+            display_title: "Private document".to_string(),
+            original_name: "document.md".to_string(),
+            stored_path: "C:\\Users\\Private\\document.md".to_string(),
+            media_type: "text/markdown".to_string(),
+            size_bytes: 10,
+            tags: vec![],
+            created_at: String::new(),
+            updated_at: String::new(),
+        };
+        let value = json_vault_item(&item);
+        assert_eq!(value["id"], "vault-1");
+        assert!(value.get("stored_path").is_none());
+    }
 }

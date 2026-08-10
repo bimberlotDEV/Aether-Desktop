@@ -207,6 +207,30 @@ const MIGRATIONS: &[(&str, &str)] = &[
         CREATE INDEX IF NOT EXISTS idx_tasks_archived ON tasks(archived_at);
         ",
     ),
+    // Migration 006: Vault
+    (
+        "006_vault",
+        "
+        CREATE TABLE IF NOT EXISTS vault_items (
+            id              TEXT PRIMARY KEY NOT NULL,
+            space_id        TEXT REFERENCES spaces(id) ON DELETE SET NULL,
+            storage_mode    TEXT NOT NULL CHECK(storage_mode IN ('linked', 'managed')),
+            display_title   TEXT NOT NULL CHECK(length(trim(display_title)) BETWEEN 1 AND 200),
+            original_name   TEXT NOT NULL CHECK(length(trim(original_name)) BETWEEN 1 AND 255),
+            stored_path     TEXT NOT NULL UNIQUE CHECK(length(trim(stored_path)) > 0),
+            media_type      TEXT NOT NULL DEFAULT 'application/octet-stream',
+            size_bytes      INTEGER NOT NULL CHECK(size_bytes >= 0),
+            tags_json       TEXT NOT NULL DEFAULT '[]',
+            created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_vault_items_space ON vault_items(space_id);
+        CREATE INDEX IF NOT EXISTS idx_vault_items_mode ON vault_items(storage_mode);
+        CREATE INDEX IF NOT EXISTS idx_vault_items_title ON vault_items(display_title);
+        CREATE INDEX IF NOT EXISTS idx_vault_items_updated ON vault_items(updated_at);
+        ",
+    ),
 ];
 
 fn ensure_migrations_table(conn: &Connection) -> Result<(), String> {
@@ -288,6 +312,7 @@ mod tests {
         assert!(tables.contains(&"module_instances".to_string()));
         assert!(tables.contains(&"activity_events".to_string()));
         assert!(tables.contains(&"tasks".to_string()));
+        assert!(tables.contains(&"vault_items".to_string()));
     }
 
     #[test]
@@ -343,6 +368,31 @@ mod tests {
             "tags_json",
             "completed_at",
             "archived_at",
+        ] {
+            assert!(cols.contains(&expected.to_string()));
+        }
+    }
+
+    #[test]
+    fn test_vault_columns_exist() {
+        let conn = in_memory_db();
+        run(&conn).unwrap();
+        let cols: Vec<String> = conn
+            .prepare("PRAGMA table_info(vault_items)")
+            .unwrap()
+            .query_map([], |row| row.get(1))
+            .unwrap()
+            .filter_map(|result| result.ok())
+            .collect();
+        for expected in [
+            "space_id",
+            "storage_mode",
+            "display_title",
+            "original_name",
+            "stored_path",
+            "media_type",
+            "size_bytes",
+            "tags_json",
         ] {
             assert!(cols.contains(&expected.to_string()));
         }
