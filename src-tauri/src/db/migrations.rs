@@ -177,6 +177,36 @@ const MIGRATIONS: &[(&str, &str)] = &[
         CREATE INDEX IF NOT EXISTS idx_ai_context_conversation ON ai_context_items(conversation_id);
         ",
     ),
+    // Migration 005: Tasks
+    (
+        "005_tasks",
+        "
+        CREATE TABLE IF NOT EXISTS tasks (
+            id              TEXT PRIMARY KEY NOT NULL,
+            space_id        TEXT REFERENCES spaces(id) ON DELETE SET NULL,
+            parent_task_id  TEXT REFERENCES tasks(id) ON DELETE CASCADE,
+            title           TEXT NOT NULL CHECK(length(trim(title)) BETWEEN 1 AND 200),
+            description     TEXT NOT NULL DEFAULT '',
+            status          TEXT NOT NULL DEFAULT 'inbox' CHECK(status IN ('inbox', 'planned', 'in_progress', 'done')),
+            priority        TEXT NOT NULL DEFAULT 'none' CHECK(priority IN ('none', 'low', 'medium', 'high')),
+            due_date        TEXT CHECK(due_date IS NULL OR (length(due_date) = 10 AND due_date GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]')),
+            tags_json       TEXT NOT NULL DEFAULT '[]',
+            completed_at    TEXT,
+            archived_at     TEXT,
+            created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at      TEXT NOT NULL DEFAULT (datetime('now')),
+            CHECK(parent_task_id IS NULL OR parent_task_id <> id),
+            CHECK((status = 'done' AND completed_at IS NOT NULL) OR (status <> 'done' AND completed_at IS NULL))
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_tasks_space ON tasks(space_id);
+        CREATE INDEX IF NOT EXISTS idx_tasks_parent ON tasks(parent_task_id);
+        CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
+        CREATE INDEX IF NOT EXISTS idx_tasks_priority ON tasks(priority);
+        CREATE INDEX IF NOT EXISTS idx_tasks_due_date ON tasks(due_date);
+        CREATE INDEX IF NOT EXISTS idx_tasks_archived ON tasks(archived_at);
+        ",
+    ),
 ];
 
 fn ensure_migrations_table(conn: &Connection) -> Result<(), String> {
@@ -257,6 +287,7 @@ mod tests {
         assert!(tables.contains(&"spaces".to_string()));
         assert!(tables.contains(&"module_instances".to_string()));
         assert!(tables.contains(&"activity_events".to_string()));
+        assert!(tables.contains(&"tasks".to_string()));
     }
 
     #[test]
@@ -290,5 +321,30 @@ mod tests {
             .collect();
         assert!(cols.contains(&"parent_space_id".to_string()));
         assert!(cols.contains(&"last_opened_at".to_string()));
+    }
+
+    #[test]
+    fn test_task_columns_exist() {
+        let conn = in_memory_db();
+        run(&conn).unwrap();
+        let cols: Vec<String> = conn
+            .prepare("PRAGMA table_info(tasks)")
+            .unwrap()
+            .query_map([], |row| row.get(1))
+            .unwrap()
+            .filter_map(|result| result.ok())
+            .collect();
+        for expected in [
+            "space_id",
+            "parent_task_id",
+            "status",
+            "priority",
+            "due_date",
+            "tags_json",
+            "completed_at",
+            "archived_at",
+        ] {
+            assert!(cols.contains(&expected.to_string()));
+        }
     }
 }

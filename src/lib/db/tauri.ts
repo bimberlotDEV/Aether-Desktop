@@ -9,6 +9,9 @@ import type {
   Note,
   NoteListItem,
   NoteSearchResult,
+  Task,
+  TaskFilter,
+  TaskInput,
 } from './types'
 
 // ─── Settings ────────────────────────────────────────────
@@ -237,6 +240,36 @@ export async function moveNote(id: string, newSpaceId: string): Promise<boolean>
 }
 export async function duplicateNote(id: string): Promise<Note> {
   return invoke('duplicate_note', { id })
+}
+
+// ─── Tasks ───────────────────────────────────────────────
+export async function createTask(input: TaskInput): Promise<Task> {
+  return invoke('create_task', { input })
+}
+export async function getTask(id: string): Promise<Task | null> {
+  return invoke('get_task', { id })
+}
+export async function listTasks(filter?: TaskFilter): Promise<Task[]> {
+  return invoke('list_tasks', { filter: filter ?? null })
+}
+export async function updateTask(id: string, input: TaskInput): Promise<Task | null> {
+  return invoke('update_task', { id, input })
+}
+export async function listTaskAttention(
+  today: string,
+  horizon: string,
+  limit?: number,
+): Promise<Task[]> {
+  return invoke('list_task_attention', { today, horizon, limit: limit ?? null })
+}
+export async function archiveTask(id: string): Promise<boolean> {
+  return invoke('archive_task', { id })
+}
+export async function restoreTask(id: string): Promise<boolean> {
+  return invoke('restore_task', { id })
+}
+export async function deleteTask(id: string): Promise<boolean> {
+  return invoke('delete_task', { id })
 }
 
 // ─── Activity ────────────────────────────────────────────

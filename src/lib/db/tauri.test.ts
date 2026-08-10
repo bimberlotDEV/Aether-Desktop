@@ -4,7 +4,15 @@ const { invoke } = vi.hoisted(() => ({ invoke: vi.fn() }))
 
 vi.mock('@tauri-apps/api/core', () => ({ invoke }))
 
-import { createSpaceWithModules, updateNote, updateSpace } from '@/lib/db/tauri'
+import {
+  createSpaceWithModules,
+  createTask,
+  listTaskAttention,
+  listTasks,
+  updateNote,
+  updateSpace,
+  updateTask,
+} from '@/lib/db/tauri'
 
 describe('Tauri database boundary', () => {
   beforeEach(() => {
@@ -62,6 +70,53 @@ describe('Tauri database boundary', () => {
       content: 'Body',
       excerpt: 'Body',
       expectedRevision: 7,
+    })
+  })
+
+  it('passes full-state Task inputs through the command boundary', async () => {
+    const input = {
+      spaceId: 'space-1',
+      parentTaskId: null,
+      title: 'Ship Phase 5',
+      description: 'Complete the persistence slice',
+      status: 'in_progress' as const,
+      priority: 'high' as const,
+      dueDate: '2026-08-12',
+      tags: ['release'],
+    }
+
+    await createTask(input)
+    await updateTask('task-1', input)
+
+    expect(invoke).toHaveBeenNthCalledWith(1, 'create_task', { input })
+    expect(invoke).toHaveBeenNthCalledWith(2, 'update_task', { id: 'task-1', input })
+  })
+
+  it('maps Task filters and attention dates without changing their semantics', async () => {
+    await listTasks({
+      spaceId: 'space-1',
+      status: 'planned',
+      priority: 'medium',
+      search: 'release',
+      includeArchived: false,
+      limit: 50,
+    })
+    await listTaskAttention('2026-08-10', '2026-08-17', 12)
+
+    expect(invoke).toHaveBeenNthCalledWith(1, 'list_tasks', {
+      filter: {
+        spaceId: 'space-1',
+        status: 'planned',
+        priority: 'medium',
+        search: 'release',
+        includeArchived: false,
+        limit: 50,
+      },
+    })
+    expect(invoke).toHaveBeenNthCalledWith(2, 'list_task_attention', {
+      today: '2026-08-10',
+      horizon: '2026-08-17',
+      limit: 12,
     })
   })
 })

@@ -417,6 +417,161 @@ pub fn list_activity(
     })
 }
 
+// ─── Tasks ──────────────────────────────────────────────
+
+#[tauri::command]
+pub fn create_task(
+    db: State<Database>,
+    input: repositories::tasks::TaskInput,
+) -> Result<serde_json::Value, String> {
+    with_conn(&db.conn, |conn| {
+        let transaction = conn
+            .unchecked_transaction()
+            .map_err(|error| format!("Task transaction error: {}", error))?;
+        let task = repositories::tasks::create(&transaction, &input)?;
+        repositories::activity::record(
+            &transaction,
+            &repositories::activity::ActivityEvent {
+                id: Uuid::now_v7().to_string(),
+                event_type: "task_created".to_string(),
+                entity_type: Some("task".to_string()),
+                entity_id: Some(task.id.clone()),
+                space_id: task.space_id.clone(),
+                metadata_json: None,
+                created_at: String::new(),
+            },
+        )?;
+        let value = serde_json::to_value(task)
+            .map_err(|error| format!("Task serialization error: {}", error))?;
+        transaction
+            .commit()
+            .map_err(|error| format!("Task transaction commit error: {}", error))?;
+        Ok(value)
+    })
+}
+
+#[tauri::command]
+pub fn get_task(db: State<Database>, id: String) -> Result<Option<serde_json::Value>, String> {
+    with_conn(&db.conn, |conn| {
+        repositories::tasks::get_by_id(conn, &id)?
+            .map(serde_json::to_value)
+            .transpose()
+            .map_err(|error| format!("Task serialization error: {}", error))
+    })
+}
+
+#[tauri::command]
+pub fn list_tasks(
+    db: State<Database>,
+    filter: Option<repositories::tasks::TaskFilter>,
+) -> Result<Vec<serde_json::Value>, String> {
+    with_conn(&db.conn, |conn| {
+        repositories::tasks::list(conn, &filter.unwrap_or_default())?
+            .into_iter()
+            .map(serde_json::to_value)
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|error| format!("Task serialization error: {}", error))
+    })
+}
+
+#[tauri::command]
+pub fn update_task(
+    db: State<Database>,
+    id: String,
+    input: repositories::tasks::TaskInput,
+) -> Result<Option<serde_json::Value>, String> {
+    with_conn(&db.conn, |conn| {
+        let transaction = conn
+            .unchecked_transaction()
+            .map_err(|error| format!("Task transaction error: {}", error))?;
+        let previous = repositories::tasks::get_by_id(&transaction, &id)?;
+        let updated = repositories::tasks::update(&transaction, &id, &input)?;
+        if previous.as_ref().is_some_and(|task| task.status != "done")
+            && updated.as_ref().is_some_and(|task| task.status == "done")
+        {
+            if let Some(task) = updated.as_ref() {
+                repositories::activity::record(
+                    &transaction,
+                    &repositories::activity::ActivityEvent {
+                        id: Uuid::now_v7().to_string(),
+                        event_type: "task_completed".to_string(),
+                        entity_type: Some("task".to_string()),
+                        entity_id: Some(task.id.clone()),
+                        space_id: task.space_id.clone(),
+                        metadata_json: None,
+                        created_at: String::new(),
+                    },
+                )?;
+            }
+        }
+        let value = updated
+            .map(serde_json::to_value)
+            .transpose()
+            .map_err(|error| format!("Task serialization error: {}", error))?;
+        transaction
+            .commit()
+            .map_err(|error| format!("Task transaction commit error: {}", error))?;
+        Ok(value)
+    })
+}
+
+#[tauri::command]
+pub fn list_task_attention(
+    db: State<Database>,
+    today: String,
+    horizon: String,
+    limit: Option<u32>,
+) -> Result<Vec<serde_json::Value>, String> {
+    with_conn(&db.conn, |conn| {
+        repositories::tasks::list_attention(conn, &today, &horizon, limit.unwrap_or(20))?
+            .into_iter()
+            .map(serde_json::to_value)
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|error| format!("Task serialization error: {}", error))
+    })
+}
+
+#[tauri::command]
+pub fn archive_task(db: State<Database>, id: String) -> Result<bool, String> {
+    with_conn(&db.conn, |conn| {
+        let transaction = conn
+            .unchecked_transaction()
+            .map_err(|error| format!("Task transaction error: {}", error))?;
+        let task = repositories::tasks::get_by_id(&transaction, &id)?;
+        let archived = repositories::tasks::archive(&transaction, &id)?;
+        if archived {
+            repositories::activity::record(
+                &transaction,
+                &repositories::activity::ActivityEvent {
+                    id: Uuid::now_v7().to_string(),
+                    event_type: "task_archived".to_string(),
+                    entity_type: Some("task".to_string()),
+                    entity_id: Some(id),
+                    space_id: task.and_then(|value| value.space_id),
+                    metadata_json: None,
+                    created_at: String::new(),
+                },
+            )?;
+        }
+        transaction
+            .commit()
+            .map_err(|error| format!("Task transaction commit error: {}", error))?;
+        Ok(archived)
+    })
+}
+
+#[tauri::command]
+pub fn restore_task(db: State<Database>, id: String) -> Result<bool, String> {
+    with_conn(&db.conn, |conn| repositories::tasks::restore(conn, &id))
+}
+
+#[tauri::command]
+pub fn delete_task(db: State<Database>, id: String) -> Result<bool, String> {
+    with_conn(&db.conn, |conn| {
+        repositories::tasks::delete_permanent(conn, &id)
+    })
+}
+
 // ─── Notes ───────────────────────────────────────────────
 
 #[tauri::command]

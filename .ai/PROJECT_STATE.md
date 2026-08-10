@@ -8,8 +8,8 @@
 | Last updated | 2026-08-10 |
 | Updated by | Codex |
 | Repository | `bimberlotDEV/Aether-Desktop` |
-| Branch | `codex/spaces-notes-audit` |
-| Baseline commit | `f2e3b0e` (PR #5 merge) |
+| Branch | `codex/phase5-tasks` |
+| Baseline commit | `08630d4` (PR #6 merge) |
 | Product maturity | Alpha |
 
 ## Responsibility of this file
@@ -31,8 +31,9 @@
 | `M-CODEX-ONLY` | Codex-only engineering workflow | `complete` | ADR-008, repository instructions, workflow, and control templates require no second AI agent. |
 | `M-RUST-QUALITY` | Restore Rust formatting and strict lint gates | `complete` | Formatting, Clippy, tests, and production builds all pass. |
 | `PHASE34-CLOSEOUT` | Close Spaces and Notes MVP gaps | `complete` | All contract acceptance criteria pass with regression coverage. |
+| `PHASE5-001` | Task persistence and IPC foundation | `complete` | ADR-009 acceptance criteria and all quality gates pass. |
 
-No product task is active. Phase 5 Tasks is the next planned roadmap milestone.
+No implementation task is active. The next planned slice is `PHASE5-002`, the Tasks UI and Pulse integration.
 
 ## Completed product milestones
 
@@ -49,7 +50,7 @@ No product task is active. Phase 5 Tasks is the next planned roadmap milestone.
 
 | Milestone | Status | Notes |
 | --- | --- | --- |
-| Phase 5 — Tasks | `not_started` | No task domain implementation located. |
+| Phase 5 — Tasks | `foundation_complete` | Persistence, validated Task trees, commands, Activity events, TypeScript contracts, and IPC wrappers are complete; UI and Pulse integration remain. |
 | Phase 6 — Vault | `placeholder` | Empty-state UI only. |
 | Phase 8 — Memory | `not_started` | No explicit memory domain located. |
 | Phase 9 — Native desktop | `partial` | Icons, Tauri bundle config, and a built executable exist; remaining native features are not verified. |
@@ -59,9 +60,9 @@ No product task is active. Phase 5 Tasks is the next planned roadmap milestone.
 
 | Check | Last result | Date | Notes |
 | --- | --- | --- | --- |
-| `pnpm check` | Pass | 2026-08-10 | Typecheck and lint clean; Vitest 14/14 across five files. |
+| `pnpm check` | Pass | 2026-08-10 | Typecheck and lint clean; Vitest 16/16 across five files. |
 | `pnpm build` | Pass | 2026-08-10 | TypeScript and Vite production build pass. |
-| `cargo test` | Pass | 2026-08-10 | 33/33 tests pass. |
+| `cargo test` | Pass | 2026-08-10 | 39/39 tests pass. |
 | `cargo build` | Pass | 2026-08-10 | Windows production build compiles with DPAPI. |
 | `cargo fmt --check` | Pass | 2026-08-10 | Repository Rust formatting is clean; `DEBT-005` resolved. |
 | `cargo clippy --all-targets -- -D warnings` | Pass | 2026-08-10 | Library, binary, and test targets are warning-free; `DEBT-006` resolved. |
@@ -93,8 +94,9 @@ Full rationale belongs in `.ai/ARCHITECTURE.md` or a dedicated ADR under `docs/d
 | `ADR-005` | `.ai/` documents are the collaboration source of truth. | Accepted |
 | `ADR-007` | Verified task commits are automatically pushed and published through guarded repository tooling. | Accepted |
 | `ADR-008` | Codex is the sole engineering agent; complex work uses task contracts and evidence-based self-review. | Accepted |
+| `ADR-009` | Tasks use one persistent tree with nullable Space ownership and local-date due semantics. | Accepted |
 
-## Next: Codex designs and contracts Phase 5 Tasks and Pulse integration as `planned_codex`.
+## Next: Codex implements `PHASE5-002`, the Tasks UI and Pulse integration, as `planned_codex`.
 
 ## Reusable update template
 

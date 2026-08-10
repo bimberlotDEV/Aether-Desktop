@@ -35,7 +35,9 @@
 | P1 | `ENV-001` | Restore Rust verification capability | Tooling | `done` | Rust MSVC installation | Rust tests, formatting checks, and Clippy run locally; code findings are tracked separately. |
 | P1 | `DOC-001` | Reconcile version and milestone documentation | Documentation | `done` | `AIWF-001` accepted | README, app metadata, and project state agree. |
 | P1 | `PHASE34-CLOSEOUT` | Close Spaces and Notes MVP gaps | Product and testing | `done` | Rust quality gates restored | Space editing/reordering/state refresh and safe Note autosave/archive flows pass regression tests. |
-| P1 | `PHASE5-EPIC` | Design and implement Tasks | Product | `needs_design` | Codex decomposition | Phase 5 requirements are split into bounded vertical slices. |
+| P1 | `PHASE5-EPIC` | Design and implement Tasks | Product | `active` | Codex decomposition | ADR-009 accepted; foundation and UI/Pulse slices are tracked below. |
+| P1 | `PHASE5-001` | Build Task persistence and IPC foundation | Product and architecture | `done` | ADR-009 | Migration, repository, commands, types, wrappers, and tests pass. |
+| P1 | `PHASE5-002` | Build Tasks UI and Pulse integration | Product | `planned` | `PHASE5-001` | Space Tasks and calm global due views meet Phase 5 acceptance. |
 | P2 | `AI-UI-EPIC` | Complete the AI user experience | Product | `needs_design` | `TECH-001` | Provider setup, conversations, streaming, cancellation, and explicit context have reviewed UX. |
 | P2 | `VAULT-EPIC` | Design and implement Vault | Product | `needs_design` | Security and file lifecycle design | Phase 6 requirements have an approved architecture. |
 
@@ -56,7 +58,7 @@
 | --- | --- | --- |
 | Spaces | `mvp_complete` | Extend only when a later roadmap phase requires it. |
 | Notes | `mvp_complete` | Extend only when a later roadmap phase requires it. |
-| Tasks | `not_started` | Codex creates an architecture slice and first planned task contract. |
+| Tasks | `foundation_complete` | Implement `PHASE5-002` Tasks UI and Pulse integration. |
 | Vault | `placeholder` | Codex designs file ownership and deletion semantics in a planned task. |
 | AI | `prototype` | Resolve security design before UI expansion. |
 | Memory | `not_started` | Defer until AI context semantics are stable. |
