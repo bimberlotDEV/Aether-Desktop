@@ -5,22 +5,22 @@
 | Field | Value |
 | --- | --- |
 | Schema version | 1 |
-| Last updated | 2026-07-31 |
-| Prioritized by | Hermes (initial inventory recorded by Codex) |
+| Last updated | 2026-08-10 |
+| Prioritized by | Codex within the owner-approved roadmap |
 
 ## Responsibility of this file
 
 - Hold prioritized candidate work and technical debt.
 - Make dependencies and readiness visible.
-- Never authorize Codex to start work; only a `ready` `.ai/HANDOFF.md` does that.
+- Authorize small `direct_codex` work directly; require a `ready` `.ai/HANDOFF.md` contract for `planned_codex` work.
 - Preserve product backlog items without expanding them into implementation plans.
 
 ## Status values
 
 - `candidate`: captured but not refined.
-- `needs_design`: requires Hermes architecture or product decisions.
-- `ready_for_handoff`: sufficiently understood to be promoted.
-- `active`: represented by the current handoff.
+- `needs_design`: requires Codex analysis, an ADR, or a human product decision.
+- `planned`: sufficiently understood and queued for a task contract.
+- `active`: represented by the current Codex task contract.
 - `blocked`: cannot progress yet.
 - `done`: completed and recorded in `.ai/CHANGELOG.md`.
 - `deferred`: intentionally postponed.
@@ -30,10 +30,11 @@
 | Priority | ID | Work item | Type | Status | Dependencies | Acceptance summary |
 | --- | --- | --- | --- | --- | --- | --- |
 | P0 | `AIWF-001` | Establish Hermes/Codex collaboration system | Process | `done` | None | Hermes accepted the complete workflow. |
-| P0 | `TECH-001` | Audit and harden AI credential storage and locking | Security | `active` | `ENV-001` done | Implemented by Codex; awaiting Hermes review with 33/33 Rust tests passing. |
+| P0 | `PROC-003` | Adopt Codex-only engineering workflow | Process | `done` | Project-owner decision | Codex owns planning through publication with planned-task contracts and self-review. |
+| P0 | `TECH-001` | Audit and harden AI credential storage and locking | Security | `done` | `ENV-001` done | Merged via PR #3; Windows DPAPI enabled and 33/33 Rust tests pass. |
 | P1 | `ENV-001` | Restore Rust verification capability | Tooling | `done` | Rust MSVC installation | Rust tests, formatting checks, and Clippy run locally; code findings are tracked separately. |
 | P1 | `DOC-001` | Reconcile version and milestone documentation | Documentation | `done` | `AIWF-001` accepted | README, app metadata, and project state agree. |
-| P1 | `PHASE5-EPIC` | Design and implement Tasks | Product | `needs_design` | Hermes decomposition | Phase 5 requirements are split into bounded vertical slices. |
+| P1 | `PHASE5-EPIC` | Design and implement Tasks | Product | `needs_design` | Codex decomposition | Phase 5 requirements are split into bounded vertical slices. |
 | P2 | `AI-UI-EPIC` | Complete the AI user experience | Product | `needs_design` | `TECH-001` | Provider setup, conversations, streaming, cancellation, and explicit context have reviewed UX. |
 | P2 | `VAULT-EPIC` | Design and implement Vault | Product | `needs_design` | Security and file lifecycle design | Phase 6 requirements have an approved architecture. |
 
@@ -54,8 +55,8 @@
 | --- | --- | --- |
 | Spaces | `substantially_complete` | Define remaining acceptance gaps and regression coverage. |
 | Notes | `substantially_complete` | Verify autosave, search, archive, and failure behavior in Tauri. |
-| Tasks | `not_started` | Hermes creates an architecture slice and first handoff. |
-| Vault | `placeholder` | Hermes designs file ownership and deletion semantics. |
+| Tasks | `not_started` | Codex creates an architecture slice and first planned task contract. |
+| Vault | `placeholder` | Codex designs file ownership and deletion semantics in a planned task. |
 | AI | `prototype` | Resolve security design before UI expansion. |
 | Memory | `not_started` | Defer until AI context semantics are stable. |
 
@@ -65,4 +66,4 @@
 | P0-P3 | `AREA-NNN` | <imperative work item> | Product/Defect/Security/Tooling/Docs/Process | `candidate` | <IDs or None> | <observable outcome> |
 ```
 
-Hermes must assign the ID, priority, dependency chain, and readiness status. Codex may add newly discovered defects or debt, but must not reprioritize existing items.
+Codex assigns the ID, priority, dependency chain, and readiness status within the owner-approved roadmap. Material product reprioritization or scope expansion requires the project owner's direction.

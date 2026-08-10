@@ -11,14 +11,14 @@
 
 ## Entry format
 
-Entries are newest first and use ISO dates. Each entry must reference a handoff task ID.
+Entries are newest first and use ISO dates. Each entry must reference a stable task ID.
 
 ```markdown
 ## YYYY-MM-DD — `TASK-ID` — Short outcome
 
 - **Type:** Feature | Fix | Refactor | Test | Docs | Process
 - **Implemented by:** Codex
-- **Reviewed by:** Hermes | Pending
+- **Reviewed by:** Codex self-review | Human | Not required
 - **Summary:** <observable result>
 - **Files:** `<path>`, `<path>`
 - **Verification:** `<command>` — Pass/Fail/Not run with reason
@@ -26,16 +26,27 @@ Entries are newest first and use ISO dates. Each entry must reference a handoff 
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-08-10 — `PROC-003` — Codex-only engineering workflow
+
+- **Type:** Process and documentation
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review; authorized by project owner
+- **Summary:** Replaced the Hermes/Codex dependency with a single-agent Codex workflow. Complex work now uses `planned_codex` task contracts and a distinct evidence-based self-review; small work remains `direct_codex`.
+- **Files:** `AGENTS.md`, `WORKFLOW.md`, `docs/decisions/008-codex-only-workflow.md`, `.ai/ARCHITECTURE.md`, `.ai/HANDOFF.md`, `.ai/PROJECT_STATE.md`, `.ai/TODO.md`, `.ai/CHANGELOG.md`, `.ai/SESSION_NOTES.md`
+- **Verification:** Active-policy scan contains no Hermes requirements; required control files and Codex-only status vocabulary are present; `git diff --check` passes; changed-path audit contains documentation only.
+- **Decisions/deviations:** ADR-008 supersedes ADR-004. Historical Hermes references remain in older changelog entries and ADR-006 as factual history.
+- **Follow-up:** Codex selects the next roadmap slice.
+
 ## 2026-07-31 — `TECH-001` — Windows DPAPI credential hardening
 
 - **Type:** Security fix and refactor
 - **Implemented by:** Codex
-- **Reviewed by:** Pending Hermes review
+- **Reviewed by:** Accepted under the project owner's Codex-only transition; merged via PR #3 on 2026-08-10
 - **Summary:** Replaced database-path-derived credential encryption with current-user-bound Windows DPAPI, injected a testable crypto boundary into `Database`, and eliminated the recursive SQLite mutex deadlock.
 - **Files:** `src-tauri/Cargo.toml`, `src-tauri/Cargo.lock`, `src-tauri/src/ai/credentials.rs`, `src-tauri/src/db/mod.rs`, `src-tauri/src/lib.rs`, `.ai/HANDOFF.md`, `.ai/PROJECT_STATE.md`, `.ai/TODO.md`, `.ai/CHANGELOG.md`, `.ai/SESSION_NOTES.md`
 - **Verification:** Rust tests 33/33 pass; production Cargo build passes; frontend typecheck/lint pass; Vitest 7/7 pass; changed Rust files are formatted; no new Clippy warnings in changed modules.
 - **Decisions/deviations:** Followed ADR-006. Included generated `Cargo.lock` as a necessary consequence of the approved dependency addition. Existing repository-wide formatting and Clippy debt remain out of scope as `DEBT-005` and `DEBT-006`.
-- **Follow-up:** Hermes review of draft PR #3.
+- **Follow-up:** None.
 
 ## 2026-07-31 — `ENV-001` — Rust MSVC verification restored
 

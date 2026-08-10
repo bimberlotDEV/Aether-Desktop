@@ -5,11 +5,11 @@
 | Field | Value |
 | --- | --- |
 | Schema version | 1 |
-| Last updated | 2026-07-31 |
+| Last updated | 2026-08-10 |
 | Updated by | Codex |
 | Repository | `bimberlotDEV/Aether-Desktop` |
-| Branch | `agent/tech-001-credential-hardening` |
-| Baseline commit | `312308a` (`ai-backend`) |
+| Branch | `agent/codex-only-workflow` |
+| Baseline commit | `2bee084` (PR #3 merge) |
 | Product maturity | Alpha |
 
 ## Responsibility of this file
@@ -27,9 +27,10 @@
 | `M-DOC-VERSIONING` | Version and metadata reconciliation | `complete` | Hermes accepted `DOC-001`. |
 | `M-AUTO-PUBLISH` | Automatic GitHub task publication | `complete` | Draft PR #1 merged into `master`. |
 | `M-RUST-VERIFY` | Restore local Rust verification | `complete` | Rust MSVC builds the test binaries and runs formatting, lint, and tests locally. |
-| `M-CRED-HARDEN` | Harden AI credential storage and fix deadlock | `ready_for_review` | Codex implemented ADR-006; Hermes reviews TECH-001. |
+| `M-CRED-HARDEN` | Harden AI credential storage and fix deadlock | `complete` | PR #3 merged; 33/33 Rust tests pass with Windows DPAPI. |
+| `M-CODEX-ONLY` | Codex-only engineering workflow | `complete` | ADR-008, repository instructions, workflow, and control templates require no second AI agent. |
 
-No product feature is active while the collaboration foundation is fresh.
+No product feature is active. Codex selects and contracts the next roadmap slice from `.ai/TODO.md`.
 
 ## Completed product milestones
 
@@ -73,8 +74,8 @@ None. `BLOCK-001` was resolved by installing Rust 1.97.1 with the stable MSVC to
 
 | ID | Severity | Summary | Tracking task |
 | --- | --- | --- | --- |
-| `RISK-001` | ~~High~~ Resolved, pending review | Credential crypto no longer acquires the database mutex; 33/33 tests pass. | `TECH-001` |
-| `RISK-002` | ~~High~~ Resolved, pending review | Path-derived encryption was replaced with current-user-bound Windows DPAPI. | `TECH-001` |
+| `RISK-001` | ~~High~~ Resolved | Credential crypto no longer acquires the database mutex; 33/33 tests pass and PR #3 is merged. | `TECH-001` |
+| `RISK-002` | ~~High~~ Resolved | Path-derived encryption was replaced with current-user-bound Windows DPAPI in merged PR #3. | `TECH-001` |
 | `RISK-003` | ~~High~~ Resolved | README, package metadata, Tauri metadata, and agent phase guidance disagree on version/maturity. | `DOC-001` — reconciled all metadata to 0.3.0-alpha. |
 
 ## Decision index
@@ -86,11 +87,12 @@ Full rationale belongs in `.ai/ARCHITECTURE.md` or a dedicated ADR under `docs/d
 | `ADR-001` | Tauri 2 is the Windows desktop shell. | Accepted |
 | `ADR-002` | SQLite via bundled `rusqlite` is the local persistence layer. | Accepted |
 | `ADR-003` | Frontend database access goes through typed Tauri invoke wrappers. | Accepted |
-| `ADR-004` | Hybrid routing uses `direct_codex` for small low-risk work and `hermes_codex` for complex or risky work. | Accepted |
+| `ADR-004` | Hybrid Hermes/Codex task routing. | Superseded by `ADR-008` |
 | `ADR-005` | `.ai/` documents are the collaboration source of truth. | Accepted |
 | `ADR-007` | Verified task commits are automatically pushed and published through guarded repository tooling. | Accepted |
+| `ADR-008` | Codex is the sole engineering agent; complex work uses task contracts and evidence-based self-review. | Accepted |
 
-## Next: Hermes reviews the backlog and promotes the next task from `.ai/TODO.md`.
+## Next: Codex prioritizes the next roadmap slice from `.ai/TODO.md` and uses `planned_codex` when architecture or risk requires a task contract.
 
 ## Reusable update template
 
@@ -98,7 +100,7 @@ Full rationale belongs in `.ai/ARCHITECTURE.md` or a dedicated ADR under `docs/d
 ## Current milestone
 | ID | Name | Status | Exit condition |
 | --- | --- | --- | --- |
-| `M-...` | <name> | `planned|active|blocked|ready_for_review|complete` | <observable condition> |
+| `M-...` | <name> | `planned|active|blocked|self_review|complete` | <observable condition> |
 
 ## Active blockers
 | ID | Scope | Blocker | Owner | Resolution path |

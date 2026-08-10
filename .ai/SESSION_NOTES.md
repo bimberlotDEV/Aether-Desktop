@@ -4,47 +4,39 @@
 
 | Field | Value |
 | --- | --- |
-| Schema version | 1 |
-| Session date | 2026-07-31 |
-| Active task | `TECH-001` |
+| Schema version | 2 |
+| Session date | 2026-08-10 |
+| Active task | `PROC-003` |
 | Agent | Codex |
-| Route | `hermes_codex` |
-| State | `ready_for_review` |
+| Route | `direct_codex` (explicit project-owner process decision) |
+| State | `complete` |
 
 ## Session objective
 
-Implement ADR-006: eliminate the recursive credential mutex deadlock and replace path-derived encryption with Windows DPAPI.
+Remove the Hermes dependency and make Codex the sole engineering agent for Aether while preserving planning, safety, verification, and review discipline.
 
 ## Work completed
 
-- Added `windows-sys 0.59` with the Windows Foundation and Security Cryptography features.
-- Added `SecretCrypto`, production `DpapiCrypto`, and test-only `TestCrypto` implementations.
-- Wrapped `CryptProtectData`, `CryptUnprotectData`, and DPAPI buffer release behind safe `Result`-returning methods.
-- Injected `Box<dyn SecretCrypto>` into `Database`; production startup supplies `DpapiCrypto`.
-- Moved encryption before the SQLite lock and decryption after releasing it.
-- Removed `derive_key()` and every database-path/SHA-256 key derivation path.
-- Updated the generated Cargo lockfile for the approved direct dependency.
+- Marked PR #3 ready and merged the already verified TECH-001 implementation into `master`.
+- Added ADR-008 accepting a Codex-only engineering workflow.
+- Replaced `hermes_codex` with `planned_codex` for complex or risky work.
+- Retained `direct_codex` for bounded, low-risk work.
+- Assigned analysis, planning, architecture, prioritization, implementation, testing, documentation, self-review, and publication to Codex.
+- Converted `.ai/HANDOFF.md` into an idle Codex task-contract template while retaining its filename for compatibility.
+- Added an explicit human approval gate for destructive, irreversible, materially product-shaping, externally coordinated, or scope-expanding choices.
+- Updated live project state, backlog ownership, architecture authority, changelog templates, and repository instructions.
 
 ## Verification
 
 | Check | Result |
 | --- | --- |
-| Four credential tests | Pass — 4/4 in 0.01 seconds; no deadlock |
-| `cargo test --manifest-path src-tauri/Cargo.toml` | Pass — 33/33 |
-| `cargo build --manifest-path src-tauri/Cargo.toml` | Pass — production DPAPI build |
-| Frontend typecheck | Pass |
-| Frontend lint | Pass — 0 warnings/errors |
-| Vitest | Pass — 7/7, files run sequentially after Windows pool startup timeout |
-| Changed-file `rustfmt --check` | Pass |
-| Strict Clippy | No changed-module findings; pre-existing `DEBT-006` findings remain outside scope |
-| Repository `cargo fmt --check` | Pre-existing `DEBT-005` differences remain outside scope |
+| PR #3 | Merged into `master` as `2bee084` |
+| Active-policy Hermes scan | Pass — no Hermes requirement remains outside historical records |
+| Workflow vocabulary | Pass — `direct_codex`, `planned_codex`, and Codex self-review are defined |
+| Control-file consistency | Pass — task contract is `idle`; TECH-001 and M-CRED-HARDEN are complete |
+| Changed-path audit | Pass — documentation and control files only |
 | `git diff --check` | Pass |
-
-## Deviations
-
-- `src-tauri/Cargo.lock` was not explicitly listed in the handoff but is mandatory generated output for the approved `Cargo.toml` dependency addition.
-- Vitest's pooled workers twice exceeded the Windows startup timeout; both test files passed when run sequentially with one worker.
 
 ## Exact resume point
 
-Hermes reviews TECH-001 on draft PR #3 against all ten acceptance criteria. If accepted, Hermes marks the handoff and milestone complete and merges PR #3.
+Codex reads the control documents, selects the next priority from `.ai/TODO.md`, classifies it as `direct_codex` or `planned_codex`, and continues without Hermes.
