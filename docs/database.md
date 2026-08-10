@@ -88,6 +88,30 @@ Meaningful action history.
 
 Indexes: `created_at`, `space_id`, `event_type`
 
+### tasks
+
+Local-first Tasks and self-referencing subtasks. The boundary model is defined by ADR-009.
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | TEXT PK | UUIDv7 |
+| `space_id` | TEXT FK | Optional; references spaces(id) ON DELETE SET NULL |
+| `parent_task_id` | TEXT FK | Optional subtask parent; references tasks(id) ON DELETE CASCADE |
+| `title` | TEXT | Required, trimmed, maximum 200 characters |
+| `description` | TEXT | Plain text, maximum 10,000 characters |
+| `status` | TEXT | inbox, planned, in_progress, done |
+| `priority` | TEXT | none, low, medium, high |
+| `due_date` | TEXT | Optional local calendar date (`YYYY-MM-DD`) |
+| `tags_json` | TEXT | Validated JSON array; exposed as `tags: string[]` |
+| `completed_at` | TEXT | Set exactly when status is done |
+| `archived_at` | TEXT | NULL if active |
+| `created_at` | TEXT | ISO 8601 timestamp |
+| `updated_at` | TEXT | ISO 8601 timestamp |
+
+Indexes: `space_id`, `parent_task_id`, `status`, `priority`, `due_date`, `archived_at`
+
+Repository filters own Task search and enum filtering. Pulse uses a bounded due-attention query for overdue and upcoming top-level Tasks.
+
 ## Migrations
 
 Versioned in `src-tauri/src/db/migrations.rs`. Each migration has a name and SQL. Applied migrations are tracked in `_migrations` table. Migrations run in a transaction — all or nothing.

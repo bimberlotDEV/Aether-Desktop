@@ -26,6 +26,17 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-08-10 — `PHASE5-001` — Task persistence and IPC foundation
+
+- **Type:** Feature, architecture, and test
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review
+- **Summary:** Added the append-only Task migration, validated Rust repository with global and Space-owned task trees, CRUD and lifecycle commands, due-attention queries, Activity events, strict TypeScript contracts, and IPC wrappers.
+- **Files:** `docs/decisions/009-task-domain-model.md`, `docs/database.md`, `src-tauri/src/db/migrations.rs`, `src-tauri/src/db/repositories/tasks.rs`, `src-tauri/src/commands.rs`, `src-tauri/src/lib.rs`, `src/lib/db/types.ts`, `src/lib/db/tauri.ts`, `src/lib/db/tauri.test.ts`, `.ai/*`
+- **Verification:** `pnpm check` — pass with 16/16 tests; `pnpm build` — pass; Rust format, strict Clippy, 39/39 tests, and build — pass; `git diff --check` — pass.
+- **Decisions/deviations:** ADR-009 governs the model. Runtime schema parsing was omitted from the low-level invoke wrapper after it increased the main bundle by approximately 60 kB; Rust validation remains authoritative and Zod schemas remain available at the UI boundary.
+- **Follow-up:** `PHASE5-002`.
+
 ## 2026-08-10 — `PHASE34-CLOSEOUT` — Spaces and Notes MVP complete
 
 - **Type:** Feature, fix, and test

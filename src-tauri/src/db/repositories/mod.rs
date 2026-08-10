@@ -4,6 +4,7 @@ pub mod notes;
 pub mod profile;
 pub mod settings;
 pub mod spaces;
+pub mod tasks;
 
 use rusqlite::Connection;
 use std::sync::Mutex;

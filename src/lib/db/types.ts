@@ -108,7 +108,55 @@ export const NoteSearchResultSchema = z.object({
 })
 export type NoteSearchResult = z.infer<typeof NoteSearchResultSchema>
 
+// ─── Task Types ──────────────────────────────────────────
 
+export const TaskStatusSchema = z.enum(['inbox', 'planned', 'in_progress', 'done'])
+export type TaskStatus = z.infer<typeof TaskStatusSchema>
+
+export const TaskPrioritySchema = z.enum(['none', 'low', 'medium', 'high'])
+export type TaskPriority = z.infer<typeof TaskPrioritySchema>
+
+export const LocalDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
+
+export const TaskSchema = z.object({
+  id: z.string(),
+  space_id: z.string().nullable(),
+  parent_task_id: z.string().nullable(),
+  title: z.string(),
+  description: z.string(),
+  status: TaskStatusSchema,
+  priority: TaskPrioritySchema,
+  due_date: LocalDateSchema.nullable(),
+  tags: z.array(z.string()),
+  completed_at: z.string().nullable(),
+  archived_at: z.string().nullable(),
+  created_at: z.string(),
+  updated_at: z.string(),
+})
+export type Task = z.infer<typeof TaskSchema>
+
+export const TaskInputSchema = z.object({
+  spaceId: z.string().nullable(),
+  parentTaskId: z.string().nullable(),
+  title: z.string().trim().min(1).max(200),
+  description: z.string().max(10_000),
+  status: TaskStatusSchema,
+  priority: TaskPrioritySchema,
+  dueDate: LocalDateSchema.nullable(),
+  tags: z.array(z.string().trim().min(1).max(40)).max(20),
+})
+export type TaskInput = z.infer<typeof TaskInputSchema>
+
+export const TaskFilterSchema = z.object({
+  spaceId: z.string().optional(),
+  unassignedOnly: z.boolean().optional(),
+  status: TaskStatusSchema.optional(),
+  priority: TaskPrioritySchema.optional(),
+  search: z.string().optional(),
+  includeArchived: z.boolean().optional(),
+  limit: z.number().int().min(1).max(500).optional(),
+})
+export type TaskFilter = z.infer<typeof TaskFilterSchema>
 
 // ─── AI Types ────────────────────────────────────────────
 
