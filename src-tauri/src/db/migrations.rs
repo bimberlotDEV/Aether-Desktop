@@ -231,6 +231,18 @@ const MIGRATIONS: &[(&str, &str)] = &[
         CREATE INDEX IF NOT EXISTS idx_vault_items_updated ON vault_items(updated_at);
         ",
     ),
+    // Migration 007: AI production hardening
+    (
+        "007_ai_hardening",
+        "
+        UPDATE ai_conversations
+        SET model = 'deepseek-v4-flash'
+        WHERE model IN ('deepseek-chat', 'deepseek-reasoner');
+
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_ai_context_unique
+        ON ai_context_items(conversation_id, entity_type, entity_id);
+        ",
+    ),
 ];
 
 fn ensure_migrations_table(conn: &Connection) -> Result<(), String> {
@@ -330,6 +342,20 @@ mod tests {
             .query_row("SELECT COUNT(*) FROM _migrations", [], |row| row.get(0))
             .unwrap();
         assert_eq!(count, MIGRATIONS.len() as i64);
+    }
+
+    #[test]
+    fn test_ai_hardening_index_exists() {
+        let conn = in_memory_db();
+        run(&conn).unwrap();
+        let index: String = conn
+            .query_row(
+                "SELECT name FROM sqlite_master WHERE type = 'index' AND name = 'idx_ai_context_unique'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(index, "idx_ai_context_unique");
     }
 
     #[test]

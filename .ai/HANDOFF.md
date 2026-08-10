@@ -5,12 +5,12 @@
 | Field | Value |
 | --- | --- |
 | Schema version | 2 |
-| Task ID | `PHASE6-002` |
+| Task ID | `PHASE7-001` |
 | Status | `self_review` |
 | Owner | Codex |
 | Prepared by | Codex |
 | Last updated | 2026-08-10 |
-| Related milestone | Phase 6 — Vault UI and Space integration |
+| Related milestone | Phase 7 — AI streaming and context foundation |
 
 ## Responsibility of this file
 
@@ -36,55 +36,57 @@
 
 ```text
 Classification: planned_codex
-Reason: The Vault UI coordinates native file selection, ownership choices, destructive confirmation, metadata, global filters, and embedded Space context.
+Reason: AI networking, credential boundaries, cancellation, persistent partial output, and private context isolation are security-sensitive cross-layer concerns.
 ```
 
 ## Current task
 
 ### Objective
 
-Deliver a complete, accessible Vault experience for global and Space-scoped file workflows on top of the verified PHASE6-001 foundation.
+Replace the AI prototype transport with a current, cancellable, typed streaming foundation and enforce explicit Space-isolated context before building the chat UI.
 
 ### Context
 
-- PHASE6-001 and ADR-010 are merged through PR #9 and provide all persistence and safe native operations.
-- The global Vault route is still a static empty state and Space `files` modules still render a placeholder.
-- The interface must explain linked versus managed ownership before import and must make removal consequences explicit.
-- Browser-mode fallbacks may support UI tests but must not manufacture realistic user files.
+- Phase 6 is merged through PR #10 at `c352e67`.
+- The AI prototype still used retired DeepSeek aliases and blocking/non-streaming transport.
+- Existing DPAPI credential storage is retained; credentials must never cross IPC.
+- ADR-011 defines channel streaming, async cancellation, message terminal states, and explicit context isolation.
 
 ### Implementation plan
 
-1. Add a synchronized `useVault` domain hook with predictable browser-test behavior and actionable errors.
-2. Build reusable Vault view/editor/import UI for global and Space-scoped use.
-3. Add search, storage-mode and Space filters, metadata editing, open, reveal, and ownership-specific removal confirmation.
-4. Replace the Space `files` placeholder with the Space-scoped Vault view.
-5. Add interaction tests, update project documentation, run all gates, and self-review.
+1. Replace the blocking provider transport with async Rustls streaming and current DeepSeek V4 models.
+2. Add a typed Tauri channel protocol and request registry with network-racing cancellation.
+3. Persist user and partial assistant turns with complete/cancelled/error terminal states.
+4. Resolve explicit Note, Task, and Vault context in Rust with Space isolation and bounded payloads.
+5. Harden conversation validation, history limits, context deduplication, migration, TypeScript contracts, and tests.
 
 ### Allowed files
 
-- `src/hooks/useVault.ts`, `src/hooks/useVault.test.ts`
-- `src/components/vault/*`
-- `src/routes/Vault.tsx`, `src/routes/Vault.test.tsx`, `src/routes/SpaceDetail.tsx`
+- `src-tauri/Cargo.toml`, `src-tauri/Cargo.lock`
+- `src-tauri/src/ai/*`, `src-tauri/src/commands.rs`, `src-tauri/src/lib.rs`
+- `src-tauri/src/db/migrations.rs`, `src-tauri/src/db/repositories/conversations.rs`
+- `src/lib/db/types.ts`, `src/lib/db/tauri.ts`, `src/lib/db/tauri.test.ts`
+- `docs/decisions/011-ai-streaming-and-context.md`
 - `.ai/ARCHITECTURE.md`, `.ai/HANDOFF.md`, `.ai/PROJECT_STATE.md`, `.ai/TODO.md`, `.ai/CHANGELOG.md`, `.ai/SESSION_NOTES.md`
 
 ### Out of scope
 
-- Content parsing, full-text content indexing, thumbnails, previews, OCR, or DOCX rendering.
-- Relinking moved external files, checksums, versioning, or duplicate-content detection.
-- Drag-and-drop, multi-file import, cloud files, sync, or sharing.
+- Chat, Settings, context picker, summary, and task-proposal UI (`PHASE7-002`).
+- Sending Vault file bytes or content; only explicit metadata is in scope.
+- Additional providers, autonomous tools, web search, or implicit database access.
 
 ### Acceptance criteria
 
-- [x] Global Vault lists items with clear ownership, filename, size, Space, tags, and updated metadata.
-- [x] Native import requires a linked/managed choice and supports optional title, tags, and Space assignment.
-- [x] Search, ownership filter, and Space filter use backend filter contracts.
-- [x] Metadata editing validates title/tags and supports moving between unassigned and active Spaces.
-- [x] Open and reveal actions surface native failures without losing UI state.
-- [x] Removal confirmation states that linked originals remain or that the managed Vault copy is deleted.
-- [x] Empty, loading, error, and no-results states are distinct and accessible.
-- [x] Space `files` modules render the same Vault experience prefiltered and imported into that Space.
-- [x] Interaction tests cover import, metadata update, filters, open/reveal, and both removal messages.
-- [x] Frontend and Rust quality gates remain green.
+- [x] Provider advertises only current `deepseek-v4-flash` and `deepseek-v4-pro` models.
+- [x] Streaming uses ordered typed Tauri channels and handles split UTF-8/SSE events and keep-alives.
+- [x] Cancellation races connection and stream reads and always clears request registration.
+- [x] User and assistant turns persist with terminal complete, cancelled, or classified error status.
+- [x] History selects the latest bounded turns in chronological order.
+- [x] Note/Task/Vault context is explicit, bounded, deduplicated, and Space-isolated.
+- [x] Vault context excludes stored paths and file content.
+- [x] Provider errors are actionable and never include API keys or request bodies.
+- [x] TypeScript contracts cover credentials, conversations, models, channels, cancellation, and context.
+- [x] Strict frontend and Rust gates pass.
 
 ### Required verification
 
@@ -100,36 +102,34 @@ Deliver a complete, accessible Vault experience for global and Space-scoped file
 
 | Risk | Mitigation or rollback |
 | --- | --- |
-| Ownership consequences are unclear. | Explain modes in the import flow and repeat the exact consequence in removal confirmation. |
-| Multiple mounted views become stale. | Central change notification reloads every active Vault hook. |
-| Native selection is cancelled or fails. | Treat cancel as a no-op and expose actionable command failures inline. |
-| Space context is lost during import/edit. | Lock the embedded view filter to its Space while keeping metadata behavior explicit. |
+| Deprecated provider contract stops working. | Use current V4 model IDs and cover them with regression tests. |
+| Cancellation leaves endless loading. | Race a cancellation token against connect/read and persist a terminal state. |
+| Context leaks across Spaces. | Resolve every entity in Rust against conversation Space immediately before sending. |
+| Stream chunks split UTF-8 or SSE frames. | Buffer raw bytes until a complete event boundary; test multibyte splits. |
+| Provider errors expose sensitive payloads. | Classify status/network failures without returning raw response or request bodies. |
 
 ## Implementation result
 
 ### Summary
 
-Implemented a reusable global and Space-scoped Vault experience with synchronized domain state, native file selection, explicit ownership, metadata workflows, backend filters, open/reveal actions, accessible states, and safe removal messaging.
+Implemented the current DeepSeek V4 provider contract, async Rustls streaming, typed channel events, cancellable request registry, persistent terminal messages, explicit context resolution, migration hardening, and full TypeScript IPC surface.
 
 ### Files changed
 
-- Added `src/hooks/useVault.ts`, `src/components/vault/VaultEditor.tsx`, `src/components/vault/VaultView.tsx`, and `src/routes/Vault.test.tsx`.
-- Replaced the global empty state in `src/routes/Vault.tsx` and the Space files placeholder in `src/routes/SpaceDetail.tsx`.
-- Updated the scoped control documents.
+- Added ADR-011, `src-tauri/src/ai/context.rs`, and `src-tauri/src/ai/runtime.rs`.
+- Rebuilt `provider.rs`; updated AI commands, state registration, migration/repository behavior, TypeScript schemas/wrappers/tests, dependencies, and control documents.
 
 ### Verification result
 
-- `pnpm check` - pass; 30/30 tests across ten files.
+- `pnpm check` - pass; 31/31 tests across ten files.
 - `pnpm build` - pass.
-- `cargo fmt --manifest-path src-tauri/Cargo.toml -- --check` - pass.
-- `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings` - pass.
-- `cargo test --manifest-path src-tauri/Cargo.toml` - pass; 48/48 tests.
+- Rust formatting, strict Clippy, 56/56 tests, and build - pass.
 - `git diff --check` - pass.
 
 ### Deviations
 
-- Browser mode remains intentionally read-only and shows an explicit desktop-app requirement instead of inventing mock user files.
-- Content previews and drag-and-drop remain deferred as scoped.
+- `deepseek-v4-flash` is the cost-conscious default with thinking explicitly disabled; UI selection can opt into Pro.
+- Vault file content remains excluded until a separately reviewed parsing/consent design exists.
 
 ## Codex self-review
 
@@ -137,7 +137,7 @@ Implemented a reusable global and Space-scoped Vault experience with synchronize
 | --- | --- |
 | Decision | `approved_for_publication` |
 | Reviewed at | 2026-08-10 |
-| Acceptance evidence | Ten criteria pass; five Vault interaction tests, 30 total frontend tests, and 48 Rust tests pass. |
-| Findings | Initial action labels were ambiguous to assistive technology; ownership was not sufficiently visible in list rows. |
-| Corrections | Added explicit `Open <title>` labels, distinct `Add to Vault` confirmation, and linked/managed labels with curated icons. |
-| Residual risks | Native Windows picker/open/reveal behavior is covered at the command boundary but still requires final packaged-app smoke testing in Phase 9/10. |
+| Acceptance evidence | All ten criteria pass; 56 Rust tests and 31 frontend tests pass with strict lint/build gates. |
+| Findings | Prototype used retired model aliases, blocking transport, lossy per-chunk UTF-8 decoding, unbounded/oldest-first history, and unvalidated context. |
+| Corrections | Replaced transport and model IDs; buffered raw SSE bytes; bounded latest history; added cancellation, terminal state, deduplication, and Space isolation. |
+| Residual risks | Live DeepSeek behavior requires a user-provided key and is verified through Settings/UI and final desktop smoke testing. |

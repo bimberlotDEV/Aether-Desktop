@@ -38,7 +38,9 @@
 | P1 | `PHASE5-EPIC` | Design and implement Tasks | Product | `done` | Codex decomposition | ADR-009, persistence, Space/global UI, and Pulse attention are complete. |
 | P1 | `PHASE5-001` | Build Task persistence and IPC foundation | Product and architecture | `done` | ADR-009 | Migration, repository, commands, types, wrappers, and tests pass. |
 | P1 | `PHASE5-002` | Build Tasks UI and Pulse integration | Product | `done` | `PHASE5-001` | Space Tasks and calm global due views meet Phase 5 acceptance. |
-| P2 | `AI-UI-EPIC` | Complete the AI user experience | Product | `needs_design` | `TECH-001` | Provider setup, conversations, streaming, cancellation, and explicit context have reviewed UX. |
+| P1 | `AI-UI-EPIC` | Complete the AI user experience | Product | `active` | `TECH-001` | Provider setup, conversations, streaming, cancellation, and explicit context have reviewed UX. |
+| P1 | `PHASE7-001` | Harden AI streaming and explicit context foundation | Security and architecture | `done` | ADR-011 | Current provider, cancellation, terminal persistence, and Space isolation pass tests. |
+| P1 | `PHASE7-002` | Build AI Settings, chat, context, summary, and proposal UI | Product | `planned` | `PHASE7-001` | DeepSeek is usable with visible context, retry/cancel, and previewed proposals. |
 | P1 | `VAULT-EPIC` | Design and implement Vault | Product | `done` | ADR-010 | Safe storage and complete global/Space MVP are implemented. |
 | P1 | `PHASE6-001` | Build Vault persistence and native filesystem foundation | Product and security | `done` | ADR-010 | Safe linked/managed storage commands and tests pass. |
 | P1 | `PHASE6-002` | Build Vault UI and Space integration | Product | `done` | `PHASE6-001` | Import, metadata, search, open/reveal, and safe removal are usable. |

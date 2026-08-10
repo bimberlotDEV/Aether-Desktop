@@ -2,7 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const { invoke } = vi.hoisted(() => ({ invoke: vi.fn() }))
 
-vi.mock('@tauri-apps/api/core', () => ({ invoke }))
+vi.mock('@tauri-apps/api/core', () => ({
+  invoke,
+  Channel: class {
+    onmessage?: (message: unknown) => void
+  },
+}))
 
 import {
   createSpaceWithModules,
@@ -18,6 +23,10 @@ import {
   removeVaultItem,
   openVaultItem,
   revealVaultItem,
+  createAiConversation,
+  streamAiMessage,
+  addAiContext,
+  cancelAiRequest,
 } from '@/lib/db/tauri'
 
 describe('Tauri database boundary', () => {
@@ -162,5 +171,37 @@ describe('Tauri database boundary', () => {
     expect(invoke).toHaveBeenNthCalledWith(4, 'open_vault_item', { id: 'vault-1' })
     expect(invoke).toHaveBeenNthCalledWith(5, 'reveal_vault_item', { id: 'vault-1' })
     expect(invoke).toHaveBeenNthCalledWith(6, 'remove_vault_item', { id: 'vault-1' })
+  })
+
+  it('passes AI model, channel, cancellation, and explicit context boundaries', async () => {
+    const onEvent = vi.fn()
+    await createAiConversation({ spaceId: 'space-1', model: 'deepseek-v4-pro' })
+    await streamAiMessage('request-1', 'conversation-1', 'Summarise this', onEvent)
+    await cancelAiRequest('request-1')
+    await addAiContext('conversation-1', 'note', 'note-1')
+
+    expect(invoke).toHaveBeenNthCalledWith(1, 'ai_create_conversation', {
+      spaceId: 'space-1',
+      title: null,
+      model: 'deepseek-v4-pro',
+    })
+    expect(invoke).toHaveBeenNthCalledWith(
+      2,
+      'ai_stream_message',
+      expect.objectContaining({
+        requestId: 'request-1',
+        conversationId: 'conversation-1',
+        content: 'Summarise this',
+        onEvent: expect.objectContaining({ onmessage: onEvent }),
+      }),
+    )
+    expect(invoke).toHaveBeenNthCalledWith(3, 'ai_cancel_request', {
+      requestId: 'request-1',
+    })
+    expect(invoke).toHaveBeenNthCalledWith(4, 'ai_add_context', {
+      conversationId: 'conversation-1',
+      entityType: 'note',
+      entityId: 'note-1',
+    })
   })
 })

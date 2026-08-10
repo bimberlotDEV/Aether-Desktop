@@ -8,6 +8,7 @@ use std::path::PathBuf;
 use tauri::Manager;
 
 use crate::ai::credentials::DpapiCrypto;
+use crate::ai::runtime::AiRuntime;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -50,6 +51,7 @@ pub fn run() {
 
             // Store database in Tauri state
             app.manage(database);
+            app.manage(AiRuntime::default());
 
             Ok(())
         })
@@ -113,17 +115,20 @@ pub fn run() {
             commands::ai_set_api_key,
             commands::ai_remove_api_key,
             commands::ai_test_connection,
+            commands::ai_list_models,
             commands::ai_create_conversation,
             commands::ai_get_conversation,
             commands::ai_list_conversations,
             commands::ai_update_conversation,
             commands::ai_delete_conversation,
             commands::ai_list_messages,
-            commands::ai_send_message,
+            commands::ai_stream_message,
+            commands::ai_cancel_request,
             commands::ai_add_context,
             commands::ai_list_context,
             commands::ai_remove_context,
             commands::ai_clear_context,
+            commands::ai_resolve_context,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
