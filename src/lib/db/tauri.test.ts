@@ -28,6 +28,10 @@ import {
   addAiContext,
   cancelAiRequest,
   createTasksBatch,
+  createMemory,
+  listMemory,
+  updateMemory,
+  deleteMemory,
 } from '@/lib/db/tauri'
 
 describe('Tauri database boundary', () => {
@@ -225,5 +229,29 @@ describe('Tauri database boundary', () => {
     await createTasksBatch(inputs)
 
     expect(invoke).toHaveBeenCalledWith('create_tasks_batch', { inputs })
+  })
+
+  it('passes explicit Memory scope and content through typed boundaries', async () => {
+    const input = {
+      spaceId: 'space-1',
+      title: 'Release constraint',
+      content: 'Windows is the first supported platform.',
+      reason: 'Keeps planning aligned.',
+      category: 'constraint' as const,
+    }
+    await createMemory(input)
+    await listMemory({ spaceId: 'space-1', category: 'constraint', search: 'Windows' })
+    await updateMemory('memory-1', input)
+    await deleteMemory('memory-1')
+
+    expect(invoke).toHaveBeenNthCalledWith(1, 'create_memory', { input })
+    expect(invoke).toHaveBeenNthCalledWith(2, 'list_memory', {
+      filter: { spaceId: 'space-1', category: 'constraint', search: 'Windows' },
+    })
+    expect(invoke).toHaveBeenNthCalledWith(3, 'update_memory', {
+      id: 'memory-1',
+      input,
+    })
+    expect(invoke).toHaveBeenNthCalledWith(4, 'delete_memory', { id: 'memory-1' })
   })
 })

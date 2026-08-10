@@ -13,6 +13,7 @@ import {
   Layers,
   FolderOpen,
   Sparkles,
+  Brain,
   type LucideIcon,
 } from 'lucide-react'
 import { useThemeStore } from '@/stores/themeStore'
@@ -59,6 +60,13 @@ const defaultCommands: Command[] = [
     description: 'Start or continue a DeepSeek conversation',
     keywords: ['chat', 'deepseek', 'assistant'],
     action: () => navigateTo('/ai'),
+  },
+  {
+    id: 'memory',
+    label: 'Open Memory',
+    description: 'Review explicit context Aether remembers',
+    keywords: ['remember', 'context', 'knowledge'],
+    action: () => navigateTo('/memory'),
   },
   {
     id: 'create-note',
@@ -124,6 +132,7 @@ const iconMap: Record<string, LucideIcon> = {
   View: Layers,
   Open: Settings,
   AI: Sparkles,
+  Memory: Brain,
   Create: Plus,
   Tasks: CheckSquare,
   Switch: Sun,
@@ -134,6 +143,7 @@ const iconMap: Record<string, LucideIcon> = {
 
 function getIcon(label: string): LucideIcon {
   if (label.includes('AI')) return Sparkles
+  if (label.includes('Memory')) return Brain
   for (const [key, icon] of Object.entries(iconMap)) {
     if (label.includes(key)) return icon
   }

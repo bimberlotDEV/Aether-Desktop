@@ -18,5 +18,6 @@ export const SPACE_MODULES = [
   },
   { id: 'files', label: 'Files', description: 'Import and manage documents' },
   { id: 'ai', label: 'AI', description: 'AI-powered assistance and summarization' },
+  { id: 'memory', label: 'Memory', description: 'Store explicit durable context' },
   { id: 'activity', label: 'Activity', description: 'Timeline of meaningful actions' },
 ] as const

@@ -1,83 +1,60 @@
 # Codex Task Contract
 
-> Canonical execution contract for the single active `planned_codex` task. The filename is retained for repository compatibility; it is not an inter-agent handoff.
-
 | Field | Value |
 | --- | --- |
 | Schema version | 2 |
-| Task ID | `PHASE7-002` |
-| Status | `self_review` |
+| Task ID | `PHASE8-001` |
+| Status | `complete` |
 | Owner | Codex |
-| Prepared by | Codex |
 | Last updated | 2026-08-10 |
-| Related milestone | Phase 7 — Complete AI experience |
+| Related milestone | Phase 8 — Memory |
 
 ## Classification
 
 ```text
 Classification: planned_codex
-Reason: The task crosses credential UX, provider streaming, persistent conversations, private context, and transactional Task creation.
+Reason: Memory adds durable private data, database ownership, deletion semantics, and external AI context boundaries.
 ```
 
 ## Objective
 
-Make the reviewed AI foundation usable through secure Settings, global and Space-scoped chat, explicit visible context, controllable streaming, response modes, and previewed Task proposals.
-
-## Scope and plan
-
-1. Add secure DeepSeek key configuration, connection testing, replacement, and removal.
-2. Add synchronized conversation lifecycle and streamed message orchestration with cancel and retry.
-3. Add global and Space AI surfaces with explicit Note, Task, and Vault context selection.
-4. Add Ask, Summarize, Explain, Plan, Rewrite, and Propose Tasks modes.
-5. Validate proposed Tasks, require user selection/confirmation, and create them transactionally.
-6. Add navigation, IPC contracts, regression tests, and implementation documentation.
-
-## Allowed files
-
-- `src-tauri/src/commands.rs`, `src-tauri/src/lib.rs`
-- `src/components/ai/*`, `src/hooks/useAi.ts`, `src/routes/AI.tsx`
-- `src/App.tsx`, `src/components/Sidebar.tsx`, `src/components/CommandPalette.tsx`
-- `src/routes/Settings.tsx`, `src/routes/SpaceDetail.tsx`
-- `src/lib/aiProposal*`, `src/lib/db/types.ts`, `src/lib/db/tauri.ts`, `src/lib/db/tauri.test.ts`
-- `.ai/*`
+Implement visible, editable, attributable, removable global and Space-scoped Memory with explicit AI attachment and no automatic conversation extraction.
 
 ## Acceptance criteria
 
-- [x] Settings can securely save/replace, test, and explicitly remove a DeepSeek API key.
-- [x] Global and Space AI support create, select, rename, archive, and delete conversation flows.
-- [x] Typed streamed responses expose progress, cancellation, terminal errors, and retry without duplicating the user turn.
-- [x] Context is visibly attached and removable; Rust remains the final Space-isolation authority.
-- [x] Vault context is described and transmitted as metadata-only.
-- [x] Ask, Summarize, Explain, Plan, Rewrite, and Propose Tasks modes have explicit provider instructions.
-- [x] Task proposals are strictly validated, previewed, selectable, and created atomically only after confirmation.
-- [x] AI privacy disclosure names the external provider boundary; browser mode does not fabricate credentials or data.
-- [x] Navigation and Space-module integration expose the complete experience.
-- [x] Strict frontend and Rust gates pass.
+- [x] Append-only migration and tested Rust repository implement validated CRUD and search.
+- [x] Every item records title, content, reason, category, source, scope, and timestamps.
+- [x] Deleting a Space deletes its scoped Memory rather than changing its meaning.
+- [x] Global and embedded Space UI support search, create, edit, and confirmed delete.
+- [x] Memory is an optional Space module and a global navigation destination.
+- [x] AI context picker exposes Memory; Rust enforces current scope and resolves current content.
+- [x] The interface clearly states that Memory is never created from chat automatically.
+- [x] Activity events record create, update, and delete without copying private content.
+- [x] Frontend/Rust tests and all strict quality gates pass.
 
-## Verification result
+## Allowed files
 
-- `pnpm check` — pass; 36/36 tests across 13 files.
-- `pnpm build` — pass.
-- `cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check` — pass.
-- `cargo test --manifest-path src-tauri/Cargo.toml` — pass; 56/56 tests.
-- `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings` — pass.
-- `git diff --check` — pass.
+- `docs/decisions/012-explicit-memory.md`, `docs/database.md`
+- `src-tauri/src/db/migrations.rs`, `src-tauri/src/db/repositories/memory.rs`, repository registration
+- `src-tauri/src/commands.rs`, `src-tauri/src/lib.rs`, `src-tauri/src/ai/context.rs`
+- Memory types, wrappers, hooks, UI, routes, navigation, Space module files, and tests
+- `.ai/*`
 
 ## Risks and controls
 
 | Risk | Control |
 | --- | --- |
-| A retry duplicates the original user prompt. | Retry references and validates the existing user message ID. |
-| AI silently sends unrelated local data. | Users explicitly attach visible context; Rust resolves and isolates it at send time. |
-| Generated Tasks cause partial writes. | A maximum of 20 validated selections are inserted in one transaction. |
-| Credentials leak to React or logs. | DPAPI storage and Rust-only retrieval remain unchanged; the input is cleared after save. |
+| Invisible or unwanted memory | User-only creation; no chat extraction path. |
+| Cross-Space disclosure | Rust resolves entity ownership against conversation scope at send time. |
+| Private content copied into audit logs | Activity events contain IDs and category only. |
+| Scope changes after Space deletion | Space-owned rows use `ON DELETE CASCADE`. |
 
-## Codex self-review
+## Verification and self-review
 
-| Field | Value |
-| --- | --- |
-| Decision | `approved_for_publication` |
-| Reviewed at | 2026-08-10 |
-| Acceptance evidence | All ten criteria and every required quality gate pass. |
-| Corrections | Moved proposal parsing out of a React component, fixed active-stream message targeting, added transaction-only batch creation, and covered credential/proposal/IPC boundaries. |
-| Residual risks | A live provider smoke test requires the owner's DeepSeek key and is deferred to the final desktop release audit. |
+- `pnpm check` — pass; 39/39 tests across 14 files.
+- `pnpm build` — pass.
+- Rust format and strict Clippy — pass.
+- `cargo test` — pass; 58/58 tests.
+- `git diff --check` — pass.
+- **Decision:** approved for publication.
+- **Correction:** self-review added a database trigger and regression test to remove polymorphic AI attachments whenever Memory is deleted directly or through Space cascade.

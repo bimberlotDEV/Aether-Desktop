@@ -862,6 +862,128 @@ pub fn delete_task(db: State<Database>, id: String) -> Result<bool, String> {
     })
 }
 
+// ─── Memory ─────────────────────────────────────────────
+
+#[tauri::command]
+pub fn create_memory(
+    db: State<Database>,
+    input: repositories::memory::MemoryInput,
+) -> Result<serde_json::Value, String> {
+    with_conn(&db.conn, |conn| {
+        let transaction = conn
+            .unchecked_transaction()
+            .map_err(|error| format!("Memory transaction error: {}", error))?;
+        let item = repositories::memory::create(&transaction, &input)?;
+        repositories::activity::record(
+            &transaction,
+            &repositories::activity::ActivityEvent {
+                id: Uuid::now_v7().to_string(),
+                event_type: "memory_created".to_string(),
+                entity_type: Some("memory".to_string()),
+                entity_id: Some(item.id.clone()),
+                space_id: item.space_id.clone(),
+                metadata_json: Some(format!(r#"{{"category":"{}"}}"#, item.category)),
+                created_at: String::new(),
+            },
+        )?;
+        let value = serde_json::to_value(item)
+            .map_err(|error| format!("Memory serialization error: {}", error))?;
+        transaction
+            .commit()
+            .map_err(|error| format!("Memory transaction commit error: {}", error))?;
+        Ok(value)
+    })
+}
+
+#[tauri::command]
+pub fn get_memory(db: State<Database>, id: String) -> Result<Option<serde_json::Value>, String> {
+    with_conn(&db.conn, |conn| {
+        repositories::memory::get_by_id(conn, &id)?
+            .map(serde_json::to_value)
+            .transpose()
+            .map_err(|error| format!("Memory serialization error: {}", error))
+    })
+}
+
+#[tauri::command]
+pub fn list_memory(
+    db: State<Database>,
+    filter: Option<repositories::memory::MemoryFilter>,
+) -> Result<Vec<serde_json::Value>, String> {
+    with_conn(&db.conn, |conn| {
+        repositories::memory::list(conn, &filter.unwrap_or_default())?
+            .into_iter()
+            .map(serde_json::to_value)
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|error| format!("Memory serialization error: {}", error))
+    })
+}
+
+#[tauri::command]
+pub fn update_memory(
+    db: State<Database>,
+    id: String,
+    input: repositories::memory::MemoryInput,
+) -> Result<Option<serde_json::Value>, String> {
+    with_conn(&db.conn, |conn| {
+        let transaction = conn
+            .unchecked_transaction()
+            .map_err(|error| format!("Memory transaction error: {}", error))?;
+        let item = repositories::memory::update(&transaction, &id, &input)?;
+        if let Some(item) = item.as_ref() {
+            repositories::activity::record(
+                &transaction,
+                &repositories::activity::ActivityEvent {
+                    id: Uuid::now_v7().to_string(),
+                    event_type: "memory_updated".to_string(),
+                    entity_type: Some("memory".to_string()),
+                    entity_id: Some(item.id.clone()),
+                    space_id: item.space_id.clone(),
+                    metadata_json: Some(format!(r#"{{"category":"{}"}}"#, item.category)),
+                    created_at: String::new(),
+                },
+            )?;
+        }
+        let value = item
+            .map(serde_json::to_value)
+            .transpose()
+            .map_err(|error| format!("Memory serialization error: {}", error))?;
+        transaction
+            .commit()
+            .map_err(|error| format!("Memory transaction commit error: {}", error))?;
+        Ok(value)
+    })
+}
+
+#[tauri::command]
+pub fn delete_memory(db: State<Database>, id: String) -> Result<bool, String> {
+    with_conn(&db.conn, |conn| {
+        let transaction = conn
+            .unchecked_transaction()
+            .map_err(|error| format!("Memory transaction error: {}", error))?;
+        let item = repositories::memory::get_by_id(&transaction, &id)?;
+        let deleted = repositories::memory::delete(&transaction, &id)?;
+        if let Some(item) = item {
+            repositories::activity::record(
+                &transaction,
+                &repositories::activity::ActivityEvent {
+                    id: Uuid::now_v7().to_string(),
+                    event_type: "memory_deleted".to_string(),
+                    entity_type: Some("memory".to_string()),
+                    entity_id: Some(item.id),
+                    space_id: item.space_id,
+                    metadata_json: Some(format!(r#"{{"category":"{}"}}"#, item.category)),
+                    created_at: String::new(),
+                },
+            )?;
+        }
+        transaction
+            .commit()
+            .map_err(|error| format!("Memory transaction commit error: {}", error))?;
+        Ok(deleted)
+    })
+}
+
 // ─── Notes ───────────────────────────────────────────────
 
 #[tauri::command]

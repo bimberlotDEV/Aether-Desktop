@@ -77,6 +77,18 @@ pub fn resolve_one(
             );
             (file.display_title, detail)
         }
+        "memory" => {
+            let memory = repositories::memory::get_by_id(conn, &item.entity_id)?
+                .ok_or_else(|| "The attached Memory item no longer exists.".to_string())?;
+            if memory.space_id.is_some() {
+                enforce_space(conversation_space, memory.space_id.as_deref())?;
+            }
+            let detail = format!(
+                "Category: {}\nReason remembered: {}\nSource: {}\nContent: {}",
+                memory.category, memory.reason, memory.source, memory.content
+            );
+            (memory.title, truncate(&detail))
+        }
         _ => return Err("Unsupported AI context type.".to_string()),
     };
     Ok(ResolvedContextItem {
@@ -140,6 +152,7 @@ mod tests {
         )
         .unwrap();
         conn.execute("INSERT INTO vault_items (id, space_id, storage_mode, display_title, original_name, stored_path, media_type, size_bytes) VALUES ('file-a', 'space-a', 'linked', 'Report', 'report.pdf', 'C:\\private\\report.pdf', 'application/pdf', 42)", []).unwrap();
+        conn.execute("INSERT INTO memory_items (id, space_id, title, content, reason, category) VALUES ('memory-a', 'space-a', 'Preference', 'Use concise answers', 'User requested it', 'preference')", []).unwrap();
         conn
     }
 
@@ -168,7 +181,7 @@ mod tests {
     }
 
     #[test]
-    fn rejects_cross_space_and_unknown_context() {
+    fn rejects_cross_space_and_resolves_memory_context() {
         let conn = setup();
         let cross_space = AiContextItem {
             id: "a".into(),
@@ -179,10 +192,14 @@ mod tests {
             added_at: String::new(),
         };
         assert!(resolve_one(&conn, Some("space-a"), &cross_space).is_err());
-        let unknown = AiContextItem {
+        let memory = AiContextItem {
             entity_type: "memory".into(),
+            entity_id: "memory-a".into(),
             ..cross_space
         };
-        assert!(resolve_one(&conn, None, &unknown).is_err());
+        assert!(resolve_one(&conn, Some("space-a"), &memory)
+            .unwrap()
+            .detail
+            .contains("Use concise answers"));
     }
 }

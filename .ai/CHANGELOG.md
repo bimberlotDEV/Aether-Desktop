@@ -26,6 +26,17 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-08-10 — `PHASE8-001` — Explicit scoped Memory MVP
+
+- **Type:** Feature, privacy, architecture, and test
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review
+- **Summary:** Added user-authored global and Space Memory with visible reason/category attribution, search, edit/delete, optional Space module, Activity events, and explicit AI context attachment.
+- **Files:** Memory migration/repository/commands/types/wrappers/hooks/UI/tests, AI context integration, navigation, ADR-012, database docs, `.ai/*`
+- **Verification:** Frontend check/build pass with 39/39 tests; Rust format, strict Clippy, and 58/58 tests pass; `git diff --check` pass.
+- **Decisions/deviations:** No automatic conversation extraction; Space deletion cascades Memory and cleans polymorphic AI attachments.
+- **Follow-up:** `PHASE9-001`
+
 ## 2026-08-10 — `PHASE7-002` — Complete AI experience
 
 - **Type:** Feature, security, and test

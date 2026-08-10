@@ -219,7 +219,7 @@ export function useAiConversation(conversationId: string | null) {
   }, [activeRequestId])
 
   const attach = useCallback(
-    async (entityType: 'note' | 'task' | 'vault', entityId: string) => {
+    async (entityType: 'note' | 'task' | 'vault' | 'memory', entityId: string) => {
       if (!conversationId) return
       await db.addAiContext(conversationId, entityType, entityId)
       await load()

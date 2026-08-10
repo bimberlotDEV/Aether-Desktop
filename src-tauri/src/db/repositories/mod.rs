@@ -1,5 +1,6 @@
 pub mod activity;
 pub mod conversations;
+pub mod memory;
 pub mod notes;
 pub mod profile;
 pub mod settings;

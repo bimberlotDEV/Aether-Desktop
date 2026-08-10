@@ -24,6 +24,9 @@ import type {
   AiResolvedContextItem,
   AiStreamEvent,
   KeyStatus,
+  MemoryFilter,
+  MemoryInput,
+  MemoryItem,
 } from './types'
 
 // ─── Settings ────────────────────────────────────────────
@@ -319,6 +322,26 @@ export async function revealVaultItem(id: string): Promise<void> {
   return invoke('reveal_vault_item', { id })
 }
 
+// ─── Memory ─────────────────────────────────────────────
+export async function createMemory(input: MemoryInput): Promise<MemoryItem> {
+  return invoke('create_memory', { input })
+}
+export async function getMemory(id: string): Promise<MemoryItem | null> {
+  return invoke('get_memory', { id })
+}
+export async function listMemory(filter?: MemoryFilter): Promise<MemoryItem[]> {
+  return invoke('list_memory', { filter: filter ?? null })
+}
+export async function updateMemory(
+  id: string,
+  input: MemoryInput,
+): Promise<MemoryItem | null> {
+  return invoke('update_memory', { id, input })
+}
+export async function deleteMemory(id: string): Promise<boolean> {
+  return invoke('delete_memory', { id })
+}
+
 // ─── AI ─────────────────────────────────────────────────
 export async function getAiKeyStatus(): Promise<KeyStatus> {
   return invoke('ai_get_key_status')
@@ -401,7 +424,7 @@ export async function cancelAiRequest(requestId: string): Promise<boolean> {
 }
 export async function addAiContext(
   conversationId: string,
-  entityType: 'note' | 'task' | 'vault',
+  entityType: 'note' | 'task' | 'vault' | 'memory',
   entityId: string,
 ): Promise<AiContextItem> {
   return invoke('ai_add_context', { conversationId, entityType, entityId })
