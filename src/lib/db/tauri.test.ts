@@ -32,6 +32,8 @@ import {
   listMemory,
   updateMemory,
   deleteMemory,
+  getNativeStatus,
+  sendTestNotification,
 } from '@/lib/db/tauri'
 
 describe('Tauri database boundary', () => {
@@ -55,6 +57,14 @@ describe('Tauri database boundary', () => {
       parentSpaceId: null,
       moduleTypes: ['notes', 'tasks'],
     })
+  })
+
+  it('keeps native readiness and test notifications behind narrow commands', async () => {
+    await getNativeStatus()
+    await sendTestNotification()
+
+    expect(invoke).toHaveBeenNthCalledWith(1, 'native_get_status')
+    expect(invoke).toHaveBeenNthCalledWith(2, 'native_test_notification')
   })
 
   it('maps cleared optional Space fields to empty persisted values', async () => {

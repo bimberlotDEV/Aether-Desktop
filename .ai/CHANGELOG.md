@@ -26,6 +26,17 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-08-10 — `PHASE9-001` — Native Windows lifecycle and installers
+
+- **Type:** Feature, packaging, and test
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review
+- **Summary:** Added hide-to-tray/Open/Quit lifecycle, non-fatal Ctrl+Shift+Space registration, native notifications, persisted window state, Settings readiness, installer metadata, and a signed-update activation gate.
+- **Files:** Native Rust module/commands/plugins, Settings UI/tests, Tauri/Cargo/package metadata, ADR-013, native desktop docs, `.ai/*`
+- **Verification:** Frontend check/build pass with 41/41 tests; Rust format, strict Clippy, and 59/59 tests pass; release executable starts; MSI and NSIS x64 installers build successfully.
+- **Decisions/deviations:** Machine version is 0.3.0 for MSI compatibility; Alpha remains product maturity. Updater remains disabled until real signing trust exists.
+- **Follow-up:** `PHASE10-001`
+
 ## 2026-08-10 — `PHASE8-001` — Explicit scoped Memory MVP
 
 - **Type:** Feature, privacy, architecture, and test

@@ -42,7 +42,7 @@
 | P1 | `PHASE7-001` | Harden AI streaming and explicit context foundation | Security and architecture | `done` | ADR-011 | Current provider, cancellation, terminal persistence, and Space isolation pass tests. |
 | P1 | `PHASE7-002` | Build AI Settings, chat, context, summary, and proposal UI | Product | `done` | `PHASE7-001` | DeepSeek is usable with visible context, retry/cancel, modes, and previewed transactional proposals. |
 | P1 | `PHASE8-001` | Design and implement Memory | Product and architecture | `done` | `PHASE7-002` | Global and Space Memory is manageable and may be explicitly attached to AI. |
-| P1 | `PHASE9-001` | Complete native Windows features | Product and packaging | `planned` | `PHASE8-001` | Tray, notifications, shortcut, installer metadata, and native smoke tests pass. |
+| P1 | `PHASE9-001` | Complete native Windows features | Product and packaging | `done` | `PHASE8-001` | Tray, notifications, shortcut, installer metadata, and native smoke tests pass. |
 | P1 | `PHASE10-001` | Complete release audit and pipeline | Quality and release | `planned` | `PHASE9-001` | CI, packaging, documentation, security/privacy, and alpha release gates pass. |
 | P1 | `VAULT-EPIC` | Design and implement Vault | Product | `done` | ADR-010 | Safe storage and complete global/Space MVP are implemented. |
 | P1 | `PHASE6-001` | Build Vault persistence and native filesystem foundation | Product and security | `done` | ADR-010 | Safe linked/managed storage commands and tests pass. |

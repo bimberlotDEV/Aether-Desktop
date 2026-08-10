@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Aether",
-  "version": "0.3.0-alpha",
+  "version": "0.3.0",
   "identifier": "com.aether.desktop",
   "build": {
     "frontendDist": "../dist",
@@ -30,6 +30,12 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "publisher": "bimberlotDEV",
+    "copyright": "Copyright © 2026 bimberlotDEV",
+    "category": "Productivity",
+    "shortDescription": "A local-first personal workspace for Windows.",
+    "longDescription": "Aether combines Spaces, Notes, Tasks, Vault, AI, and explicit Memory in a private local-first Windows desktop workspace.",
+    "createUpdaterArtifacts": false,
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

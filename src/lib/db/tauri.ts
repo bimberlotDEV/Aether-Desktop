@@ -27,7 +27,16 @@ import type {
   MemoryFilter,
   MemoryInput,
   MemoryItem,
+  NativeStatus,
 } from './types'
+
+// ─── Native desktop ─────────────────────────────────────
+export async function getNativeStatus(): Promise<NativeStatus> {
+  return invoke('native_get_status')
+}
+export async function sendTestNotification(): Promise<void> {
+  return invoke('native_test_notification')
+}
 
 // ─── Settings ────────────────────────────────────────────
 export async function getSetting(key: string): Promise<AppSetting | null> {

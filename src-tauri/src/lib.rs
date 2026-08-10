@@ -1,6 +1,7 @@
 mod ai;
 mod commands;
 mod db;
+mod native;
 mod vault;
 
 use db::Database;
@@ -15,6 +16,17 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_notification::init())
+        .plugin(tauri_plugin_window_state::Builder::default().build())
+        .plugin(
+            tauri_plugin_global_shortcut::Builder::new()
+                .with_handler(|app, _shortcut, event| {
+                    if event.state() == tauri_plugin_global_shortcut::ShortcutState::Pressed {
+                        native::show_main_window(app);
+                    }
+                })
+                .build(),
+        )
         .setup(|app| {
             if cfg!(debug_assertions) {
                 app.handle().plugin(
@@ -52,10 +64,14 @@ pub fn run() {
             // Store database in Tauri state
             app.manage(database);
             app.manage(AiRuntime::default());
+            let native_status = native::setup(app)?;
+            app.manage(native_status);
 
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            commands::native_get_status,
+            commands::native_test_notification,
             commands::get_setting,
             commands::set_setting,
             commands::delete_setting,
@@ -136,6 +152,14 @@ pub fn run() {
             commands::ai_clear_context,
             commands::ai_resolve_context,
         ])
+        .on_window_event(|window, event| {
+            if window.label() == "main" {
+                if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                    api.prevent_close();
+                    let _ = window.hide();
+                }
+            }
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

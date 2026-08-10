@@ -8,8 +8,8 @@
 | Last updated | 2026-08-10 |
 | Updated by | Codex |
 | Repository | `bimberlotDEV/Aether-Desktop` |
-| Branch | `codex/phase8-memory` |
-| Baseline commit | `7838599` (PR #12 merge) |
+| Branch | `codex/phase9-native-windows` |
+| Baseline commit | `fca59e3` (PR #13 merge) |
 | Product maturity | Alpha |
 
 ## Responsibility of this file
@@ -38,8 +38,9 @@
 | `PHASE7-001` | AI streaming and context foundation | `complete` | Merged through PR #11 at `7569d3f`. |
 | `PHASE7-002` | Complete AI user experience | `complete` | Merged through PR #12 at `7838599`. |
 | `PHASE8-001` | Explicit scoped Memory | `complete` | Persistence, global/Space management, AI attachment, tests, and quality gates pass. |
+| `PHASE9-001` | Native Windows lifecycle and packaging | `complete` | Tray, shortcut, notifications, window state, MSI/NSIS build, and startup smoke test pass. |
 
-The completed task is `PHASE8-001`, governed by the contract in `.ai/HANDOFF.md`.
+The completed task is `PHASE9-001`, governed by the contract in `.ai/HANDOFF.md`.
 
 ## Completed product milestones
 
@@ -59,16 +60,16 @@ The completed task is `PHASE8-001`, governed by the contract in `.ai/HANDOFF.md`
 | Phase 5 — Tasks | `complete` | Global and Space Tasks, subtasks, full editing, search/filtering, completion, archive recovery, Pulse attention, persistence, and Activity events are implemented. |
 | Phase 6 — Vault | `mvp_complete` | Safe linked/managed storage, global/Space UI, metadata, filters, open/reveal, and removal workflows pass all gates. |
 | Phase 8 — Memory | `mvp_complete` | Explicit user-authored global/Space Memory, management UI, safe deletion, and AI context integration are implemented. |
-| Phase 9 — Native desktop | `partial` | Icons, Tauri bundle config, and a built executable exist; remaining native features are not verified. |
+| Phase 9 — Native desktop | `complete` | Tray lifecycle, shortcut, notifications, window-state, icons/metadata, MSI and NSIS installers are verified. |
 | Phase 10 — Release quality | `not_started` | No complete release audit or release pipeline verified. |
 
 ## Quality snapshot
 
 | Check | Last result | Date | Notes |
 | --- | --- | --- | --- |
-| `pnpm check` | Pass | 2026-08-10 | Typecheck and lint clean; Vitest 39/39 across 14 files. |
+| `pnpm check` | Pass | 2026-08-10 | Typecheck and lint clean; Vitest 41/41 across 15 files. |
 | `pnpm build` | Pass | 2026-08-10 | TypeScript and Vite production build pass. |
-| `cargo test` | Pass | 2026-08-10 | 58/58 tests pass, including Memory scope/cascade, AI isolation, and Vault safety. |
+| `cargo test` | Pass | 2026-08-10 | 59/59 tests pass, including native status, Memory scope/cascade, AI isolation, and Vault safety. |
 | `cargo build` | Pass | 2026-08-10 | Windows production build compiles with DPAPI. |
 | `cargo fmt --check` | Pass | 2026-08-10 | Repository Rust formatting is clean; `DEBT-005` resolved. |
 | `cargo clippy --all-targets -- -D warnings` | Pass | 2026-08-10 | Library, binary, and test targets are warning-free; `DEBT-006` resolved. |
@@ -85,7 +86,7 @@ None. `BLOCK-001` was resolved by installing Rust 1.97.1 with the stable MSVC to
 | --- | --- | --- | --- |
 | `RISK-001` | ~~High~~ Resolved | Credential crypto no longer acquires the database mutex; 33/33 tests pass and PR #3 is merged. | `TECH-001` |
 | `RISK-002` | ~~High~~ Resolved | Path-derived encryption was replaced with current-user-bound Windows DPAPI in merged PR #3. | `TECH-001` |
-| `RISK-003` | ~~High~~ Resolved | README, package metadata, Tauri metadata, and agent phase guidance disagree on version/maturity. | `DOC-001` — reconciled all metadata to 0.3.0-alpha. |
+| `RISK-003` | ~~High~~ Resolved | README, package metadata, Tauri metadata, and agent phase guidance disagree on version/maturity. | `DOC-001` reconciled product maturity; `PHASE9-001` normalized machine versions to MSI-compatible 0.3.0 while retaining Alpha as the product phase. |
 
 ## Decision index
 
@@ -104,8 +105,9 @@ Full rationale belongs in `.ai/ARCHITECTURE.md` or a dedicated ADR under `docs/d
 | `ADR-010` | Vault distinguishes linked and managed ownership and enforces deletion safety in Rust. | Accepted |
 | `ADR-011` | AI uses cancellable typed streams and explicit Space-isolated context resolved in Rust. | Accepted |
 | `ADR-012` | Memory is explicit, user-authored, scoped, attributable, and attached to AI only by choice. | Accepted |
+| `ADR-013` | Native Windows lifecycle uses tray persistence, non-fatal shortcut registration, OS notifications, and gated signed updates. | Accepted |
 
-## Next: Publish `PHASE8-001`, then complete Phase 9 native Windows features.
+## Next: Publish `PHASE9-001`, then complete the Phase 10 release audit and pipeline.
 
 ## Reusable update template
 

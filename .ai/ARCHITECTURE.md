@@ -100,6 +100,7 @@ SQLite / native capabilities / external providers
 | `ADR-010` | Enforce Vault linked/managed ownership and safe deletion in trusted Rust code. | Accepted | `docs/decisions/010-vault-file-ownership.md` |
 | `ADR-011` | Use cancellable typed AI streams and explicit Space-isolated context resolved in Rust. | Accepted | `docs/decisions/011-ai-streaming-and-context.md` |
 | `ADR-012` | Use explicit, user-authored, scoped Memory with opt-in AI attachment. | Accepted | `docs/decisions/012-explicit-memory.md` |
+| `ADR-013` | Use a persistent native Windows tray lifecycle with visible shortcut/notification readiness and gated signed updates. | Accepted | `docs/decisions/013-native-windows-lifecycle.md` |
 
 ## Architecture change protocol
 

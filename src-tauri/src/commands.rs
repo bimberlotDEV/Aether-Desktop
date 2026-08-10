@@ -6,9 +6,11 @@ use crate::ai::provider::{self, ChatCompletionRequest, ChatMessage, ProviderConf
 use crate::ai::runtime::AiRuntime;
 use crate::db::repositories::{self, with_conn};
 use crate::db::Database;
+use crate::native::NativeStatus;
 use crate::vault as vault_storage;
 use std::path::PathBuf;
 use tauri::{ipc::Channel, AppHandle, Manager, State};
+use tauri_plugin_notification::NotificationExt;
 use tauri_plugin_opener::OpenerExt;
 use uuid::Uuid;
 
@@ -21,6 +23,23 @@ impl Drop for AiRequestGuard<'_> {
     fn drop(&mut self) {
         self.runtime.finish(&self.request_id);
     }
+}
+
+// ─── Native desktop ─────────────────────────────────────
+
+#[tauri::command]
+pub fn native_get_status(status: State<NativeStatus>) -> NativeStatus {
+    status.inner().clone()
+}
+
+#[tauri::command]
+pub fn native_test_notification(app: AppHandle) -> Result<(), String> {
+    app.notification()
+        .builder()
+        .title("Aether notifications are ready")
+        .body("You can close Aether to the tray and reopen it with Ctrl+Shift+Space.")
+        .show()
+        .map_err(|error| format!("Native notification error: {}", error))
 }
 
 // ─── Settings ───────────────────────────────────────────
