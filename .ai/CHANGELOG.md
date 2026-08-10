@@ -26,6 +26,17 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-08-10 — `DEBT-005/DEBT-006` — Rust quality gates restored
+
+- **Type:** Fix and refactor
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review
+- **Summary:** Formatted the existing Rust backend, resolved all strict Clippy findings, removed unnecessary test bindings and mutability, simplified result propagation, and documented intentionally staged Phase 7 APIs with localized lint allowances.
+- **Files:** `src-tauri/src/ai/provider.rs`, `src-tauri/src/commands.rs`, `src-tauri/src/db/repositories/conversations.rs`, `src-tauri/src/db/repositories/mod.rs`, `src-tauri/src/db/repositories/notes.rs`, `src-tauri/src/db/repositories/spaces.rs`, `.ai/TODO.md`, `.ai/PROJECT_STATE.md`, `.ai/CHANGELOG.md`, `.ai/SESSION_NOTES.md`
+- **Verification:** `cargo fmt --check` — pass; strict Clippy — pass; Rust tests 33/33 — pass; `cargo build` — pass; `pnpm check` — pass with 7/7 tests; `pnpm build` — pass; `git diff --check` — pass.
+- **Decisions/deviations:** Kept unfinished-but-planned AI streaming and message lifecycle APIs with narrow `dead_code` annotations because Phase 7 will expose them; no global lint suppression was added.
+- **Follow-up:** Audit Phase 3 Spaces and Phase 4 Notes acceptance and regression coverage.
+
 ## 2026-08-10 — `PROC-003` — Codex-only engineering workflow
 
 - **Type:** Process and documentation

@@ -70,6 +70,7 @@ pub struct Usage {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)] // Constructed through the Phase 7 model-selection API.
 pub struct ModelInfo {
     pub id: String,
     pub provider: String,
@@ -79,10 +80,17 @@ pub struct ModelInfo {
 
 // Provider trait
 
+#[allow(dead_code)] // Phase 7 exposes the remaining provider capabilities to the UI.
 pub trait AiProvider: Send + Sync {
     fn name(&self) -> &str;
-    fn chat_completion(&self, request: &ChatCompletionRequest) -> Result<ChatCompletionResponse, String>;
-    fn chat_completion_stream(&self, request: &ChatCompletionRequest) -> Result<Box<dyn Iterator<Item = Result<String, String>> + '_>, String>;
+    fn chat_completion(
+        &self,
+        request: &ChatCompletionRequest,
+    ) -> Result<ChatCompletionResponse, String>;
+    fn chat_completion_stream(
+        &self,
+        request: &ChatCompletionRequest,
+    ) -> Result<Box<dyn Iterator<Item = Result<String, String>> + '_>, String>;
     fn test_connection(&self) -> Result<(), String>;
     fn available_models(&self) -> Vec<ModelInfo>;
 }
@@ -150,14 +158,20 @@ impl AiProvider for DeepSeekProvider {
         "deepseek"
     }
 
-    fn chat_completion(&self, request: &ChatCompletionRequest) -> Result<ChatCompletionResponse, String> {
+    fn chat_completion(
+        &self,
+        request: &ChatCompletionRequest,
+    ) -> Result<ChatCompletionResponse, String> {
         let req = self.build_chat_request(request);
-        let body = serde_json::to_string(&req)
-            .map_err(|e| format!("Serialization error: {}", e))?;
+        let body =
+            serde_json::to_string(&req).map_err(|e| format!("Serialization error: {}", e))?;
 
         let url = format!(
             "{}/chat/completions",
-            self.config.base_url.as_deref().unwrap_or("https://api.deepseek.com/v1")
+            self.config
+                .base_url
+                .as_deref()
+                .unwrap_or("https://api.deepseek.com/v1")
         );
 
         let response = ureq::post(&url)
@@ -167,27 +181,33 @@ impl AiProvider for DeepSeekProvider {
             .map_err(|e| format!("HTTP error: {}", e))?;
 
         let status = response.status();
-        let resp_body = response.into_string()
+        let resp_body = response
+            .into_string()
             .map_err(|e| format!("Read error: {}", e))?;
 
         if status != 200 {
             return Err(format!("API error {}: {}", status, resp_body));
         }
 
-        serde_json::from_str(&resp_body)
-            .map_err(|e| format!("Parse error: {}", e))
+        serde_json::from_str(&resp_body).map_err(|e| format!("Parse error: {}", e))
     }
 
-    fn chat_completion_stream(&self, request: &ChatCompletionRequest) -> Result<Box<dyn Iterator<Item = Result<String, String>> + '_>, String> {
+    fn chat_completion_stream(
+        &self,
+        request: &ChatCompletionRequest,
+    ) -> Result<Box<dyn Iterator<Item = Result<String, String>> + '_>, String> {
         let mut req = self.build_chat_request(request);
         req.stream = Some(true);
 
-        let body = serde_json::to_string(&req)
-            .map_err(|e| format!("Serialization error: {}", e))?;
+        let body =
+            serde_json::to_string(&req).map_err(|e| format!("Serialization error: {}", e))?;
 
         let url = format!(
             "{}/chat/completions",
-            self.config.base_url.as_deref().unwrap_or("https://api.deepseek.com/v1")
+            self.config
+                .base_url
+                .as_deref()
+                .unwrap_or("https://api.deepseek.com/v1")
         );
 
         let response = ureq::post(&url)
@@ -203,7 +223,10 @@ impl AiProvider for DeepSeekProvider {
         }
 
         let reader = response.into_reader();
-        Ok(Box::new(SseIterator { reader, buffer: String::new() }))
+        Ok(Box::new(SseIterator {
+            reader,
+            buffer: String::new(),
+        }))
     }
 
     fn test_connection(&self) -> Result<(), String> {
@@ -243,6 +266,7 @@ impl AiProvider for DeepSeekProvider {
 
 // SSE Iterator
 
+#[allow(dead_code)] // Instantiated when Phase 7 enables streaming commands.
 struct SseIterator {
     reader: Box<dyn Read + 'static>,
     buffer: String,
@@ -276,6 +300,7 @@ impl Iterator for SseIterator {
     }
 }
 
+#[allow(dead_code)] // Used by SseIterator once streaming is exposed in Phase 7.
 impl SseIterator {
     fn process_buffer(&mut self) -> Option<Result<String, String>> {
         let separator = "\n\n";

@@ -1,7 +1,9 @@
 #![allow(clippy::too_many_arguments)]
 
 use crate::ai::credentials;
-use crate::ai::provider::{self, AiProvider, ChatCompletionRequest, ChatMessage, ProviderConfig, ThinkingConfig};
+use crate::ai::provider::{
+    self, ChatCompletionRequest, ChatMessage, ProviderConfig, ThinkingConfig,
+};
 use crate::db::repositories::{self, with_conn};
 use crate::db::Database;
 use tauri::State;
@@ -671,10 +673,10 @@ pub fn ai_remove_api_key(db: State<Database>) -> Result<bool, String> {
 pub fn ai_test_connection(db: State<Database>) -> Result<String, String> {
     let key = credentials::get(&db, credentials::AI_API_KEY)?
         .ok_or_else(|| "No API key configured".to_string())?;
-    
+
     let config = ProviderConfig::default_deepseek(key);
     let provider = provider::create_provider(config)?;
-    
+
     provider.test_connection()?;
     Ok("Connection successful".to_string())
 }
@@ -695,12 +697,15 @@ pub fn ai_create_conversation(
             "deepseek",
             "deepseek-chat",
         )?;
-        Ok(serde_json::to_value(conv).map_err(|e| format!("Serialize error: {}", e))?)
+        serde_json::to_value(conv).map_err(|e| format!("Serialize error: {}", e))
     })
 }
 
 #[tauri::command]
-pub fn ai_get_conversation(db: State<Database>, id: String) -> Result<Option<serde_json::Value>, String> {
+pub fn ai_get_conversation(
+    db: State<Database>,
+    id: String,
+) -> Result<Option<serde_json::Value>, String> {
     with_conn(&db.conn, |conn| {
         let conv = repositories::conversations::get_conversation(conn, &id)?;
         Ok(conv.map(|c| serde_json::to_value(c).unwrap()))
@@ -719,7 +724,10 @@ pub fn ai_list_conversations(
             space_id.as_deref(),
             include_archived.unwrap_or(false),
         )?;
-        Ok(convs.iter().map(|c| serde_json::to_value(c).unwrap()).collect())
+        Ok(convs
+            .iter()
+            .map(|c| serde_json::to_value(c).unwrap())
+            .collect())
     })
 }
 
@@ -758,7 +766,10 @@ pub fn ai_list_messages(
 ) -> Result<Vec<serde_json::Value>, String> {
     with_conn(&db.conn, |conn| {
         let msgs = repositories::conversations::list_messages(conn, &conversation_id, limit)?;
-        Ok(msgs.iter().map(|m| serde_json::to_value(m).unwrap()).collect())
+        Ok(msgs
+            .iter()
+            .map(|m| serde_json::to_value(m).unwrap())
+            .collect())
     })
 }
 
@@ -777,22 +788,27 @@ pub fn ai_send_message(
     content: String,
 ) -> Result<AiChatResponse, String> {
     // Get API key
-    let key = credentials::get(&db, credentials::AI_API_KEY)?
-        .ok_or_else(|| "No API key configured. Please configure an AI provider in Settings.".to_string())?;
-    
+    let key = credentials::get(&db, credentials::AI_API_KEY)?.ok_or_else(|| {
+        "No API key configured. Please configure an AI provider in Settings.".to_string()
+    })?;
+
     // Save user message
     with_conn(&db.conn, |conn| {
         repositories::conversations::add_message(
-            conn, &conversation_id, "user", &content, "complete",
+            conn,
+            &conversation_id,
+            "user",
+            &content,
+            "complete",
         )?;
         Ok::<_, String>(())
     })?;
-    
+
     // Get conversation history
     let messages = with_conn(&db.conn, |conn| {
         repositories::conversations::list_messages(conn, &conversation_id, Some(50))
     })?;
-    
+
     // Build provider request
     let chat_messages: Vec<ChatMessage> = messages
         .iter()
@@ -801,7 +817,7 @@ pub fn ai_send_message(
             content: m.content.clone(),
         })
         .collect();
-    
+
     let request = ChatCompletionRequest {
         model: "deepseek-chat".to_string(),
         messages: chat_messages,
@@ -813,28 +829,34 @@ pub fn ai_send_message(
             thinking_type: "enabled".to_string(),
         }),
     };
-    
+
     // Create provider and send
     let config = ProviderConfig::default_deepseek(key);
     let provider = provider::create_provider(config)?;
-    
-    let response = provider.chat_completion(&request)
+
+    let response = provider
+        .chat_completion(&request)
         .map_err(|e| format!("AI request failed: {}", e))?;
-    
-    let assistant_content = response.choices
+
+    let assistant_content = response
+        .choices
         .first()
         .and_then(|c| c.message.as_ref())
         .map(|m| m.content.clone())
         .unwrap_or_default();
-    
+
     // Save assistant message
     with_conn(&db.conn, |conn| {
         repositories::conversations::add_message(
-            conn, &conversation_id, "assistant", &assistant_content, "complete",
+            conn,
+            &conversation_id,
+            "assistant",
+            &assistant_content,
+            "complete",
         )?;
         Ok::<_, String>(())
     })?;
-    
+
     Ok(AiChatResponse {
         content: assistant_content,
         usage: response.usage.map(|u| serde_json::to_value(u).unwrap()),
@@ -852,9 +874,13 @@ pub fn ai_add_context(
 ) -> Result<serde_json::Value, String> {
     with_conn(&db.conn, |conn| {
         let item = repositories::conversations::add_context_item(
-            conn, &conversation_id, &entity_type, &entity_id, "attached",
+            conn,
+            &conversation_id,
+            &entity_type,
+            &entity_id,
+            "attached",
         )?;
-        Ok(serde_json::to_value(item).map_err(|e| format!("Serialize error: {}", e))?)
+        serde_json::to_value(item).map_err(|e| format!("Serialize error: {}", e))
     })
 }
 
@@ -865,7 +891,10 @@ pub fn ai_list_context(
 ) -> Result<Vec<serde_json::Value>, String> {
     with_conn(&db.conn, |conn| {
         let items = repositories::conversations::list_context_items(conn, &conversation_id)?;
-        Ok(items.iter().map(|i| serde_json::to_value(i).unwrap()).collect())
+        Ok(items
+            .iter()
+            .map(|i| serde_json::to_value(i).unwrap())
+            .collect())
     })
 }
 

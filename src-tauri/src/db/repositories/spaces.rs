@@ -452,7 +452,7 @@ mod tests {
     #[test]
     fn test_parent_child() {
         let conn = setup();
-        let mut parent = test_space("p1", "School");
+        let parent = test_space("p1", "School");
         create(&conn, &parent).unwrap();
 
         let mut child = test_space("c1", "Math");
@@ -519,7 +519,7 @@ mod tests {
     #[test]
     fn test_top_level() {
         let conn = setup();
-        let mut parent = test_space("p1", "Parent");
+        let parent = test_space("p1", "Parent");
         create(&conn, &parent).unwrap();
         let mut child = test_space("c1", "Child");
         child.parent_space_id = Some("p1".to_string());

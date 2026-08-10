@@ -46,8 +46,8 @@
 | P2 | `DEBT-002` | Lint | Four non-failing warnings were in utilities, IconPicker, and SpaceDetail. | ~~`pnpm lint` on 2026-07-30~~ Resolved: 0 warnings after fix (commit `28b82ab`). |
 | P2 | `DEBT-003` | Architecture docs | Existing `docs/architecture.md` contains a duplicated Tauri Bridge layer and predates Notes/AI work. | Repository inspection |
 | P2 | `DEBT-004` | Packaging | `Cargo.toml` repository field was empty despite configured Git remote. | ~~Repository inspection~~ Resolved: populated with https://github.com/bimberlotDEV/Aether-Desktop. |
-| P1 | `DEBT-005` | Rust formatting | `cargo fmt --check` reports pre-existing formatting differences across AI, commands, and conversation repository code. | `cargo fmt --manifest-path src-tauri/Cargo.toml -- --check` on 2026-07-31 |
-| P1 | `DEBT-006` | Rust lint | Strict Clippy reports 11 library errors and 12 test-build errors, including unused code and correctness/style lints. | `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings` on 2026-07-31 |
+| P1 | `DEBT-005` | Rust formatting | Rust sources now satisfy the repository formatting gate. | Resolved: `cargo fmt --manifest-path src-tauri/Cargo.toml -- --check` passes on 2026-08-10. |
+| P1 | `DEBT-006` | Rust lint | Strict Clippy is clean across library, binary, and test targets. | Resolved: `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings` passes on 2026-08-10. |
 
 ## Feature status index
 
