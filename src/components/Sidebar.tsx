@@ -80,7 +80,7 @@ export function Sidebar() {
         style={{ borderTop: `1px solid var(--color-sidebar-border)` }}
       >
         <p className="text-xs" style={{ color: 'var(--color-text-tertiary)' }}>
-          Alpha · v0.3.0
+          Alpha · v0.3.1
         </p>
       </div>
     </aside>

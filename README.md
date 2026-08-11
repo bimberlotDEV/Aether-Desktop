@@ -4,7 +4,7 @@
 
 Aether combines Spaces, Markdown Notes, Tasks, Pulse, Vault, explicit Memory, and opt-in AI assistance in a Tauri desktop application.
 
-**Current release:** Alpha 0.3.0. The core roadmap through Phase 10 is implemented and release-gated. Installers are currently unsigned and intended for alpha testing.
+**Current release:** Alpha 0.3.1. The core roadmap through Phase 10 is implemented and release-gated. Installers are currently unsigned and intended for alpha testing.
 
 ## What is included
 

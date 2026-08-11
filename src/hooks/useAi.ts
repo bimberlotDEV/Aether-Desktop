@@ -125,31 +125,59 @@ export function useAiConversation(conversationId: string | null) {
   const [error, setError] = useState<string | null>(null)
   const [activeRequestId, setActiveRequestId] = useState<string | null>(null)
   const activeAssistantId = useRef<string | null>(null)
+  const activeRequestIdRef = useRef<string | null>(null)
+  const messageRevision = useRef(0)
+  const loadSequence = useRef(0)
+  const conversationIdRef = useRef(conversationId)
+  conversationIdRef.current = conversationId
 
   const load = useCallback(async () => {
     if (!conversationId || !isTauri) {
+      loadSequence.current += 1
       setMessages([])
       setContextItems([])
       setResolvedContext([])
+      setLoading(false)
       return
     }
+    const sequence = ++loadSequence.current
     setLoading(true)
     setError(null)
+    const revisionAtStart = messageRevision.current
     try {
       const [nextMessages, nextContext, nextResolved] = await Promise.all([
         db.listAiMessages(conversationId, 200),
         db.listAiContext(conversationId),
         db.resolveAiContext(conversationId),
       ])
-      setMessages(nextMessages)
+      if (
+        conversationIdRef.current !== conversationId ||
+        loadSequence.current !== sequence
+      )
+        return
+      if (
+        activeRequestIdRef.current === null &&
+        messageRevision.current === revisionAtStart
+      ) {
+        setMessages(nextMessages)
+      }
       setContextItems(nextContext)
       setResolvedContext(nextResolved)
     } catch (cause) {
-      setError(
-        cause instanceof Error ? cause.message : 'Could not load this conversation.',
-      )
+      if (
+        conversationIdRef.current === conversationId &&
+        loadSequence.current === sequence
+      ) {
+        setError(
+          cause instanceof Error ? cause.message : 'Could not load this conversation.',
+        )
+      }
     } finally {
-      setLoading(false)
+      if (
+        conversationIdRef.current === conversationId &&
+        loadSequence.current === sequence
+      )
+        setLoading(false)
     }
   }, [conversationId])
   useEffect(() => void load(), [load])
@@ -159,6 +187,8 @@ export function useAiConversation(conversationId: string | null) {
       if (!conversationId) return
       const id = requestId()
       const optimisticUserMessageId = retryUserMessageId ? null : `optimistic-user-${id}`
+      activeRequestIdRef.current = id
+      messageRevision.current += 1
       setActiveRequestId(id)
       setError(null)
       if (optimisticUserMessageId) {
@@ -185,6 +215,7 @@ export function useAiConversation(conversationId: string | null) {
           conversationId,
           content,
           (event) => {
+            messageRevision.current += 1
             if (event.event === 'started') {
               activeAssistantId.current = event.data.assistantMessage.id
               setMessages((current) => {
@@ -231,8 +262,11 @@ export function useAiConversation(conversationId: string | null) {
         notifyConversations()
       } catch (cause) {
         setError(cause instanceof Error ? cause.message : 'Could not send the message.')
+        activeRequestIdRef.current = null
+        messageRevision.current += 1
         await load()
       } finally {
+        activeRequestIdRef.current = null
         setActiveRequestId(null)
       }
     },

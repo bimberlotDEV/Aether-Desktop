@@ -26,6 +26,17 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-08-11 — `AI-CHAT-003` — Stale loads no longer hide submitted prompts
+
+- **Type:** Fix, test, and release
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review
+- **Summary:** Prevented an older in-flight conversation load from overwriting a newly submitted prompt and its streaming assistant placeholder. Added an explicit message revision guard, disabled sending while the selected conversation is loading, and released the fix as Alpha 0.3.1 so Windows has a real patch-upgrade boundary.
+- **Files:** `src/hooks/useAi.ts`, `src/hooks/useAi.test.ts`, `src/components/ai/AiView.tsx`, application version metadata/UI, release documentation, `.ai/*`
+- **Verification:** `pnpm check` passes with 53/53 tests across 24 files; `pnpm build`, Rust format, strict Clippy, 61/61 Rust tests, `pnpm tauri:build`, and `git diff --check` pass. The 0.3.1 NSIS upgrade replaced the installed executable, registered version 0.3.1, embedded the expected `index-DW1rFMl4.js` frontend bundle, and opened the AI route without the error boundary.
+- **Decisions/deviations:** No live DeepSeek prompt was sent by Codex because that would be an external message using the owner's credentials. The deterministic race test forces the stale-load ordering that caused the refresh-only symptom.
+- **Follow-up:** None.
+
 ## 2026-08-11 — `AI-CHAT-002` — AI streaming no longer crashes the view
 
 - **Type:** Fix and test
