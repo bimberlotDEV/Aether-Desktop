@@ -158,8 +158,27 @@ export function useAiConversation(conversationId: string | null) {
     async (content: string, retryUserMessageId?: string, mode: AiMode = 'ask') => {
       if (!conversationId) return
       const id = requestId()
+      const optimisticUserMessageId = retryUserMessageId ? null : `optimistic-user-${id}`
       setActiveRequestId(id)
       setError(null)
+      if (optimisticUserMessageId) {
+        const now = new Date().toISOString()
+        setMessages((current) => [
+          ...current,
+          {
+            id: optimisticUserMessageId,
+            conversation_id: conversationId,
+            role: 'user',
+            content,
+            status: 'pending',
+            provider_message_id: null,
+            error_code: null,
+            metadata_json: JSON.stringify({ mode }),
+            created_at: now,
+            updated_at: now,
+          },
+        ])
+      }
       try {
         await db.streamAiMessage(
           id,
@@ -169,13 +188,19 @@ export function useAiConversation(conversationId: string | null) {
             if (event.event === 'started') {
               activeAssistantId.current = event.data.assistantMessage.id
               setMessages((current) => {
-                const userExists = current.some(
+                const withoutOptimistic = optimisticUserMessageId
+                  ? current.filter((message) => message.id !== optimisticUserMessageId)
+                  : current
+                const userExists = withoutOptimistic.some(
                   (message) => message.id === event.data.userMessage.id,
                 )
+                const assistantExists = withoutOptimistic.some(
+                  (message) => message.id === event.data.assistantMessage.id,
+                )
                 return [
-                  ...current,
+                  ...withoutOptimistic,
                   ...(userExists ? [] : [event.data.userMessage]),
-                  event.data.assistantMessage,
+                  ...(assistantExists ? [] : [event.data.assistantMessage]),
                 ]
               })
             } else if (event.event === 'delta') {

@@ -26,6 +26,17 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-08-11 — `AI-CHAT-001` — Submitted prompts render immediately
+
+- **Type:** Fix and test
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review
+- **Summary:** Added an optimistic user message before AI streaming begins and reconciled it with the persisted Rust message on the `started` event, preventing prompts from appearing only after refresh.
+- **Files:** `src/hooks/useAi.ts`, `src/hooks/useAi.test.ts`, `.ai/*`
+- **Verification:** `pnpm check` passes with 51/51 tests across 23 files; `pnpm build`, `pnpm tauri:build`, and `git diff --check` pass; a verified NSIS installer was copied to Downloads.
+- **Decisions/deviations:** Retry reuses its existing user message and therefore does not create an optimistic duplicate. No live provider request was needed for verification, and the running installed app was not interrupted for a redundant startup smoke.
+- **Follow-up:** None.
+
 ## 2026-08-11 — `STAB-001` — Integrated alpha stabilization complete
 
 - **Type:** Fix, accessibility, test, native, and packaging
