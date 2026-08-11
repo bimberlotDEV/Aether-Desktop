@@ -114,7 +114,9 @@ export function AiView({ spaceId }: { spaceId?: string }) {
     if (selectedId && list.conversations.some((item) => item.id === selectedId)) return
     setSelectedId(list.conversations[0]?.id ?? null)
   }, [list.conversations, selectedId])
-  useEffect(() => endRef.current?.scrollIntoView({ behavior: 'smooth' }), [chat.messages])
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [chat.messages])
 
   const selected = list.conversations.find((item) => item.id === selectedId)
   const canSend =
