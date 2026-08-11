@@ -2,15 +2,15 @@
 
 > Canonical snapshot of what is true in the repository now. This is not a plan or historical log.
 
-| Field            | Value                             |
-| ---------------- | --------------------------------- |
-| Schema version   | 1                                 |
-| Last updated     | 2026-08-11                        |
-| Updated by       | Codex                             |
-| Repository       | `bimberlotDEV/Aether-Desktop`     |
-| Branch           | `codex/stab-001-stress-hardening` |
-| Baseline commit  | `6fc60c3` (PR #15 merge)          |
-| Product maturity | Alpha                             |
+| Field            | Value                            |
+| ---------------- | -------------------------------- |
+| Schema version   | 1                                |
+| Last updated     | 2026-08-11                       |
+| Updated by       | Codex                            |
+| Repository       | `bimberlotDEV/Aether-Desktop`    |
+| Branch           | `codex/fix-ai-prompt-optimistic` |
+| Baseline commit  | `b9dcbbb` (PR #27 merge)         |
+| Product maturity | Alpha                            |
 
 ## Responsibility of this file
 
@@ -69,8 +69,8 @@ No implementation task is active. `STAB-001` is complete and recorded in `.ai/HA
 
 | Check                                       | Last result | Date       | Notes                                                                                                |
 | ------------------------------------------- | ----------- | ---------- | ---------------------------------------------------------------------------------------------------- |
-| `pnpm check`                                | Pass        | 2026-08-11 | Typecheck and lint clean; Vitest 50/50 across 22 files.                                              |
-| `pnpm build`                                | Pass        | 2026-08-11 | Production build is 496.64 kB JS / 137.33 kB gzip and has no chunk-size warning.                     |
+| `pnpm check`                                | Pass        | 2026-08-11 | Typecheck and lint clean; Vitest 51/51 across 23 files.                                              |
+| `pnpm build`                                | Pass        | 2026-08-11 | Production build is 496.97 kB JS / 137.48 kB gzip and has no chunk-size warning.                     |
 | `pnpm audit --audit-level high`             | Pass        | 2026-08-11 | No known vulnerabilities.                                                                            |
 | `cargo test`                                | Pass        | 2026-08-11 | 61/61 tests pass, including sanitized backup, native status, AI isolation, Memory, and Vault safety. |
 | `cargo build`                               | Pass        | 2026-08-11 | Windows production build compiles with DPAPI and single-instance support.                            |
@@ -115,7 +115,7 @@ Full rationale belongs in `.ai/ARCHITECTURE.md` or a dedicated ADR under `docs/d
 
 ## Next
 
-The Alpha 0.3.0 roadmap through Phase 10 and the `STAB-001` integrated stabilization pass are complete. Public signing and updater activation remain owner-controlled release operations.
+The Alpha 0.3.0 roadmap through Phase 10 and the `STAB-001` integrated stabilization pass are complete. `AI-CHAT-001` additionally fixes immediate prompt rendering. Public signing and updater activation remain owner-controlled release operations.
 
 ## Reusable update template
 
