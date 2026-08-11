@@ -26,6 +26,17 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-08-11 — `AI-CHAT-002` — AI streaming no longer crashes the view
+
+- **Type:** Fix and test
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review
+- **Summary:** Prevented the AI message-scroll effect from returning WebView2's Promise to React as an effect cleanup, which crashed the view on the next streamed message update. Existing persisted prompts and responses remain intact.
+- **Files:** `src/components/ai/AiView.tsx`, `src/components/ai/AiView.test.tsx`, `.ai/*`, `docs/release-artifacts-0.3.0.md`
+- **Verification:** `pnpm check` passes with 52/52 tests across 24 files; `pnpm build`, `pnpm tauri:build`, and `git diff --check` pass; both debug and packaged release runtimes render the AI route without the error boundary.
+- **Decisions/deviations:** The regression test deliberately makes `scrollIntoView()` return a Promise, matching WebView2 behavior, and verifies that rerendering does not invoke it as a cleanup. No live provider request or user-data mutation was required.
+- **Follow-up:** None.
+
 ## 2026-08-11 — `AI-CHAT-001` — Submitted prompts render immediately
 
 - **Type:** Fix and test
