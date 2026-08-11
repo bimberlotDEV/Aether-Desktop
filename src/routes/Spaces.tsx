@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Layers,
@@ -18,9 +18,10 @@ import { CreateSpaceModal } from '@/components/CreateSpaceModal'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import type { Space } from '@/lib/db/types'
 import { cn } from '@/lib/utils'
+import { iconToEmoji } from '@/lib/iconToEmoji'
 
 function SpaceIcon({ icon, accent }: { icon: string | null; accent: string | null }) {
-  const emoji = icon || '📚'
+  const emoji = icon ? iconToEmoji(icon) : '📚'
   return (
     <div
       className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-lg"
@@ -48,6 +49,15 @@ export function Spaces() {
   const [menuOpen, setMenuOpen] = useState<string | null>(null)
   const [showArchived, setShowArchived] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<Space | null>(null)
+
+  useEffect(() => {
+    if (!menuOpen) return
+    const closeMenu = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMenuOpen(null)
+    }
+    window.addEventListener('keydown', closeMenu)
+    return () => window.removeEventListener('keydown', closeMenu)
+  }, [menuOpen])
 
   const favourites = spaces.filter((s) => s.favourite && !s.archived_at)
   const active = spaces.filter((s) => !s.favourite && !s.archived_at)
@@ -294,42 +304,51 @@ function SpaceRow({
   return (
     <div
       className={cn(
-        'group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors duration-100 cursor-pointer',
+        'group flex items-center rounded-lg transition-colors duration-100',
         isArchived && 'opacity-50',
       )}
       style={{ backgroundColor: isMenuOpen ? 'var(--color-bg-tertiary)' : undefined }}
-      onClick={onOpen}
     >
-      <SpaceIcon icon={space.icon} accent={space.accent} />
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <span
-            className="text-sm font-medium truncate"
-            style={{ color: 'var(--color-text-primary)' }}
-          >
-            {space.name}
-          </span>
-          {space.favourite && (
-            <Star
-              size={11}
-              fill="var(--color-warning)"
-              style={{ color: 'var(--color-warning)' }}
-            />
+      <button
+        type="button"
+        onClick={onOpen}
+        className="flex min-w-0 flex-1 items-center gap-3 px-3 py-2.5 text-left focus-ring"
+        aria-label={`Open ${space.name}`}
+      >
+        <SpaceIcon icon={space.icon} accent={space.accent} />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span
+              className="text-sm font-medium truncate"
+              style={{ color: 'var(--color-text-primary)' }}
+            >
+              {space.name}
+            </span>
+            {space.favourite && (
+              <Star
+                size={11}
+                fill="var(--color-warning)"
+                style={{ color: 'var(--color-warning)' }}
+              />
+            )}
+          </div>
+          {space.description && (
+            <p
+              className="text-xs truncate mt-0.5"
+              style={{ color: 'var(--color-text-tertiary)' }}
+            >
+              {space.description}
+            </p>
           )}
         </div>
-        {space.description && (
-          <p
-            className="text-xs truncate mt-0.5"
-            style={{ color: 'var(--color-text-tertiary)' }}
-          >
-            {space.description}
-          </p>
-        )}
-      </div>
-      <div className="relative" onClick={(e) => e.stopPropagation()}>
+      </button>
+      <div className="relative pr-2">
         <button
+          type="button"
           onClick={() => setMenuOpen(isMenuOpen ? null : space.id)}
-          className="p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-[var(--color-bg-tertiary)]"
+          aria-label={`Actions for ${space.name}`}
+          aria-expanded={isMenuOpen}
+          className="p-1 rounded-md opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity hover:bg-[var(--color-bg-tertiary)] focus-ring"
           style={{ color: 'var(--color-text-tertiary)' }}
         >
           <MoreHorizontal size={15} />
@@ -338,6 +357,8 @@ function SpaceRow({
           <>
             <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(null)} />
             <div
+              role="menu"
+              aria-label={`Actions for ${space.name}`}
               className="absolute right-0 top-8 z-20 w-44 py-1 rounded-lg shadow-lg border"
               style={{
                 backgroundColor: 'var(--color-bg-elevated)',
@@ -440,6 +461,8 @@ function MenuItem({
 }) {
   return (
     <button
+      type="button"
+      role="menuitem"
       onClick={onClick}
       className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-left transition-colors hover:bg-[var(--color-bg-tertiary)]"
       style={{ color: danger ? 'var(--color-danger)' : 'var(--color-text-primary)' }}

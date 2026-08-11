@@ -1,29 +1,26 @@
 # Session Notes
 
-| Field | Value |
-| --- | --- |
-| Schema version | 2 |
-| Session date | 2026-08-10 |
-| Active task | `PHASE10-001` |
-| Agent | Codex |
-| State | `complete` |
+| Field          | Value      |
+| -------------- | ---------- |
+| Schema version | 2          |
+| Session date   | 2026-08-11 |
+| Active task    | `STAB-001` |
+| Agent          | Codex      |
+| State          | `complete` |
 
-## Work completed
+## Completed work
 
-- Added consistent workspace database export with native destination selection, partial-file cleanup, credential removal, integrity validation, and explicit Vault-byte exclusions.
-- Added Windows CI, Dependabot, pinned pnpm metadata, MIT license, security policy, product changelog, release checklist, artifact hashes, and current architecture/README documentation.
-- Hardened confirmation-dialog semantics and theme-control state; added keyboard and IPC regression tests.
-- Cleared all npm audit findings by updating React Router and vulnerable transitive test/build dependencies.
-- Generated final x64 MSI and NSIS candidates and passed the release executable startup smoke test.
+- Exercised the route/theme/window-size/keyboard/error-path browser matrix and the Windows desktop shell.
+- Repaired reproducible navigation, render recovery, Space icon, row/menu accessibility, dialog, browser-mode data-flow, Notes synchronization, and multiple-instance defects.
+- Added five new test files plus expanded route coverage; the frontend suite now passes 50/50 tests across 22 files.
+- Verified 61/61 Rust tests, strict Clippy, formatting, production builds, a clean high-severity dependency audit, and a full Tauri installer build.
+- Confirmed that two release launches retain exactly one Aether process and copied the verified NSIS installer to `C:\Users\rawan\Downloads\Aether_0.3.0_STAB-001_x64-setup.exe`.
 
-## Verification
+## Safety boundary
 
-- Frontend check/build: pass; 45/45 tests across 17 files.
-- Rust format, strict Clippy, and 61/61 tests: pass.
-- `pnpm audit --audit-level high`: pass with no known vulnerabilities.
-- `pnpm tauri:build`: pass with both Windows bundles.
-- Exact sizes and SHA-256 hashes are in `docs/release-artifacts-0.3.0.md`.
+- Do not modify or delete pre-existing user records, credentials, databases, or Vault files.
+- Use `STAB-001`-prefixed fixtures and remove only task-owned fixtures when safe and authorized.
 
 ## Exact resume point
 
-Publish `PHASE10-001`, require the new GitHub Windows CI check to pass, merge it, and synchronize `master`.
+No implementation work remains. Publish the reviewed task branch and merge it after GitHub checks pass.

@@ -251,6 +251,9 @@ export function CommandPalette() {
 
       {/* Palette */}
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Command palette"
         className="relative w-full max-w-[520px] rounded-xl shadow-2xl glass-surface overflow-hidden"
         onClick={(e) => e.stopPropagation()}
         style={{

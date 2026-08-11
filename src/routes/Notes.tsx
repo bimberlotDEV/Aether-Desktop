@@ -47,6 +47,15 @@ export function NotesView() {
   const [showArchived, setShowArchived] = useState(false)
 
   useEffect(() => {
+    if (!menuOpen) return
+    const closeMenu = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMenuOpen(null)
+    }
+    window.addEventListener('keydown', closeMenu)
+    return () => window.removeEventListener('keydown', closeMenu)
+  }, [menuOpen])
+
+  useEffect(() => {
     void search(searchQuery, spaceId)
   }, [searchQuery, search, spaceId])
 
@@ -317,48 +326,58 @@ function NoteRow({
   return (
     <div
       className={cn(
-        'group flex items-center gap-2.5 px-4 py-2 cursor-pointer transition-colors duration-75',
+        'group flex items-center transition-colors duration-75',
         isActive
           ? 'bg-[var(--color-accent-muted)]'
           : 'hover:bg-[var(--color-bg-tertiary)]',
       )}
-      onClick={onSelect}
     >
-      <FileText
-        size={15}
-        strokeWidth={1.75}
-        style={{
-          color: isActive ? 'var(--color-accent)' : 'var(--color-text-tertiary)',
-          flexShrink: 0,
-        }}
-      />
-      <div className="flex-1 min-w-0">
-        <div
-          className="text-sm font-medium truncate"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          {note.title || 'Untitled note'}
-        </div>
-        {note.excerpt && (
-          <p
-            className="text-xs truncate mt-0.5"
-            style={{ color: 'var(--color-text-tertiary)' }}
-          >
-            {note.excerpt}
-          </p>
-        )}
-      </div>
-      {note.pinned && (
-        <Pin
-          size={10}
-          fill="var(--color-warning)"
-          style={{ color: 'var(--color-warning)', flexShrink: 0 }}
+      <button
+        type="button"
+        onClick={onSelect}
+        aria-label={`Open ${note.title || 'Untitled note'}`}
+        aria-current={isActive ? 'true' : undefined}
+        className="flex min-w-0 flex-1 items-center gap-2.5 px-4 py-2 text-left focus-ring"
+      >
+        <FileText
+          size={15}
+          strokeWidth={1.75}
+          style={{
+            color: isActive ? 'var(--color-accent)' : 'var(--color-text-tertiary)',
+            flexShrink: 0,
+          }}
         />
-      )}
-      <div className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
+        <div className="flex-1 min-w-0">
+          <div
+            className="text-sm font-medium truncate"
+            style={{ color: 'var(--color-text-primary)' }}
+          >
+            {note.title || 'Untitled note'}
+          </div>
+          {note.excerpt && (
+            <p
+              className="text-xs truncate mt-0.5"
+              style={{ color: 'var(--color-text-tertiary)' }}
+            >
+              {note.excerpt}
+            </p>
+          )}
+        </div>
+        {note.pinned && (
+          <Pin
+            size={10}
+            fill="var(--color-warning)"
+            style={{ color: 'var(--color-warning)', flexShrink: 0 }}
+          />
+        )}
+      </button>
+      <div className="relative shrink-0 pr-2">
         <button
+          type="button"
           onClick={() => setMenuOpen(isMenuOpen ? null : note.id)}
-          className="p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-[var(--color-bg-tertiary)]"
+          aria-label={`Actions for ${note.title || 'Untitled note'}`}
+          aria-expanded={isMenuOpen}
+          className="p-1 rounded-md opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity hover:bg-[var(--color-bg-tertiary)] focus-ring"
           style={{ color: 'var(--color-text-tertiary)' }}
         >
           <MoreHorizontal size={14} />
@@ -367,6 +386,8 @@ function NoteRow({
           <>
             <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(null)} />
             <div
+              role="menu"
+              aria-label={`Actions for ${note.title || 'Untitled note'}`}
               className="absolute right-0 top-7 z-20 w-44 py-1 rounded-lg shadow-lg border"
               style={{
                 backgroundColor: 'var(--color-bg-elevated)',
@@ -428,6 +449,8 @@ function RowMenuItem({
 }) {
   return (
     <button
+      type="button"
+      role="menuitem"
       onClick={onClick}
       className="flex items-center gap-2.5 w-full px-3 py-2 text-sm text-left transition-colors hover:bg-[var(--color-bg-tertiary)]"
       style={{ color: danger ? 'var(--color-danger)' : 'var(--color-text-primary)' }}
