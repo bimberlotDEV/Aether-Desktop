@@ -120,7 +120,11 @@ export function AiView({ spaceId }: { spaceId?: string }) {
 
   const selected = list.conversations.find((item) => item.id === selectedId)
   const canSend =
-    !!draft.trim() && !!selectedId && !chat.streaming && settings.status === 'configured'
+    !!draft.trim() &&
+    !!selectedId &&
+    !chat.loading &&
+    !chat.streaming &&
+    settings.status === 'configured'
 
   async function createConversation() {
     try {

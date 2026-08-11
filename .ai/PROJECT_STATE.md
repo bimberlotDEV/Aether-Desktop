@@ -2,15 +2,15 @@
 
 > Canonical snapshot of what is true in the repository now. This is not a plan or historical log.
 
-| Field            | Value                              |
-| ---------------- | ---------------------------------- |
-| Schema version   | 1                                  |
-| Last updated     | 2026-08-11                         |
-| Updated by       | Codex                              |
-| Repository       | `bimberlotDEV/Aether-Desktop`      |
-| Branch           | `codex/fix-ai-scroll-effect-crash` |
-| Baseline commit  | `c117518` (PR #28 merge)           |
-| Product maturity | Alpha                              |
+| Field            | Value                             |
+| ---------------- | --------------------------------- |
+| Schema version   | 1                                 |
+| Last updated     | 2026-08-11                        |
+| Updated by       | Codex                             |
+| Repository       | `bimberlotDEV/Aether-Desktop`     |
+| Branch           | `codex/release-0.3.1-chat-hotfix` |
+| Baseline commit  | `626f13c` (PR #29 merge)          |
+| Product maturity | Alpha                             |
 
 ## Responsibility of this file
 
@@ -41,6 +41,7 @@
 | `PHASE9-001`       | Native Windows lifecycle and packaging             | `complete` | Tray, shortcut, notifications, window state, MSI/NSIS build, and startup smoke test pass.                                         |
 | `PHASE10-001`      | Quality and release preparation                    | `complete` | CI, sanitized export, audits, documentation, packaging, hashes, and startup verification pass.                                    |
 | `STAB-001`         | Integrated alpha stabilization                     | `complete` | Automated, browser, desktop, native, responsive, accessibility, and error-path stress checks pass with verified defects repaired. |
+| `AI-CHAT-003`      | Eliminate stale-load prompt hiding and ship 0.3.1  | `complete` | A deterministic load/stream race test passes and the installed 0.3.1 bundle contains the verified frontend.                       |
 
 No implementation task is active. `STAB-001` is complete and recorded in `.ai/HANDOFF.md`.
 
@@ -69,15 +70,15 @@ No implementation task is active. `STAB-001` is complete and recorded in `.ai/HA
 
 | Check                                       | Last result | Date       | Notes                                                                                                |
 | ------------------------------------------- | ----------- | ---------- | ---------------------------------------------------------------------------------------------------- |
-| `pnpm check`                                | Pass        | 2026-08-11 | Typecheck and lint clean; Vitest 52/52 across 24 files.                                              |
-| `pnpm build`                                | Pass        | 2026-08-11 | Production build is 496.98 kB JS / 137.48 kB gzip and has no chunk-size warning.                     |
+| `pnpm check`                                | Pass        | 2026-08-11 | Typecheck and lint clean; Vitest 53/53 across 24 files.                                              |
+| `pnpm build`                                | Pass        | 2026-08-11 | Production build is 497.35 kB JS / 137.60 kB gzip and has no chunk-size warning.                     |
 | `pnpm audit --audit-level high`             | Pass        | 2026-08-11 | No known vulnerabilities.                                                                            |
 | `cargo test`                                | Pass        | 2026-08-11 | 61/61 tests pass, including sanitized backup, native status, AI isolation, Memory, and Vault safety. |
 | `cargo build`                               | Pass        | 2026-08-11 | Windows production build compiles with DPAPI and single-instance support.                            |
 | `cargo fmt --check`                         | Pass        | 2026-08-11 | Repository Rust formatting is clean.                                                                 |
 | `cargo clippy --all-targets -- -D warnings` | Pass        | 2026-08-11 | Library, binary, and test targets are warning-free.                                                  |
-| `pnpm tauri:build`                          | Pass        | 2026-08-11 | x64 MSI and NSIS bundles built; hashes recorded in `docs/release-artifacts-0.3.0.md`.                |
-| Release startup smoke                       | Pass        | 2026-08-11 | Packaged release opened the AI route with its message input visible and without the error boundary.  |
+| `pnpm tauri:build`                          | Pass        | 2026-08-11 | 0.3.1 x64 MSI and NSIS bundles built; hashes recorded in `docs/release-artifacts-0.3.1.md`.          |
+| Release startup smoke                       | Pass        | 2026-08-11 | Installed 0.3.1 opened the AI route, showed its version/input, and did not show the error boundary.  |
 
 ## Active blockers
 
@@ -115,7 +116,7 @@ Full rationale belongs in `.ai/ARCHITECTURE.md` or a dedicated ADR under `docs/d
 
 ## Next
 
-The Alpha 0.3.0 roadmap through Phase 10 and the `STAB-001` integrated stabilization pass are complete. `AI-CHAT-001` fixes immediate prompt rendering, and `AI-CHAT-002` prevents the following streamed update from crashing the AI view. Public signing and updater activation remain owner-controlled release operations.
+The Alpha 0.3.1 roadmap through Phase 10 and the `STAB-001` integrated stabilization pass are complete. `AI-CHAT-001` adds optimistic prompt rendering, `AI-CHAT-002` prevents the following streamed update from crashing the AI view, and `AI-CHAT-003` prevents stale loads from hiding the new stream. Public signing and updater activation remain owner-controlled release operations.
 
 ## Reusable update template
 

@@ -2,6 +2,12 @@
 
 All notable product changes are recorded here.
 
+## 0.3.1-alpha - 2026-08-11
+
+- Fixed submitted AI prompts appearing only after a refresh.
+- Fixed a WebView2 scroll effect crash during streamed message updates.
+- Incremented the Windows package version so the hotfix installs as an explicit upgrade from 0.3.0.
+
 ## 0.3.0-alpha - 2026-08-10
 
 - Added local-first Spaces, Markdown Notes, Tasks, Pulse, Vault metadata/file workflows, and explicit Memory.

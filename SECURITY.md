@@ -2,7 +2,7 @@
 
 ## Supported version
 
-Aether 0.3.0 is alpha software. Only the latest commit on `master` is supported; no public security SLA is offered yet.
+Aether 0.3.1 is alpha software. Only the latest commit on `master` is supported; no public security SLA is offered yet.
 
 ## Reporting a vulnerability
 

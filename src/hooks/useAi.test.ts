@@ -91,4 +91,48 @@ describe('useAiConversation sending', () => {
 
     expect(hook.result.current.messages).toEqual([userMessage, assistantMessage])
   })
+
+  it('does not let an older in-flight load erase a newly started message stream', async () => {
+    let resolveInitialMessages: ((messages: AiMessage[]) => void) | undefined
+    mocks.listAiMessages.mockImplementationOnce(
+      () =>
+        new Promise<AiMessage[]>((resolve) => {
+          resolveInitialMessages = resolve
+        }),
+    )
+
+    const userMessage = message('user-race', 'user', 'Keep this visible', 'complete')
+    const assistantMessage = message('assistant-race', 'assistant', '', 'streaming')
+    mocks.streamAiMessage.mockImplementation(
+      async (
+        requestId: string,
+        _conversationId: string,
+        _content: string,
+        callback: (event: AiStreamEvent) => void,
+      ) => {
+        callback({
+          event: 'started',
+          data: { requestId, userMessage, assistantMessage },
+        })
+        await new Promise<void>(() => undefined)
+      },
+    )
+
+    const hook = renderHook(() => useAiConversation('conversation-1'))
+    await waitFor(() => expect(mocks.listAiMessages).toHaveBeenCalledOnce())
+
+    act(() => {
+      void hook.result.current.send('Keep this visible')
+    })
+    await waitFor(() =>
+      expect(hook.result.current.messages).toEqual([userMessage, assistantMessage]),
+    )
+
+    await act(async () => {
+      resolveInitialMessages?.([])
+      await Promise.resolve()
+    })
+
+    expect(hook.result.current.messages).toEqual([userMessage, assistantMessage])
+  })
 })
