@@ -53,6 +53,14 @@ export function CreateSpaceModal({ onClose, initialParentId }: Props) {
     if (step === 1) nameRef.current?.focus()
   }, [step])
 
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', handleEscape)
+    return () => window.removeEventListener('keydown', handleEscape)
+  }, [onClose])
+
   const totalSteps = template === 'school' ? 4 : 3
   const canNext =
     step === 0
@@ -113,6 +121,9 @@ export function CreateSpaceModal({ onClose, initialParentId }: Props) {
         style={{ backgroundColor: 'var(--color-bg-overlay)' }}
       />
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="create-space-title"
         className="relative w-full max-w-[480px] rounded-xl shadow-2xl overflow-hidden"
         style={{
           backgroundColor: 'var(--color-bg-elevated)',
@@ -128,7 +139,9 @@ export function CreateSpaceModal({ onClose, initialParentId }: Props) {
           <div className="flex items-center gap-3">
             {step > 0 && (
               <button
+                type="button"
                 onClick={() => setStep(step - 1)}
+                aria-label="Previous step"
                 className="p-1 rounded-md hover:bg-[var(--color-bg-tertiary)]"
                 style={{ color: 'var(--color-text-secondary)' }}
               >
@@ -136,6 +149,7 @@ export function CreateSpaceModal({ onClose, initialParentId }: Props) {
               </button>
             )}
             <h2
+              id="create-space-title"
               className="text-base font-semibold"
               style={{ color: 'var(--color-text-primary)' }}
             >
@@ -149,7 +163,9 @@ export function CreateSpaceModal({ onClose, initialParentId }: Props) {
             </h2>
           </div>
           <button
+            type="button"
             onClick={onClose}
+            aria-label="Close new Space dialog"
             className="p-1 rounded-md hover:bg-[var(--color-bg-tertiary)]"
             style={{ color: 'var(--color-text-tertiary)' }}
           >
@@ -228,12 +244,14 @@ export function CreateSpaceModal({ onClose, initialParentId }: Props) {
             <div className="space-y-4">
               <div>
                 <label
+                  htmlFor="space-name"
                   className="text-xs font-medium mb-1.5 block"
                   style={{ color: 'var(--color-text-secondary)' }}
                 >
                   Name *
                 </label>
                 <input
+                  id="space-name"
                   ref={nameRef}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
@@ -252,12 +270,14 @@ export function CreateSpaceModal({ onClose, initialParentId }: Props) {
               </div>
               <div>
                 <label
+                  htmlFor="space-description"
                   className="text-xs font-medium mb-1.5 block"
                   style={{ color: 'var(--color-text-secondary)' }}
                 >
                   Description
                 </label>
                 <textarea
+                  id="space-description"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="What is this Space for?"
@@ -290,6 +310,7 @@ export function CreateSpaceModal({ onClose, initialParentId }: Props) {
                 <div className="flex gap-2">
                   {SPACE_ACCENTS.map((a) => (
                     <button
+                      type="button"
                       key={a.id}
                       onClick={() => setAccent(a.value)}
                       title={a.label}
@@ -302,7 +323,9 @@ export function CreateSpaceModal({ onClose, initialParentId }: Props) {
                   ))}
                   {accent && (
                     <button
+                      type="button"
                       onClick={() => setAccent(null)}
+                      aria-label="Remove accent"
                       className="w-8 h-8 rounded-full flex items-center justify-center"
                       style={{ border: '1px solid var(--color-border)' }}
                     >

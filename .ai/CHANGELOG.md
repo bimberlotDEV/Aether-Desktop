@@ -26,6 +26,17 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-08-11 — `STAB-001` — Integrated alpha stabilization complete
+
+- **Type:** Fix, accessibility, test, native, and packaging
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review
+- **Summary:** Stress-tested the integrated browser and Windows desktop application; repaired blank navigation/render failures, Space icon mapping, inaccessible list/menu/dialog controls, incomplete browser-mode Spaces and Notes behavior, stale global Note refresh, and concurrent desktop instances.
+- **Files:** App routing/error boundary, Space/Note hooks and routes, dialog/palette semantics, single-instance Tauri setup, regression tests, release/control documentation
+- **Verification:** Frontend check/build pass with 50/50 tests; Rust format/strict Clippy/build/61 tests pass; dependency audit clean; browser/desktop matrices pass; MSI/NSIS build and two-launch single-instance release smoke pass.
+- **Decisions/deviations:** Existing user data and credentials were left untouched. Public signing, updater activation, and live provider usage remain owner-controlled.
+- **Follow-up:** None required for Alpha 0.3.0 stabilization.
+
 ## 2026-08-10 — `PHASE10-001` — Alpha release quality complete
 
 - **Type:** Feature, security, accessibility, CI, packaging, and documentation

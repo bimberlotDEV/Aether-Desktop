@@ -1,16 +1,31 @@
 import { useState, useEffect, useCallback } from 'react'
-import type { Space, SpaceWithDetails } from '@/lib/db/types'
+import type { ModuleInstance, Space, SpaceWithDetails } from '@/lib/db/types'
 import * as db from '@/lib/db/tauri'
 
 const isTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window
 
 let mockSpaces: Space[] = []
+let mockModulesBySpace = new Map<string, ModuleInstance[]>()
 let mockIdCounter = 0
 const spaceChangeListeners = new Set<() => void>()
 
 function mockId(): string {
   mockIdCounter++
   return `mock-${mockIdCounter}-${Date.now()}`
+}
+
+function mockModules(spaceId: string, moduleTypes: string[]): ModuleInstance[] {
+  const now = new Date().toISOString()
+  return moduleTypes.map((moduleType) => ({
+    id: mockId(),
+    space_id: spaceId,
+    module_type: moduleType,
+    title: null,
+    config_json: null,
+    layout_json: null,
+    created_at: now,
+    updated_at: now,
+  }))
 }
 
 function notifySpacesChanged() {
@@ -84,6 +99,7 @@ export function useSpaces() {
           })
         }
       } else {
+        const now = new Date().toISOString()
         const newSpace = {
           id: mockId(),
           name: params.name,
@@ -97,10 +113,29 @@ export function useSpaces() {
           settings_json: null,
           parent_space_id: params.parentSpaceId ?? null,
           last_opened_at: null,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+          created_at: now,
+          updated_at: now,
         } as Space
         mockSpaces = [...mockSpaces, newSpace]
+        mockModulesBySpace.set(newSpace.id, mockModules(newSpace.id, params.moduleTypes))
+
+        if (params.templateType === 'school' && params.subjects?.length) {
+          const subjects = params.subjects.map((subject) => {
+            const childId = mockId()
+            mockModulesBySpace.set(childId, mockModules(childId, params.moduleTypes))
+            return {
+              ...newSpace,
+              id: childId,
+              name: subject.name,
+              icon: subject.icon ?? null,
+              accent: subject.accent ?? null,
+              template_type: 'subject',
+              parent_space_id: newSpace.id,
+              sort_order: mockSpaces.length,
+            }
+          })
+          mockSpaces = [...mockSpaces, ...subjects]
+        }
       }
       notifySpacesChanged()
     },
@@ -134,6 +169,7 @@ export function useSpaces() {
               }
             : space,
         )
+        mockModulesBySpace.set(id, mockModules(id, params.moduleTypes))
       }
       notifySpacesChanged()
     },
@@ -160,7 +196,16 @@ export function useSpaces() {
 
   const remove = useCallback(async (id: string) => {
     if (isTauri) await db.deleteSpace(id)
-    else mockSpaces = mockSpaces.filter((space) => space.id !== id)
+    else {
+      const removedIds = new Set([
+        id,
+        ...mockSpaces
+          .filter((space) => space.parent_space_id === id)
+          .map((space) => space.id),
+      ])
+      mockSpaces = mockSpaces.filter((space) => !removedIds.has(space.id))
+      removedIds.forEach((removedId) => mockModulesBySpace.delete(removedId))
+    }
     notifySpacesChanged()
   }, [])
 
@@ -179,16 +224,26 @@ export function useSpaces() {
     } else {
       const original = mockSpaces.find((space) => space.id === id)
       if (original) {
+        const duplicateId = mockId()
         mockSpaces = [
           ...mockSpaces,
           {
             ...original,
-            id: mockId(),
+            id: duplicateId,
             name: `${original.name} (copy)`,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           },
         ]
+        mockModulesBySpace.set(
+          duplicateId,
+          mockModules(
+            duplicateId,
+            (mockModulesBySpace.get(original.id) ?? []).map(
+              (module) => module.module_type,
+            ),
+          ),
+        )
       }
     }
     notifySpacesChanged()
@@ -245,7 +300,7 @@ export function useSpaceDetail(spaceId: string | undefined) {
         if (space) {
           setData({
             space,
-            modules: [],
+            modules: mockModulesBySpace.get(space.id) ?? [],
             children: mockSpaces.filter(
               (candidate) => candidate.parent_space_id === spaceId,
             ),

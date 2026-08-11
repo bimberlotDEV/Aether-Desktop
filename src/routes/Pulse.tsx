@@ -15,6 +15,7 @@ import { useGlobalNotes } from '@/hooks/useNotes'
 import { FileText } from 'lucide-react'
 import { useTaskAttention } from '@/hooks/useTasks'
 import type { Task } from '@/lib/db/types'
+import { iconToEmoji } from '@/lib/iconToEmoji'
 
 function getGreeting(): string {
   const hour = new Date().getHours()
@@ -117,7 +118,9 @@ export function Pulse() {
                       onClick={() => navigate(`/spaces/${s.id}`)}
                       className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors hover:bg-[var(--color-bg-tertiary)]"
                     >
-                      <span className="text-lg">{s.icon ? '📦' : '📚'}</span>
+                      <span className="text-lg">
+                        {s.icon ? iconToEmoji(s.icon) : '📚'}
+                      </span>
                       <span
                         className="text-sm font-medium"
                         style={{ color: 'var(--color-text-primary)' }}
@@ -144,7 +147,9 @@ export function Pulse() {
                       onClick={() => navigate(`/spaces/${s.id}`)}
                       className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors hover:bg-[var(--color-bg-tertiary)]"
                     >
-                      <span className="text-lg">{s.icon ? '📦' : '📚'}</span>
+                      <span className="text-lg">
+                        {s.icon ? iconToEmoji(s.icon) : '📚'}
+                      </span>
                       <span
                         className="text-sm font-medium"
                         style={{ color: 'var(--color-text-primary)' }}

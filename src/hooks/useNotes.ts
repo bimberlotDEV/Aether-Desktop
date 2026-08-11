@@ -4,6 +4,42 @@ import * as db from '@/lib/db/tauri'
 import { createAutosaveCoordinator, type AutosaveCoordinator } from '@/lib/autosave'
 
 const isTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window
+let mockNotes: Note[] = []
+let mockNoteCounter = 0
+const noteChangeListeners = new Set<() => void>()
+
+function notifyNotesChanged() {
+  noteChangeListeners.forEach((listener) => listener())
+}
+
+function useNoteChangeSubscription(load: () => Promise<void>) {
+  useEffect(() => {
+    const listener = () => void load()
+    noteChangeListeners.add(listener)
+    return () => {
+      noteChangeListeners.delete(listener)
+    }
+  }, [load])
+}
+
+function createMockNote(spaceId: string): Note {
+  const now = new Date().toISOString()
+  mockNoteCounter += 1
+  return {
+    id: `mock-note-${mockNoteCounter}`,
+    space_id: spaceId,
+    title: 'Untitled note',
+    content: '',
+    content_format: 'markdown',
+    excerpt: '',
+    pinned: false,
+    revision: 1,
+    archived_at: null,
+    created_at: now,
+    updated_at: now,
+    last_opened_at: now,
+  }
+}
 
 export function useNotes(spaceId: string | undefined) {
   const [notes, setNotes] = useState<NoteListItem[]>([])
@@ -12,17 +48,19 @@ export function useNotes(spaceId: string | undefined) {
   const [error, setError] = useState<string | null>(null)
 
   const load = useCallback(async () => {
-    if (!spaceId || !isTauri) {
+    if (!spaceId) {
       setLoading(false)
       return
     }
     setLoading(true)
     setError(null)
     try {
-      const [active, archived] = await Promise.all([
-        db.listNotesBySpace(spaceId),
-        db.listArchivedNotes(spaceId),
-      ])
+      const [active, archived] = isTauri
+        ? await Promise.all([db.listNotesBySpace(spaceId), db.listArchivedNotes(spaceId)])
+        : [
+            mockNotes.filter((note) => note.space_id === spaceId && !note.archived_at),
+            mockNotes.filter((note) => note.space_id === spaceId && note.archived_at),
+          ]
       setNotes(active)
       setArchivedNotes(archived)
     } catch (e) {
@@ -33,14 +71,17 @@ export function useNotes(spaceId: string | undefined) {
   }, [spaceId])
 
   useEffect(() => {
-    load()
+    void load()
   }, [load])
+  useNoteChangeSubscription(load)
 
   const create = useCallback(async () => {
-    if (!spaceId || !isTauri) return null
+    if (!spaceId) return null
     try {
-      const note = await db.createNote(spaceId)
+      const note = isTauri ? await db.createNote(spaceId) : createMockNote(spaceId)
+      if (!isTauri) mockNotes = [note, ...mockNotes]
       await load()
+      notifyNotesChanged()
       return note
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to create note')
@@ -50,54 +91,94 @@ export function useNotes(spaceId: string | undefined) {
 
   const remove = useCallback(
     async (id: string) => {
-      if (!isTauri) return
-      await db.deleteNote(id)
+      if (isTauri) await db.deleteNote(id)
+      else mockNotes = mockNotes.filter((note) => note.id !== id)
       await load()
+      notifyNotesChanged()
     },
     [load],
   )
 
   const pin = useCallback(
     async (id: string, pinned: boolean) => {
-      if (!isTauri) return
-      await db.pinNote(id, pinned)
+      if (isTauri) await db.pinNote(id, pinned)
+      else
+        mockNotes = mockNotes.map((note) =>
+          note.id === id
+            ? { ...note, pinned, updated_at: new Date().toISOString() }
+            : note,
+        )
       await load()
+      notifyNotesChanged()
     },
     [load],
   )
 
   const archive = useCallback(
     async (id: string) => {
-      if (!isTauri) return
-      await db.archiveNote(id)
+      if (isTauri) await db.archiveNote(id)
+      else
+        mockNotes = mockNotes.map((note) =>
+          note.id === id
+            ? { ...note, archived_at: new Date().toISOString(), pinned: false }
+            : note,
+        )
       await load()
+      notifyNotesChanged()
     },
     [load],
   )
 
   const restore = useCallback(
     async (id: string) => {
-      if (!isTauri) return
-      await db.restoreNote(id)
+      if (isTauri) await db.restoreNote(id)
+      else
+        mockNotes = mockNotes.map((note) =>
+          note.id === id
+            ? { ...note, archived_at: null, updated_at: new Date().toISOString() }
+            : note,
+        )
       await load()
+      notifyNotesChanged()
     },
     [load],
   )
 
   const duplicate = useCallback(
     async (id: string) => {
-      if (!isTauri) return
-      await db.duplicateNote(id)
+      if (isTauri) await db.duplicateNote(id)
+      else {
+        const original = mockNotes.find((note) => note.id === id)
+        if (original) {
+          const duplicate = createMockNote(original.space_id)
+          mockNotes = [
+            {
+              ...duplicate,
+              title: `${original.title} (copy)`,
+              content: original.content,
+              excerpt: original.excerpt,
+            },
+            ...mockNotes,
+          ]
+        }
+      }
       await load()
+      notifyNotesChanged()
     },
     [load],
   )
 
   const move = useCallback(
     async (id: string, newSpaceId: string) => {
-      if (!isTauri) return
-      await db.moveNote(id, newSpaceId)
+      if (isTauri) await db.moveNote(id, newSpaceId)
+      else
+        mockNotes = mockNotes.map((note) =>
+          note.id === id
+            ? { ...note, space_id: newSpaceId, updated_at: new Date().toISOString() }
+            : note,
+        )
       await load()
+      notifyNotesChanged()
     },
     [load],
   )
@@ -134,14 +215,16 @@ export function useNote(id: string | undefined) {
   const [draft, setDraft] = useState<{ title: string; content: string } | null>(null)
 
   const load = useCallback(async () => {
-    if (!id || !isTauri) {
+    if (!id) {
       setLoading(false)
       return
     }
     setLoading(true)
     setError(null)
     try {
-      const result = await db.getNote(id)
+      const result = isTauri
+        ? await db.getNote(id)
+        : (mockNotes.find((note) => note.id === id) ?? null)
       setNote(result)
       noteRef.current = result
       setDraft(null)
@@ -161,19 +244,33 @@ export function useNote(id: string | undefined) {
   const save = useCallback(
     async ({ title, content }: { title: string; content: string }) => {
       const currentNote = noteRef.current
-      if (!id || !isTauri || !currentNote) return
+      if (!id || !currentNote) return
       setSaveState('saving')
       const excerpt = content
         .replace(/[#*`>[\]_~-]/g, '')
         .trim()
         .slice(0, 160)
       try {
-        const result = await db.updateNote(id, {
-          title: title || 'Untitled note',
-          content,
-          excerpt,
-          expectedRevision: currentNote.revision,
-        })
+        const result = isTauri
+          ? await db.updateNote(id, {
+              title: title || 'Untitled note',
+              content,
+              excerpt,
+              expectedRevision: currentNote.revision,
+            })
+          : (() => {
+              const updated: Note = {
+                ...currentNote,
+                title: title || 'Untitled note',
+                content,
+                excerpt,
+                revision: currentNote.revision + 1,
+                updated_at: new Date().toISOString(),
+              }
+              mockNotes = mockNotes.map((note) => (note.id === id ? updated : note))
+              notifyNotesChanged()
+              return updated
+            })()
         if (result) {
           noteRef.current = result
           setNote(result)
@@ -190,7 +287,9 @@ export function useNote(id: string | undefined) {
       } catch (e) {
         const msg = e instanceof Error ? e.message : 'Save failed'
         if (msg.includes('Stale update')) {
-          const latest = await db.getNote(id).catch(() => null)
+          const latest = isTauri
+            ? await db.getNote(id).catch(() => null)
+            : (mockNotes.find((note) => note.id === id) ?? null)
           if (latest) {
             noteRef.current = latest
             setNote(latest)
@@ -250,16 +349,17 @@ export function useGlobalNotes() {
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(async () => {
-    if (!isTauri) {
-      setLoading(false)
-      return
-    }
     setLoading(true)
     try {
-      const [r, p] = await Promise.all([
-        db.listRecentNotes(undefined, 8),
-        db.listPinnedNotes(),
-      ])
+      const [r, p] = isTauri
+        ? await Promise.all([db.listRecentNotes(undefined, 8), db.listPinnedNotes()])
+        : [
+            [...mockNotes]
+              .filter((note) => !note.archived_at)
+              .sort((a, b) => b.updated_at.localeCompare(a.updated_at))
+              .slice(0, 8),
+            mockNotes.filter((note) => note.pinned && !note.archived_at),
+          ]
       setRecent(r)
       setPinned(p)
     } catch {
@@ -270,8 +370,9 @@ export function useGlobalNotes() {
   }, [])
 
   useEffect(() => {
-    load()
+    void load()
   }, [load])
+  useNoteChangeSubscription(load)
 
   return { recent, pinned, loading, refresh: load }
 }
@@ -283,7 +384,7 @@ export function useNoteSearch() {
 
   const search = useCallback(async (query: string, spaceId?: string) => {
     const request = ++requestRef.current
-    if (!isTauri || !query.trim()) {
+    if (!query.trim()) {
       setResults([])
       setSearching(false)
       return
@@ -291,7 +392,16 @@ export function useNoteSearch() {
     setResults([])
     setSearching(true)
     try {
-      const r = await db.searchNotes(query, spaceId, 20)
+      const normalized = query.trim().toLocaleLowerCase()
+      const r = isTauri
+        ? await db.searchNotes(query, spaceId, 20)
+        : mockNotes
+            .filter((note) => !note.archived_at)
+            .filter((note) => (spaceId ? note.space_id === spaceId : true))
+            .filter((note) =>
+              `${note.title} ${note.content}`.toLocaleLowerCase().includes(normalized),
+            )
+            .slice(0, 20)
       if (request === requestRef.current) setResults(r)
     } catch {
       /* silent */

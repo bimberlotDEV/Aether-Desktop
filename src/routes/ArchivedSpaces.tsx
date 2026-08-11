@@ -18,7 +18,10 @@ export function ArchivedSpaces() {
         style={{ borderBottom: '1px solid var(--color-border)' }}
       >
         <button
+          type="button"
           onClick={() => navigate('/spaces')}
+          aria-label="Back to Spaces"
+          title="Back to Spaces"
           className="p-1 rounded-md hover:bg-[var(--color-bg-tertiary)]"
           style={{ color: 'var(--color-text-tertiary)' }}
         >
