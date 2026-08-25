@@ -17,6 +17,7 @@
 - Completed dark/light and responsive browser QA, including locally persisted browser-mode Space and Note flows.
 - Validated the standalone UI branch and a local integration with AI response synchronization and legacy-upgrade branches.
 - Built, backed up, installed, and started the combined Windows 0.3.1 package.
+- Integrated merged PRs #34 and #35 into the UI branch while preserving AI response reconciliation, database migration safeguards, and all three task histories.
 
 ## Verification snapshot
 
@@ -30,4 +31,4 @@
 
 ## Exact resume point
 
-No UI-001 implementation work remains. Review and merge its draft PR independently from PRs #34 and #35; the installed app already contains the verified combined local candidate.
+UI-001 is integrated with merged PRs #34 and #35. Validate the refreshed branch, push it to PR #36, and merge only after its refreshed CI succeeds.

@@ -21,30 +21,32 @@
 
 ## Current milestone
 
-| ID                 | Name                                               | Status     | Exit condition                                                                                                                    |
-| ------------------ | -------------------------------------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `M-AI-WORKFLOW`    | Hermes/Codex collaboration foundation              | `complete` | Hermes accepted `AIWF-001` and promoted `DOC-001`.                                                                                |
-| `M-DOC-VERSIONING` | Version and metadata reconciliation                | `complete` | Hermes accepted `DOC-001`.                                                                                                        |
-| `M-AUTO-PUBLISH`   | Automatic GitHub task publication                  | `complete` | Draft PR #1 merged into `master`.                                                                                                 |
-| `M-RUST-VERIFY`    | Restore local Rust verification                    | `complete` | Rust MSVC builds the test binaries and runs formatting, lint, and tests locally.                                                  |
-| `M-CRED-HARDEN`    | Harden AI credential storage and fix deadlock      | `complete` | PR #3 merged; 33/33 Rust tests pass with Windows DPAPI.                                                                           |
-| `M-CODEX-ONLY`     | Codex-only engineering workflow                    | `complete` | ADR-008, repository instructions, workflow, and control templates require no second AI agent.                                     |
-| `M-RUST-QUALITY`   | Restore Rust formatting and strict lint gates      | `complete` | Formatting, Clippy, tests, and production builds all pass.                                                                        |
-| `PHASE34-CLOSEOUT` | Close Spaces and Notes MVP gaps                    | `complete` | All contract acceptance criteria pass with regression coverage.                                                                   |
-| `PHASE5-001`       | Task persistence and IPC foundation                | `complete` | ADR-009 acceptance criteria and all quality gates pass.                                                                           |
-| `PHASE5-002`       | Tasks UI and Pulse integration                     | `complete` | Space and global Task workflows, Pulse attention, tests, and quality gates pass.                                                  |
-| `PHASE6-001`       | Vault persistence and native filesystem foundation | `complete` | Merged through PR #9 at `b202c8e`.                                                                                                |
-| `PHASE6-002`       | Vault UI and Space integration                     | `complete` | Merged through PR #10 at `c352e67`.                                                                                               |
-| `PHASE7-001`       | AI streaming and context foundation                | `complete` | Merged through PR #11 at `7569d3f`.                                                                                               |
-| `PHASE7-002`       | Complete AI user experience                        | `complete` | Merged through PR #12 at `7838599`.                                                                                               |
-| `PHASE8-001`       | Explicit scoped Memory                             | `complete` | Persistence, global/Space management, AI attachment, tests, and quality gates pass.                                               |
-| `PHASE9-001`       | Native Windows lifecycle and packaging             | `complete` | Tray, shortcut, notifications, window state, MSI/NSIS build, and startup smoke test pass.                                         |
-| `PHASE10-001`      | Quality and release preparation                    | `complete` | CI, sanitized export, audits, documentation, packaging, hashes, and startup verification pass.                                    |
-| `STAB-001`         | Integrated alpha stabilization                     | `complete` | Automated, browser, desktop, native, responsive, accessibility, and error-path stress checks pass with verified defects repaired. |
-| `AI-CHAT-003`      | Eliminate stale-load prompt hiding and ship 0.3.1  | `complete` | A deterministic load/stream race test passes and the installed 0.3.1 bundle contains the verified frontend.                       |
-| `UI-001`           | Reimagine the Aether interface system              | `complete` | Every core surface is cohesive, premium, responsive, accessible, and distinctly Aether without behavior regressions.              |
+| ID                 | Name                                               | Status     | Exit condition                                                                                                                      |
+| ------------------ | -------------------------------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `M-AI-WORKFLOW`    | Hermes/Codex collaboration foundation              | `complete` | Hermes accepted `AIWF-001` and promoted `DOC-001`.                                                                                  |
+| `M-DOC-VERSIONING` | Version and metadata reconciliation                | `complete` | Hermes accepted `DOC-001`.                                                                                                          |
+| `M-AUTO-PUBLISH`   | Automatic GitHub task publication                  | `complete` | Draft PR #1 merged into `master`.                                                                                                   |
+| `M-RUST-VERIFY`    | Restore local Rust verification                    | `complete` | Rust MSVC builds the test binaries and runs formatting, lint, and tests locally.                                                    |
+| `M-CRED-HARDEN`    | Harden AI credential storage and fix deadlock      | `complete` | PR #3 merged; 33/33 Rust tests pass with Windows DPAPI.                                                                             |
+| `M-CODEX-ONLY`     | Codex-only engineering workflow                    | `complete` | ADR-008, repository instructions, workflow, and control templates require no second AI agent.                                       |
+| `M-RUST-QUALITY`   | Restore Rust formatting and strict lint gates      | `complete` | Formatting, Clippy, tests, and production builds all pass.                                                                          |
+| `PHASE34-CLOSEOUT` | Close Spaces and Notes MVP gaps                    | `complete` | All contract acceptance criteria pass with regression coverage.                                                                     |
+| `PHASE5-001`       | Task persistence and IPC foundation                | `complete` | ADR-009 acceptance criteria and all quality gates pass.                                                                             |
+| `PHASE5-002`       | Tasks UI and Pulse integration                     | `complete` | Space and global Task workflows, Pulse attention, tests, and quality gates pass.                                                    |
+| `PHASE6-001`       | Vault persistence and native filesystem foundation | `complete` | Merged through PR #9 at `b202c8e`.                                                                                                  |
+| `PHASE6-002`       | Vault UI and Space integration                     | `complete` | Merged through PR #10 at `c352e67`.                                                                                                 |
+| `PHASE7-001`       | AI streaming and context foundation                | `complete` | Merged through PR #11 at `7569d3f`.                                                                                                 |
+| `PHASE7-002`       | Complete AI user experience                        | `complete` | Merged through PR #12 at `7838599`.                                                                                                 |
+| `PHASE8-001`       | Explicit scoped Memory                             | `complete` | Persistence, global/Space management, AI attachment, tests, and quality gates pass.                                                 |
+| `PHASE9-001`       | Native Windows lifecycle and packaging             | `complete` | Tray, shortcut, notifications, window state, MSI/NSIS build, and startup smoke test pass.                                           |
+| `PHASE10-001`      | Quality and release preparation                    | `complete` | CI, sanitized export, audits, documentation, packaging, hashes, and startup verification pass.                                      |
+| `STAB-001`         | Integrated alpha stabilization                     | `complete` | Automated, browser, desktop, native, responsive, accessibility, and error-path stress checks pass with verified defects repaired.   |
+| `AI-CHAT-003`      | Eliminate stale-load prompt hiding and ship 0.3.1  | `complete` | A deterministic load/stream race test passes and the installed 0.3.1 bundle contains the verified frontend.                         |
+| `AI-CHAT-004`      | Reconcile completed responses without page reload  | `complete` | Terminal events upsert missing messages and every completed stream reconciles the visible conversation with persisted SQLite state. |
+| `HARD-001`         | Safely upgrade personal-beta databases             | `complete` | Populated legacy databases upgrade transactionally with current repository and Vault safety invariants intact.                      |
+| `UI-001`           | Reimagine the Aether interface system              | `complete` | Every core surface is cohesive, premium, responsive, accessible, and distinctly Aether without behavior regressions.                |
 
-No implementation task is active. `STAB-001` is complete and recorded in `.ai/HANDOFF.md`.
+`AI-CHAT-004`, `HARD-001`, and `UI-001` are complete and integrated in the release train.
 
 ## Completed product milestones
 
@@ -69,17 +71,17 @@ No implementation task is active. `STAB-001` is complete and recorded in `.ai/HA
 
 ## Quality snapshot
 
-| Check                                       | Last result | Date       | Notes                                                                                                |
-| ------------------------------------------- | ----------- | ---------- | ---------------------------------------------------------------------------------------------------- |
-| `pnpm check`                                | Pass        | 2026-08-25 | UI branch: 54/54 tests; combined with PRs #34/#35: 56/56 tests across 25 files.                      |
-| `pnpm build`                                | Pass        | 2026-08-25 | Combined production build: 492.28 kB JS / 138.46 kB gzip; no chunk-size warning.                     |
-| `pnpm audit --audit-level high`             | Pass        | 2026-08-25 | No known vulnerabilities.                                                                            |
-| `cargo test`                                | Pass        | 2026-08-11 | 61/61 tests pass, including sanitized backup, native status, AI isolation, Memory, and Vault safety. |
-| `cargo build`                               | Pass        | 2026-08-11 | Windows production build compiles with DPAPI and single-instance support.                            |
-| `cargo fmt --check`                         | Pass        | 2026-08-11 | Repository Rust formatting is clean.                                                                 |
-| `cargo clippy --all-targets -- -D warnings` | Pass        | 2026-08-11 | Library, binary, and test targets are warning-free.                                                  |
-| `pnpm tauri:build`                          | Pass        | 2026-08-25 | Combined 0.3.1 x64 MSI and NSIS bundles built successfully.                                          |
-| Release startup smoke                       | Pass        | 2026-08-25 | Combined 0.3.1 installed after backup and started responsively with the existing database intact.    |
+| Check                                       | Last result | Date       | Notes                                                                                          |
+| ------------------------------------------- | ----------- | ---------- | ---------------------------------------------------------------------------------------------- |
+| `pnpm check`                                | Pass        | 2026-08-25 | Integrated UI, AI, and migration branch: 56/56 tests across 25 files.                          |
+| `pnpm build`                                | Pass        | 2026-08-25 | Integrated production build: 492.28 kB JS / 138.46 kB gzip; no chunk-size warning.             |
+| `pnpm audit --audit-level high`             | Pass        | 2026-08-11 | No known vulnerabilities.                                                                      |
+| `cargo test`                                | Pass        | 2026-08-25 | 63/63 tests pass, including populated legacy upgrade, filesystem retry, and rollback coverage. |
+| `cargo build`                               | Pass        | 2026-08-11 | Windows production build compiles with DPAPI and single-instance support.                      |
+| `cargo fmt --check`                         | Pass        | 2026-08-11 | Repository Rust formatting is clean.                                                           |
+| `cargo clippy --all-targets -- -D warnings` | Pass        | 2026-08-11 | Library, binary, and test targets are warning-free.                                            |
+| `pnpm tauri:build`                          | Pass        | 2026-08-25 | Combined 0.3.1 x64 MSI and NSIS bundles built with HARD-001 and AI response sync.              |
+| Release startup smoke                       | Pass        | 2026-08-25 | Combined installer starts responsively; SQLite integrity and foreign-key checks pass.          |
 
 ## Active blockers
 
@@ -114,10 +116,11 @@ Full rationale belongs in `.ai/ARCHITECTURE.md` or a dedicated ADR under `docs/d
 | `ADR-012` | Memory is explicit, user-authored, scoped, attributable, and attached to AI only by choice.                                  | Accepted                |
 | `ADR-013` | Native Windows lifecycle uses tray persistence, non-fatal shortcut registration, OS notifications, and gated signed updates. | Accepted                |
 | `ADR-014` | Workspace export uses a sanitized, integrity-checked SQLite snapshot and excludes credentials and Vault file bytes.          | Accepted                |
+| `ADR-015` | Build Aether's frontend from an internal semantic interface system with a distinctive shell and reusable primitives.         | Accepted                |
 
 ## Next
 
-The Alpha 0.3.1 roadmap through Phase 10 and the `STAB-001` integrated stabilization pass are complete. `AI-CHAT-001` adds optimistic prompt rendering, `AI-CHAT-002` prevents the following streamed update from crashing the AI view, and `AI-CHAT-003` prevents stale loads from hiding the new stream. Public signing and updater activation remain owner-controlled release operations.
+The product-evolution roadmap proceeds through Milestone A — Alpha Hardening before Context Foundation, Universal Search, Continuity, Pulse 2.0, Safe Actions, AI evolution, onboarding, Public Beta, and commercial readiness. `AI-CHAT-004` fixes completed-response reconciliation and `HARD-001` closes the first data-safety checkpoint. Public signing and updater activation remain owner-controlled release operations.
 
 ## Reusable update template
 

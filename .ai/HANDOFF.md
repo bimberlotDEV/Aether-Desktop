@@ -70,7 +70,7 @@ The current application is functional but visually flat. At 1280×720, the fixed
 - **Style drift:** centralize semantic tokens and primitives; avoid per-component arbitrary values where a shared role exists.
 - **Futuristic becoming noisy:** use geometry, contrast, typography, alignment, restrained accent lines, and motion—not gradients, glow, glass, or decoration.
 - **Accessibility regression:** retain semantic elements, visible focus, reduced motion, readable contrast, and keyboard-verifiable dialogs/navigation.
-- **Branch dependency:** UI-001 starts cleanly from current `master`. AI response synchronization and legacy-upgrade work remain in PRs #34 and #35 and will receive a separate combined integration smoke before installation.
+- **Branch dependency:** UI-001 started cleanly from its original `master`; merged PRs #34 and #35 were integrated before final merge, with their histories and runtime changes preserved.
 - **Rollback:** UI-001 changes frontend code and documentation only; reverting its commits restores the prior interface without data migration.
 
 ## Required validation
@@ -99,4 +99,4 @@ None. The owner chose the product direction, and the concrete visual system can 
 - **Acceptance mapping:** The shell and all named routes use the semantic interface system in `src/styles/index.css` and `src/components/ui/AetherUI.tsx`; browser QA covered empty and populated Pulse/Spaces/Notes flows, every primary route, dialogs, command palette, dark/light themes, and 1024×640, 1280×720, and 1600×900 viewports with no horizontal overflow. Visible focus and reduced-motion rules remain active.
 - **Automated evidence:** Standalone `pnpm check` passes with 54/54 tests; the combined local integration with PRs #34 and #35 passes with 56/56 tests. `pnpm build` produces 492.28 kB JS (138.46 kB gzip) and 48.63 kB CSS (9.80 kB gzip) without a chunk warning. `pnpm audit --audit-level high` reports no known vulnerabilities, and `pnpm tauri:build` produces both x64 installers.
 - **Installed smoke:** The combined NSIS package installed with exit code 0 after backing up `%APPDATA%/com.aether.desktop`; installed version 0.3.1 started from `%LOCALAPPDATA%/Aether/aether.exe` and remained responsive with the existing database in place.
-- **Findings:** No new dependency, backend change, fake persistence, dead control, forbidden gradient/glow/glass styling, or behavior regression was found. The combined smoke remains local because UI-001, PR #34, and PR #35 are independently reviewable branches.
+- **Findings:** No new dependency, fake persistence, dead control, forbidden gradient/glow/glass styling, or behavior regression was found. PRs #34 and #35 are now merged and integrated into this branch without weakening AI synchronization or migration safeguards.

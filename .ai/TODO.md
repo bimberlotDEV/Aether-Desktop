@@ -5,7 +5,7 @@
 | Field          | Value                                   |
 | -------------- | --------------------------------------- |
 | Schema version | 1                                       |
-| Last updated   | 2026-08-11                              |
+| Last updated   | 2026-08-25                              |
 | Prioritized by | Codex within the owner-approved roadmap |
 
 ## Responsibility of this file
@@ -45,9 +45,11 @@
 | P1       | `PHASE9-001`       | Complete native Windows features                           | Product and packaging     | `done` | `PHASE8-001`                | Tray, notifications, shortcut, installer metadata, and native smoke tests pass.                                         |
 | P1       | `PHASE10-001`      | Complete release audit and pipeline                        | Quality and release       | `done` | `PHASE9-001`                | CI, packaging, documentation, security/privacy, backup export, and alpha release gates pass.                            |
 | P0       | `STAB-001`         | Integrated stress test and defect hardening                | Quality and defect        | `done` | `PHASE10-001`               | Full browser/desktop test matrix passes and all reproducible P0/P1 defects are resolved.                                |
+| P0       | `HARD-001`         | Safely upgrade personal-beta databases                     | Defect and data lifecycle | `done` | Milestone A                 | Older databases start on 0.3.1 with valid rows and managed-file safety preserved.                                       |
 | P1       | `AI-CHAT-001`      | Render submitted AI prompts immediately                    | Defect                    | `done` | `PHASE7-002`                | A submitted prompt is visible before backend streaming starts and is reconciled without duplication.                    |
 | P0       | `AI-CHAT-002`      | Prevent AI stream rerender crash                           | Defect                    | `done` | `AI-CHAT-001`               | Streamed message updates rerender without invoking a Promise as a React effect cleanup or showing the error boundary.   |
 | P0       | `AI-CHAT-003`      | Keep new prompts visible across stale message loads        | Defect and release        | `done` | `AI-CHAT-002`               | An older load cannot overwrite a newly started stream; Alpha 0.3.1 installs as an explicit Windows patch upgrade.       |
+| P0       | `AI-CHAT-004`      | Show completed AI responses without reloading              | Defect                    | `done` | `AI-CHAT-003`               | Missed WebView stream events cannot leave a persisted response hidden until Ctrl+R.                                     |
 | P1       | `UI-001`           | Redesign the complete Aether interface system              | Product and accessibility | `done` | Owner direction, ADR-015    | Every core surface feels cohesive, premium, responsive, accessible, and distinctly Aether without behavior regressions. |
 | P1       | `VAULT-EPIC`       | Design and implement Vault                                 | Product                   | `done` | ADR-010                     | Safe storage and complete global/Space MVP are implemented.                                                             |
 | P1       | `PHASE6-001`       | Build Vault persistence and native filesystem foundation   | Product and security      | `done` | ADR-010                     | Safe linked/managed storage commands and tests pass.                                                                    |
