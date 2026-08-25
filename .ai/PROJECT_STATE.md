@@ -2,15 +2,15 @@
 
 > Canonical snapshot of what is true in the repository now. This is not a plan or historical log.
 
-| Field            | Value                             |
-| ---------------- | --------------------------------- |
-| Schema version   | 1                                 |
-| Last updated     | 2026-08-11                        |
-| Updated by       | Codex                             |
-| Repository       | `bimberlotDEV/Aether-Desktop`     |
-| Branch           | `codex/release-0.3.1-chat-hotfix` |
-| Baseline commit  | `626f13c` (PR #29 merge)          |
-| Product maturity | Alpha                             |
+| Field            | Value                         |
+| ---------------- | ----------------------------- |
+| Schema version   | 1                             |
+| Last updated     | 2026-08-25                    |
+| Updated by       | Codex                         |
+| Repository       | `bimberlotDEV/Aether-Desktop` |
+| Branch           | `codex/alpha-legacy-upgrade`  |
+| Baseline commit  | `f775a58` (current `master`)  |
+| Product maturity | Alpha                         |
 
 ## Responsibility of this file
 
@@ -42,8 +42,9 @@
 | `PHASE10-001`      | Quality and release preparation                    | `complete` | CI, sanitized export, audits, documentation, packaging, hashes, and startup verification pass.                                    |
 | `STAB-001`         | Integrated alpha stabilization                     | `complete` | Automated, browser, desktop, native, responsive, accessibility, and error-path stress checks pass with verified defects repaired. |
 | `AI-CHAT-003`      | Eliminate stale-load prompt hiding and ship 0.3.1  | `complete` | A deterministic load/stream race test passes and the installed 0.3.1 bundle contains the verified frontend.                       |
+| `HARD-001`         | Safely upgrade personal-beta databases             | `active`   | Populated legacy databases upgrade transactionally with current repository and Vault safety invariants intact.                    |
 
-No implementation task is active. `STAB-001` is complete and recorded in `.ai/HANDOFF.md`.
+`HARD-001` is ready and active as the first checkpoint in the owner-approved Milestone A — Alpha Hardening roadmap.
 
 ## Completed product milestones
 
@@ -116,7 +117,7 @@ Full rationale belongs in `.ai/ARCHITECTURE.md` or a dedicated ADR under `docs/d
 
 ## Next
 
-The Alpha 0.3.1 roadmap through Phase 10 and the `STAB-001` integrated stabilization pass are complete. `AI-CHAT-001` adds optimistic prompt rendering, `AI-CHAT-002` prevents the following streamed update from crashing the AI view, and `AI-CHAT-003` prevents stale loads from hiding the new stream. Public signing and updater activation remain owner-controlled release operations.
+The product-evolution roadmap now proceeds through Milestone A — Alpha Hardening before Context Foundation, Universal Search, Continuity, Pulse 2.0, Safe Actions, AI evolution, onboarding, Public Beta, and commercial readiness. `HARD-001` is the active data-safety checkpoint. Public signing and updater activation remain owner-controlled release operations.
 
 ## Reusable update template
 
