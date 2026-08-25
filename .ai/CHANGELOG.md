@@ -37,6 +37,17 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Decisions/deviations:** Corrupt, missing, size-mismatched, path-unsafe, or conflicting legacy Vault blobs block the upgrade rather than being silently discarded or associated with another file. Original valid blobs remain as recovery copies, trading temporary disk usage for rollback safety.
 - **Follow-up:** Continue Milestone A with the next evidence-backed stability defect; begin Context Foundation only after Alpha-hardening exit criteria are defined and satisfied.
 
+## 2026-08-25 — `AI-CHAT-004` — Completed AI responses render without Ctrl+R
+
+- **Type:** Fix and test
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review
+- **Summary:** Made AI stream events tolerant of missing lifecycle messages and reconciled each successfully completed stream with the authoritative persisted conversation, so a WebView Channel timing issue cannot leave the answer hidden until a page reload.
+- **Files:** `src/hooks/useAi.ts`, `src/hooks/useAi.test.ts`, `.ai/*`
+- **Verification:** `pnpm check` passes with 55/55 tests across 24 files; production and Tauri builds pass; Rust formatting, strict Clippy, and 62/62 tests pass. The installed 0.3.1 executable embeds `index-uxuVmjVb.js`, remains responsive, and opens an integrity-clean database with zero foreign-key violations.
+- **Decisions/deviations:** No live provider message was sent during verification because deterministic Channel-loss tests cover the state boundary without using private credentials or incurring external usage.
+- **Follow-up:** None.
+
 ## 2026-08-11 — `AI-CHAT-003` — Stale loads no longer hide submitted prompts
 
 - **Type:** Fix, test, and release

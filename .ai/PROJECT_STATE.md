@@ -21,28 +21,29 @@
 
 ## Current milestone
 
-| ID                 | Name                                               | Status     | Exit condition                                                                                                                    |
-| ------------------ | -------------------------------------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `M-AI-WORKFLOW`    | Hermes/Codex collaboration foundation              | `complete` | Hermes accepted `AIWF-001` and promoted `DOC-001`.                                                                                |
-| `M-DOC-VERSIONING` | Version and metadata reconciliation                | `complete` | Hermes accepted `DOC-001`.                                                                                                        |
-| `M-AUTO-PUBLISH`   | Automatic GitHub task publication                  | `complete` | Draft PR #1 merged into `master`.                                                                                                 |
-| `M-RUST-VERIFY`    | Restore local Rust verification                    | `complete` | Rust MSVC builds the test binaries and runs formatting, lint, and tests locally.                                                  |
-| `M-CRED-HARDEN`    | Harden AI credential storage and fix deadlock      | `complete` | PR #3 merged; 33/33 Rust tests pass with Windows DPAPI.                                                                           |
-| `M-CODEX-ONLY`     | Codex-only engineering workflow                    | `complete` | ADR-008, repository instructions, workflow, and control templates require no second AI agent.                                     |
-| `M-RUST-QUALITY`   | Restore Rust formatting and strict lint gates      | `complete` | Formatting, Clippy, tests, and production builds all pass.                                                                        |
-| `PHASE34-CLOSEOUT` | Close Spaces and Notes MVP gaps                    | `complete` | All contract acceptance criteria pass with regression coverage.                                                                   |
-| `PHASE5-001`       | Task persistence and IPC foundation                | `complete` | ADR-009 acceptance criteria and all quality gates pass.                                                                           |
-| `PHASE5-002`       | Tasks UI and Pulse integration                     | `complete` | Space and global Task workflows, Pulse attention, tests, and quality gates pass.                                                  |
-| `PHASE6-001`       | Vault persistence and native filesystem foundation | `complete` | Merged through PR #9 at `b202c8e`.                                                                                                |
-| `PHASE6-002`       | Vault UI and Space integration                     | `complete` | Merged through PR #10 at `c352e67`.                                                                                               |
-| `PHASE7-001`       | AI streaming and context foundation                | `complete` | Merged through PR #11 at `7569d3f`.                                                                                               |
-| `PHASE7-002`       | Complete AI user experience                        | `complete` | Merged through PR #12 at `7838599`.                                                                                               |
-| `PHASE8-001`       | Explicit scoped Memory                             | `complete` | Persistence, global/Space management, AI attachment, tests, and quality gates pass.                                               |
-| `PHASE9-001`       | Native Windows lifecycle and packaging             | `complete` | Tray, shortcut, notifications, window state, MSI/NSIS build, and startup smoke test pass.                                         |
-| `PHASE10-001`      | Quality and release preparation                    | `complete` | CI, sanitized export, audits, documentation, packaging, hashes, and startup verification pass.                                    |
-| `STAB-001`         | Integrated alpha stabilization                     | `complete` | Automated, browser, desktop, native, responsive, accessibility, and error-path stress checks pass with verified defects repaired. |
-| `AI-CHAT-003`      | Eliminate stale-load prompt hiding and ship 0.3.1  | `complete` | A deterministic load/stream race test passes and the installed 0.3.1 bundle contains the verified frontend.                       |
-| `HARD-001`         | Safely upgrade personal-beta databases             | `complete` | Populated legacy databases upgrade transactionally with current repository and Vault safety invariants intact.                    |
+| ID                 | Name                                               | Status     | Exit condition                                                                                                                      |
+| ------------------ | -------------------------------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `M-AI-WORKFLOW`    | Hermes/Codex collaboration foundation              | `complete` | Hermes accepted `AIWF-001` and promoted `DOC-001`.                                                                                  |
+| `M-DOC-VERSIONING` | Version and metadata reconciliation                | `complete` | Hermes accepted `DOC-001`.                                                                                                          |
+| `M-AUTO-PUBLISH`   | Automatic GitHub task publication                  | `complete` | Draft PR #1 merged into `master`.                                                                                                   |
+| `M-RUST-VERIFY`    | Restore local Rust verification                    | `complete` | Rust MSVC builds the test binaries and runs formatting, lint, and tests locally.                                                    |
+| `M-CRED-HARDEN`    | Harden AI credential storage and fix deadlock      | `complete` | PR #3 merged; 33/33 Rust tests pass with Windows DPAPI.                                                                             |
+| `M-CODEX-ONLY`     | Codex-only engineering workflow                    | `complete` | ADR-008, repository instructions, workflow, and control templates require no second AI agent.                                       |
+| `M-RUST-QUALITY`   | Restore Rust formatting and strict lint gates      | `complete` | Formatting, Clippy, tests, and production builds all pass.                                                                          |
+| `PHASE34-CLOSEOUT` | Close Spaces and Notes MVP gaps                    | `complete` | All contract acceptance criteria pass with regression coverage.                                                                     |
+| `PHASE5-001`       | Task persistence and IPC foundation                | `complete` | ADR-009 acceptance criteria and all quality gates pass.                                                                             |
+| `PHASE5-002`       | Tasks UI and Pulse integration                     | `complete` | Space and global Task workflows, Pulse attention, tests, and quality gates pass.                                                    |
+| `PHASE6-001`       | Vault persistence and native filesystem foundation | `complete` | Merged through PR #9 at `b202c8e`.                                                                                                  |
+| `PHASE6-002`       | Vault UI and Space integration                     | `complete` | Merged through PR #10 at `c352e67`.                                                                                                 |
+| `PHASE7-001`       | AI streaming and context foundation                | `complete` | Merged through PR #11 at `7569d3f`.                                                                                                 |
+| `PHASE7-002`       | Complete AI user experience                        | `complete` | Merged through PR #12 at `7838599`.                                                                                                 |
+| `PHASE8-001`       | Explicit scoped Memory                             | `complete` | Persistence, global/Space management, AI attachment, tests, and quality gates pass.                                                 |
+| `PHASE9-001`       | Native Windows lifecycle and packaging             | `complete` | Tray, shortcut, notifications, window state, MSI/NSIS build, and startup smoke test pass.                                           |
+| `PHASE10-001`      | Quality and release preparation                    | `complete` | CI, sanitized export, audits, documentation, packaging, hashes, and startup verification pass.                                      |
+| `STAB-001`         | Integrated alpha stabilization                     | `complete` | Automated, browser, desktop, native, responsive, accessibility, and error-path stress checks pass with verified defects repaired.   |
+| `AI-CHAT-003`      | Eliminate stale-load prompt hiding and ship 0.3.1  | `complete` | A deterministic load/stream race test passes and the installed 0.3.1 bundle contains the verified frontend.                         |
+| `AI-CHAT-004`      | Reconcile completed responses without page reload  | `complete` | Terminal events upsert missing messages and every completed stream reconciles the visible conversation with persisted SQLite state. |
+| `HARD-001`         | Safely upgrade personal-beta databases             | `complete` | Populated legacy databases upgrade transactionally with current repository and Vault safety invariants intact.                      |
 
 `HARD-001` is complete as the first checkpoint in the owner-approved Milestone A — Alpha Hardening roadmap.
 
@@ -117,7 +118,7 @@ Full rationale belongs in `.ai/ARCHITECTURE.md` or a dedicated ADR under `docs/d
 
 ## Next
 
-The product-evolution roadmap proceeds through Milestone A — Alpha Hardening before Context Foundation, Universal Search, Continuity, Pulse 2.0, Safe Actions, AI evolution, onboarding, Public Beta, and commercial readiness. `HARD-001` closed the first data-safety checkpoint; the next Alpha-hardening defect should be selected from evidence before Context Foundation begins. Public signing and updater activation remain owner-controlled release operations.
+The product-evolution roadmap proceeds through Milestone A — Alpha Hardening before Context Foundation, Universal Search, Continuity, Pulse 2.0, Safe Actions, AI evolution, onboarding, Public Beta, and commercial readiness. `AI-CHAT-004` fixes completed-response reconciliation and `HARD-001` closes the first data-safety checkpoint. Public signing and updater activation remain owner-controlled release operations.
 
 ## Reusable update template
 
