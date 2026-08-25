@@ -14,12 +14,9 @@ import { Memory } from '@/routes/Memory'
 
 export function App() {
   return (
-    <div
-      className="flex h-screen w-screen overflow-hidden"
-      style={{ backgroundColor: 'var(--color-bg)' }}
-    >
+    <div className="aether-shell">
       <Sidebar />
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      <main className="aether-main">
         <Routes>
           <Route path="/" element={<Pulse />} />
           <Route path="/spaces" element={<Spaces />} />

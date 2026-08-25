@@ -1,28 +1,28 @@
 # Session Notes
 
-| Field          | Value         |
-| -------------- | ------------- |
-| Schema version | 2             |
-| Session date   | 2026-08-11    |
-| Active task    | `AI-CHAT-003` |
-| Agent          | Codex         |
-| State          | `complete`    |
+| Field          | Value      |
+| -------------- | ---------- |
+| Schema version | 2          |
+| Session date   | 2026-08-25 |
+| Active task    | `UI-001`   |
+| Agent          | Codex      |
+| State          | `self_review` |
 
-## Completed work
+## Current work
 
-- Confirmed that the installed 0.3.0 bundle already contained the prior hotfix, so the remaining refresh-only symptom was not an old-binary problem.
-- Found a second deterministic race: an earlier `listAiMessages` load could resolve after the optimistic and `started` state updates, replacing both with its stale snapshot until refresh.
-- Added a message revision and active-request guard around database loads, and disabled sending while the current conversation is loading.
-- Added a regression test that starts streaming, resolves an older load afterward, and proves that the user and assistant messages remain present.
-- Incremented all live package/UI metadata to Alpha 0.3.1 and documented numeric patch increments as the Windows upgrade boundary.
-- Verified 53/53 frontend tests, production build, Rust format/strict Clippy/61 tests, complete MSI/NSIS packaging, installed-bundle replacement, registry version, embedded frontend identity, and AI-route startup.
-- Installed `C:\Users\rawan\Downloads\Aether_0.3.1_AI-CHAT-003-final_x64-setup.exe`; its SHA-256 is `C5F0BE6C35F609785F0F214EA93C315D917FEE5B8DEB58B4D3AAE0B65E4AFEC4`.
+- The owner requested a complete Aether layout and UI makeover because the installed Alpha feels bland and visually inactive.
+- Classified the change as `planned_codex` because it changes the shared design system and nearly every frontend surface.
+- Audited the current dark UI at 1280×720 across Pulse, Spaces, Tasks, Vault, AI, Memory, Activity, and Settings.
+- Confirmed repeated sparse empty states, weak shell identity, inconsistent content widths, undifferentiated surfaces, and route-local control styling.
+- Accepted ADR-015 and prepared the complete `UI-001` contract without changing production code.
 
 ## Safety boundary
 
-- Do not modify or delete pre-existing user records, credentials, databases, or Vault files.
-- Do not send a live provider message solely for verification when the state boundary can be tested deterministically.
+- Preserve every existing event handler, route, persistence call, security boundary, and user-data behavior.
+- Do not introduce fake data, dead controls, gradients, neon glow, decorative glass, telemetry, dependencies, or backend changes.
+- Build from semantic tokens and shared primitives, then migrate route compositions.
+- Keep PR #34 and PR #35 independent; validate a combined local build before replacing the installed app.
 
 ## Exact resume point
 
-No implementation work remains. Publish the reviewed task branch and merge it after GitHub checks pass.
+The `UI-001` readiness gate passes. Begin with shared tokens and interface primitives, then migrate the application shell and representative routes before the remaining product surfaces.

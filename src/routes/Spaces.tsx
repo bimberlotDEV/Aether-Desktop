@@ -19,6 +19,13 @@ import { ConfirmDialog } from '@/components/ConfirmDialog'
 import type { Space } from '@/lib/db/types'
 import { cn } from '@/lib/utils'
 import { iconToEmoji } from '@/lib/iconToEmoji'
+import {
+  Button,
+  EmptyState,
+  Page,
+  PageHeader,
+  SectionLabel,
+} from '@/components/ui/AetherUI'
 
 function SpaceIcon({ icon, accent }: { icon: string | null; accent: string | null }) {
   const emoji = icon ? iconToEmoji(icon) : '📚'
@@ -91,84 +98,40 @@ export function Spaces() {
   }
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 overflow-y-auto">
-      <div
-        className="px-8 py-6 shrink-0 flex items-center justify-between"
-        style={{ borderBottom: '1px solid var(--color-border)' }}
-      >
-        <div>
-          <h1
-            className="text-xl font-semibold tracking-tight"
-            style={{ color: 'var(--color-text-primary)' }}
-          >
-            Spaces
-          </h1>
-          <p className="text-sm mt-1" style={{ color: 'var(--color-text-tertiary)' }}>
-            {hasSpaces
-              ? `${spaces.filter((s) => !s.archived_at).length} active spaces`
-              : 'Create your first Space'}
-          </p>
-        </div>
-        <button
-          onClick={() => setShowCreate(true)}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-100"
-          style={{
-            backgroundColor: 'var(--color-accent)',
-            color: 'var(--color-accent-text)',
-          }}
-        >
-          <Plus size={15} strokeWidth={2} />
-          New Space
-        </button>
-      </div>
+    <Page width="default">
+      <PageHeader
+        eyebrow="Structure"
+        icon={Layers}
+        title="Spaces"
+        description={
+          hasSpaces
+            ? `${spaces.filter((space) => !space.archived_at).length} active contexts for focused work.`
+            : 'Create focused contexts for projects, study, and everything you want to keep together.'
+        }
+        actions={
+          <Button variant="primary" icon={Plus} onClick={() => setShowCreate(true)}>
+            New Space
+          </Button>
+        }
+      />
 
-      <div className="flex-1 px-8 py-6 space-y-10 max-w-[800px]">
+      <div className="space-y-8">
         {!hasSpaces ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div
-              className="w-14 h-14 rounded-2xl flex items-center justify-center mb-6"
-              style={{ backgroundColor: 'var(--color-accent-muted)' }}
-            >
-              <Layers
-                size={26}
-                strokeWidth={1.5}
-                style={{ color: 'var(--color-accent)' }}
-              />
-            </div>
-            <h2
-              className="text-lg font-semibold mb-2"
-              style={{ color: 'var(--color-text-primary)' }}
-            >
-              No Spaces yet
-            </h2>
-            <p
-              className="text-sm max-w-[320px] mb-6 leading-relaxed"
-              style={{ color: 'var(--color-text-secondary)' }}
-            >
-              Spaces help you organize everything into dedicated contexts. Create a Space
-              for school, work, or any project.
-            </p>
-            <button
-              onClick={() => setShowCreate(true)}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-colors"
-              style={{
-                backgroundColor: 'var(--color-accent)',
-                color: 'var(--color-accent-text)',
-              }}
-            >
-              <Plus size={15} strokeWidth={2} /> Create your first Space
-            </button>
-          </div>
+          <EmptyState
+            icon={Layers}
+            eyebrow="Your workspace, composed"
+            title="Create a place for what matters"
+            description="A Space keeps its Notes, Tasks, files, Memory, and AI context together without mixing it into the rest of your workspace."
+            action={{
+              label: 'Create your first Space',
+              onClick: () => setShowCreate(true),
+            }}
+          />
         ) : (
           <>
             {favourites.length > 0 && (
               <section>
-                <h2
-                  className="text-xs font-semibold uppercase tracking-wider mb-3"
-                  style={{ color: 'var(--color-text-tertiary)' }}
-                >
-                  Favourites
-                </h2>
+                <SectionLabel meta={`${favourites.length}`}>Favourites</SectionLabel>
                 <div className="space-y-1">
                   {favourites.map((s) => (
                     <SpaceRow
@@ -191,12 +154,7 @@ export function Spaces() {
               </section>
             )}
             <section>
-              <h2
-                className="text-xs font-semibold uppercase tracking-wider mb-3"
-                style={{ color: 'var(--color-text-tertiary)' }}
-              >
-                All Spaces
-              </h2>
+              <SectionLabel meta={`${active.length}`}>All Spaces</SectionLabel>
               <div className="space-y-1">
                 {active.map((s) => (
                   <SpaceRow
@@ -265,7 +223,7 @@ export function Spaces() {
           onCancel={() => setDeleteTarget(null)}
         />
       )}
-    </div>
+    </Page>
   )
 }
 
@@ -304,7 +262,7 @@ function SpaceRow({
   return (
     <div
       className={cn(
-        'group flex items-center rounded-lg transition-colors duration-100',
+        'aether-surface aether-surface--interactive group flex items-center rounded-xl transition-colors duration-100',
         isArchived && 'opacity-50',
       )}
       style={{ backgroundColor: isMenuOpen ? 'var(--color-bg-tertiary)' : undefined }}

@@ -5,11 +5,11 @@
 | Field            | Value                             |
 | ---------------- | --------------------------------- |
 | Schema version   | 1                                 |
-| Last updated     | 2026-08-11                        |
+| Last updated     | 2026-08-25                        |
 | Updated by       | Codex                             |
 | Repository       | `bimberlotDEV/Aether-Desktop`     |
-| Branch           | `codex/release-0.3.1-chat-hotfix` |
-| Baseline commit  | `626f13c` (PR #29 merge)          |
+| Branch           | `codex/ui-makeover`               |
+| Baseline commit  | `f775a58` (current `master`)       |
 | Product maturity | Alpha                             |
 
 ## Responsibility of this file
@@ -42,6 +42,7 @@
 | `PHASE10-001`      | Quality and release preparation                    | `complete` | CI, sanitized export, audits, documentation, packaging, hashes, and startup verification pass.                                    |
 | `STAB-001`         | Integrated alpha stabilization                     | `complete` | Automated, browser, desktop, native, responsive, accessibility, and error-path stress checks pass with verified defects repaired. |
 | `AI-CHAT-003`      | Eliminate stale-load prompt hiding and ship 0.3.1  | `complete` | A deterministic load/stream race test passes and the installed 0.3.1 bundle contains the verified frontend.                       |
+| `UI-001`           | Reimagine the Aether interface system              | `self_review` | Every core surface is cohesive, premium, responsive, accessible, and distinctly Aether without behavior regressions.           |
 
 No implementation task is active. `STAB-001` is complete and recorded in `.ai/HANDOFF.md`.
 

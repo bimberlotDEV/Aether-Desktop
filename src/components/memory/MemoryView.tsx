@@ -4,6 +4,7 @@ import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { MemoryEditor } from '@/components/memory/MemoryEditor'
 import { useMemory } from '@/hooks/useMemory'
 import type { MemoryCategory, MemoryItem, Space } from '@/lib/db/types'
+import { Button, EmptyState, PageHeader, Surface } from '@/components/ui/AetherUI'
 
 const labels: Record<MemoryCategory, string> = {
   preference: 'Preference',
@@ -26,26 +27,26 @@ export function MemoryView({ spaceId, spaces }: { spaceId?: string; spaces: Spac
   })
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      <div className="border-b border-[var(--color-border)] px-8 py-6">
-        <div className="flex items-start gap-4">
-          <div className="flex-1">
-            <h1 className="text-xl font-semibold tracking-tight">Memory</h1>
-            <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-              Explicit context you control. Nothing is remembered from conversations
-              automatically.
-            </p>
-          </div>
-          <button
-            onClick={() => setEditing('new')}
-            disabled={!memory.isTauri}
-            className="inline-flex items-center gap-2 rounded-md bg-[var(--color-accent)] px-3 py-2 text-sm font-medium text-[var(--color-accent-text)] disabled:opacity-50 focus-ring"
-          >
-            <Plus size={15} /> Remember
-          </button>
-        </div>
-        <div className="mt-5 flex gap-2">
-          <label className="flex min-w-0 flex-1 items-center gap-2 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2">
+    <div className="h-full min-h-0 overflow-y-auto">
+      <div className="mx-auto w-full max-w-[1040px] px-8 py-8">
+        <PageHeader
+          eyebrow="User controlled"
+          icon={Brain}
+          title="Memory"
+          description="Explicit context you control. Nothing is remembered from conversations automatically."
+          actions={
+            <Button
+              variant="primary"
+              icon={Plus}
+              onClick={() => setEditing('new')}
+              disabled={!memory.isTauri}
+            >
+              Remember
+            </Button>
+          }
+        />
+        <div className="mb-5 flex gap-2">
+          <label className="aether-field flex min-w-0 flex-1 items-center gap-2 px-3 py-2">
             <Search size={14} className="text-[var(--color-text-tertiary)]" />
             <span className="sr-only">Search Memory</span>
             <input
@@ -60,7 +61,7 @@ export function MemoryView({ spaceId, spaces }: { spaceId?: string; spaces: Spac
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value as MemoryCategory | '')}
-              className="h-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-3 text-sm"
+              className="aether-field h-full px-3 text-sm"
             >
               <option value="">All categories</option>
               {Object.entries(labels).map(([value, label]) => (
@@ -71,12 +72,12 @@ export function MemoryView({ spaceId, spaces }: { spaceId?: string; spaces: Spac
             </select>
           </label>
         </div>
-      </div>
-      <div className="min-h-0 flex-1 overflow-y-auto px-8 py-6">
         {!memory.isTauri ? (
-          <Empty
-            title="Memory is available in the desktop app"
-            detail="Aether does not fabricate Memory in browser preview mode."
+          <EmptyState
+            icon={Brain}
+            eyebrow="Desktop protected"
+            title="Memory lives in the desktop app"
+            description="Aether keeps this explicit context behind its trusted local desktop boundary and never fabricates preview data."
           />
         ) : memory.loading ? (
           <p className="py-12 text-center text-sm text-[var(--color-text-tertiary)]">
@@ -90,9 +91,11 @@ export function MemoryView({ spaceId, spaces }: { spaceId?: string; spaces: Spac
             {memory.error}
           </p>
         ) : memory.items.length === 0 ? (
-          <Empty
+          <EmptyState
+            icon={search || category ? Search : Brain}
+            eyebrow={search || category ? 'Nothing found' : 'Deliberate by design'}
             title={search || category ? 'No matching Memory' : 'Nothing remembered yet'}
-            detail={
+            description={
               search || category
                 ? 'Try another search or category.'
                 : 'Add only durable context you want to review and control later.'
@@ -101,10 +104,7 @@ export function MemoryView({ spaceId, spaces }: { spaceId?: string; spaces: Spac
         ) : (
           <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
             {memory.items.map((item) => (
-              <article
-                key={item.id}
-                className="rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-4"
-              >
+              <Surface key={item.id} className="p-4">
                 <div className="flex items-start gap-3">
                   <Brain size={16} className="mt-0.5 text-[var(--color-accent)]" />
                   <div className="min-w-0 flex-1">
@@ -147,7 +147,7 @@ export function MemoryView({ spaceId, spaces }: { spaceId?: string; spaces: Spac
                     </div>
                   </div>
                 </div>
-              </article>
+              </Surface>
             ))}
           </div>
         )}
@@ -178,16 +178,6 @@ export function MemoryView({ spaceId, spaces }: { spaceId?: string; spaces: Spac
           }}
         />
       )}
-    </div>
-  )
-}
-
-function Empty({ title, detail }: { title: string; detail: string }) {
-  return (
-    <div className="flex flex-col items-center py-16 text-center">
-      <Brain size={28} className="mb-3 text-[var(--color-text-tertiary)]" />
-      <h2 className="text-sm font-semibold">{title}</h2>
-      <p className="mt-1 max-w-sm text-sm text-[var(--color-text-tertiary)]">{detail}</p>
     </div>
   )
 }

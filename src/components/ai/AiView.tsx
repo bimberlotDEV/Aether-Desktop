@@ -20,6 +20,7 @@ import { AiTaskProposal } from '@/components/ai/AiTaskProposal'
 import { parseTaskProposal, type TaskProposal } from '@/lib/aiProposal'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { cn } from '@/lib/utils'
+import { EmptyState } from '@/components/ui/AetherUI'
 
 const MODES: { id: AiMode; label: string }[] = [
   { id: 'ask', label: 'Ask' },
@@ -149,29 +150,36 @@ export function AiView({ spaceId }: { spaceId?: string }) {
 
   if (!list.isTauri) {
     return (
-      <div className="flex h-full items-center justify-center p-8 text-center">
-        <div>
-          <Bot size={28} className="mx-auto mb-4 text-[var(--color-accent)]" />
-          <h2 className="text-lg font-semibold">AI is available in the desktop app</h2>
-          <p className="mt-2 max-w-sm text-sm text-[var(--color-text-secondary)]">
-            Aether keeps credentials and provider requests in the trusted Rust desktop
-            process.
-          </p>
+      <div className="h-full overflow-y-auto p-8">
+        <div className="mx-auto max-w-[920px]">
+          <div className="mb-7">
+            <p className="aether-eyebrow">Private intelligence</p>
+            <h1 className="aether-page-title">AI workspace</h1>
+            <p className="aether-page-description">
+              Think with DeepSeek while you stay in control of every piece of context.
+            </p>
+          </div>
+          <EmptyState
+            icon={Bot}
+            eyebrow="Trusted desktop boundary"
+            title="AI lives in the Aether desktop app"
+            description="Credentials, provider requests, context resolution, and conversation persistence stay behind the trusted Rust process."
+          />
         </div>
       </div>
     )
   }
 
   return (
-    <div className="flex h-full min-h-0">
-      <aside className="flex h-full w-[250px] shrink-0 flex-col border-r border-[var(--color-border)] bg-[var(--color-sidebar-bg)]">
+    <div className="aether-ai-shell">
+      <aside className="aether-ai-sidebar">
         <div className="border-b border-[var(--color-border)] p-3">
           <div className="flex gap-2">
             <select
               aria-label="Model for new conversation"
               value={model}
               onChange={(event) => setModel(event.target.value)}
-              className="min-w-0 flex-1 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-2 py-1.5 text-xs"
+              className="aether-field min-w-0 flex-1 px-2 py-1.5 text-xs"
             >
               <option value="deepseek-v4-flash">V4 Flash</option>
               <option value="deepseek-v4-pro">V4 Pro</option>
@@ -179,7 +187,7 @@ export function AiView({ spaceId }: { spaceId?: string }) {
             <button
               onClick={() => void createConversation()}
               aria-label="New conversation"
-              className="rounded-md bg-[var(--color-accent)] p-2 text-[var(--color-accent-text)] focus-ring"
+              className="aether-button aether-button--primary min-h-0 p-2 focus-ring"
             >
               <Plus size={15} />
             </button>
@@ -216,24 +224,21 @@ export function AiView({ spaceId }: { spaceId?: string }) {
 
       <section className="flex min-w-0 flex-1 flex-col">
         {!selected ? (
-          <div className="flex flex-1 items-center justify-center p-8 text-center">
-            <div>
-              <Brain size={26} className="mx-auto mb-4 text-[var(--color-accent)]" />
-              <h2 className="text-lg font-semibold">Start a focused conversation</h2>
-              <p className="mt-2 max-w-sm text-sm text-[var(--color-text-secondary)]">
-                Choose Flash for everyday work or Pro for more demanding reasoning.
-              </p>
-              <button
-                onClick={() => void createConversation()}
-                className="mt-5 rounded-md bg-[var(--color-accent)] px-4 py-2 text-sm font-medium text-[var(--color-accent-text)] focus-ring"
-              >
-                New conversation
-              </button>
-            </div>
+          <div className="flex-1 overflow-y-auto p-8">
+            <EmptyState
+              icon={Brain}
+              eyebrow="A focused thinking space"
+              title="Start a new conversation"
+              description="Choose Flash for everyday work or Pro for more demanding reasoning. You decide what context is attached."
+              action={{
+                label: 'New conversation',
+                onClick: () => void createConversation(),
+              }}
+            />
           </div>
         ) : (
           <>
-            <header className="border-b border-[var(--color-border)] px-5 py-3">
+            <header className="aether-ai-header">
               <div className="flex items-center gap-2">
                 {renaming ? (
                   <input
@@ -394,7 +399,7 @@ export function AiView({ spaceId }: { spaceId?: string }) {
                 </p>
               )}
             </div>
-            <footer className="border-t border-[var(--color-border)] px-5 py-4">
+            <footer className="aether-ai-composer">
               <div className="mx-auto max-w-[780px]">
                 <div className="mb-2 flex flex-wrap gap-1">
                   {MODES.map((candidate) => (
@@ -417,7 +422,7 @@ export function AiView({ spaceId }: { spaceId?: string }) {
                     Configure a DeepSeek API key in Settings before sending.
                   </p>
                 )}
-                <div className="flex items-end gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)] p-2">
+                <div className="aether-field flex items-end gap-2 rounded-xl p-2">
                   <textarea
                     aria-label="Message"
                     value={draft}

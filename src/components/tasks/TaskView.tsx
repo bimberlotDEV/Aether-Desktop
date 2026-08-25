@@ -3,6 +3,7 @@ import {
   Archive,
   CalendarDays,
   Check,
+  CheckSquare,
   ChevronDown,
   ChevronRight,
   ListFilter,
@@ -16,6 +17,7 @@ import { useTasks } from '@/hooks/useTasks'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { TaskEditor } from '@/components/tasks/TaskEditor'
 import { cn } from '@/lib/utils'
+import { Button, PageHeader, Surface } from '@/components/ui/AetherUI'
 
 interface TaskViewProps {
   spaceId?: string
@@ -234,25 +236,22 @@ export function TaskView({
   }
 
   return (
-    <div className="max-w-[820px] mx-auto px-8 py-7">
-      <div className="flex items-start gap-4 mb-6">
-        <div className="flex-1">
-          <h1 className="text-xl font-semibold text-[var(--color-text-primary)]">
-            {title}
-          </h1>
-          <p className="text-sm mt-1 text-[var(--color-text-secondary)]">{description}</p>
-        </div>
-        <button
-          onClick={() => setEditor({})}
-          className="inline-flex items-center gap-2 px-3 py-2 rounded-md bg-[var(--color-accent)] text-[var(--color-accent-text)] text-sm font-medium focus-ring"
-        >
-          <Plus size={15} /> New Task
-        </button>
-      </div>
+    <div className="w-full max-w-[980px] mx-auto px-8 py-8">
+      <PageHeader
+        eyebrow={spaceId ? 'Space workflow' : 'Capture & focus'}
+        icon={CheckSquare}
+        title={title}
+        description={description}
+        actions={
+          <Button variant="primary" icon={Plus} onClick={() => setEditor({})}>
+            New Task
+          </Button>
+        }
+      />
 
       <form
         onSubmit={quickCreate}
-        className="flex items-center gap-2 p-2 mb-4 rounded-lg border bg-[var(--color-bg-secondary)] border-[var(--color-border)]"
+        className="aether-field flex items-center gap-2 p-2 mb-4"
       >
         <Plus size={16} className="ml-1 text-[var(--color-text-tertiary)]" />
         <input
@@ -267,14 +266,14 @@ export function TaskView({
         />
         <button
           disabled={!quickTitle.trim()}
-          className="px-3 py-1.5 rounded-md text-xs font-medium bg-[var(--color-bg-elevated)] border border-[var(--color-border)] disabled:opacity-40 focus-ring"
+          className="aether-button aether-button--secondary min-h-0 px-3 py-1.5 text-xs disabled:opacity-40"
         >
           Add
         </button>
       </form>
 
       <div className="flex flex-wrap items-center gap-2 mb-3">
-        <label className="flex-1 min-w-52 flex items-center gap-2 px-3 h-9 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)]">
+        <label className="aether-field flex-1 min-w-52 flex items-center gap-2 px-3 h-9">
           <Search size={14} className="text-[var(--color-text-tertiary)]" />
           <span className="sr-only">Search Tasks</span>
           <input
@@ -289,7 +288,7 @@ export function TaskView({
           aria-label="Filter by status"
           value={status}
           onChange={(event) => setStatus(event.target.value as TaskStatus | 'all')}
-          className="h-9 px-2 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] text-sm focus-ring"
+          className="aether-field h-9 px-2 text-sm focus-ring"
         >
           <option value="all">All statuses</option>
           {Object.entries(STATUS_LABELS).map(([value, label]) => (
@@ -302,7 +301,7 @@ export function TaskView({
           aria-label="Filter by priority"
           value={priority}
           onChange={(event) => setPriority(event.target.value as TaskPriority | 'all')}
-          className="h-9 px-2 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] text-sm focus-ring"
+          className="aether-field h-9 px-2 text-sm focus-ring"
         >
           <option value="all">All priorities</option>
           <option value="high">High</option>
@@ -318,43 +317,42 @@ export function TaskView({
         </p>
       )}
 
-      <section
-        aria-label="Active Tasks"
-        className="border-t border-[var(--color-border)]"
-      >
-        {active.loading ? (
-          <p className="py-10 text-center text-sm text-[var(--color-text-tertiary)]">
-            Loading Tasks…
-          </p>
-        ) : visibleTasks.length === 0 ? (
-          <div className="py-12 text-center">
-            <p className="text-sm font-medium text-[var(--color-text-secondary)]">
-              No Tasks here
+      <Surface className="px-3">
+        <section aria-label="Active Tasks">
+          {active.loading ? (
+            <p className="py-10 text-center text-sm text-[var(--color-text-tertiary)]">
+              Loading Tasks…
             </p>
-            <p className="text-xs mt-1 text-[var(--color-text-tertiary)]">
-              {search || status !== 'all' || priority !== 'all'
-                ? 'Try clearing a filter.'
-                : 'Capture one above when something needs your attention.'}
-            </p>
-          </div>
-        ) : (
-          visibleTasks.map(({ task, depth }) => (
-            <TaskRow
-              key={task.id}
-              task={task}
-              depth={depth}
-              childCount={
-                active.tasks.filter((candidate) => candidate.parent_task_id === task.id)
-                  .length
-              }
-              onToggle={() => runQuietly(active.toggleComplete(task))}
-              onEdit={() => setEditor({ task })}
-              onAddSubtask={() => setEditor({ parentId: task.id })}
-              onArchive={() => runQuietly(active.archive(task.id))}
-            />
-          ))
-        )}
-      </section>
+          ) : visibleTasks.length === 0 ? (
+            <div className="py-12 text-center">
+              <p className="text-sm font-medium text-[var(--color-text-secondary)]">
+                No Tasks here
+              </p>
+              <p className="text-xs mt-1 text-[var(--color-text-tertiary)]">
+                {search || status !== 'all' || priority !== 'all'
+                  ? 'Try clearing a filter.'
+                  : 'Capture one above when something needs your attention.'}
+              </p>
+            </div>
+          ) : (
+            visibleTasks.map(({ task, depth }) => (
+              <TaskRow
+                key={task.id}
+                task={task}
+                depth={depth}
+                childCount={
+                  active.tasks.filter((candidate) => candidate.parent_task_id === task.id)
+                    .length
+                }
+                onToggle={() => runQuietly(active.toggleComplete(task))}
+                onEdit={() => setEditor({ task })}
+                onAddSubtask={() => setEditor({ parentId: task.id })}
+                onArchive={() => runQuietly(active.archive(task.id))}
+              />
+            ))
+          )}
+        </section>
+      </Surface>
 
       <section className="mt-6">
         <button
