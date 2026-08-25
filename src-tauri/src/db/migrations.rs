@@ -1,4 +1,9 @@
 use rusqlite::{Connection, Transaction};
+use std::{
+    fs,
+    io::{BufReader, Read},
+    path::{Component, Path, PathBuf},
+};
 
 const MIGRATIONS: &[(&str, &str)] = &[
     // Migration 001: Core tables
@@ -300,22 +305,408 @@ fn apply_migration(tx: &Transaction, name: &str, sql: &str) -> Result<(), String
     Ok(())
 }
 
+fn table_has_column(conn: &Connection, table: &str, column: &str) -> Result<bool, String> {
+    let sql = format!("PRAGMA table_info({table})");
+    let mut statement = conn
+        .prepare(&sql)
+        .map_err(|error| format!("Failed to inspect legacy table '{table}': {error}"))?;
+    let columns = statement
+        .query_map([], |row| row.get::<_, String>(1))
+        .map_err(|error| format!("Failed to inspect legacy table '{table}': {error}"))?;
+    for value in columns {
+        if value.map_err(|error| format!("Failed to inspect legacy table '{table}': {error}"))?
+            == column
+        {
+            return Ok(true);
+        }
+    }
+    Ok(false)
+}
+
+#[derive(Default)]
+struct LegacyVaultFiles {
+    created_files: Vec<PathBuf>,
+    created_directories: Vec<PathBuf>,
+}
+
+impl LegacyVaultFiles {
+    fn rollback(&self) {
+        for file in self.created_files.iter().rev() {
+            let _ = fs::remove_file(file);
+        }
+        for directory in self.created_directories.iter().rev() {
+            let _ = fs::remove_dir(directory);
+        }
+    }
+}
+
+fn safe_path_component(value: &str) -> bool {
+    let mut components = Path::new(value).components();
+    matches!(components.next(), Some(Component::Normal(_))) && components.next().is_none()
+}
+
+fn truncate_chars(value: &str, limit: usize) -> String {
+    value.chars().take(limit).collect()
+}
+
+fn files_equal(left: &Path, right: &Path) -> Result<bool, String> {
+    let left_file = fs::File::open(left)
+        .map_err(|error| format!("Failed to inspect legacy Vault source: {error}"))?;
+    let right_file = fs::File::open(right)
+        .map_err(|error| format!("Failed to inspect migrated Vault target: {error}"))?;
+    if left_file
+        .metadata()
+        .map_err(|error| format!("Failed to inspect legacy Vault source: {error}"))?
+        .len()
+        != right_file
+            .metadata()
+            .map_err(|error| format!("Failed to inspect migrated Vault target: {error}"))?
+            .len()
+    {
+        return Ok(false);
+    }
+
+    let mut left = BufReader::new(left_file);
+    let mut right = BufReader::new(right_file);
+    let mut left_buffer = [0_u8; 64 * 1024];
+    let mut right_buffer = [0_u8; 64 * 1024];
+    loop {
+        let left_read = left
+            .read(&mut left_buffer)
+            .map_err(|error| format!("Failed to read legacy Vault source: {error}"))?;
+        let right_read = right
+            .read(&mut right_buffer)
+            .map_err(|error| format!("Failed to read migrated Vault target: {error}"))?;
+        if left_read != right_read || left_buffer[..left_read] != right_buffer[..right_read] {
+            return Ok(false);
+        }
+        if left_read == 0 {
+            return Ok(true);
+        }
+    }
+}
+
+fn database_directory(conn: &Connection) -> Result<Option<PathBuf>, String> {
+    let path: String = conn
+        .query_row(
+            "SELECT file FROM pragma_database_list WHERE name = 'main'",
+            [],
+            |row| row.get(0),
+        )
+        .map_err(|error| format!("Failed to resolve legacy database path: {error}"))?;
+    if path.is_empty() {
+        return Ok(None);
+    }
+    Path::new(&path)
+        .parent()
+        .map(|parent| Some(parent.to_path_buf()))
+        .ok_or_else(|| "Legacy database has no parent directory".to_string())
+}
+
+fn prepare_legacy_vault_files(tx: &Transaction) -> Result<LegacyVaultFiles, String> {
+    if !table_has_column(tx, "vault_items", "stored_name")?
+        || table_has_column(tx, "vault_items", "storage_mode")?
+    {
+        return Ok(LegacyVaultFiles::default());
+    }
+
+    let count: i64 = tx
+        .query_row("SELECT COUNT(*) FROM vault_items", [], |row| row.get(0))
+        .map_err(|error| format!("Failed to count legacy Vault items: {error}"))?;
+    if count == 0 {
+        return Ok(LegacyVaultFiles::default());
+    }
+
+    let data_directory = database_directory(tx)?
+        .ok_or_else(|| "Legacy Vault files require a file-backed database".to_string())?
+        .canonicalize()
+        .map_err(|error| format!("Failed to resolve Aether data directory: {error}"))?;
+    let vault_root = data_directory
+        .join("vault")
+        .canonicalize()
+        .map_err(|error| format!("Legacy Vault storage is unavailable: {error}"))?;
+    if vault_root.parent() != Some(data_directory.as_path()) {
+        return Err("Legacy Vault storage escaped the Aether data directory".to_string());
+    }
+
+    let items_directory = vault_root.join("items");
+    let items_existed = items_directory.exists();
+    fs::create_dir_all(&items_directory)
+        .map_err(|error| format!("Failed to create current Vault storage: {error}"))?;
+    let items_directory = items_directory
+        .canonicalize()
+        .map_err(|error| format!("Failed to resolve current Vault storage: {error}"))?;
+    if items_directory.parent() != Some(vault_root.as_path()) {
+        return Err("Current Vault items directory escaped managed storage".to_string());
+    }
+
+    let mut rows = tx
+        .prepare("SELECT id, original_name, stored_name, size_bytes FROM vault_items ORDER BY id")
+        .map_err(|error| format!("Failed to inspect legacy Vault records: {error}"))?;
+    let rows = rows
+        .query_map([], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, String>(2)?,
+                row.get::<_, i64>(3)?,
+            ))
+        })
+        .map_err(|error| format!("Failed to inspect legacy Vault records: {error}"))?
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|error| format!("Failed to read legacy Vault record: {error}"))?;
+
+    let mut prepared = LegacyVaultFiles::default();
+    if !items_existed {
+        prepared.created_directories.push(items_directory.clone());
+    }
+
+    let result = (|| {
+        for (id, original_name, stored_name, recorded_size) in rows {
+            if !safe_path_component(&id) || !safe_path_component(&stored_name) {
+                return Err(format!(
+                    "Legacy Vault item '{id}' contains an unsafe storage name"
+                ));
+            }
+            if recorded_size < 0 {
+                return Err(format!("Legacy Vault item '{id}' has an invalid size"));
+            }
+            let original_name = truncate_chars(original_name.trim(), 255);
+            if original_name.is_empty() || !safe_path_component(&original_name) {
+                return Err(format!("Legacy Vault item '{id}' has an invalid filename"));
+            }
+
+            let source = vault_root
+                .join(&stored_name)
+                .canonicalize()
+                .map_err(|error| format!("Legacy Vault item '{id}' is unavailable: {error}"))?;
+            if source.parent() != Some(vault_root.as_path()) || !source.is_file() {
+                return Err(format!("Legacy Vault item '{id}' escaped managed storage"));
+            }
+            let actual_size = source
+                .metadata()
+                .map_err(|error| format!("Failed to inspect legacy Vault item '{id}': {error}"))?
+                .len();
+            if actual_size != recorded_size as u64 {
+                return Err(format!(
+                    "Legacy Vault item '{id}' size does not match its stored metadata"
+                ));
+            }
+
+            let item_directory = items_directory.join(&id);
+            let item_directory_existed = item_directory.exists();
+            fs::create_dir_all(&item_directory).map_err(|error| {
+                format!("Failed to create storage for Vault item '{id}': {error}")
+            })?;
+            let item_directory = item_directory.canonicalize().map_err(|error| {
+                format!("Failed to resolve storage for Vault item '{id}': {error}")
+            })?;
+            if item_directory.parent() != Some(items_directory.as_path()) {
+                return Err(format!(
+                    "Vault item '{id}' storage escaped the items directory"
+                ));
+            }
+            if !item_directory_existed {
+                prepared.created_directories.push(item_directory.clone());
+            }
+
+            let target = item_directory.join(&original_name);
+            if target.exists() {
+                let target = target.canonicalize().map_err(|error| {
+                    format!("Failed to resolve migrated Vault item '{id}': {error}")
+                })?;
+                if target.parent() != Some(item_directory.as_path())
+                    || !target.is_file()
+                    || !files_equal(&source, &target)?
+                {
+                    return Err(format!(
+                        "Vault item '{id}' already has a different migration target"
+                    ));
+                }
+                continue;
+            }
+
+            let partial = item_directory.join(".legacy-migration.partial");
+            if partial.exists() {
+                fs::remove_file(&partial).map_err(|error| {
+                    format!("Failed to clear an incomplete Vault migration for '{id}': {error}")
+                })?;
+            }
+            let copy_result = (|| {
+                let mut source_file = fs::File::open(&source)
+                    .map_err(|error| format!("Failed to open legacy Vault item '{id}': {error}"))?;
+                let mut partial_file = fs::OpenOptions::new()
+                    .write(true)
+                    .create_new(true)
+                    .open(&partial)
+                    .map_err(|error| {
+                        format!("Failed to create migration copy for Vault item '{id}': {error}")
+                    })?;
+                std::io::copy(&mut source_file, &mut partial_file)
+                    .map_err(|error| format!("Failed to copy legacy Vault item '{id}': {error}"))?;
+                partial_file.sync_all().map_err(|error| {
+                    format!("Failed to flush migrated Vault item '{id}': {error}")
+                })?;
+                Ok(())
+            })();
+            if let Err(error) = copy_result {
+                let _ = fs::remove_file(&partial);
+                return Err(error);
+            }
+            if let Err(error) = fs::rename(&partial, &target) {
+                let _ = fs::remove_file(&partial);
+                return Err(format!(
+                    "Failed to finalize legacy Vault item '{id}': {error}"
+                ));
+            }
+            prepared.created_files.push(target);
+        }
+        Ok(())
+    })();
+
+    if let Err(error) = result {
+        prepared.rollback();
+        return Err(error);
+    }
+    Ok(prepared)
+}
+
+/// Upgrade schemas shipped by the pre-0.3 personal-beta builds. Those builds used
+/// different migration names, so `CREATE TABLE IF NOT EXISTS` cannot repair their
+/// incompatible Tasks, Memory, and Vault tables by itself.
+fn upgrade_legacy_personal_beta(tx: &Transaction) -> Result<LegacyVaultFiles, String> {
+    if table_has_column(tx, "tasks", "due_at")? && !table_has_column(tx, "tasks", "parent_task_id")?
+    {
+        tx.execute_batch(
+            "ALTER TABLE tasks RENAME TO tasks_legacy_pre_031;
+             CREATE TABLE tasks (
+                id              TEXT PRIMARY KEY NOT NULL,
+                space_id        TEXT REFERENCES spaces(id) ON DELETE SET NULL,
+                parent_task_id  TEXT REFERENCES tasks(id) ON DELETE CASCADE,
+                title           TEXT NOT NULL CHECK(length(trim(title)) BETWEEN 1 AND 200),
+                description     TEXT NOT NULL DEFAULT '',
+                status          TEXT NOT NULL DEFAULT 'inbox' CHECK(status IN ('inbox', 'planned', 'in_progress', 'done')),
+                priority        TEXT NOT NULL DEFAULT 'none' CHECK(priority IN ('none', 'low', 'medium', 'high')),
+                due_date        TEXT CHECK(due_date IS NULL OR (length(due_date) = 10 AND due_date GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]')),
+                tags_json       TEXT NOT NULL DEFAULT '[]',
+                completed_at    TEXT,
+                archived_at     TEXT,
+                created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+                updated_at      TEXT NOT NULL DEFAULT (datetime('now')),
+                CHECK(parent_task_id IS NULL OR parent_task_id <> id),
+                CHECK((status = 'done' AND completed_at IS NOT NULL) OR (status <> 'done' AND completed_at IS NULL))
+             );
+             INSERT INTO tasks
+                (id, space_id, title, description, status, priority, due_date, completed_at,
+                 archived_at, created_at, updated_at)
+             SELECT id, space_id,
+                    CASE WHEN trim(title) = '' THEN 'Untitled task' ELSE substr(trim(title), 1, 200) END,
+                    description,
+                    CASE WHEN status = 'done' THEN 'done' ELSE 'inbox' END,
+                    CASE priority WHEN 'low' THEN 'low' WHEN 'high' THEN 'high' WHEN 'normal' THEN 'medium' ELSE 'none' END,
+                    CASE WHEN due_at IS NOT NULL AND substr(due_at, 1, 10) GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'
+                         THEN substr(due_at, 1, 10) ELSE NULL END,
+                    CASE WHEN status = 'done' THEN coalesce(completed_at, updated_at, created_at, datetime('now')) ELSE NULL END,
+                    archived_at, created_at, updated_at
+             FROM tasks_legacy_pre_031;
+             DROP TABLE tasks_legacy_pre_031;",
+        )
+        .map_err(|error| format!("Legacy Tasks upgrade failed: {error}"))?;
+    }
+
+    if table_has_column(tx, "memory_items", "scope")?
+        && !table_has_column(tx, "memory_items", "title")?
+    {
+        tx.execute_batch(
+            "ALTER TABLE memory_items RENAME TO memory_items_legacy_pre_031;
+             CREATE TABLE memory_items (
+                id          TEXT PRIMARY KEY NOT NULL,
+                space_id    TEXT REFERENCES spaces(id) ON DELETE CASCADE,
+                title       TEXT NOT NULL CHECK(length(trim(title)) BETWEEN 1 AND 200),
+                content     TEXT NOT NULL CHECK(length(trim(content)) BETWEEN 1 AND 20000),
+                reason      TEXT NOT NULL CHECK(length(trim(reason)) BETWEEN 1 AND 500),
+                category    TEXT NOT NULL CHECK(category IN ('preference', 'decision', 'recurring_context', 'terminology', 'goal', 'constraint')),
+                source      TEXT NOT NULL DEFAULT 'user' CHECK(source = 'user'),
+                created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+                updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
+             );
+             INSERT INTO memory_items
+                (id, space_id, title, content, reason, category, source, created_at, updated_at)
+             SELECT id, space_id,
+                    CASE WHEN active = 0 THEN 'Imported inactive memory' ELSE 'Imported memory' END,
+                    trim(content), 'Migrated from an earlier Aether version',
+                    'recurring_context', 'user', created_at, updated_at
+             FROM memory_items_legacy_pre_031;
+             DROP TABLE memory_items_legacy_pre_031;",
+        )
+        .map_err(|error| format!("Legacy Memory upgrade failed: {error}"))?;
+    }
+
+    if table_has_column(tx, "vault_items", "stored_name")?
+        && !table_has_column(tx, "vault_items", "storage_mode")?
+    {
+        let prepared_files = prepare_legacy_vault_files(tx)?;
+        tx.execute_batch(
+            "ALTER TABLE vault_items RENAME TO vault_items_legacy_pre_031;
+             CREATE TABLE vault_items (
+                id              TEXT PRIMARY KEY NOT NULL,
+                space_id        TEXT REFERENCES spaces(id) ON DELETE SET NULL,
+                storage_mode    TEXT NOT NULL CHECK(storage_mode IN ('linked', 'managed')),
+                display_title   TEXT NOT NULL CHECK(length(trim(display_title)) BETWEEN 1 AND 200),
+                original_name   TEXT NOT NULL CHECK(length(trim(original_name)) BETWEEN 1 AND 255),
+                stored_path     TEXT NOT NULL UNIQUE CHECK(length(trim(stored_path)) > 0),
+                media_type      TEXT NOT NULL DEFAULT 'application/octet-stream',
+                size_bytes      INTEGER NOT NULL CHECK(size_bytes >= 0),
+                tags_json       TEXT NOT NULL DEFAULT '[]',
+                created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+                updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
+             );
+             INSERT INTO vault_items
+                (id, space_id, storage_mode, display_title, original_name, stored_path,
+                 media_type, size_bytes, tags_json, created_at, updated_at)
+             SELECT id, space_id, 'managed', substr(trim(original_name), 1, 200),
+                    substr(trim(original_name), 1, 255),
+                    'items/' || id || '/' || substr(trim(original_name), 1, 255),
+                    'application/octet-stream', max(size_bytes, 0), '[]', created_at, created_at
+             FROM vault_items_legacy_pre_031;
+             DROP TABLE vault_items_legacy_pre_031;",
+        )
+        .map_err(|error| {
+            prepared_files.rollback();
+            format!("Legacy Vault upgrade failed: {error}")
+        })?;
+        return Ok(prepared_files);
+    }
+
+    Ok(LegacyVaultFiles::default())
+}
+
 pub fn run(conn: &Connection) -> Result<(), String> {
     let tx = conn
         .unchecked_transaction()
         .map_err(|e| format!("Transaction error: {}", e))?;
 
     ensure_migrations_table(&tx)?;
+    let legacy_vault_files = upgrade_legacy_personal_beta(&tx)?;
 
-    for (name, sql) in MIGRATIONS {
-        if !is_applied(&tx, name)? {
-            apply_migration(&tx, name, sql)?;
-            log::info!("Applied migration: {}", name);
+    let apply_result = (|| {
+        for (name, sql) in MIGRATIONS {
+            if !is_applied(&tx, name)? {
+                apply_migration(&tx, name, sql)?;
+                log::info!("Applied migration: {}", name);
+            }
         }
+        Ok(())
+    })();
+    if let Err(error) = apply_result {
+        legacy_vault_files.rollback();
+        return Err(error);
     }
 
-    tx.commit()
-        .map_err(|e| format!("Migration commit error: {}", e))?;
+    if let Err(error) = tx.commit() {
+        legacy_vault_files.rollback();
+        return Err(format!("Migration commit error: {error}"));
+    }
 
     Ok(())
 }
@@ -323,7 +714,9 @@ pub fn run(conn: &Connection) -> Result<(), String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::db::repositories;
     use rusqlite::Connection;
+    use tempfile::TempDir;
 
     fn in_memory_db() -> Connection {
         let conn = Connection::open_in_memory().unwrap();
@@ -358,6 +751,204 @@ mod tests {
         let conn = in_memory_db();
         run(&conn).unwrap();
         run(&conn).unwrap();
+    }
+
+    #[test]
+    fn test_upgrades_personal_beta_schema_without_losing_rows() {
+        let temporary = TempDir::new().unwrap();
+        let conn = Connection::open(temporary.path().join("aether.db")).unwrap();
+        conn.pragma_update(None, "foreign_keys", "ON").unwrap();
+        run(&conn).unwrap();
+        conn.execute_batch(
+            "DROP TABLE tasks;
+             DROP TABLE memory_items;
+             DROP TABLE vault_items;
+             DELETE FROM _migrations WHERE name IN ('005_tasks', '006_vault', '008_memory');
+             INSERT INTO spaces (id, name) VALUES ('space-1', 'Legacy');
+             CREATE TABLE tasks (
+                id TEXT PRIMARY KEY NOT NULL, space_id TEXT NOT NULL, title TEXT NOT NULL,
+                description TEXT NOT NULL DEFAULT '', status TEXT NOT NULL, priority TEXT NOT NULL,
+                due_at TEXT, sort_order INTEGER NOT NULL DEFAULT 0, archived_at TEXT,
+                created_at TEXT NOT NULL, updated_at TEXT NOT NULL, completed_at TEXT
+             );
+             CREATE TABLE memory_items (
+                id TEXT PRIMARY KEY NOT NULL, scope TEXT NOT NULL, space_id TEXT,
+                content TEXT NOT NULL, active INTEGER NOT NULL DEFAULT 1,
+                created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+             );
+             CREATE TABLE vault_items (
+                id TEXT PRIMARY KEY NOT NULL, space_id TEXT, original_name TEXT NOT NULL,
+                stored_name TEXT NOT NULL UNIQUE, size_bytes INTEGER NOT NULL,
+                created_at TEXT NOT NULL
+             );
+             INSERT INTO tasks VALUES
+                ('task-1', 'space-1', 'Old task', '', 'done', 'normal', '2026-08-24T12:00:00Z', 0, NULL,
+                 '2026-08-01 00:00:00', '2026-08-24 00:00:00', NULL);
+             INSERT INTO tasks VALUES
+                ('task-open', 'space-1', 'Open task', 'Keep working', 'open', 'low', 'not-a-date', 1,
+                 '2026-08-20 00:00:00', '2026-08-01 00:00:00', '2026-08-24 00:00:00', NULL);
+             INSERT INTO memory_items VALUES
+                ('memory-1', 'space', 'space-1', 'Remember this', 1,
+                 '2026-08-01 00:00:00', '2026-08-02 00:00:00');
+             INSERT INTO memory_items VALUES
+                ('memory-inactive', 'global', NULL, 'Keep this disabled memory', 0,
+                 '2026-08-01 00:00:00', '2026-08-02 00:00:00');
+             INSERT INTO vault_items VALUES
+                ('vault-1', 'space-1', 'document.txt', 'legacy.bin', 12, '2026-08-01 00:00:00');",
+        )
+        .unwrap();
+        let legacy_vault = temporary.path().join("vault");
+        fs::create_dir(&legacy_vault).unwrap();
+        fs::write(legacy_vault.join("legacy.bin"), b"legacy bytes").unwrap();
+
+        run(&conn).unwrap();
+
+        let task: (String, String, String, Option<String>) = conn
+            .query_row(
+                "SELECT status, priority, due_date, completed_at FROM tasks WHERE id = 'task-1'",
+                [],
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?)),
+            )
+            .unwrap();
+        assert_eq!(task.0, "done");
+        assert_eq!(task.1, "medium");
+        assert_eq!(task.2, "2026-08-24");
+        assert!(task.3.is_some());
+        let open_task = repositories::tasks::get_by_id(&conn, "task-open")
+            .unwrap()
+            .unwrap();
+        assert_eq!(open_task.space_id.as_deref(), Some("space-1"));
+        assert_eq!(open_task.status, "inbox");
+        assert_eq!(open_task.priority, "low");
+        assert_eq!(open_task.due_date, None);
+        assert_eq!(
+            open_task.archived_at.as_deref(),
+            Some("2026-08-20 00:00:00")
+        );
+        assert_eq!(
+            conn.query_row(
+                "SELECT title FROM memory_items WHERE id = 'memory-1'",
+                [],
+                |row| row.get::<_, String>(0),
+            )
+            .unwrap(),
+            "Imported memory"
+        );
+        let inactive_memory: (Option<String>, String) = conn
+            .query_row(
+                "SELECT space_id, title FROM memory_items WHERE id = 'memory-inactive'",
+                [],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
+            .unwrap();
+        assert_eq!(inactive_memory, (None, "Imported inactive memory".into()));
+        assert_eq!(
+            conn.query_row(
+                "SELECT stored_path FROM vault_items WHERE id = 'vault-1'",
+                [],
+                |row| row.get::<_, String>(0),
+            )
+            .unwrap(),
+            "items/vault-1/document.txt"
+        );
+        assert_eq!(
+            fs::read(legacy_vault.join("items/vault-1/document.txt")).unwrap(),
+            b"legacy bytes"
+        );
+        assert_eq!(
+            fs::read(legacy_vault.join("legacy.bin")).unwrap(),
+            b"legacy bytes"
+        );
+        assert!(repositories::vault::get_by_id(&conn, "vault-1")
+            .unwrap()
+            .is_some());
+        assert!(repositories::tasks::get_by_id(&conn, "task-1")
+            .unwrap()
+            .is_some());
+        assert!(repositories::memory::get_by_id(&conn, "memory-1")
+            .unwrap()
+            .is_some());
+        assert_eq!(
+            repositories::memory::get_by_id(&conn, "memory-1")
+                .unwrap()
+                .unwrap()
+                .space_id
+                .as_deref(),
+            Some("space-1")
+        );
+        run(&conn).unwrap();
+    }
+
+    #[test]
+    fn test_legacy_upgrade_rolls_back_schema_and_created_vault_copy() {
+        let temporary = TempDir::new().unwrap();
+        let conn = Connection::open(temporary.path().join("aether.db")).unwrap();
+        conn.pragma_update(None, "foreign_keys", "ON").unwrap();
+        run(&conn).unwrap();
+        conn.execute_batch(
+            "DROP TABLE tasks;
+             DROP TABLE memory_items;
+             DROP TABLE vault_items;
+             DELETE FROM _migrations WHERE name IN ('005_tasks', '006_vault', '008_memory');
+             CREATE TABLE tasks (
+                id TEXT PRIMARY KEY NOT NULL, space_id TEXT NOT NULL, title TEXT NOT NULL,
+                description TEXT NOT NULL DEFAULT '', status TEXT NOT NULL, priority TEXT NOT NULL,
+                due_at TEXT, sort_order INTEGER NOT NULL DEFAULT 0, archived_at TEXT,
+                created_at TEXT NOT NULL, updated_at TEXT NOT NULL, completed_at TEXT
+             );
+             CREATE TABLE memory_items (
+                id TEXT PRIMARY KEY NOT NULL, scope TEXT NOT NULL, space_id TEXT,
+                content TEXT NOT NULL, active INTEGER NOT NULL DEFAULT 1,
+                created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+             );
+             CREATE TABLE vault_items (
+                id TEXT PRIMARY KEY NOT NULL, space_id TEXT, original_name TEXT NOT NULL,
+                stored_name TEXT NOT NULL UNIQUE, size_bytes INTEGER NOT NULL,
+                created_at TEXT NOT NULL
+             );
+             INSERT INTO vault_items VALUES
+                ('vault-rollback', NULL, 'rollback.txt', 'rollback.bin', 8, '2026-08-01 00:00:00');
+             CREATE TRIGGER block_current_migration BEFORE INSERT ON _migrations
+             WHEN NEW.name = '005_tasks'
+             BEGIN SELECT RAISE(ABORT, 'forced migration failure'); END;",
+        )
+        .unwrap();
+        let legacy_vault = temporary.path().join("vault");
+        fs::create_dir(&legacy_vault).unwrap();
+        fs::write(legacy_vault.join("rollback.bin"), b"rollback").unwrap();
+
+        assert!(run(&conn).is_err());
+        assert!(table_has_column(&conn, "vault_items", "stored_name").unwrap());
+        assert!(!table_has_column(&conn, "vault_items", "storage_mode").unwrap());
+        assert!(!legacy_vault
+            .join("items/vault-rollback/rollback.txt")
+            .exists());
+        assert_eq!(
+            fs::read(legacy_vault.join("rollback.bin")).unwrap(),
+            b"rollback"
+        );
+
+        conn.execute("DROP TRIGGER block_current_migration", [])
+            .unwrap();
+        let target_directory = legacy_vault.join("items/vault-rollback");
+        fs::create_dir_all(&target_directory).unwrap();
+        let target = target_directory.join("rollback.txt");
+        fs::write(&target, b"different").unwrap();
+        assert!(run(&conn).is_err());
+        assert!(table_has_column(&conn, "vault_items", "stored_name").unwrap());
+        assert_eq!(fs::read(&target).unwrap(), b"different");
+
+        fs::write(&target, b"rollback").unwrap();
+        run(&conn).unwrap();
+        assert_eq!(
+            conn.query_row(
+                "SELECT stored_path FROM vault_items WHERE id = 'vault-rollback'",
+                [],
+                |row| row.get::<_, String>(0),
+            )
+            .unwrap(),
+            "items/vault-rollback/rollback.txt"
+        );
     }
 
     #[test]

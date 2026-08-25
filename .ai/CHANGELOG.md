@@ -26,6 +26,17 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-08-25 — `HARD-001` — Personal-beta databases upgrade without losing managed files
+
+- **Type:** Fix, migration hardening, and test
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review
+- **Summary:** Added transactional compatibility upgrades for the earlier Tasks, Memory, and Vault schemas. Legacy managed Vault bytes are canonically validated, copied through a crash-repeatable no-overwrite path into current ownership storage, and retained at their original location for recovery.
+- **Files:** `src-tauri/src/db/migrations.rs`, `.ai/*`
+- **Verification:** 53/53 standalone and 55/55 combined frontend tests pass; 63/63 Rust tests, strict Clippy, formatting, production builds, dependency audit, MSI/NSIS packaging, combined installed startup, SQLite integrity, and foreign-key checks pass.
+- **Decisions/deviations:** Corrupt, missing, size-mismatched, path-unsafe, or conflicting legacy Vault blobs block the upgrade rather than being silently discarded or associated with another file. Original valid blobs remain as recovery copies, trading temporary disk usage for rollback safety.
+- **Follow-up:** Continue Milestone A with the next evidence-backed stability defect; begin Context Foundation only after Alpha-hardening exit criteria are defined and satisfied.
+
 ## 2026-08-25 — `AI-CHAT-004` — Completed AI responses render without Ctrl+R
 
 - **Type:** Fix and test

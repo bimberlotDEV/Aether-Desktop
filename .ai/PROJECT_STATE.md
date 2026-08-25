@@ -8,7 +8,7 @@
 | Last updated     | 2026-08-25                    |
 | Updated by       | Codex                         |
 | Repository       | `bimberlotDEV/Aether-Desktop` |
-| Branch           | `codex/ai-response-sync`      |
+| Branch           | `codex/alpha-legacy-upgrade`  |
 | Baseline commit  | `f775a58` (current `master`)  |
 | Product maturity | Alpha                         |
 
@@ -43,8 +43,9 @@
 | `STAB-001`         | Integrated alpha stabilization                     | `complete` | Automated, browser, desktop, native, responsive, accessibility, and error-path stress checks pass with verified defects repaired.   |
 | `AI-CHAT-003`      | Eliminate stale-load prompt hiding and ship 0.3.1  | `complete` | A deterministic load/stream race test passes and the installed 0.3.1 bundle contains the verified frontend.                         |
 | `AI-CHAT-004`      | Reconcile completed responses without page reload  | `complete` | Terminal events upsert missing messages and every completed stream reconciles the visible conversation with persisted SQLite state. |
+| `HARD-001`         | Safely upgrade personal-beta databases             | `complete` | Populated legacy databases upgrade transactionally with current repository and Vault safety invariants intact.                      |
 
-No implementation task is active. `STAB-001` is complete and recorded in `.ai/HANDOFF.md`.
+`HARD-001` is complete as the first checkpoint in the owner-approved Milestone A — Alpha Hardening roadmap.
 
 ## Completed product milestones
 
@@ -69,17 +70,17 @@ No implementation task is active. `STAB-001` is complete and recorded in `.ai/HA
 
 ## Quality snapshot
 
-| Check                                       | Last result | Date       | Notes                                                                                    |
-| ------------------------------------------- | ----------- | ---------- | ---------------------------------------------------------------------------------------- |
-| `pnpm check`                                | Pass        | 2026-08-25 | Typecheck and lint clean; Vitest 55/55 across 24 files.                                  |
-| `pnpm build`                                | Pass        | 2026-08-25 | Production build is 497.31 kB JS / 137.62 kB gzip and has no chunk-size warning.         |
-| `pnpm audit --audit-level high`             | Pass        | 2026-08-11 | No known vulnerabilities.                                                                |
-| `cargo test`                                | Pass        | 2026-08-25 | 62/62 tests pass, including legacy-schema compatibility and existing safety coverage.    |
-| `cargo build`                               | Pass        | 2026-08-11 | Windows production build compiles with DPAPI and single-instance support.                |
-| `cargo fmt --check`                         | Pass        | 2026-08-25 | Repository Rust formatting is clean.                                                     |
-| `cargo clippy --all-targets -- -D warnings` | Pass        | 2026-08-25 | Library, binary, and test targets are warning-free.                                      |
-| `pnpm tauri:build`                          | Pass        | 2026-08-25 | 0.3.1 x64 MSI and NSIS bundles contain frontend bundle `index-uxuVmjVb.js`.              |
-| Release startup smoke                       | Pass        | 2026-08-25 | Installed 0.3.1 is responsive; SQLite integrity passes with zero foreign-key violations. |
+| Check                                       | Last result | Date       | Notes                                                                                          |
+| ------------------------------------------- | ----------- | ---------- | ---------------------------------------------------------------------------------------------- |
+| `pnpm check`                                | Pass        | 2026-08-11 | Typecheck and lint clean; Vitest 53/53 across 24 files.                                        |
+| `pnpm build`                                | Pass        | 2026-08-11 | Production build is 497.35 kB JS / 137.60 kB gzip and has no chunk-size warning.               |
+| `pnpm audit --audit-level high`             | Pass        | 2026-08-11 | No known vulnerabilities.                                                                      |
+| `cargo test`                                | Pass        | 2026-08-25 | 63/63 tests pass, including populated legacy upgrade, filesystem retry, and rollback coverage. |
+| `cargo build`                               | Pass        | 2026-08-11 | Windows production build compiles with DPAPI and single-instance support.                      |
+| `cargo fmt --check`                         | Pass        | 2026-08-11 | Repository Rust formatting is clean.                                                           |
+| `cargo clippy --all-targets -- -D warnings` | Pass        | 2026-08-11 | Library, binary, and test targets are warning-free.                                            |
+| `pnpm tauri:build`                          | Pass        | 2026-08-25 | Combined 0.3.1 x64 MSI and NSIS bundles built with HARD-001 and AI response sync.              |
+| Release startup smoke                       | Pass        | 2026-08-25 | Combined installer starts responsively; SQLite integrity and foreign-key checks pass.          |
 
 ## Active blockers
 
@@ -117,7 +118,7 @@ Full rationale belongs in `.ai/ARCHITECTURE.md` or a dedicated ADR under `docs/d
 
 ## Next
 
-The Alpha 0.3.1 roadmap through Phase 10 and the `STAB-001` integrated stabilization pass are complete. `AI-CHAT-001` adds optimistic prompt rendering, `AI-CHAT-002` prevents the following streamed update from crashing the AI view, `AI-CHAT-003` prevents stale loads from hiding the new stream, and `AI-CHAT-004` reconciles completed responses without requiring Ctrl+R. Public signing and updater activation remain owner-controlled release operations.
+The product-evolution roadmap proceeds through Milestone A — Alpha Hardening before Context Foundation, Universal Search, Continuity, Pulse 2.0, Safe Actions, AI evolution, onboarding, Public Beta, and commercial readiness. `AI-CHAT-004` fixes completed-response reconciliation and `HARD-001` closes the first data-safety checkpoint. Public signing and updater activation remain owner-controlled release operations.
 
 ## Reusable update template
 
