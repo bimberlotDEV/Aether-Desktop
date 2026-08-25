@@ -135,4 +135,59 @@ describe('useAiConversation sending', () => {
 
     expect(hook.result.current.messages).toEqual([userMessage, assistantMessage])
   })
+
+  it('reconciles persisted messages when the WebView misses stream events', async () => {
+    const userMessage = message('user-persisted', 'user', 'Persist this', 'complete')
+    const assistantMessage = message(
+      'assistant-persisted',
+      'assistant',
+      'Visible without reload',
+      'complete',
+    )
+    mocks.streamAiMessage.mockResolvedValue(undefined)
+    mocks.listAiMessages
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([userMessage, assistantMessage])
+
+    const hook = renderHook(() => useAiConversation('conversation-1'))
+    await waitFor(() => expect(hook.result.current.loading).toBe(false))
+
+    await act(async () => {
+      await hook.result.current.send('Persist this')
+    })
+
+    expect(hook.result.current.messages).toEqual([userMessage, assistantMessage])
+    expect(mocks.listAiMessages).toHaveBeenCalledTimes(2)
+  })
+
+  it('upserts a terminal answer even if its started event was missed', async () => {
+    const assistantMessage = message(
+      'assistant-terminal',
+      'assistant',
+      'Terminal answer',
+      'complete',
+    )
+    mocks.streamAiMessage.mockImplementation(
+      async (
+        _requestId: string,
+        _conversationId: string,
+        _content: string,
+        callback: (event: AiStreamEvent) => void,
+      ) => {
+        callback({ event: 'complete', data: { message: assistantMessage } })
+      },
+    )
+    mocks.listAiMessages
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([assistantMessage])
+
+    const hook = renderHook(() => useAiConversation('conversation-1'))
+    await waitFor(() => expect(hook.result.current.loading).toBe(false))
+
+    await act(async () => {
+      await hook.result.current.send('Answer this')
+    })
+
+    expect(hook.result.current.messages).toEqual([assistantMessage])
+  })
 })

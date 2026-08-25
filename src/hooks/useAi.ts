@@ -19,6 +19,14 @@ function requestId() {
   return globalThis.crypto?.randomUUID?.() ?? `request-${Date.now()}`
 }
 
+function upsertMessage(messages: AiMessage[], next: AiMessage) {
+  const index = messages.findIndex((message) => message.id === next.id)
+  if (index === -1) return [...messages, next]
+  return messages.map((message, messageIndex) =>
+    messageIndex === index ? next : message,
+  )
+}
+
 export function useAiSettings() {
   const [status, setStatus] = useState<'configured' | 'missing' | 'unavailable'>(
     isTauri ? 'unavailable' : 'missing',
@@ -222,22 +230,16 @@ export function useAiConversation(conversationId: string | null) {
                 const withoutOptimistic = optimisticUserMessageId
                   ? current.filter((message) => message.id !== optimisticUserMessageId)
                   : current
-                const userExists = withoutOptimistic.some(
-                  (message) => message.id === event.data.userMessage.id,
+                return upsertMessage(
+                  upsertMessage(withoutOptimistic, event.data.userMessage),
+                  event.data.assistantMessage,
                 )
-                const assistantExists = withoutOptimistic.some(
-                  (message) => message.id === event.data.assistantMessage.id,
-                )
-                return [
-                  ...withoutOptimistic,
-                  ...(userExists ? [] : [event.data.userMessage]),
-                  ...(assistantExists ? [] : [event.data.assistantMessage]),
-                ]
               })
             } else if (event.event === 'delta') {
+              const assistantId = activeAssistantId.current
               setMessages((current) =>
                 current.map((message) =>
-                  message.id === activeAssistantId.current
+                  message.id === assistantId
                     ? { ...message, content: message.content + event.data.content }
                     : message,
                 ),
@@ -247,11 +249,7 @@ export function useAiConversation(conversationId: string | null) {
                 event.event === 'failed'
                   ? event.data.assistantMessage
                   : event.data.message
-              setMessages((current) =>
-                current.map((message) =>
-                  message.id === terminal.id ? terminal : message,
-                ),
-              )
+              setMessages((current) => upsertMessage(current, terminal))
               activeAssistantId.current = null
               if (event.event === 'failed') setError(event.data.message)
             }
@@ -259,6 +257,14 @@ export function useAiConversation(conversationId: string | null) {
           retryUserMessageId,
           mode,
         )
+        // Channel delivery can be interrupted by WebView lifecycle or timing. SQLite is
+        // authoritative, so reconcile after every completed command instead of requiring
+        // the user to reload the entire page to see the persisted response.
+        const persistedMessages = await db.listAiMessages(conversationId, 200)
+        if (conversationIdRef.current === conversationId) {
+          messageRevision.current += 1
+          setMessages(persistedMessages)
+        }
         notifyConversations()
       } catch (cause) {
         setError(cause instanceof Error ? cause.message : 'Could not send the message.')
