@@ -2,15 +2,15 @@
 
 > Canonical snapshot of what is true in the repository now. This is not a plan or historical log.
 
-| Field            | Value                             |
-| ---------------- | --------------------------------- |
-| Schema version   | 1                                 |
-| Last updated     | 2026-08-11                        |
-| Updated by       | Codex                             |
-| Repository       | `bimberlotDEV/Aether-Desktop`     |
-| Branch           | `codex/release-0.3.1-chat-hotfix` |
-| Baseline commit  | `626f13c` (PR #29 merge)          |
-| Product maturity | Alpha                             |
+| Field            | Value                         |
+| ---------------- | ----------------------------- |
+| Schema version   | 1                             |
+| Last updated     | 2026-08-25                    |
+| Updated by       | Codex                         |
+| Repository       | `bimberlotDEV/Aether-Desktop` |
+| Branch           | `codex/ai-response-sync`      |
+| Baseline commit  | `f775a58` (current `master`)  |
+| Product maturity | Alpha                         |
 
 ## Responsibility of this file
 
@@ -21,27 +21,28 @@
 
 ## Current milestone
 
-| ID                 | Name                                               | Status     | Exit condition                                                                                                                    |
-| ------------------ | -------------------------------------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `M-AI-WORKFLOW`    | Hermes/Codex collaboration foundation              | `complete` | Hermes accepted `AIWF-001` and promoted `DOC-001`.                                                                                |
-| `M-DOC-VERSIONING` | Version and metadata reconciliation                | `complete` | Hermes accepted `DOC-001`.                                                                                                        |
-| `M-AUTO-PUBLISH`   | Automatic GitHub task publication                  | `complete` | Draft PR #1 merged into `master`.                                                                                                 |
-| `M-RUST-VERIFY`    | Restore local Rust verification                    | `complete` | Rust MSVC builds the test binaries and runs formatting, lint, and tests locally.                                                  |
-| `M-CRED-HARDEN`    | Harden AI credential storage and fix deadlock      | `complete` | PR #3 merged; 33/33 Rust tests pass with Windows DPAPI.                                                                           |
-| `M-CODEX-ONLY`     | Codex-only engineering workflow                    | `complete` | ADR-008, repository instructions, workflow, and control templates require no second AI agent.                                     |
-| `M-RUST-QUALITY`   | Restore Rust formatting and strict lint gates      | `complete` | Formatting, Clippy, tests, and production builds all pass.                                                                        |
-| `PHASE34-CLOSEOUT` | Close Spaces and Notes MVP gaps                    | `complete` | All contract acceptance criteria pass with regression coverage.                                                                   |
-| `PHASE5-001`       | Task persistence and IPC foundation                | `complete` | ADR-009 acceptance criteria and all quality gates pass.                                                                           |
-| `PHASE5-002`       | Tasks UI and Pulse integration                     | `complete` | Space and global Task workflows, Pulse attention, tests, and quality gates pass.                                                  |
-| `PHASE6-001`       | Vault persistence and native filesystem foundation | `complete` | Merged through PR #9 at `b202c8e`.                                                                                                |
-| `PHASE6-002`       | Vault UI and Space integration                     | `complete` | Merged through PR #10 at `c352e67`.                                                                                               |
-| `PHASE7-001`       | AI streaming and context foundation                | `complete` | Merged through PR #11 at `7569d3f`.                                                                                               |
-| `PHASE7-002`       | Complete AI user experience                        | `complete` | Merged through PR #12 at `7838599`.                                                                                               |
-| `PHASE8-001`       | Explicit scoped Memory                             | `complete` | Persistence, global/Space management, AI attachment, tests, and quality gates pass.                                               |
-| `PHASE9-001`       | Native Windows lifecycle and packaging             | `complete` | Tray, shortcut, notifications, window state, MSI/NSIS build, and startup smoke test pass.                                         |
-| `PHASE10-001`      | Quality and release preparation                    | `complete` | CI, sanitized export, audits, documentation, packaging, hashes, and startup verification pass.                                    |
-| `STAB-001`         | Integrated alpha stabilization                     | `complete` | Automated, browser, desktop, native, responsive, accessibility, and error-path stress checks pass with verified defects repaired. |
-| `AI-CHAT-003`      | Eliminate stale-load prompt hiding and ship 0.3.1  | `complete` | A deterministic load/stream race test passes and the installed 0.3.1 bundle contains the verified frontend.                       |
+| ID                 | Name                                               | Status     | Exit condition                                                                                                                      |
+| ------------------ | -------------------------------------------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `M-AI-WORKFLOW`    | Hermes/Codex collaboration foundation              | `complete` | Hermes accepted `AIWF-001` and promoted `DOC-001`.                                                                                  |
+| `M-DOC-VERSIONING` | Version and metadata reconciliation                | `complete` | Hermes accepted `DOC-001`.                                                                                                          |
+| `M-AUTO-PUBLISH`   | Automatic GitHub task publication                  | `complete` | Draft PR #1 merged into `master`.                                                                                                   |
+| `M-RUST-VERIFY`    | Restore local Rust verification                    | `complete` | Rust MSVC builds the test binaries and runs formatting, lint, and tests locally.                                                    |
+| `M-CRED-HARDEN`    | Harden AI credential storage and fix deadlock      | `complete` | PR #3 merged; 33/33 Rust tests pass with Windows DPAPI.                                                                             |
+| `M-CODEX-ONLY`     | Codex-only engineering workflow                    | `complete` | ADR-008, repository instructions, workflow, and control templates require no second AI agent.                                       |
+| `M-RUST-QUALITY`   | Restore Rust formatting and strict lint gates      | `complete` | Formatting, Clippy, tests, and production builds all pass.                                                                          |
+| `PHASE34-CLOSEOUT` | Close Spaces and Notes MVP gaps                    | `complete` | All contract acceptance criteria pass with regression coverage.                                                                     |
+| `PHASE5-001`       | Task persistence and IPC foundation                | `complete` | ADR-009 acceptance criteria and all quality gates pass.                                                                             |
+| `PHASE5-002`       | Tasks UI and Pulse integration                     | `complete` | Space and global Task workflows, Pulse attention, tests, and quality gates pass.                                                    |
+| `PHASE6-001`       | Vault persistence and native filesystem foundation | `complete` | Merged through PR #9 at `b202c8e`.                                                                                                  |
+| `PHASE6-002`       | Vault UI and Space integration                     | `complete` | Merged through PR #10 at `c352e67`.                                                                                                 |
+| `PHASE7-001`       | AI streaming and context foundation                | `complete` | Merged through PR #11 at `7569d3f`.                                                                                                 |
+| `PHASE7-002`       | Complete AI user experience                        | `complete` | Merged through PR #12 at `7838599`.                                                                                                 |
+| `PHASE8-001`       | Explicit scoped Memory                             | `complete` | Persistence, global/Space management, AI attachment, tests, and quality gates pass.                                                 |
+| `PHASE9-001`       | Native Windows lifecycle and packaging             | `complete` | Tray, shortcut, notifications, window state, MSI/NSIS build, and startup smoke test pass.                                           |
+| `PHASE10-001`      | Quality and release preparation                    | `complete` | CI, sanitized export, audits, documentation, packaging, hashes, and startup verification pass.                                      |
+| `STAB-001`         | Integrated alpha stabilization                     | `complete` | Automated, browser, desktop, native, responsive, accessibility, and error-path stress checks pass with verified defects repaired.   |
+| `AI-CHAT-003`      | Eliminate stale-load prompt hiding and ship 0.3.1  | `complete` | A deterministic load/stream race test passes and the installed 0.3.1 bundle contains the verified frontend.                         |
+| `AI-CHAT-004`      | Reconcile completed responses without page reload  | `complete` | Terminal events upsert missing messages and every completed stream reconciles the visible conversation with persisted SQLite state. |
 
 No implementation task is active. `STAB-001` is complete and recorded in `.ai/HANDOFF.md`.
 
@@ -68,17 +69,17 @@ No implementation task is active. `STAB-001` is complete and recorded in `.ai/HA
 
 ## Quality snapshot
 
-| Check                                       | Last result | Date       | Notes                                                                                                |
-| ------------------------------------------- | ----------- | ---------- | ---------------------------------------------------------------------------------------------------- |
-| `pnpm check`                                | Pass        | 2026-08-11 | Typecheck and lint clean; Vitest 53/53 across 24 files.                                              |
-| `pnpm build`                                | Pass        | 2026-08-11 | Production build is 497.35 kB JS / 137.60 kB gzip and has no chunk-size warning.                     |
-| `pnpm audit --audit-level high`             | Pass        | 2026-08-11 | No known vulnerabilities.                                                                            |
-| `cargo test`                                | Pass        | 2026-08-11 | 61/61 tests pass, including sanitized backup, native status, AI isolation, Memory, and Vault safety. |
-| `cargo build`                               | Pass        | 2026-08-11 | Windows production build compiles with DPAPI and single-instance support.                            |
-| `cargo fmt --check`                         | Pass        | 2026-08-11 | Repository Rust formatting is clean.                                                                 |
-| `cargo clippy --all-targets -- -D warnings` | Pass        | 2026-08-11 | Library, binary, and test targets are warning-free.                                                  |
-| `pnpm tauri:build`                          | Pass        | 2026-08-11 | 0.3.1 x64 MSI and NSIS bundles built; hashes recorded in `docs/release-artifacts-0.3.1.md`.          |
-| Release startup smoke                       | Pass        | 2026-08-11 | Installed 0.3.1 opened the AI route, showed its version/input, and did not show the error boundary.  |
+| Check                                       | Last result | Date       | Notes                                                                                    |
+| ------------------------------------------- | ----------- | ---------- | ---------------------------------------------------------------------------------------- |
+| `pnpm check`                                | Pass        | 2026-08-25 | Typecheck and lint clean; Vitest 55/55 across 24 files.                                  |
+| `pnpm build`                                | Pass        | 2026-08-25 | Production build is 497.31 kB JS / 137.62 kB gzip and has no chunk-size warning.         |
+| `pnpm audit --audit-level high`             | Pass        | 2026-08-11 | No known vulnerabilities.                                                                |
+| `cargo test`                                | Pass        | 2026-08-25 | 62/62 tests pass, including legacy-schema compatibility and existing safety coverage.    |
+| `cargo build`                               | Pass        | 2026-08-11 | Windows production build compiles with DPAPI and single-instance support.                |
+| `cargo fmt --check`                         | Pass        | 2026-08-25 | Repository Rust formatting is clean.                                                     |
+| `cargo clippy --all-targets -- -D warnings` | Pass        | 2026-08-25 | Library, binary, and test targets are warning-free.                                      |
+| `pnpm tauri:build`                          | Pass        | 2026-08-25 | 0.3.1 x64 MSI and NSIS bundles contain frontend bundle `index-uxuVmjVb.js`.              |
+| Release startup smoke                       | Pass        | 2026-08-25 | Installed 0.3.1 is responsive; SQLite integrity passes with zero foreign-key violations. |
 
 ## Active blockers
 
@@ -116,7 +117,7 @@ Full rationale belongs in `.ai/ARCHITECTURE.md` or a dedicated ADR under `docs/d
 
 ## Next
 
-The Alpha 0.3.1 roadmap through Phase 10 and the `STAB-001` integrated stabilization pass are complete. `AI-CHAT-001` adds optimistic prompt rendering, `AI-CHAT-002` prevents the following streamed update from crashing the AI view, and `AI-CHAT-003` prevents stale loads from hiding the new stream. Public signing and updater activation remain owner-controlled release operations.
+The Alpha 0.3.1 roadmap through Phase 10 and the `STAB-001` integrated stabilization pass are complete. `AI-CHAT-001` adds optimistic prompt rendering, `AI-CHAT-002` prevents the following streamed update from crashing the AI view, `AI-CHAT-003` prevents stale loads from hiding the new stream, and `AI-CHAT-004` reconciles completed responses without requiring Ctrl+R. Public signing and updater activation remain owner-controlled release operations.
 
 ## Reusable update template
 
