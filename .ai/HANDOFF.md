@@ -4,7 +4,7 @@
 | ----------------- | -------------------------------- |
 | Schema version    | 2                                |
 | Task ID           | `UI-001`                         |
-| Status            | `self_review`                    |
+| Status            | `complete`                       |
 | Owner             | Codex                            |
 | Last updated      | 2026-08-25                       |
 | Related milestone | Milestone A — Product experience |
@@ -20,18 +20,18 @@ The current application is functional but visually flat. At 1280×720, the fixed
 
 ## Acceptance criteria
 
-- [ ] Aether has a distinctive, cohesive application shell with clear brand, grouped navigation, command access, contextual status, and an intentional content canvas.
-- [ ] Pulse, Spaces, Tasks, Vault, AI, Memory, Activity, Settings, Space Detail, Notes, dialogs, and command palette share one visual language without losing existing behavior.
-- [ ] Page headers, primary/secondary buttons, fields, filters, surfaces, empty states, badges, icon treatments, and destructive actions use reusable design primitives or shared tokens.
-- [ ] Dark and light themes both have legible layered surfaces, restrained indigo/cyan accents, high text contrast, and no forbidden gradients, glows, or decorative glass effects.
-- [ ] The interface feels alive through meaningful status, hierarchy, micro-interactions, and spatial rhythm rather than fake content or gratuitous animation.
-- [ ] Core layouts remain usable at 1024×640, 1280×720, and 1600×900 without clipped actions or inaccessible content.
-- [ ] Keyboard focus remains visible; dialogs, navigation, buttons, filters, and command palette preserve accessible names and interaction semantics.
-- [ ] Reduced-motion preferences disable nonessential motion.
-- [ ] Existing route and interaction tests pass; new tests cover the shell and shared visual primitives where behavior changes.
-- [ ] Production build size stays below the existing warning threshold and no new runtime dependency is required without evidence.
-- [ ] Browser visual QA covers representative empty states, populated browser-mode flows, dark/light themes, command palette, dialogs, and supported viewport sizes.
-- [ ] Self-review finds no functionality regression, dead control, fake persistence, inaccessible interaction, or styling outside the approved token system.
+- [x] Aether has a distinctive, cohesive application shell with clear brand, grouped navigation, command access, contextual status, and an intentional content canvas.
+- [x] Pulse, Spaces, Tasks, Vault, AI, Memory, Activity, Settings, Space Detail, Notes, dialogs, and command palette share one visual language without losing existing behavior.
+- [x] Page headers, primary/secondary buttons, fields, filters, surfaces, empty states, badges, icon treatments, and destructive actions use reusable design primitives or shared tokens.
+- [x] Dark and light themes both have legible layered surfaces, restrained indigo/cyan accents, high text contrast, and no forbidden gradients, glows, or decorative glass effects.
+- [x] The interface feels alive through meaningful status, hierarchy, micro-interactions, and spatial rhythm rather than fake content or gratuitous animation.
+- [x] Core layouts remain usable at 1024×640, 1280×720, and 1600×900 without clipped actions or inaccessible content.
+- [x] Keyboard focus remains visible; dialogs, navigation, buttons, filters, and command palette preserve accessible names and interaction semantics.
+- [x] Reduced-motion preferences disable nonessential motion.
+- [x] Existing route and interaction tests pass; new tests cover the shell and shared visual primitives where behavior changes.
+- [x] Production build size stays below the existing warning threshold and no new runtime dependency is required without evidence.
+- [x] Browser visual QA covers representative empty states, populated browser-mode flows, dark/light themes, command palette, dialogs, and supported viewport sizes.
+- [x] Self-review finds no functionality regression, dead control, fake persistence, inaccessible interaction, or styling outside the approved token system.
 
 ## Allowed paths
 
@@ -95,6 +95,8 @@ None. The owner chose the product direction, and the concrete visual system can 
 
 ## Self-review record
 
-- **Status:** Pending implementation.
-- **Acceptance mapping:** Pending.
-- **Findings:** Pending.
+- **Status:** Pass. UI-001 is complete on `codex/ui-makeover`; the exact UI commit is `82c7b14`.
+- **Acceptance mapping:** The shell and all named routes use the semantic interface system in `src/styles/index.css` and `src/components/ui/AetherUI.tsx`; browser QA covered empty and populated Pulse/Spaces/Notes flows, every primary route, dialogs, command palette, dark/light themes, and 1024×640, 1280×720, and 1600×900 viewports with no horizontal overflow. Visible focus and reduced-motion rules remain active.
+- **Automated evidence:** Standalone `pnpm check` passes with 54/54 tests; the combined local integration with PRs #34 and #35 passes with 56/56 tests. `pnpm build` produces 492.28 kB JS (138.46 kB gzip) and 48.63 kB CSS (9.80 kB gzip) without a chunk warning. `pnpm audit --audit-level high` reports no known vulnerabilities, and `pnpm tauri:build` produces both x64 installers.
+- **Installed smoke:** The combined NSIS package installed with exit code 0 after backing up `%APPDATA%/com.aether.desktop`; installed version 0.3.1 started from `%LOCALAPPDATA%/Aether/aether.exe` and remained responsive with the existing database in place.
+- **Findings:** No new dependency, backend change, fake persistence, dead control, forbidden gradient/glow/glass styling, or behavior regression was found. The combined smoke remains local because UI-001, PR #34, and PR #35 are independently reviewable branches.

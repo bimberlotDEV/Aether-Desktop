@@ -2,15 +2,15 @@
 
 > Canonical snapshot of what is true in the repository now. This is not a plan or historical log.
 
-| Field            | Value                             |
-| ---------------- | --------------------------------- |
-| Schema version   | 1                                 |
-| Last updated     | 2026-08-25                        |
-| Updated by       | Codex                             |
-| Repository       | `bimberlotDEV/Aether-Desktop`     |
-| Branch           | `codex/ui-makeover`               |
-| Baseline commit  | `f775a58` (current `master`)       |
-| Product maturity | Alpha                             |
+| Field            | Value                         |
+| ---------------- | ----------------------------- |
+| Schema version   | 1                             |
+| Last updated     | 2026-08-25                    |
+| Updated by       | Codex                         |
+| Repository       | `bimberlotDEV/Aether-Desktop` |
+| Branch           | `codex/ui-makeover`           |
+| Baseline commit  | `f775a58` (current `master`)  |
+| Product maturity | Alpha                         |
 
 ## Responsibility of this file
 
@@ -42,7 +42,7 @@
 | `PHASE10-001`      | Quality and release preparation                    | `complete` | CI, sanitized export, audits, documentation, packaging, hashes, and startup verification pass.                                    |
 | `STAB-001`         | Integrated alpha stabilization                     | `complete` | Automated, browser, desktop, native, responsive, accessibility, and error-path stress checks pass with verified defects repaired. |
 | `AI-CHAT-003`      | Eliminate stale-load prompt hiding and ship 0.3.1  | `complete` | A deterministic load/stream race test passes and the installed 0.3.1 bundle contains the verified frontend.                       |
-| `UI-001`           | Reimagine the Aether interface system              | `self_review` | Every core surface is cohesive, premium, responsive, accessible, and distinctly Aether without behavior regressions.           |
+| `UI-001`           | Reimagine the Aether interface system              | `complete` | Every core surface is cohesive, premium, responsive, accessible, and distinctly Aether without behavior regressions.              |
 
 No implementation task is active. `STAB-001` is complete and recorded in `.ai/HANDOFF.md`.
 
@@ -71,15 +71,15 @@ No implementation task is active. `STAB-001` is complete and recorded in `.ai/HA
 
 | Check                                       | Last result | Date       | Notes                                                                                                |
 | ------------------------------------------- | ----------- | ---------- | ---------------------------------------------------------------------------------------------------- |
-| `pnpm check`                                | Pass        | 2026-08-11 | Typecheck and lint clean; Vitest 53/53 across 24 files.                                              |
-| `pnpm build`                                | Pass        | 2026-08-11 | Production build is 497.35 kB JS / 137.60 kB gzip and has no chunk-size warning.                     |
-| `pnpm audit --audit-level high`             | Pass        | 2026-08-11 | No known vulnerabilities.                                                                            |
+| `pnpm check`                                | Pass        | 2026-08-25 | UI branch: 54/54 tests; combined with PRs #34/#35: 56/56 tests across 25 files.                      |
+| `pnpm build`                                | Pass        | 2026-08-25 | Combined production build: 492.28 kB JS / 138.46 kB gzip; no chunk-size warning.                     |
+| `pnpm audit --audit-level high`             | Pass        | 2026-08-25 | No known vulnerabilities.                                                                            |
 | `cargo test`                                | Pass        | 2026-08-11 | 61/61 tests pass, including sanitized backup, native status, AI isolation, Memory, and Vault safety. |
 | `cargo build`                               | Pass        | 2026-08-11 | Windows production build compiles with DPAPI and single-instance support.                            |
 | `cargo fmt --check`                         | Pass        | 2026-08-11 | Repository Rust formatting is clean.                                                                 |
 | `cargo clippy --all-targets -- -D warnings` | Pass        | 2026-08-11 | Library, binary, and test targets are warning-free.                                                  |
-| `pnpm tauri:build`                          | Pass        | 2026-08-11 | 0.3.1 x64 MSI and NSIS bundles built; hashes recorded in `docs/release-artifacts-0.3.1.md`.          |
-| Release startup smoke                       | Pass        | 2026-08-11 | Installed 0.3.1 opened the AI route, showed its version/input, and did not show the error boundary.  |
+| `pnpm tauri:build`                          | Pass        | 2026-08-25 | Combined 0.3.1 x64 MSI and NSIS bundles built successfully.                                          |
+| Release startup smoke                       | Pass        | 2026-08-25 | Combined 0.3.1 installed after backup and started responsively with the existing database intact.    |
 
 ## Active blockers
 

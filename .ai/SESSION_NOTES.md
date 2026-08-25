@@ -4,25 +4,30 @@
 | -------------- | ---------- |
 | Schema version | 2          |
 | Session date   | 2026-08-25 |
-| Active task    | `UI-001`   |
+| Active task    | None       |
 | Agent          | Codex      |
-| State          | `self_review` |
+| State          | `complete` |
 
-## Current work
+## Completed work
 
-- The owner requested a complete Aether layout and UI makeover because the installed Alpha feels bland and visually inactive.
-- Classified the change as `planned_codex` because it changes the shared design system and nearly every frontend surface.
-- Audited the current dark UI at 1280×720 across Pulse, Spaces, Tasks, Vault, AI, Memory, Activity, and Settings.
-- Confirmed repeated sparse empty states, weak shell identity, inconsistent content widths, undifferentiated surfaces, and route-local control styling.
-- Accepted ADR-015 and prepared the complete `UI-001` contract without changing production code.
+- Completed `UI-001`, a product-wide Aether interface makeover classified as `planned_codex` and governed by ADR-015.
+- Added semantic interface tokens and reusable Page, PageHeader, Button, Surface, EmptyState, SectionLabel, and StatusDot primitives.
+- Rebuilt the application shell, Pulse, Spaces, Tasks, Vault, AI, Memory, Activity, Settings, Space Detail, Notes, dialogs, and command palette into one restrained futuristic visual language.
+- Preserved every existing persistence, domain, security, and AI confirmation boundary; no backend, migration, credential, or user-data behavior changed.
+- Completed dark/light and responsive browser QA, including locally persisted browser-mode Space and Note flows.
+- Validated the standalone UI branch and a local integration with AI response synchronization and legacy-upgrade branches.
+- Built, backed up, installed, and started the combined Windows 0.3.1 package.
 
-## Safety boundary
+## Verification snapshot
 
-- Preserve every existing event handler, route, persistence call, security boundary, and user-data behavior.
-- Do not introduce fake data, dead controls, gradients, neon glow, decorative glass, telemetry, dependencies, or backend changes.
-- Build from semantic tokens and shared primitives, then migrate route compositions.
-- Keep PR #34 and PR #35 independent; validate a combined local build before replacing the installed app.
+- Standalone `pnpm check`: 54/54 tests pass.
+- Combined `pnpm check`: 56/56 tests pass across 25 files.
+- Combined `pnpm build`: 492.28 kB JS (138.46 kB gzip), 48.63 kB CSS (9.80 kB gzip), no chunk warning.
+- `pnpm audit --audit-level high`: no known vulnerabilities.
+- `pnpm tauri:build`: MSI and NSIS x64 bundles pass.
+- Installed startup smoke: version 0.3.1 process is responsive and the existing 258,048-byte database remains in place.
+- Pre-install backup: `C:\Users\bim\AppData\Local\AetherInstallBackups\pre-ui-001-20260825-190751`.
 
 ## Exact resume point
 
-The `UI-001` readiness gate passes. Begin with shared tokens and interface primitives, then migrate the application shell and representative routes before the remaining product surfaces.
+No UI-001 implementation work remains. Review and merge its draft PR independently from PRs #34 and #35; the installed app already contains the verified combined local candidate.

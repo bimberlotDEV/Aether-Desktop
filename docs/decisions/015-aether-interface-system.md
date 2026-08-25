@@ -34,4 +34,3 @@ Choose option 3. Aether will use:
 - Lucide remains available, but icon size, weight, framing, and meaning are curated by the interface system.
 - Decorative gradients, glow, glass cards, fake activity, fake metrics, and dead actions remain prohibited even when described as “futuristic.”
 - Browser-mode empty and locally persisted preview flows remain the safe visual QA surface; final desktop smoke validates the Tauri composition.
-

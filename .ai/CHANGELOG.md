@@ -26,6 +26,17 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-08-25 — `UI-001` — Aether interface system reimagined
+
+- **Type:** Feature, design system, accessibility, and test
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review
+- **Summary:** Rebuilt Aether's complete frontend into a calm, layered, distinctly futuristic Windows workspace with a stronger shell, meaningful Pulse cockpit, coherent route compositions, richer real empty/populated states, and consistent dark/light interactions.
+- **Files:** `src/styles/index.css`, `src/components/ui/AetherUI.tsx`, shell, product routes, dialogs, component tests, ADR-015, `.ai/*`
+- **Verification:** Standalone frontend gates pass with 54/54 tests. The combined local candidate with PRs #34/#35 passes 56/56 tests, production build, dependency audit, Windows MSI/NSIS build, backup, silent installation, and responsive installed-app startup. Browser visual QA covers all core routes, empty/populated states, dark/light themes, dialogs, command palette, and 1024×640 through 1600×900.
+- **Decisions/deviations:** No new dependencies, backend behavior, fake data, gradient/glow/glass decoration, or persistence changes were introduced. The combined build was installed locally while each PR remains independently reviewable.
+- **Follow-up:** None.
+
 ## 2026-08-11 — `AI-CHAT-003` — Stale loads no longer hide submitted prompts
 
 - **Type:** Fix, test, and release
