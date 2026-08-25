@@ -4,7 +4,7 @@
 | ----------------- | --------------------------------- |
 | Schema version    | 2                                 |
 | Task ID           | `RELEASE-032`                     |
-| Status            | `self_review`                     |
+| Status            | `complete`                        |
 | Owner             | Codex                             |
 | Last updated      | 2026-08-25                        |
 | Related milestone | Alpha 0.3.2 release consolidation |
@@ -29,7 +29,7 @@ PR #34 (AI response reconciliation), PR #35 (personal-beta database upgrades), a
 - [x] The NSIS installer exits successfully, Windows installs version 0.3.2, and the installed executable starts and remains responsive.
 - [x] The existing database remains present after upgrade with the same or greater file size; migration safety is additionally covered by the 63-test Rust suite.
 - [x] The final diff is limited to release metadata, visible version labels, release/control documentation, and generated lock metadata.
-- [ ] The verified work is committed, pushed, represented by a draft PR, and receives a green refreshed GitHub CI run.
+- [x] The verified work is committed, pushed, represented by draft PR #37, and receives a green refreshed GitHub CI run.
 
 ## Allowed paths
 
@@ -99,9 +99,10 @@ None. The owner explicitly authorized the next release step. Public signing, aut
 
 ## Self-review record
 
-- **Status:** Local self-review passed; publication and refreshed GitHub CI remain pending.
+- **Status:** Pass. Release commit `6d96178` is pushed in draft PR #37, and GitHub Actions run 32894361551 completed the Windows quality-gate job successfully.
 - **Version and scope:** All first-party machine/display sources resolve to 0.3.2. Remaining 0.3.1 references are historical changelog, completed-task evidence, dependency versions, and the previous artifact record. The changed paths match the contract and add no dependency, permission, migration, or runtime behavior.
 - **Automated evidence:** Frozen install, typecheck, lint, 56/56 frontend tests, production build, clean high-severity audit, Rust formatting, strict Clippy, 63/63 Rust tests, optimized release build, Tauri MSI/NSIS packaging, and `git diff --check` pass.
 - **Artifact evidence:** Loose executable: 16,096,768 bytes / `1AFF3FFA67E741B2B13A5CB59C13A171DA39250F184449F7CE4A762CACA450E7`; MSI: 7,086,080 bytes / `C5A02C8FEFA9A99D55BF2130E421EFFA310BF0B677A16EF56DDE6974BDB3FEFB`; NSIS: 4,228,661 bytes / `D0402AB4ADAC9E7A392957CD0A84404CF9C53ABDB691BFD9B603C37E91E7BE2B`. All are explicitly unsigned.
 - **Data and install evidence:** Backup `pre-release-032-20260825-220627` matches the source database at 258,048 bytes and SHA-256 `F2808F56E2D421A54745118D880B566A3809B0632018806C4C9C1DD8A6E3BD2F`. The same offline database size/hash remained after the NSIS exit-code-0 upgrade; installed product version is 0.3.2 and its process is responsive.
 - **Findings:** Corrected the initial lockfile criterion after confirming pnpm's importer does not encode the root package version. No secret, generated binary, database, backup, unsafe operation, or unrelated change is present in the diff.
+- **Publication evidence:** Draft PR `https://github.com/bimberlotDEV/Aether-Desktop/pull/37`; CI run `https://github.com/bimberlotDEV/Aether-Desktop/actions/runs/32894361551`. All Windows job steps passed, including frozen dependency installation, frontend quality/build, Rust format, strict lint, and Rust tests.
