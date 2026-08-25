@@ -26,6 +26,17 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-08-25 — `RELEASE-032` — Alpha 0.3.2 candidate installed and published
+
+- **Type:** Build, release, docs, and process
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review
+- **Summary:** Consolidated merged AI reconciliation, personal-beta migration safety, and the interface redesign into version 0.3.2; produced reproducible Windows artifacts, protected the existing local data with an offline backup, installed the upgrade, and published draft PR #37.
+- **Files:** Version metadata and labels, `CHANGELOG.md`, `README.md`, `docs/native-desktop.md`, `docs/release-artifacts-0.3.2.md`, `.ai/*`
+- **Verification:** Frozen installation, 56/56 frontend tests, production build, clean high-severity dependency audit, Rust format, strict Clippy, 63/63 Rust tests, release build, MSI/NSIS packaging, artifact hashes, byte-for-byte database preservation, installed-process smoke, and GitHub Actions run 32894361551 pass.
+- **Decisions/deviations:** Artifacts remain explicitly unsigned, automatic updating remains disabled, and no GitHub Release was published. Draft PR #37 remains open for owner-controlled merge.
+- **Follow-up:** Design full restore and Vault-byte archive semantics as a separate reviewed task; configure signing/updating only with owner-controlled trust infrastructure.
+
 ## 2026-08-25 — `UI-001` — Aether interface system reimagined
 
 - **Type:** Feature, design system, accessibility, and test

@@ -8,8 +8,8 @@
 | Last updated     | 2026-08-25                    |
 | Updated by       | Codex                         |
 | Repository       | `bimberlotDEV/Aether-Desktop` |
-| Branch           | `codex/ui-makeover`           |
-| Baseline commit  | `f775a58` (current `master`)  |
+| Branch           | `codex/release-0.3.2`         |
+| Baseline commit  | `3748947` (current `master`)  |
 | Product maturity | Alpha                         |
 
 ## Responsibility of this file
@@ -45,8 +45,9 @@
 | `AI-CHAT-004`      | Reconcile completed responses without page reload  | `complete` | Terminal events upsert missing messages and every completed stream reconciles the visible conversation with persisted SQLite state. |
 | `HARD-001`         | Safely upgrade personal-beta databases             | `complete` | Populated legacy databases upgrade transactionally with current repository and Vault safety invariants intact.                      |
 | `UI-001`           | Reimagine the Aether interface system              | `complete` | Every core surface is cohesive, premium, responsive, accessible, and distinctly Aether without behavior regressions.                |
+| `RELEASE-032`      | Consolidate and install Alpha 0.3.2                | `complete` | Merged AI, migration, and UI work ships as a versioned, hashed, installed, and CI-green Windows release candidate.                  |
 
-`AI-CHAT-004`, `HARD-001`, and `UI-001` are complete and integrated in the release train.
+`RELEASE-032` is complete on draft PR #37: 0.3.2 is locally built, backed up, installed, responsive, hashed, published, and independently CI-green.
 
 ## Completed product milestones
 
@@ -73,15 +74,15 @@
 
 | Check                                       | Last result | Date       | Notes                                                                                          |
 | ------------------------------------------- | ----------- | ---------- | ---------------------------------------------------------------------------------------------- |
-| `pnpm check`                                | Pass        | 2026-08-25 | Integrated UI, AI, and migration branch: 56/56 tests across 25 files.                          |
-| `pnpm build`                                | Pass        | 2026-08-25 | Integrated production build: 492.28 kB JS / 138.46 kB gzip; no chunk-size warning.             |
+| `pnpm check`                                | Pass        | 2026-08-25 | Release 0.3.2 branch: 56/56 tests across 25 files.                                             |
+| `pnpm build`                                | Pass        | 2026-08-25 | Release 0.3.2: 492.28 kB JS / 138.46 kB gzip; no chunk-size warning.                           |
 | `pnpm audit --audit-level high`             | Pass        | 2026-08-11 | No known vulnerabilities.                                                                      |
 | `cargo test`                                | Pass        | 2026-08-25 | 63/63 tests pass, including populated legacy upgrade, filesystem retry, and rollback coverage. |
 | `cargo build`                               | Pass        | 2026-08-11 | Windows production build compiles with DPAPI and single-instance support.                      |
 | `cargo fmt --check`                         | Pass        | 2026-08-11 | Repository Rust formatting is clean.                                                           |
 | `cargo clippy --all-targets -- -D warnings` | Pass        | 2026-08-11 | Library, binary, and test targets are warning-free.                                            |
-| `pnpm tauri:build`                          | Pass        | 2026-08-25 | Combined 0.3.1 x64 MSI and NSIS bundles built with HARD-001 and AI response sync.              |
-| Release startup smoke                       | Pass        | 2026-08-25 | Combined installer starts responsively; SQLite integrity and foreign-key checks pass.          |
+| `pnpm tauri:build`                          | Pass        | 2026-08-25 | Alpha 0.3.2 x64 MSI and NSIS bundles built and SHA-256 hashes recorded.                        |
+| Release startup smoke                       | Pass        | 2026-08-25 | 0.3.2 installed with exit code 0; database hash unchanged and process responsive.              |
 
 ## Active blockers
 
