@@ -42,9 +42,9 @@
 | `PHASE10-001`      | Quality and release preparation                    | `complete` | CI, sanitized export, audits, documentation, packaging, hashes, and startup verification pass.                                    |
 | `STAB-001`         | Integrated alpha stabilization                     | `complete` | Automated, browser, desktop, native, responsive, accessibility, and error-path stress checks pass with verified defects repaired. |
 | `AI-CHAT-003`      | Eliminate stale-load prompt hiding and ship 0.3.1  | `complete` | A deterministic load/stream race test passes and the installed 0.3.1 bundle contains the verified frontend.                       |
-| `HARD-001`         | Safely upgrade personal-beta databases             | `active`   | Populated legacy databases upgrade transactionally with current repository and Vault safety invariants intact.                    |
+| `HARD-001`         | Safely upgrade personal-beta databases             | `complete` | Populated legacy databases upgrade transactionally with current repository and Vault safety invariants intact.                    |
 
-`HARD-001` is ready and active as the first checkpoint in the owner-approved Milestone A — Alpha Hardening roadmap.
+`HARD-001` is complete as the first checkpoint in the owner-approved Milestone A — Alpha Hardening roadmap.
 
 ## Completed product milestones
 
@@ -69,17 +69,17 @@
 
 ## Quality snapshot
 
-| Check                                       | Last result | Date       | Notes                                                                                                |
-| ------------------------------------------- | ----------- | ---------- | ---------------------------------------------------------------------------------------------------- |
-| `pnpm check`                                | Pass        | 2026-08-11 | Typecheck and lint clean; Vitest 53/53 across 24 files.                                              |
-| `pnpm build`                                | Pass        | 2026-08-11 | Production build is 497.35 kB JS / 137.60 kB gzip and has no chunk-size warning.                     |
-| `pnpm audit --audit-level high`             | Pass        | 2026-08-11 | No known vulnerabilities.                                                                            |
-| `cargo test`                                | Pass        | 2026-08-11 | 61/61 tests pass, including sanitized backup, native status, AI isolation, Memory, and Vault safety. |
-| `cargo build`                               | Pass        | 2026-08-11 | Windows production build compiles with DPAPI and single-instance support.                            |
-| `cargo fmt --check`                         | Pass        | 2026-08-11 | Repository Rust formatting is clean.                                                                 |
-| `cargo clippy --all-targets -- -D warnings` | Pass        | 2026-08-11 | Library, binary, and test targets are warning-free.                                                  |
-| `pnpm tauri:build`                          | Pass        | 2026-08-11 | 0.3.1 x64 MSI and NSIS bundles built; hashes recorded in `docs/release-artifacts-0.3.1.md`.          |
-| Release startup smoke                       | Pass        | 2026-08-11 | Installed 0.3.1 opened the AI route, showed its version/input, and did not show the error boundary.  |
+| Check                                       | Last result | Date       | Notes                                                                                          |
+| ------------------------------------------- | ----------- | ---------- | ---------------------------------------------------------------------------------------------- |
+| `pnpm check`                                | Pass        | 2026-08-11 | Typecheck and lint clean; Vitest 53/53 across 24 files.                                        |
+| `pnpm build`                                | Pass        | 2026-08-11 | Production build is 497.35 kB JS / 137.60 kB gzip and has no chunk-size warning.               |
+| `pnpm audit --audit-level high`             | Pass        | 2026-08-11 | No known vulnerabilities.                                                                      |
+| `cargo test`                                | Pass        | 2026-08-25 | 63/63 tests pass, including populated legacy upgrade, filesystem retry, and rollback coverage. |
+| `cargo build`                               | Pass        | 2026-08-11 | Windows production build compiles with DPAPI and single-instance support.                      |
+| `cargo fmt --check`                         | Pass        | 2026-08-11 | Repository Rust formatting is clean.                                                           |
+| `cargo clippy --all-targets -- -D warnings` | Pass        | 2026-08-11 | Library, binary, and test targets are warning-free.                                            |
+| `pnpm tauri:build`                          | Pass        | 2026-08-25 | Combined 0.3.1 x64 MSI and NSIS bundles built with HARD-001 and AI response sync.              |
+| Release startup smoke                       | Pass        | 2026-08-25 | Combined installer starts responsively; SQLite integrity and foreign-key checks pass.          |
 
 ## Active blockers
 
@@ -117,7 +117,7 @@ Full rationale belongs in `.ai/ARCHITECTURE.md` or a dedicated ADR under `docs/d
 
 ## Next
 
-The product-evolution roadmap now proceeds through Milestone A — Alpha Hardening before Context Foundation, Universal Search, Continuity, Pulse 2.0, Safe Actions, AI evolution, onboarding, Public Beta, and commercial readiness. `HARD-001` is the active data-safety checkpoint. Public signing and updater activation remain owner-controlled release operations.
+The product-evolution roadmap proceeds through Milestone A — Alpha Hardening before Context Foundation, Universal Search, Continuity, Pulse 2.0, Safe Actions, AI evolution, onboarding, Public Beta, and commercial readiness. `HARD-001` closed the first data-safety checkpoint; the next Alpha-hardening defect should be selected from evidence before Context Foundation begins. Public signing and updater activation remain owner-controlled release operations.
 
 ## Reusable update template
 

@@ -4,7 +4,7 @@
 | ----------------- | ----------------------------- |
 | Schema version    | 2                             |
 | Task ID           | `HARD-001`                    |
-| Status            | `ready`                       |
+| Status            | `complete`                    |
 | Owner             | Codex                         |
 | Last updated      | 2026-08-25                    |
 | Related milestone | Milestone A — Alpha Hardening |
@@ -20,17 +20,17 @@ The current upstream migration sequence reuses different names and table shapes 
 
 ## Acceptance criteria
 
-- [ ] Fresh database creation still produces the current Tasks, Memory, and Vault schemas.
-- [ ] Re-running migrations remains idempotent.
-- [ ] A representative prior-schema database upgrades in one transaction without losing valid Task, Memory, Vault, Space, or Note rows.
-- [ ] Legacy Task status, priority, due date, completion, archive, and Space ownership map deterministically to supported current values.
-- [ ] Legacy Memory scope and content remain explicit and do not gain broader AI access as a side effect.
-- [ ] Legacy Vault metadata never resolves outside Aether-controlled storage, never overwrites a file, and either preserves discoverable managed bytes or reports an explicit recoverable limitation.
-- [ ] Failed upgrades roll back without leaving renamed, partial, or duplicate tables.
-- [ ] Current repositories can read and mutate upgraded rows under their normal validation rules.
-- [ ] The owner's database is backed up before installer replacement and passes SQLite integrity plus foreign-key checks afterward.
-- [ ] All frontend, Rust, build, packaging, and startup gates pass.
-- [ ] Self-review finds no unresolved data-loss, path-safety, secret, or scope defect.
+- [x] Fresh database creation still produces the current Tasks, Memory, and Vault schemas.
+- [x] Re-running migrations remains idempotent.
+- [x] A representative prior-schema database upgrades in one transaction without losing valid Task, Memory, Vault, Space, or Note rows.
+- [x] Legacy Task status, priority, due date, completion, archive, and Space ownership map deterministically to supported current values.
+- [x] Legacy Memory scope and content remain explicit and do not gain broader AI access as a side effect.
+- [x] Legacy Vault metadata never resolves outside Aether-controlled storage, never overwrites a file, and either preserves discoverable managed bytes or reports an explicit recoverable limitation.
+- [x] Failed upgrades roll back without leaving renamed, partial, or duplicate tables.
+- [x] Current repositories can read and mutate upgraded rows under their normal validation rules.
+- [x] The owner's database is backed up before installer replacement and passes SQLite integrity plus foreign-key checks afterward.
+- [x] All frontend, Rust, build, packaging, and startup gates pass.
+- [x] Self-review finds no unresolved data-loss, path-safety, secret, or scope defect.
 
 ## Allowed paths
 
@@ -92,7 +92,7 @@ None. The safest behavior can be derived from existing architecture and historic
 
 ## Self-review record
 
-- **Status:** Pending.
-- **Acceptance mapping:** Pending implementation and verification.
-- **Data safety:** No production database or managed file may be modified before a verified backup exists.
-- **Known limitations:** To be determined from historical implementation evidence.
+- **Status:** Pass — no unresolved data-loss, path-safety, secret, or scope findings.
+- **Acceptance mapping:** Fresh creation and idempotence remain covered by existing migration tests; populated legacy Tasks, scoped/inactive Memory, Vault metadata, real managed bytes, repository reads, mismatched/identical retry targets, and forced rollback are covered by `test_upgrades_personal_beta_schema_without_losing_rows` and `test_legacy_upgrade_rolls_back_schema_and_created_vault_copy`. Full frontend/Rust/build/package gates and installed runtime checks pass.
+- **Data safety:** Legacy Vault sources are validated as single canonical files directly below the historical managed root, copied through a create-new partial file, flushed, atomically renamed, and never overwritten. Newly created targets are removed if the SQL transaction fails; original sources remain as recovery copies. The installed upgrade was preceded by a verified 521,780-byte data-directory backup.
+- **Known limitations:** The one-time upgrade may temporarily require up to the legacy Vault byte size in additional disk space because original managed blobs are intentionally retained for recovery. Corrupt or missing legacy blobs block migration instead of silently discarding metadata or associating the wrong file.

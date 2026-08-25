@@ -6,7 +6,7 @@
 | Session date   | 2026-08-25 |
 | Active task    | `HARD-001` |
 | Agent          | Codex      |
-| State          | `ready`    |
+| State          | `complete` |
 
 ## Current work
 
@@ -14,6 +14,9 @@
 - Classified the next work as `planned_codex` and selected the proven personal-beta database incompatibility as the first Milestone A hardening checkpoint.
 - Moved the existing local migration prototype onto `codex/alpha-legacy-upgrade`; no additional production code changed before the readiness gate.
 - Created a complete task contract covering populated schema upgrades, rollback, Memory scope, Vault bytes/path safety, installer replacement, and publication.
+- Verified historical Vault storage at `app_data/vault/<stored_name>` and migrated bytes safely into `vault/items/<id>/<original_name>` while retaining original recovery copies.
+- Added populated upgrade, current-repository, mismatched/identical retry, and forced transaction-rollback coverage.
+- Passed 55/55 combined frontend tests, 63/63 Rust tests, strict gates, MSI/NSIS packaging, verified backup, combined installation, responsive startup, and SQLite integrity checks.
 
 ## Safety boundary
 
@@ -24,4 +27,4 @@
 
 ## Exact resume point
 
-The `HARD-001` contract is `ready`. Inspect historical migrations, repository invariants, and legacy managed-file behavior before revising the existing migration prototype.
+`HARD-001` implementation, validation, installed integration smoke, and self-review are complete. Publish `codex/alpha-legacy-upgrade`, create its draft PR, and then select the next evidence-backed Milestone A hardening checkpoint.
