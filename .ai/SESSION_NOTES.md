@@ -1,14 +1,14 @@
 # Session Notes
 
-| Field          | Value      |
-| -------------- | ---------- |
-| Schema version | 2          |
-| Session date   | 2026-08-25 |
-| Active task    | None       |
-| Agent          | Codex      |
-| State          | `complete` |
+| Field          | Value         |
+| -------------- | ------------- |
+| Schema version | 2             |
+| Session date   | 2026-08-25    |
+| Active task    | `RELEASE-032` |
+| Agent          | Codex         |
+| State          | `self_review` |
 
-## Completed work
+## Current work
 
 - Completed `UI-001`, a product-wide Aether interface makeover classified as `planned_codex` and governed by ADR-015.
 - Added semantic interface tokens and reusable Page, PageHeader, Button, Surface, EmptyState, SectionLabel, and StatusDot primitives.
@@ -18,6 +18,9 @@
 - Validated the standalone UI branch and a local integration with AI response synchronization and legacy-upgrade branches.
 - Built, backed up, installed, and started the combined Windows 0.3.1 package.
 - Integrated merged PRs #34 and #35 into the UI branch while preserving AI response reconciliation, database migration safeguards, and all three task histories.
+- Merged PRs #34, #35, and #36 in order; every refreshed PR and post-merge `master` Windows-CI run passed.
+- Classified the formal 0.3.2 packaging and installation as `planned_codex` and completed the `RELEASE-032` readiness contract.
+- Synchronized 0.3.2 metadata and labels, passed every local release gate, built and hashed MSI/NSIS artifacts, verified an offline backup, installed the NSIS upgrade, proved the database hash unchanged, and restarted a responsive 0.3.2 process.
 
 ## Verification snapshot
 
@@ -31,4 +34,4 @@
 
 ## Exact resume point
 
-UI-001 is integrated with merged PRs #34 and #35. Validate the refreshed branch, push it to PR #36, and merge only after its refreshed CI succeeds.
+Local implementation and self-review pass. Commit and publish the release branch as a draft PR, wait for refreshed GitHub CI, then close the contract with final publication evidence.

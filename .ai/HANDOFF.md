@@ -1,102 +1,107 @@
 # Codex Task Contract
 
-| Field             | Value                            |
-| ----------------- | -------------------------------- |
-| Schema version    | 2                                |
-| Task ID           | `UI-001`                         |
-| Status            | `complete`                       |
-| Owner             | Codex                            |
-| Last updated      | 2026-08-25                       |
-| Related milestone | Milestone A — Product experience |
-| Classification    | `planned_codex`                  |
+| Field             | Value                             |
+| ----------------- | --------------------------------- |
+| Schema version    | 2                                 |
+| Task ID           | `RELEASE-032`                     |
+| Status            | `self_review`                     |
+| Owner             | Codex                             |
+| Last updated      | 2026-08-25                        |
+| Related milestone | Alpha 0.3.2 release consolidation |
+| Classification    | `planned_codex`                   |
 
 ## Objective
 
-Transform Aether's complete frontend into a calm, premium, recognizably futuristic Windows workspace with a coherent shell, stronger information hierarchy, richer empty and populated states, and consistent interaction styling—without changing persistence, domain behavior, or security boundaries.
+Publish a reproducible Aether 0.3.2 Alpha release candidate from merged `master`, install it as a verified upgrade on this Windows PC without losing user data, and publish exact artifacts, hashes, release notes, and validation evidence for review.
 
 ## Context
 
-The current application is functional but visually flat. At 1280×720, the fixed 208px sidebar has little product identity, route headers and content widths are inconsistent, empty screens leave most of the canvas unused, controls vary between routes, and the dark theme relies on near-black surfaces without enough hierarchy. The owner explicitly requested a full layout and UI makeover. The repository requires restraint inspired by Linear, Raycast, Arc, Things, and Craft, and forbids neon, decorative gradients, glassmorphism, fake data, dead controls, and generic dashboard styling.
+PR #34 (AI response reconciliation), PR #35 (personal-beta database upgrades), and PR #36 (complete interface makeover) are merged in order on `master` at `3748947`, and every post-merge Windows CI run passed. The installed application already contains the locally integrated 0.3.1 candidate, but repository metadata still identifies it as 0.3.1 and the final merged source has not been emitted as a separately versioned release. A new patch version gives Windows a clear upgrade boundary and makes the integrated release auditable.
 
 ## Acceptance criteria
 
-- [x] Aether has a distinctive, cohesive application shell with clear brand, grouped navigation, command access, contextual status, and an intentional content canvas.
-- [x] Pulse, Spaces, Tasks, Vault, AI, Memory, Activity, Settings, Space Detail, Notes, dialogs, and command palette share one visual language without losing existing behavior.
-- [x] Page headers, primary/secondary buttons, fields, filters, surfaces, empty states, badges, icon treatments, and destructive actions use reusable design primitives or shared tokens.
-- [x] Dark and light themes both have legible layered surfaces, restrained indigo/cyan accents, high text contrast, and no forbidden gradients, glows, or decorative glass effects.
-- [x] The interface feels alive through meaningful status, hierarchy, micro-interactions, and spatial rhythm rather than fake content or gratuitous animation.
-- [x] Core layouts remain usable at 1024×640, 1280×720, and 1600×900 without clipped actions or inaccessible content.
-- [x] Keyboard focus remains visible; dialogs, navigation, buttons, filters, and command palette preserve accessible names and interaction semantics.
-- [x] Reduced-motion preferences disable nonessential motion.
-- [x] Existing route and interaction tests pass; new tests cover the shell and shared visual primitives where behavior changes.
-- [x] Production build size stays below the existing warning threshold and no new runtime dependency is required without evidence.
-- [x] Browser visual QA covers representative empty states, populated browser-mode flows, dark/light themes, command palette, dialogs, and supported viewport sizes.
-- [x] Self-review finds no functionality regression, dead control, fake persistence, inaccessible interaction, or styling outside the approved token system.
+- [x] `package.json`, Rust package metadata, Cargo lock metadata, Tauri configuration, and visible in-app version labels agree on `0.3.2`; the pnpm lockfile has no root-version field and passes frozen installation unchanged.
+- [x] Product changelog and release artifact documentation describe AI response reconciliation, safe personal-beta upgrades, and the interface makeover without overstating public signing or updater support.
+- [x] Frontend typecheck, lint, 56 tests, production build, dependency audit, Rust formatting, strict Clippy, 63 Rust tests, release build, and Tauri packaging all pass from the release branch.
+- [x] The generated x64 MSI, NSIS installer, and release executable exist and have recorded byte sizes and SHA-256 hashes.
+- [x] No generated binary, database, credential, environment file, log, private key, or user backup is staged or committed.
+- [x] A complete pre-upgrade copy of `%APPDATA%/com.aether.desktop` is created outside the repository after stopping the verified process and before replacing the installed app.
+- [x] The NSIS installer exits successfully, Windows installs version 0.3.2, and the installed executable starts and remains responsive.
+- [x] The existing database remains present after upgrade with the same or greater file size; migration safety is additionally covered by the 63-test Rust suite.
+- [x] The final diff is limited to release metadata, visible version labels, release/control documentation, and generated lock metadata.
+- [ ] The verified work is committed, pushed, represented by a draft PR, and receives a green refreshed GitHub CI run.
 
 ## Allowed paths
 
-- `src/App.tsx`
-- `src/styles/`
-- `src/components/`
-- `src/routes/`
-- Frontend tests under `src/` that cover changed UI behavior
-- `docs/decisions/015-aether-interface-system.md`
-- `.ai/ARCHITECTURE.md`
+- `package.json`
+- `pnpm-lock.yaml`
+- `src-tauri/Cargo.toml`
+- `src-tauri/Cargo.lock`
+- `src-tauri/tauri.conf.json`
+- `src/components/Sidebar.tsx`
+- `src/routes/Settings.tsx`
+- `CHANGELOG.md`
+- `README.md`
+- `docs/native-desktop.md`
+- `docs/release-artifacts-0.3.2.md`
 - `.ai/CHANGELOG.md`
-- `.ai/PROJECT_STATE.md`
 - `.ai/HANDOFF.md`
+- `.ai/PROJECT_STATE.md`
 - `.ai/SESSION_NOTES.md`
 - `.ai/TODO.md`
 
 ## Non-goals
 
-- Changing SQLite schemas, repositories, Tauri commands, Vault ownership, AI provider behavior, Memory scope, backup semantics, or credentials.
-- Adding dashboard charts, sample data, decorative metrics, marketing surfaces, plugins, accounts, telemetry, sync, or collaboration.
-- Replacing Tailwind, React, routing, Zustand, or Lucide with a new framework.
-- Activating signing or the updater.
-- Hiding unfinished product behavior behind fake UI.
+- Adding product features, schema migrations, dependencies, permissions, signing, an updater, telemetry, restore behavior, or Vault-byte backup semantics.
+- Publishing a GitHub Release or marking the draft PR merged without a separate owner request.
+- Sending a live DeepSeek request with the owner's credentials.
+- Removing old installers, previous backups, legacy Vault recovery copies, or user content.
 
 ## Dependencies and evidence
 
-- Existing route/component behavior and automated tests.
-- `AGENTS.md` visual rules and `IDEA.md` accessibility/product requirements.
-- Existing Tailwind v4 token foundation in `src/styles/index.css`.
-- Current browser-mode fallbacks for safe UI verification without desktop credentials or user data.
-- `ADR-015`, which defines the durable interface-system direction for this redesign.
+- Merged baseline: `3748947` on `master`.
+- Successful post-merge Windows CI for PRs #34, #35, and #36.
+- Existing release checklist in `docs/release-checklist.md`.
+- Existing 0.3.1 metadata and artifact-record pattern.
+- Existing verified backup root under `%LOCALAPPDATA%/AetherInstallBackups`.
 
 ## Risks and safeguards
 
-- **Regression across broad surface area:** preserve component props and event handlers, work through shared primitives first, and run route tests after each slice.
-- **Style drift:** centralize semantic tokens and primitives; avoid per-component arbitrary values where a shared role exists.
-- **Futuristic becoming noisy:** use geometry, contrast, typography, alignment, restrained accent lines, and motion—not gradients, glow, glass, or decoration.
-- **Accessibility regression:** retain semantic elements, visible focus, reduced motion, readable contrast, and keyboard-verifiable dialogs/navigation.
-- **Branch dependency:** UI-001 started cleanly from its original `master`; merged PRs #34 and #35 were integrated before final merge, with their histories and runtime changes preserved.
-- **Rollback:** UI-001 changes frontend code and documentation only; reverting its commits restores the prior interface without data migration.
+- **Installer replacement risk:** resolve exact source, backup, installer, and installed executable paths before mutation; stop only the verified `aether.exe` process.
+- **User-data risk:** make a complete timestamped backup before installation and never delete the source or backup.
+- **Version drift:** search all first-party 0.3.1 references, update only machine/version-display references, and verify locks through native package tooling.
+- **Artifact ambiguity:** hash exact release executable, MSI, and NSIS outputs after the final build and document their full filenames.
+- **Unsigned distribution:** preserve the existing explicit unsigned/no-updater limitation.
+- **Rollback:** the pre-upgrade backup and previous 0.3.1 installer remain available; reverting the release commit restores repository metadata.
 
 ## Required validation
 
 ```text
-pnpm typecheck
-pnpm lint
-pnpm test
+pnpm install --frozen-lockfile
+pnpm check
 pnpm build
 pnpm audit --audit-level high
-git diff --check
-Browser dark/light visual QA at 1024×640, 1280×720, and 1600×900
-Browser keyboard/focus smoke for navigation, command palette, and dialogs
-Combined local integration with PR #34 and PR #35
+cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check
+cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --all-features -- -D warnings
+cargo test --manifest-path src-tauri/Cargo.toml --all-targets --all-features
+cargo build --manifest-path src-tauri/Cargo.toml --release
 pnpm tauri:build
-Installed Windows startup smoke without modifying user content
+git diff --check
+SHA-256 and byte-size capture for release artifacts
+pre-install backup verification
+silent NSIS upgrade and installed process/version smoke
+GitHub PR CI
 ```
 
 ## Blocking decisions
 
-None. The owner chose the product direction, and the concrete visual system can be inferred from the binding design constraints. New functionality or a material navigation-model change will be excluded or separately proposed rather than assumed.
+None. The owner explicitly authorized the next release step. Public signing, automatic updates, and GitHub Release publication remain excluded because they require separate owner-controlled trust material or publication direction.
 
 ## Self-review record
 
-- **Status:** Pass. UI-001 is complete on `codex/ui-makeover`; the exact UI commit is `82c7b14`.
-- **Acceptance mapping:** The shell and all named routes use the semantic interface system in `src/styles/index.css` and `src/components/ui/AetherUI.tsx`; browser QA covered empty and populated Pulse/Spaces/Notes flows, every primary route, dialogs, command palette, dark/light themes, and 1024×640, 1280×720, and 1600×900 viewports with no horizontal overflow. Visible focus and reduced-motion rules remain active.
-- **Automated evidence:** Standalone `pnpm check` passes with 54/54 tests; the combined local integration with PRs #34 and #35 passes with 56/56 tests. `pnpm build` produces 492.28 kB JS (138.46 kB gzip) and 48.63 kB CSS (9.80 kB gzip) without a chunk warning. `pnpm audit --audit-level high` reports no known vulnerabilities, and `pnpm tauri:build` produces both x64 installers.
-- **Installed smoke:** The combined NSIS package installed with exit code 0 after backing up `%APPDATA%/com.aether.desktop`; installed version 0.3.1 started from `%LOCALAPPDATA%/Aether/aether.exe` and remained responsive with the existing database in place.
-- **Findings:** No new dependency, fake persistence, dead control, forbidden gradient/glow/glass styling, or behavior regression was found. PRs #34 and #35 are now merged and integrated into this branch without weakening AI synchronization or migration safeguards.
+- **Status:** Local self-review passed; publication and refreshed GitHub CI remain pending.
+- **Version and scope:** All first-party machine/display sources resolve to 0.3.2. Remaining 0.3.1 references are historical changelog, completed-task evidence, dependency versions, and the previous artifact record. The changed paths match the contract and add no dependency, permission, migration, or runtime behavior.
+- **Automated evidence:** Frozen install, typecheck, lint, 56/56 frontend tests, production build, clean high-severity audit, Rust formatting, strict Clippy, 63/63 Rust tests, optimized release build, Tauri MSI/NSIS packaging, and `git diff --check` pass.
+- **Artifact evidence:** Loose executable: 16,096,768 bytes / `1AFF3FFA67E741B2B13A5CB59C13A171DA39250F184449F7CE4A762CACA450E7`; MSI: 7,086,080 bytes / `C5A02C8FEFA9A99D55BF2130E421EFFA310BF0B677A16EF56DDE6974BDB3FEFB`; NSIS: 4,228,661 bytes / `D0402AB4ADAC9E7A392957CD0A84404CF9C53ABDB691BFD9B603C37E91E7BE2B`. All are explicitly unsigned.
+- **Data and install evidence:** Backup `pre-release-032-20260825-220627` matches the source database at 258,048 bytes and SHA-256 `F2808F56E2D421A54745118D880B566A3809B0632018806C4C9C1DD8A6E3BD2F`. The same offline database size/hash remained after the NSIS exit-code-0 upgrade; installed product version is 0.3.2 and its process is responsive.
+- **Findings:** Corrected the initial lockfile criterion after confirming pnpm's importer does not encode the root package version. No secret, generated binary, database, backup, unsafe operation, or unrelated change is present in the diff.

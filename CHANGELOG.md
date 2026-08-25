@@ -2,6 +2,13 @@
 
 All notable product changes are recorded here.
 
+## 0.3.2-alpha - 2026-08-25
+
+- Reconciled completed DeepSeek responses with persisted conversations so answers appear without requiring Ctrl+R, including when WebView stream lifecycle events are missed.
+- Added safe transactional upgrades for personal-beta Tasks, Memory, and Vault schemas while retaining legacy managed Vault files as recovery copies.
+- Reimagined the complete Aether interface with a cohesive application shell, richer Pulse, redesigned product surfaces, responsive layouts, accessible focus behavior, and refined dark/light themes.
+- Consolidated the merged AI, migration, and interface work into a separately versioned Windows upgrade candidate.
+
 ## 0.3.1-alpha - 2026-08-11
 
 - Fixed submitted AI prompts appearing only after a refresh.

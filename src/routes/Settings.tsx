@@ -71,7 +71,7 @@ export function Settings() {
                 className="text-sm font-medium"
                 style={{ color: 'var(--color-text-primary)' }}
               >
-                Alpha 0.3.1
+                Alpha 0.3.2
               </span>
             </div>
             <div className="flex justify-between items-center">
