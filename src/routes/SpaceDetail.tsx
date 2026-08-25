@@ -94,10 +94,10 @@ export function SpaceDetailLayout() {
   const isArchived = !!space.archived_at
 
   return (
-    <div className="flex-1 flex flex-col min-h-0">
+    <div className="aether-space-shell">
       {/* Header */}
       <div
-        className="px-8 py-5 shrink-0 flex items-center gap-4"
+        className="aether-space-header"
         style={{ borderBottom: '1px solid var(--color-border)' }}
       >
         {/* Breadcrumb */}
@@ -185,7 +185,7 @@ export function SpaceDetailLayout() {
 
       {/* Module tabs */}
       <div
-        className="flex items-center gap-0 px-8 shrink-0"
+        className="aether-space-tabs"
         style={{ borderBottom: '1px solid var(--color-border)' }}
       >
         <NavLink
@@ -225,7 +225,7 @@ export function SpaceDetailLayout() {
       </div>
 
       {/* Content area */}
-      <div className="flex-1 min-h-0 overflow-y-auto">
+      <div className="aether-space-content">
         <Routes>
           <Route
             index
@@ -315,7 +315,7 @@ function OverviewTab({
   children: Space[]
 }) {
   return (
-    <div className="px-8 py-6 space-y-8 max-w-[700px]">
+    <div className="mx-auto w-full max-w-[920px] px-8 py-8 space-y-8">
       {/* Space info */}
       <div className="flex items-start gap-4">
         <div
@@ -378,8 +378,7 @@ function OverviewTab({
             return (
               <div
                 key={m.id}
-                className="flex items-center gap-3 px-3 py-2.5 rounded-lg"
-                style={{ backgroundColor: 'var(--color-bg-secondary)' }}
+                className="aether-surface flex items-center gap-3 px-3 py-3 rounded-xl"
               >
                 <span style={{ color: 'var(--color-accent)', display: 'flex' }}>
                   <ModuleIcon size={16} strokeWidth={1.75} />

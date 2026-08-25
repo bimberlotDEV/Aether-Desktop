@@ -254,7 +254,7 @@ export function CommandPalette() {
         role="dialog"
         aria-modal="true"
         aria-label="Command palette"
-        className="relative w-full max-w-[520px] rounded-xl shadow-2xl glass-surface overflow-hidden"
+        className="aether-command-palette glass-surface"
         onClick={(e) => e.stopPropagation()}
         style={{
           animation: 'commandIn 150ms var(--ease-out)',
@@ -306,7 +306,7 @@ export function CommandPalette() {
                 <button
                   key={cmd.id}
                   className={cn(
-                    'flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-left transition-colors duration-75',
+                    'aether-command-result',
                     i === selectedIndex
                       ? 'bg-[var(--color-accent-muted)]'
                       : 'hover:bg-[var(--color-bg-tertiary)]',
@@ -346,19 +346,6 @@ export function CommandPalette() {
           )}
         </div>
       </div>
-
-      <style>{`
-        @keyframes commandIn {
-          from {
-            opacity: 0;
-            transform: scale(0.97) translateY(-8px);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1) translateY(0);
-          }
-        }
-      `}</style>
     </div>
   )
 }

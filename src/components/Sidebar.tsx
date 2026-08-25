@@ -1,16 +1,20 @@
 import { NavLink } from 'react-router-dom'
 import {
-  LayoutDashboard,
-  Layers,
-  FolderOpen,
   Activity,
-  Settings,
-  CheckSquare,
-  Sparkles,
   Brain,
+  CheckSquare,
+  Command,
+  FolderOpen,
+  Layers,
+  LayoutDashboard,
+  Search,
+  Settings,
+  Sparkles,
   type LucideIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useCommandStore } from '@/stores/commandStore'
+import { StatusDot } from '@/components/ui/AetherUI'
 
 interface NavItem {
   to: string
@@ -18,70 +22,105 @@ interface NavItem {
   label: string
 }
 
-const navItems: NavItem[] = [
+const workspaceItems: NavItem[] = [
   { to: '/', icon: LayoutDashboard, label: 'Pulse' },
   { to: '/spaces', icon: Layers, label: 'Spaces' },
   { to: '/tasks', icon: CheckSquare, label: 'Tasks' },
   { to: '/vault', icon: FolderOpen, label: 'Vault' },
+]
+
+const intelligenceItems: NavItem[] = [
   { to: '/ai', icon: Sparkles, label: 'AI' },
   { to: '/memory', icon: Brain, label: 'Memory' },
   { to: '/activity', icon: Activity, label: 'Activity' },
-  { to: '/settings', icon: Settings, label: 'Settings' },
 ]
 
-export function Sidebar() {
+function AetherMark() {
   return (
-    <aside
-      className="flex flex-col h-full border-r select-none"
-      style={{
-        width: 208,
-        backgroundColor: 'var(--color-sidebar-bg)',
-        borderColor: 'var(--color-sidebar-border)',
-      }}
-    >
-      {/* Wordmark */}
-      <div
-        className="flex items-center gap-2.5 px-4 h-12 shrink-0"
-        style={{ borderBottom: `1px solid var(--color-sidebar-border)` }}
-      >
-        <span
-          className="text-sm font-semibold tracking-tight"
-          style={{ color: 'var(--color-text-primary)' }}
-        >
-          Aether
-        </span>
-      </div>
+    <span className="aether-mark" aria-hidden="true">
+      <span />
+      <span />
+      <span />
+    </span>
+  )
+}
 
-      {/* Navigation */}
-      <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
-        {navItems.map((item) => (
+function NavGroup({ label, items }: { label: string; items: NavItem[] }) {
+  return (
+    <div className="aether-nav-group">
+      <p className="aether-nav-label">{label}</p>
+      <div className="space-y-0.5">
+        {items.map((item) => (
           <NavLink
             key={item.to}
             to={item.to}
             end={item.to === '/'}
             className={({ isActive }) =>
-              cn(
-                'flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-sm font-medium transition-colors duration-100',
-                isActive
-                  ? 'bg-[var(--color-sidebar-active)] text-[var(--color-accent)]'
-                  : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-sidebar-hover)] hover:text-[var(--color-text-primary)]',
-              )
+              cn('aether-nav-item focus-ring', isActive && 'aether-nav-item--active')
             }
           >
-            <item.icon size={17} strokeWidth={1.75} />
-            {item.label}
+            {({ isActive }) => (
+              <>
+                <span className="aether-nav-indicator" aria-hidden="true" />
+                <item.icon
+                  size={16}
+                  strokeWidth={isActive ? 2 : 1.65}
+                  aria-hidden="true"
+                />
+                <span>{item.label}</span>
+              </>
+            )}
           </NavLink>
         ))}
+      </div>
+    </div>
+  )
+}
+
+export function Sidebar() {
+  const openCommandPalette = useCommandStore((state) => state.open)
+
+  return (
+    <aside className="aether-sidebar" aria-label="Aether navigation">
+      <div className="aether-brand">
+        <AetherMark />
+        <div>
+          <p className="aether-brand-name">Aether</p>
+          <p className="aether-brand-tagline">Personal workspace</p>
+        </div>
+      </div>
+
+      <button className="aether-command-trigger focus-ring" onClick={openCommandPalette}>
+        <Search size={14} strokeWidth={1.8} aria-hidden="true" />
+        <span>Search Aether</span>
+        <kbd>
+          <Command size={10} aria-hidden="true" />K
+        </kbd>
+      </button>
+
+      <nav className="aether-sidebar-nav">
+        <NavGroup label="Workspace" items={workspaceItems} />
+        <NavGroup label="Intelligence" items={intelligenceItems} />
       </nav>
 
-      {/* Bottom — subtle version / status */}
-      <div
-        className="px-4 py-3 shrink-0"
-        style={{ borderTop: `1px solid var(--color-sidebar-border)` }}
-      >
-        <p className="text-xs" style={{ color: 'var(--color-text-tertiary)' }}>
-          Alpha · v0.3.1
-        </p>
+      <div className="aether-sidebar-footer">
+        <NavLink
+          to="/settings"
+          className={({ isActive }) =>
+            cn('aether-nav-item focus-ring', isActive && 'aether-nav-item--active')
+          }
+        >
+          <span className="aether-nav-indicator" aria-hidden="true" />
+          <Settings size={16} strokeWidth={1.65} aria-hidden="true" />
+          <span>Settings</span>
+        </NavLink>
+        <div className="aether-local-status">
+          <div className="flex items-center gap-2">
+            <StatusDot />
+            <span>Local & private</span>
+          </div>
+          <span>0.3.1</span>
+        </div>
       </div>
     </aside>
   )

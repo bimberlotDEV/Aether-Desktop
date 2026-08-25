@@ -79,15 +79,12 @@ export function NotesView() {
   }
 
   return (
-    <div className="flex h-full min-h-0">
+    <div className="aether-notes-shell">
       {/* List panel */}
-      <div
-        className="w-[280px] shrink-0 flex flex-col h-full border-r"
-        style={{ borderColor: 'var(--color-border)' }}
-      >
+      <div className="aether-notes-list">
         {/* Header */}
         <div
-          className="px-4 py-3 flex items-center gap-2 shrink-0"
+          className="px-3 py-3 flex items-center gap-2 shrink-0"
           style={{ borderBottom: '1px solid var(--color-border)' }}
         >
           <div className="flex-1 relative">
@@ -101,11 +98,7 @@ export function NotesView() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search notes…"
-              className="w-full pl-8 pr-3 py-1.5 rounded-md text-sm outline-none"
-              style={{
-                backgroundColor: 'var(--color-bg-tertiary)',
-                color: 'var(--color-text-primary)',
-              }}
+              className="aether-field w-full pl-8 pr-3 py-1.5 text-sm outline-none"
             />
           </div>
           <button
@@ -258,16 +251,13 @@ export function NotesView() {
       </div>
 
       {/* Editor panel */}
-      <div className="flex-1 flex flex-col min-w-0 h-full">
+      <div className="aether-note-workspace">
         {selectedId ? (
           <NoteEditor key={selectedId} noteId={selectedId} />
         ) : (
-          <div className="flex-1 flex items-center justify-center">
+          <div className="aether-note-idle">
             <div className="text-center">
-              <div
-                className="w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-4"
-                style={{ backgroundColor: 'var(--color-accent-muted)' }}
-              >
+              <div className="aether-icon-frame aether-icon-frame--large mx-auto mb-4">
                 <FileText
                   size={22}
                   strokeWidth={1.75}
@@ -276,6 +266,9 @@ export function NotesView() {
               </div>
               <p className="text-sm" style={{ color: 'var(--color-text-tertiary)' }}>
                 Select a note or create a new one
+              </p>
+              <p className="mt-1 text-xs text-[var(--color-text-tertiary)]">
+                Your writing stays local and saves as you type.
               </p>
             </div>
           </div>
@@ -326,7 +319,7 @@ function NoteRow({
   return (
     <div
       className={cn(
-        'group flex items-center transition-colors duration-75',
+        'aether-note-list-row group flex items-center transition-colors duration-75',
         isActive
           ? 'bg-[var(--color-accent-muted)]'
           : 'hover:bg-[var(--color-bg-tertiary)]',
@@ -547,7 +540,7 @@ function NoteEditor({ noteId }: { noteId: string }) {
     <div className="flex-1 flex flex-col min-h-0">
       {/* Editor header */}
       <div
-        className="flex items-center gap-3 px-6 py-2 shrink-0"
+        className="aether-note-editor-header"
         style={{ borderBottom: '1px solid var(--color-border)' }}
       >
         <div className="flex-1" />
@@ -557,8 +550,8 @@ function NoteEditor({ noteId }: { noteId: string }) {
       </div>
 
       {/* Editor body */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-[720px] mx-auto px-8 py-6">
+      <div className="aether-note-editor-scroll">
+        <div className="aether-note-paper">
           {/* Title */}
           <input
             ref={titleRef}
@@ -566,7 +559,7 @@ function NoteEditor({ noteId }: { noteId: string }) {
             value={title}
             onChange={(e) => handleTitleChange(e.target.value)}
             placeholder="Untitled note"
-            className="w-full text-2xl font-semibold bg-transparent outline-none mb-4 tracking-tight"
+            className="w-full text-3xl font-semibold bg-transparent outline-none mb-5 tracking-tight"
             style={{ color: 'var(--color-text-primary)' }}
             spellCheck={false}
           />
@@ -577,7 +570,7 @@ function NoteEditor({ noteId }: { noteId: string }) {
             value={content}
             onChange={(e) => handleContentChange(e.target.value)}
             placeholder="Start writing…"
-            className="w-full flex-1 min-h-[400px] bg-transparent outline-none resize-none text-sm leading-relaxed"
+            className="w-full flex-1 min-h-[460px] bg-transparent outline-none resize-none text-base leading-relaxed"
             style={{ color: 'var(--color-text-primary)' }}
             spellCheck
           />

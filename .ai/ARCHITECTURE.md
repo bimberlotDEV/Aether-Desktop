@@ -5,7 +5,7 @@
 | Field | Value |
 | --- | --- |
 | Schema version | 1 |
-| Last updated | 2026-08-10 |
+| Last updated | 2026-08-25 |
 | Architecture owner | Codex |
 | Implementation verifier | Codex self-review |
 
@@ -104,6 +104,7 @@ SQLite / native capabilities / external providers
 | `ADR-012` | Use explicit, user-authored, scoped Memory with opt-in AI attachment. | Accepted | `docs/decisions/012-explicit-memory.md` |
 | `ADR-013` | Use a persistent native Windows tray lifecycle with visible shortcut/notification readiness and gated signed updates. | Accepted | `docs/decisions/013-native-windows-lifecycle.md` |
 | `ADR-014` | Export a sanitized SQLite workspace snapshot; defer restore and Vault-byte archives. | Accepted | `docs/decisions/014-workspace-backup.md` |
+| `ADR-015` | Build Aether's frontend from an internal semantic interface system with a distinctive shell and reusable primitives. | Accepted | `docs/decisions/015-aether-interface-system.md` |
 
 ## Architecture change protocol
 

@@ -1,98 +1,102 @@
 # Codex Task Contract
 
-| Field             | Value                         |
-| ----------------- | ----------------------------- |
-| Schema version    | 2                             |
-| Task ID           | `HARD-001`                    |
-| Status            | `complete`                    |
-| Owner             | Codex                         |
-| Last updated      | 2026-08-25                    |
-| Related milestone | Milestone A — Alpha Hardening |
-| Classification    | `planned_codex`               |
+| Field             | Value                            |
+| ----------------- | -------------------------------- |
+| Schema version    | 2                                |
+| Task ID           | `UI-001`                         |
+| Status            | `complete`                       |
+| Owner             | Codex                            |
+| Last updated      | 2026-08-25                       |
+| Related milestone | Milestone A — Product experience |
+| Classification    | `planned_codex`                  |
 
 ## Objective
 
-Make Alpha 0.3.1 start safely on databases created by the earlier personal-beta schema line, preserving valid Tasks, Memory, Vault metadata, Space relationships, and any discoverable managed-file ownership without weakening current path protections.
+Transform Aether's complete frontend into a calm, premium, recognizably futuristic Windows workspace with a coherent shell, stronger information hierarchy, richer empty and populated states, and consistent interaction styling—without changing persistence, domain behavior, or security boundaries.
 
 ## Context
 
-The current upstream migration sequence reuses different names and table shapes than an earlier personal-beta build. On an affected database, migration `005_tasks` runs against an existing legacy `tasks` table and fails while creating `idx_tasks_parent`, causing the release executable to exit during startup. A local emergency patch proves the schema mismatch and restores startup for the owner's database, but it must be reviewed as a formal data-lifecycle change before publication.
+The current application is functional but visually flat. At 1280×720, the fixed 208px sidebar has little product identity, route headers and content widths are inconsistent, empty screens leave most of the canvas unused, controls vary between routes, and the dark theme relies on near-black surfaces without enough hierarchy. The owner explicitly requested a full layout and UI makeover. The repository requires restraint inspired by Linear, Raycast, Arc, Things, and Craft, and forbids neon, decorative gradients, glassmorphism, fake data, dead controls, and generic dashboard styling.
 
 ## Acceptance criteria
 
-- [x] Fresh database creation still produces the current Tasks, Memory, and Vault schemas.
-- [x] Re-running migrations remains idempotent.
-- [x] A representative prior-schema database upgrades in one transaction without losing valid Task, Memory, Vault, Space, or Note rows.
-- [x] Legacy Task status, priority, due date, completion, archive, and Space ownership map deterministically to supported current values.
-- [x] Legacy Memory scope and content remain explicit and do not gain broader AI access as a side effect.
-- [x] Legacy Vault metadata never resolves outside Aether-controlled storage, never overwrites a file, and either preserves discoverable managed bytes or reports an explicit recoverable limitation.
-- [x] Failed upgrades roll back without leaving renamed, partial, or duplicate tables.
-- [x] Current repositories can read and mutate upgraded rows under their normal validation rules.
-- [x] The owner's database is backed up before installer replacement and passes SQLite integrity plus foreign-key checks afterward.
-- [x] All frontend, Rust, build, packaging, and startup gates pass.
-- [x] Self-review finds no unresolved data-loss, path-safety, secret, or scope defect.
+- [x] Aether has a distinctive, cohesive application shell with clear brand, grouped navigation, command access, contextual status, and an intentional content canvas.
+- [x] Pulse, Spaces, Tasks, Vault, AI, Memory, Activity, Settings, Space Detail, Notes, dialogs, and command palette share one visual language without losing existing behavior.
+- [x] Page headers, primary/secondary buttons, fields, filters, surfaces, empty states, badges, icon treatments, and destructive actions use reusable design primitives or shared tokens.
+- [x] Dark and light themes both have legible layered surfaces, restrained indigo/cyan accents, high text contrast, and no forbidden gradients, glows, or decorative glass effects.
+- [x] The interface feels alive through meaningful status, hierarchy, micro-interactions, and spatial rhythm rather than fake content or gratuitous animation.
+- [x] Core layouts remain usable at 1024×640, 1280×720, and 1600×900 without clipped actions or inaccessible content.
+- [x] Keyboard focus remains visible; dialogs, navigation, buttons, filters, and command palette preserve accessible names and interaction semantics.
+- [x] Reduced-motion preferences disable nonessential motion.
+- [x] Existing route and interaction tests pass; new tests cover the shell and shared visual primitives where behavior changes.
+- [x] Production build size stays below the existing warning threshold and no new runtime dependency is required without evidence.
+- [x] Browser visual QA covers representative empty states, populated browser-mode flows, dark/light themes, command palette, dialogs, and supported viewport sizes.
+- [x] Self-review finds no functionality regression, dead control, fake persistence, inaccessible interaction, or styling outside the approved token system.
 
 ## Allowed paths
 
-- `src-tauri/src/db/migrations.rs`
-- `src-tauri/src/db/mod.rs`
-- `src-tauri/src/vault.rs`
-- Closely related Rust tests or a bounded migration fixture under `src-tauri/`
+- `src/App.tsx`
+- `src/styles/`
+- `src/components/`
+- `src/routes/`
+- Frontend tests under `src/` that cover changed UI behavior
+- `docs/decisions/015-aether-interface-system.md`
+- `.ai/ARCHITECTURE.md`
 - `.ai/CHANGELOG.md`
 - `.ai/PROJECT_STATE.md`
 - `.ai/HANDOFF.md`
 - `.ai/SESSION_NOTES.md`
 - `.ai/TODO.md`
-- Relevant database/release documentation when verified behavior changes
 
 ## Non-goals
 
-- Context Engine, universal search, Pulse 2.0, onboarding, or other post-hardening features.
-- Replacing SQLite, the repository pattern, or the existing Tauri trust boundary.
-- Weakening Vault containment or converting managed files into arbitrary linked paths.
-- Deleting invalid legacy records without preserving evidence and an explicit recovery path.
-- Changing public product positioning beyond recording the new master roadmap.
+- Changing SQLite schemas, repositories, Tauri commands, Vault ownership, AI provider behavior, Memory scope, backup semantics, or credentials.
+- Adding dashboard charts, sample data, decorative metrics, marketing surfaces, plugins, accounts, telemetry, sync, or collaboration.
+- Replacing Tailwind, React, routing, Zustand, or Lucide with a new framework.
+- Activating signing or the updater.
+- Hiding unfinished product behavior behind fake UI.
 
-## Dependencies and evidence to inspect
+## Dependencies and evidence
 
-- Current and historical migration sequences and Git history.
-- Current Tasks, Memory, and Vault repository invariants.
-- Historical managed-file storage behavior, if it existed in a shipped build.
-- The backed-up owner database, read-only except during the final verified upgrade.
-- Current backup/export limitations and release packaging behavior.
+- Existing route/component behavior and automated tests.
+- `AGENTS.md` visual rules and `IDEA.md` accessibility/product requirements.
+- Existing Tailwind v4 token foundation in `src/styles/index.css`.
+- Current browser-mode fallbacks for safe UI verification without desktop credentials or user data.
+- `ADR-015`, which defines the durable interface-system direction for this redesign.
 
 ## Risks and safeguards
 
-- **Data loss:** all schema replacement must occur inside a single SQLite transaction and be covered by populated fixtures.
-- **Managed-file orphaning:** do not fabricate a current managed path unless the corresponding byte location is known and safely migrated.
-- **Scope leakage:** global/Space Memory mapping must preserve original scope and remain explicit-only AI context.
-- **Path traversal/symlinks:** filesystem repair, if required, stays in trusted Rust and uses canonical containment checks.
-- **User worktree overlap:** only the existing `src-tauri/src/db/migrations.rs` prototype overlaps this task; all other task paths are clean at readiness.
-- **Rollback:** preserve the pre-upgrade database directory backup and keep schema changes transactional; installation can be replaced with the prior installer if startup validation fails.
+- **Regression across broad surface area:** preserve component props and event handlers, work through shared primitives first, and run route tests after each slice.
+- **Style drift:** centralize semantic tokens and primitives; avoid per-component arbitrary values where a shared role exists.
+- **Futuristic becoming noisy:** use geometry, contrast, typography, alignment, restrained accent lines, and motion—not gradients, glow, glass, or decoration.
+- **Accessibility regression:** retain semantic elements, visible focus, reduced motion, readable contrast, and keyboard-verifiable dialogs/navigation.
+- **Branch dependency:** UI-001 started cleanly from its original `master`; merged PRs #34 and #35 were integrated before final merge, with their histories and runtime changes preserved.
+- **Rollback:** UI-001 changes frontend code and documentation only; reverting its commits restores the prior interface without data migration.
 
 ## Required validation
 
 ```text
-pnpm check
+pnpm typecheck
+pnpm lint
+pnpm test
 pnpm build
 pnpm audit --audit-level high
-cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
-cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
-cargo test --manifest-path src-tauri/Cargo.toml
-cargo build --manifest-path src-tauri/Cargo.toml
-pnpm tauri:build
 git diff --check
-SQLite fresh-schema, populated legacy-upgrade, rollback, idempotence, integrity, and foreign-key checks
-Installed Windows startup smoke against a backed-up legacy database
+Browser dark/light visual QA at 1024×640, 1280×720, and 1600×900
+Browser keyboard/focus smoke for navigation, command palette, and dialogs
+Combined local integration with PR #34 and PR #35
+pnpm tauri:build
+Installed Windows startup smoke without modifying user content
 ```
 
 ## Blocking decisions
 
-None. The safest behavior can be derived from existing architecture and historical repository evidence. If legacy managed-file bytes cannot be located deterministically, the task must preserve metadata and expose a recoverable limitation rather than guessing or deleting.
+None. The owner chose the product direction, and the concrete visual system can be inferred from the binding design constraints. New functionality or a material navigation-model change will be excluded or separately proposed rather than assumed.
 
 ## Self-review record
 
-- **Status:** Pass — no unresolved data-loss, path-safety, secret, or scope findings.
-- **Acceptance mapping:** Fresh creation and idempotence remain covered by existing migration tests; populated legacy Tasks, scoped/inactive Memory, Vault metadata, real managed bytes, repository reads, mismatched/identical retry targets, and forced rollback are covered by `test_upgrades_personal_beta_schema_without_losing_rows` and `test_legacy_upgrade_rolls_back_schema_and_created_vault_copy`. Full frontend/Rust/build/package gates and installed runtime checks pass.
-- **Data safety:** Legacy Vault sources are validated as single canonical files directly below the historical managed root, copied through a create-new partial file, flushed, atomically renamed, and never overwritten. Newly created targets are removed if the SQL transaction fails; original sources remain as recovery copies. The installed upgrade was preceded by a verified 521,780-byte data-directory backup.
-- **Known limitations:** The one-time upgrade may temporarily require up to the legacy Vault byte size in additional disk space because original managed blobs are intentionally retained for recovery. Corrupt or missing legacy blobs block migration instead of silently discarding metadata or associating the wrong file.
+- **Status:** Pass. UI-001 is complete on `codex/ui-makeover`; the exact UI commit is `82c7b14`.
+- **Acceptance mapping:** The shell and all named routes use the semantic interface system in `src/styles/index.css` and `src/components/ui/AetherUI.tsx`; browser QA covered empty and populated Pulse/Spaces/Notes flows, every primary route, dialogs, command palette, dark/light themes, and 1024×640, 1280×720, and 1600×900 viewports with no horizontal overflow. Visible focus and reduced-motion rules remain active.
+- **Automated evidence:** Standalone `pnpm check` passes with 54/54 tests; the combined local integration with PRs #34 and #35 passes with 56/56 tests. `pnpm build` produces 492.28 kB JS (138.46 kB gzip) and 48.63 kB CSS (9.80 kB gzip) without a chunk warning. `pnpm audit --audit-level high` reports no known vulnerabilities, and `pnpm tauri:build` produces both x64 installers.
+- **Installed smoke:** The combined NSIS package installed with exit code 0 after backing up `%APPDATA%/com.aether.desktop`; installed version 0.3.1 started from `%LOCALAPPDATA%/Aether/aether.exe` and remained responsive with the existing database in place.
+- **Findings:** No new dependency, fake persistence, dead control, forbidden gradient/glow/glass styling, or behavior regression was found. PRs #34 and #35 are now merged and integrated into this branch without weakening AI synchronization or migration safeguards.

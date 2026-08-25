@@ -1,15 +1,10 @@
 @import 'tailwindcss';
 
-/* ============================================
-   Aether Design Tokens
-   ============================================ */
-
 @theme {
-  /* ---- Typography ---- */
-  --font-sans: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
-  --font-mono: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', monospace;
+  --font-sans:
+    'Inter Variable', 'Inter', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Cascadia Code', 'SFMono-Regular', monospace;
 
-  /* ---- Font sizes (modular scale) ---- */
   --text-xs: 0.6875rem;
   --text-xs--line-height: 1rem;
   --text-sm: 0.8125rem;
@@ -24,163 +19,125 @@
   --text-2xl--line-height: 2rem;
   --text-3xl: 1.875rem;
   --text-3xl--line-height: 2.375rem;
+  --text-4xl: 2.25rem;
+  --text-4xl--line-height: 2.65rem;
 
-  /* ---- Font weights ---- */
   --font-weight-normal: 400;
   --font-weight-medium: 500;
   --font-weight-semibold: 600;
   --font-weight-bold: 700;
 
-  /* ---- Spacing scale (4px base) ---- */
-  --spacing-0: 0;
-  --spacing-px: 1px;
-  --spacing-0_5: 2px;
-  --spacing-1: 4px;
-  --spacing-1_5: 6px;
-  --spacing-2: 8px;
-  --spacing-2_5: 10px;
-  --spacing-3: 12px;
-  --spacing-3_5: 14px;
-  --spacing-4: 16px;
-  --spacing-5: 20px;
-  --spacing-6: 24px;
-  --spacing-7: 28px;
-  --spacing-8: 32px;
-  --spacing-9: 36px;
-  --spacing-10: 40px;
-  --spacing-11: 44px;
-  --spacing-12: 48px;
-  --spacing-14: 56px;
-  --spacing-16: 64px;
-  --spacing-20: 80px;
-  --spacing-24: 96px;
-  --spacing-28: 112px;
-  --spacing-32: 128px;
-  --spacing-36: 144px;
-  --spacing-40: 160px;
-  --spacing-48: 192px;
-  --spacing-56: 224px;
-  --spacing-64: 256px;
-
-  /* ---- Border radii ---- */
-  --radius-none: 0;
-  --radius-xs: 2px;
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
-  --radius-xl: 12px;
+  --radius-xs: 3px;
+  --radius-sm: 5px;
+  --radius-md: 7px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
+  --radius-2xl: 18px;
   --radius-full: 9999px;
 
-  /* ---- Shadows ---- */
-  --shadow-xs: 0 1px 2px rgb(0 0 0 / 0.05);
-  --shadow-sm: 0 1px 3px rgb(0 0 0 / 0.1), 0 1px 2px rgb(0 0 0 / 0.06);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xs: 0 1px 2px rgb(16 24 40 / 0.04);
+  --shadow-sm: 0 1px 3px rgb(16 24 40 / 0.07), 0 8px 24px rgb(16 24 40 / 0.04);
+  --shadow-md: 0 16px 40px rgb(16 24 40 / 0.1), 0 2px 8px rgb(16 24 40 / 0.06);
+  --shadow-lg: 0 28px 70px rgb(0 0 0 / 0.22), 0 4px 14px rgb(0 0 0 / 0.14);
 
-  /* ---- Easing ---- */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* ============================================
-   Aether Color System
-   Neutral, restrained palette inspired by
-   Linear, Raycast, and Arc.
-   ============================================ */
-
 :root {
-  /* ---- Surface colors (light) ---- */
-  --color-bg: #fafafa;
-  --color-bg-secondary: #f4f4f5;
-  --color-bg-tertiary: #eaeaec;
+  color-scheme: light;
+
+  --color-canvas: #eef1f6;
+  --color-bg: #f8f9fb;
+  --color-bg-secondary: #f0f2f6;
+  --color-bg-tertiary: #e7eaf0;
   --color-bg-elevated: #ffffff;
-  --color-bg-overlay: rgb(0 0 0 / 0.4);
+  --color-bg-strong: #e1e6ee;
+  --color-bg-overlay: rgb(12 16 24 / 0.5);
 
-  /* ---- Text colors (light) ---- */
-  --color-text-primary: #18181b;
-  --color-text-secondary: #52525b;
-  --color-text-tertiary: #a1a1aa;
-  --color-text-disabled: #d4d4d8;
+  --color-text-primary: #171a21;
+  --color-text-secondary: #555d6d;
+  --color-text-tertiary: #858d9d;
+  --color-text-disabled: #b5bbc6;
 
-  /* ---- Border colors (light) ---- */
-  --color-border: #e4e4e7;
-  --color-border-hover: #d4d4d8;
-  --color-border-focus: #a1a1aa;
+  --color-border: #dfe3ea;
+  --color-border-hover: #cbd1dc;
+  --color-border-strong: #b8c0ce;
+  --color-border-focus: #7487f4;
 
-  /* ---- Accent (indigo — calm, professional) ---- */
-  --color-accent: #4f46e5;
-  --color-accent-hover: #4338ca;
-  --color-accent-muted: rgb(79 70 229 / 0.1);
+  --color-accent: #5268e8;
+  --color-accent-hover: #4358d0;
+  --color-accent-muted: rgb(82 104 232 / 0.1);
+  --color-accent-subtle: rgb(82 104 232 / 0.055);
+  --color-accent-border: rgb(82 104 232 / 0.25);
   --color-accent-text: #ffffff;
+  --color-signal: #168e92;
+  --color-signal-muted: rgb(22 142 146 / 0.1);
 
-  /* ---- Status colors ---- */
-  --color-success: #059669;
-  --color-warning: #d97706;
-  --color-danger: #dc2626;
-  --color-info: #2563eb;
+  --color-success: #07845c;
+  --color-warning: #b7680c;
+  --color-danger: #c53c43;
+  --color-info: #2775c7;
 
-  /* ---- Sidebar ---- */
-  --color-sidebar-bg: #f4f4f5;
-  --color-sidebar-border: #e4e4e7;
-  --color-sidebar-hover: #eaeaec;
-  --color-sidebar-active: #e4e4e7;
+  --color-sidebar-bg: #f5f6f9;
+  --color-sidebar-border: #dde2e9;
+  --color-sidebar-hover: #e9ecf2;
+  --color-sidebar-active: #e2e6f0;
+  --color-sidebar-active-border: rgb(82 104 232 / 0.32);
 
-  /* ---- Command palette ---- */
-  --color-command-bg: rgb(255 255 255 / 0.92);
-  --color-command-border: rgb(0 0 0 / 0.08);
+  --color-command-bg: #ffffff;
+  --color-command-border: rgb(31 39 53 / 0.12);
+  --surface-highlight: inset 0 1px 0 rgb(255 255 255 / 0.72);
 }
 
 .dark {
-  /* ---- Surface colors (dark) ---- */
-  --color-bg: #0a0a0b;
-  --color-bg-secondary: #131316;
-  --color-bg-tertiary: #1a1a1e;
-  --color-bg-elevated: #1e1e23;
-  --color-bg-overlay: rgb(0 0 0 / 0.6);
+  color-scheme: dark;
 
-  /* ---- Text colors (dark) ---- */
-  --color-text-primary: #fafafa;
-  --color-text-secondary: #a1a1aa;
-  --color-text-tertiary: #71717a;
-  --color-text-disabled: #3f3f46;
+  --color-canvas: #07090d;
+  --color-bg: #0c0f15;
+  --color-bg-secondary: #111620;
+  --color-bg-tertiary: #171d28;
+  --color-bg-elevated: #151b25;
+  --color-bg-strong: #1c2431;
+  --color-bg-overlay: rgb(0 0 0 / 0.72);
 
-  /* ---- Border colors (dark) ---- */
-  --color-border: #27272a;
-  --color-border-hover: #3f3f46;
-  --color-border-focus: #52525b;
+  --color-text-primary: #f4f6fa;
+  --color-text-secondary: #a7afbf;
+  --color-text-tertiary: #687284;
+  --color-text-disabled: #424a58;
 
-  /* ---- Accent (indigo — calm, professional) ---- */
-  --color-accent: #6366f1;
-  --color-accent-hover: #818cf8;
-  --color-accent-muted: rgb(99 102 241 / 0.12);
-  --color-accent-text: #ffffff;
+  --color-border: #202735;
+  --color-border-hover: #323c4d;
+  --color-border-strong: #435064;
+  --color-border-focus: #7c8df5;
 
-  /* ---- Status colors ---- */
-  --color-success: #10b981;
-  --color-warning: #f59e0b;
-  --color-danger: #ef4444;
-  --color-info: #3b82f6;
+  --color-accent: #7486f3;
+  --color-accent-hover: #8d9bff;
+  --color-accent-muted: rgb(116 134 243 / 0.13);
+  --color-accent-subtle: rgb(116 134 243 / 0.065);
+  --color-accent-border: rgb(116 134 243 / 0.28);
+  --color-accent-text: #090b12;
+  --color-signal: #4cc2c0;
+  --color-signal-muted: rgb(76 194 192 / 0.11);
 
-  /* ---- Sidebar ---- */
-  --color-sidebar-bg: #0e0e10;
-  --color-sidebar-border: #1e1e23;
-  --color-sidebar-hover: #1a1a1e;
-  --color-sidebar-active: #222228;
+  --color-success: #48b98c;
+  --color-warning: #d99a4e;
+  --color-danger: #e56a70;
+  --color-info: #63a5df;
 
-  /* ---- Command palette ---- */
-  --color-command-bg: rgb(20 20 24 / 0.94);
-  --color-command-border: rgb(255 255 255 / 0.06);
+  --color-sidebar-bg: #0a0d13;
+  --color-sidebar-border: #1b2230;
+  --color-sidebar-hover: #121824;
+  --color-sidebar-active: #171e2b;
+  --color-sidebar-active-border: rgb(116 134 243 / 0.32);
+
+  --color-command-bg: #121722;
+  --color-command-border: rgb(255 255 255 / 0.1);
+  --surface-highlight: inset 0 1px 0 rgb(255 255 255 / 0.035);
 }
-
-/* ============================================
-   Tailwind v4 custom utility layer
-   ============================================ */
 
 @layer base {
   * {
-    margin: 0;
-    padding: 0;
     box-sizing: border-box;
   }
 
@@ -192,7 +149,8 @@
   }
 
   body {
-    background-color: var(--color-bg);
+    margin: 0;
+    background: var(--color-canvas);
     color: var(--color-text-primary);
     font-size: var(--text-base);
     line-height: var(--text-base--line-height);
@@ -201,10 +159,21 @@
     -webkit-user-select: none;
   }
 
-  /* Scrollbar styling */
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+  }
+
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']) {
+    cursor: pointer;
+  }
+
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 8px;
+    height: 8px;
   }
 
   ::-webkit-scrollbar-track {
@@ -213,44 +182,1162 @@
 
   ::-webkit-scrollbar-thumb {
     background: var(--color-border-hover);
+    border: 2px solid transparent;
     border-radius: var(--radius-full);
+    background-clip: padding-box;
   }
 
   ::-webkit-scrollbar-thumb:hover {
     background: var(--color-text-tertiary);
+    border: 2px solid transparent;
+    background-clip: padding-box;
   }
 }
 
-/* Focus ring — visible, consistent, subtle */
 @utility focus-ring {
   outline: none;
 
   &:focus-visible {
-    outline: 2px solid var(--color-accent);
+    outline: 2px solid var(--color-border-focus);
     outline-offset: 2px;
     border-radius: var(--radius-sm);
   }
 }
 
-/* Glass surface (used sparingly for overlays) */
 @utility glass-surface {
   background: var(--color-command-bg);
-  backdrop-filter: blur(16px) saturate(180%);
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
   border: 1px solid var(--color-command-border);
 }
 
-/* Text selection */
+@layer components {
+  .aether-sidebar {
+    display: flex;
+    width: 226px;
+    height: 100%;
+    flex: 0 0 226px;
+    flex-direction: column;
+    overflow: hidden;
+    border-right: 1px solid var(--color-sidebar-border);
+    background: var(--color-sidebar-bg);
+  }
+
+  .aether-brand {
+    display: flex;
+    height: 68px;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 11px;
+    padding: 0 16px;
+  }
+
+  .aether-mark {
+    position: relative;
+    display: block;
+    width: 30px;
+    height: 30px;
+    flex: 0 0 auto;
+    border: 1px solid var(--color-accent-border);
+    border-radius: 9px;
+    background: var(--color-accent-muted);
+    box-shadow: var(--surface-highlight);
+  }
+
+  .aether-mark::before,
+  .aether-mark::after {
+    position: absolute;
+    background: var(--color-accent);
+    content: '';
+  }
+
+  .aether-mark::before {
+    top: 14px;
+    left: 7px;
+    width: 15px;
+    height: 1px;
+    transform: rotate(-32deg);
+    opacity: 0.55;
+  }
+
+  .aether-mark::after {
+    top: 8px;
+    left: 14px;
+    width: 1px;
+    height: 14px;
+    transform: rotate(-18deg);
+    opacity: 0.4;
+  }
+
+  .aether-mark span {
+    position: absolute;
+    z-index: 1;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--color-accent);
+  }
+
+  .aether-mark span:nth-child(1) {
+    top: 7px;
+    right: 7px;
+  }
+
+  .aether-mark span:nth-child(2) {
+    top: 14px;
+    left: 6px;
+    background: var(--color-signal);
+  }
+
+  .aether-mark span:nth-child(3) {
+    right: 8px;
+    bottom: 6px;
+  }
+
+  .aether-brand-name,
+  .aether-brand-tagline {
+    margin: 0;
+  }
+
+  .aether-brand-name {
+    color: var(--color-text-primary);
+    font-size: 0.875rem;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    line-height: 1.15;
+  }
+
+  .aether-brand-tagline {
+    margin-top: 3px;
+    color: var(--color-text-tertiary);
+    font-size: 0.625rem;
+    line-height: 1;
+  }
+
+  .aether-command-trigger {
+    display: flex;
+    height: 34px;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 8px;
+    margin: 2px 10px 8px;
+    border: 1px solid var(--color-sidebar-border);
+    border-radius: var(--radius-md);
+    padding: 0 9px;
+    background: var(--color-bg-secondary);
+    color: var(--color-text-tertiary);
+    font-size: var(--text-xs);
+    text-align: left;
+    transition:
+      border-color 140ms var(--ease-out),
+      background-color 140ms var(--ease-out),
+      color 140ms var(--ease-out);
+  }
+
+  .aether-command-trigger:hover {
+    border-color: var(--color-border-hover);
+    background: var(--color-bg-tertiary);
+    color: var(--color-text-secondary);
+  }
+
+  .aether-command-trigger > span {
+    flex: 1;
+  }
+
+  .aether-command-trigger kbd {
+    display: inline-flex;
+    align-items: center;
+    gap: 1px;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    padding: 1px 4px;
+    background: var(--color-bg-elevated);
+    color: var(--color-text-tertiary);
+    font-family: var(--font-sans);
+    font-size: 0.5625rem;
+  }
+
+  .aether-sidebar-nav {
+    min-height: 0;
+    flex: 1;
+    overflow-y: auto;
+    padding: 7px 9px 16px;
+  }
+
+  .aether-nav-group + .aether-nav-group {
+    margin-top: 20px;
+  }
+
+  .aether-nav-label {
+    margin: 0 0 6px;
+    padding: 0 9px;
+    color: var(--color-text-tertiary);
+    font-size: 0.5625rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  .aether-nav-item {
+    position: relative;
+    display: flex;
+    min-height: 34px;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    padding: 6px 9px;
+    color: var(--color-text-secondary);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    text-decoration: none;
+    transition:
+      border-color 120ms var(--ease-out),
+      background-color 120ms var(--ease-out),
+      color 120ms var(--ease-out),
+      transform 120ms var(--ease-out);
+  }
+
+  .aether-nav-item:hover {
+    background: var(--color-sidebar-hover);
+    color: var(--color-text-primary);
+  }
+
+  .aether-nav-item--active {
+    border-color: var(--color-sidebar-active-border);
+    background: var(--color-sidebar-active);
+    color: var(--color-text-primary);
+    box-shadow: var(--surface-highlight);
+  }
+
+  .aether-nav-item--active svg {
+    color: var(--color-accent);
+  }
+
+  .aether-nav-indicator {
+    position: absolute;
+    left: -10px;
+    width: 2px;
+    height: 14px;
+    border-radius: 0 3px 3px 0;
+    background: transparent;
+  }
+
+  .aether-nav-item--active .aether-nav-indicator {
+    background: var(--color-accent);
+  }
+
+  .aether-sidebar-footer {
+    flex: 0 0 auto;
+    border-top: 1px solid var(--color-sidebar-border);
+    padding: 9px;
+  }
+
+  .aether-local-status {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 8px;
+    padding: 6px 9px 2px;
+    color: var(--color-text-tertiary);
+    font-size: 0.625rem;
+  }
+
+  .aether-shell {
+    display: flex;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background: var(--color-canvas);
+  }
+
+  .aether-main {
+    position: relative;
+    display: flex;
+    min-width: 0;
+    flex: 1;
+    flex-direction: column;
+    margin: 8px 8px 8px 0;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    background: var(--color-bg);
+    box-shadow: var(--surface-highlight), var(--shadow-sm);
+  }
+
+  .aether-main::before {
+    position: absolute;
+    z-index: 20;
+    top: 0;
+    left: 20%;
+    width: 60%;
+    height: 1px;
+    background: var(--color-accent-border);
+    content: '';
+    pointer-events: none;
+  }
+
+  .aether-page-scroll {
+    min-height: 0;
+    flex: 1;
+    overflow: auto;
+  }
+
+  .aether-page {
+    width: 100%;
+    min-height: 100%;
+    margin-inline: auto;
+    padding: 34px 38px 48px;
+  }
+
+  .aether-page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 28px;
+    margin-bottom: 30px;
+  }
+
+  .aether-page-heading {
+    display: flex;
+    min-width: 0;
+    align-items: flex-start;
+    gap: 13px;
+  }
+
+  .aether-page-title {
+    margin: 0;
+    color: var(--color-text-primary);
+    font-size: 1.45rem;
+    font-weight: 650;
+    letter-spacing: -0.035em;
+    line-height: 1.18;
+  }
+
+  .aether-page-description {
+    max-width: 620px;
+    margin: 6px 0 0;
+    color: var(--color-text-secondary);
+    font-size: var(--text-sm);
+    line-height: 1.55;
+  }
+
+  .aether-page-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  .aether-eyebrow {
+    margin: 0 0 5px;
+    color: var(--color-signal);
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .aether-button {
+    display: inline-flex;
+    min-height: 34px;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+    padding: 7px 12px;
+    font-size: var(--text-sm);
+    font-weight: 600;
+    line-height: 1.15;
+    transition:
+      transform 140ms var(--ease-out),
+      border-color 140ms var(--ease-out),
+      background-color 140ms var(--ease-out),
+      color 140ms var(--ease-out);
+  }
+
+  .aether-button:hover:not(:disabled) {
+    transform: translateY(-1px);
+  }
+
+  .aether-button:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  .aether-button:focus-visible {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 2px;
+  }
+
+  .aether-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+
+  .aether-button--primary {
+    border-color: var(--color-accent);
+    background: var(--color-accent);
+    color: var(--color-accent-text);
+    box-shadow: var(--surface-highlight), var(--shadow-xs);
+  }
+
+  .aether-button--primary:hover:not(:disabled) {
+    border-color: var(--color-accent-hover);
+    background: var(--color-accent-hover);
+  }
+
+  .aether-button--secondary {
+    border-color: var(--color-border);
+    background: var(--color-bg-elevated);
+    color: var(--color-text-primary);
+    box-shadow: var(--surface-highlight), var(--shadow-xs);
+  }
+
+  .aether-button--secondary:hover:not(:disabled) {
+    border-color: var(--color-border-hover);
+    background: var(--color-bg-secondary);
+  }
+
+  .aether-button--quiet {
+    background: transparent;
+    color: var(--color-text-secondary);
+  }
+
+  .aether-button--quiet:hover:not(:disabled) {
+    background: var(--color-bg-tertiary);
+    color: var(--color-text-primary);
+  }
+
+  .aether-button--danger {
+    border-color: color-mix(in srgb, var(--color-danger) 28%, var(--color-border));
+    background: color-mix(in srgb, var(--color-danger) 8%, var(--color-bg-elevated));
+    color: var(--color-danger);
+  }
+
+  .aether-surface {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    background: var(--color-bg-elevated);
+    box-shadow: var(--surface-highlight), var(--shadow-xs);
+  }
+
+  .aether-surface--interactive {
+    transition:
+      transform 160ms var(--ease-out),
+      border-color 160ms var(--ease-out),
+      background-color 160ms var(--ease-out);
+  }
+
+  .aether-surface--interactive:hover {
+    transform: translateY(-1px);
+    border-color: var(--color-border-hover);
+    background: color-mix(in srgb, var(--color-bg-elevated) 90%, var(--color-accent) 10%);
+  }
+
+  .aether-icon-frame {
+    display: inline-flex;
+    width: 34px;
+    height: 34px;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-secondary);
+    color: var(--color-text-secondary);
+    box-shadow: var(--surface-highlight);
+  }
+
+  .aether-icon-frame--accent {
+    border-color: var(--color-accent-border);
+    background: var(--color-accent-muted);
+    color: var(--color-accent);
+  }
+
+  .aether-icon-frame--large {
+    width: 52px;
+    height: 52px;
+    border-color: var(--color-accent-border);
+    border-radius: var(--radius-xl);
+    background: var(--color-accent-muted);
+    color: var(--color-accent);
+  }
+
+  .aether-empty {
+    position: relative;
+    display: flex;
+    min-height: 330px;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-2xl);
+    padding: 50px 32px;
+    background: var(--color-bg-secondary);
+    text-align: center;
+    box-shadow: var(--surface-highlight);
+  }
+
+  .aether-empty::before,
+  .aether-empty::after {
+    position: absolute;
+    width: 1px;
+    height: 34px;
+    background: var(--color-accent-border);
+    content: '';
+  }
+
+  .aether-empty::before {
+    top: 0;
+  }
+
+  .aether-empty::after {
+    bottom: 0;
+  }
+
+  .aether-empty--compact {
+    min-height: 220px;
+    padding: 34px 28px;
+  }
+
+  .aether-empty-orbit {
+    position: relative;
+    display: grid;
+    width: 84px;
+    height: 84px;
+    place-items: center;
+    margin-bottom: 20px;
+    border: 1px solid var(--color-border);
+    border-radius: 50%;
+  }
+
+  .aether-empty-orbit::before,
+  .aether-empty-orbit::after {
+    position: absolute;
+    border-radius: 50%;
+    content: '';
+  }
+
+  .aether-empty-orbit::before {
+    top: 8px;
+    right: 10px;
+    width: 6px;
+    height: 6px;
+    background: var(--color-signal);
+  }
+
+  .aether-empty-orbit::after {
+    bottom: 13px;
+    left: 5px;
+    width: 4px;
+    height: 4px;
+    background: var(--color-accent);
+  }
+
+  .aether-empty-copy {
+    max-width: 470px;
+  }
+
+  .aether-empty-copy h2 {
+    margin: 0;
+    color: var(--color-text-primary);
+    font-size: var(--text-lg);
+    font-weight: 650;
+    letter-spacing: -0.02em;
+  }
+
+  .aether-empty-copy > p:not(.aether-eyebrow) {
+    margin: 9px 0 0;
+    color: var(--color-text-secondary);
+    font-size: var(--text-sm);
+    line-height: 1.6;
+  }
+
+  .aether-empty-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 22px;
+  }
+
+  .aether-section-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 10px;
+    color: var(--color-text-tertiary);
+    font-size: 0.625rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .aether-section-meta {
+    color: var(--color-text-tertiary);
+    font-weight: 500;
+    letter-spacing: 0;
+    text-transform: none;
+  }
+
+  .aether-field {
+    min-height: 38px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-bg-elevated);
+    color: var(--color-text-primary);
+    box-shadow: var(--surface-highlight);
+    transition:
+      border-color 140ms var(--ease-out),
+      background-color 140ms var(--ease-out);
+  }
+
+  .aether-field:hover {
+    border-color: var(--color-border-hover);
+  }
+
+  .aether-field:focus,
+  .aether-field:focus-within {
+    border-color: var(--color-border-focus);
+    outline: none;
+  }
+
+  .aether-status-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+
+  .aether-status-dot--online {
+    background: var(--color-signal);
+  }
+
+  .aether-status-dot--quiet {
+    background: var(--color-text-tertiary);
+  }
+
+  .aether-presence {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-full);
+    padding: 6px 10px;
+    background: var(--color-bg-secondary);
+    color: var(--color-text-secondary);
+    font-size: var(--text-xs);
+  }
+
+  .aether-pulse-empty-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(280px, 0.72fr);
+    gap: 16px;
+  }
+
+  .aether-launch-panel,
+  .aether-attention-panel {
+    padding: 16px;
+  }
+
+  .aether-launch-row {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 11px;
+    border: 0;
+    border-radius: var(--radius-lg);
+    padding: 9px;
+    background: transparent;
+    color: var(--color-text-tertiary);
+    text-align: left;
+    transition:
+      background-color 140ms var(--ease-out),
+      color 140ms var(--ease-out);
+  }
+
+  .aether-launch-row:hover {
+    background: var(--color-bg-secondary);
+    color: var(--color-accent);
+  }
+
+  .aether-launch-row > span:nth-child(2) {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .aether-launch-row strong,
+  .aether-launch-row small {
+    display: block;
+  }
+
+  .aether-launch-row strong {
+    color: var(--color-text-primary);
+    font-size: var(--text-sm);
+    font-weight: 600;
+  }
+
+  .aether-launch-row small {
+    margin-top: 1px;
+    color: var(--color-text-tertiary);
+    font-size: var(--text-xs);
+  }
+
+  .aether-pulse-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.45fr) minmax(300px, 0.75fr);
+    align-items: start;
+    gap: 16px;
+  }
+
+  .aether-space-launcher-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+
+  .aether-space-launcher {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid transparent;
+    border-radius: var(--radius-lg);
+    padding: 9px;
+    background: transparent;
+    color: var(--color-text-tertiary);
+    text-align: left;
+  }
+
+  .aether-space-launcher:hover {
+    border-color: var(--color-border);
+    background: var(--color-bg-secondary);
+    color: var(--color-accent);
+  }
+
+  .aether-space-launcher strong,
+  .aether-space-launcher small {
+    display: block;
+  }
+
+  .aether-space-launcher strong {
+    overflow: hidden;
+    color: var(--color-text-primary);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .aether-space-launcher small {
+    margin-top: 1px;
+    color: var(--color-text-tertiary);
+    font-size: var(--text-xs);
+  }
+
+  .aether-space-emoji {
+    display: grid;
+    width: 34px;
+    height: 34px;
+    flex: 0 0 auto;
+    place-items: center;
+    border-radius: var(--radius-lg);
+    font-size: 1rem;
+  }
+
+  .aether-attention-panel {
+    position: sticky;
+    top: 0;
+  }
+
+  .aether-clear-state {
+    display: flex;
+    align-items: flex-start;
+    gap: 11px;
+    margin: 8px 0 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 12px;
+    background: var(--color-bg-secondary);
+  }
+
+  .aether-clear-state strong {
+    color: var(--color-text-primary);
+    font-size: var(--text-sm);
+    font-weight: 600;
+  }
+
+  .aether-clear-state p,
+  .aether-inline-message {
+    margin: 3px 0 0;
+    color: var(--color-text-tertiary);
+    font-size: var(--text-xs);
+    line-height: 1.5;
+  }
+
+  .aether-inline-message {
+    padding: 12px 2px;
+  }
+
+  .aether-task-group-label {
+    margin: 0 0 5px;
+    color: var(--color-text-tertiary);
+    font-size: var(--text-xs);
+    font-weight: 600;
+  }
+
+  .aether-attention-row,
+  .aether-note-row {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 9px;
+    border: 0;
+    border-radius: var(--radius-md);
+    padding: 7px 8px;
+    background: transparent;
+    color: var(--color-text-tertiary);
+  }
+
+  .aether-attention-row:hover,
+  .aether-note-row:hover {
+    background: var(--color-bg-secondary);
+  }
+
+  .aether-task-check {
+    display: grid;
+    width: 17px;
+    height: 17px;
+    flex: 0 0 auto;
+    place-items: center;
+    border: 1px solid var(--color-border-hover);
+    border-radius: 50%;
+    background: transparent;
+    color: transparent;
+  }
+
+  .aether-task-check:hover {
+    border-color: var(--color-accent);
+    color: var(--color-accent);
+  }
+
+  .aether-note-row {
+    text-align: left;
+  }
+
+  .aether-note-row span {
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+    color: var(--color-text-primary);
+    font-size: var(--text-sm);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .aether-ai-shell {
+    display: flex;
+    height: 100%;
+    min-height: 0;
+    padding: 8px;
+    gap: 8px;
+    background: var(--color-bg);
+  }
+
+  .aether-ai-sidebar {
+    display: flex;
+    width: 258px;
+    height: 100%;
+    flex: 0 0 258px;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    background: var(--color-bg-secondary);
+    box-shadow: var(--surface-highlight);
+  }
+
+  .aether-ai-shell > section {
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    background: var(--color-bg);
+    box-shadow: var(--surface-highlight);
+  }
+
+  .aether-ai-header {
+    border-bottom: 1px solid var(--color-border);
+    padding: 14px 18px 12px;
+    background: var(--color-bg-elevated);
+  }
+
+  .aether-ai-composer {
+    border-top: 1px solid var(--color-border);
+    padding: 12px 18px 14px;
+    background: var(--color-bg-secondary);
+  }
+
+  .aether-command-palette {
+    position: relative;
+    width: calc(100% - 32px);
+    max-width: 610px;
+    overflow: hidden;
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-lg), var(--surface-highlight);
+    animation: commandIn 150ms var(--ease-out);
+  }
+
+  .aether-command-palette::before {
+    position: absolute;
+    z-index: 2;
+    top: 0;
+    left: 25%;
+    width: 50%;
+    height: 1px;
+    background: var(--color-accent);
+    content: '';
+    opacity: 0.7;
+  }
+
+  .aether-command-result {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 12px;
+    border: 1px solid transparent;
+    border-radius: var(--radius-lg);
+    padding: 10px 11px;
+    background: transparent;
+    text-align: left;
+    transition:
+      border-color 75ms,
+      background-color 75ms;
+  }
+
+  .aether-command-result:hover {
+    border-color: var(--color-border);
+  }
+
+  .aether-dialog {
+    border: 1px solid var(--color-command-border);
+    border-radius: var(--radius-xl);
+    background: var(--color-bg-elevated);
+    box-shadow: var(--shadow-lg), var(--surface-highlight);
+  }
+
+  .aether-notes-shell {
+    display: flex;
+    height: 100%;
+    min-height: 0;
+    gap: 8px;
+    padding: 8px;
+    background: var(--color-bg-secondary);
+  }
+
+  .aether-notes-list {
+    display: flex;
+    width: 300px;
+    height: 100%;
+    flex: 0 0 300px;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    background: var(--color-bg);
+    box-shadow: var(--surface-highlight);
+  }
+
+  .aether-note-workspace {
+    display: flex;
+    min-width: 0;
+    height: 100%;
+    flex: 1;
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    background: var(--color-bg);
+    box-shadow: var(--surface-highlight);
+  }
+
+  .aether-note-idle {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-bg-secondary);
+  }
+
+  .aether-note-list-row {
+    margin: 2px 6px;
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+  }
+
+  .aether-note-list-row:has([aria-current='true']) {
+    border-color: var(--color-accent-border);
+  }
+
+  .aether-note-editor-header {
+    display: flex;
+    min-height: 42px;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid var(--color-border);
+    padding: 7px 18px;
+    background: var(--color-bg-elevated);
+  }
+
+  .aether-note-editor-scroll {
+    min-height: 0;
+    flex: 1;
+    overflow-y: auto;
+    background: var(--color-bg-secondary);
+  }
+
+  .aether-note-paper {
+    width: calc(100% - 32px);
+    max-width: 780px;
+    min-height: calc(100% - 32px);
+    margin: 16px auto;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    padding: 46px 54px;
+    background: var(--color-bg-elevated);
+    box-shadow: var(--surface-highlight), var(--shadow-xs);
+  }
+
+  .aether-space-shell {
+    display: flex;
+    min-height: 0;
+    flex: 1;
+    flex-direction: column;
+    padding: 8px;
+    gap: 8px;
+    background: var(--color-bg-secondary);
+  }
+
+  .aether-space-header,
+  .aether-space-tabs {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    background: var(--color-bg-elevated);
+    box-shadow: var(--surface-highlight);
+  }
+
+  .aether-space-header {
+    min-height: 58px;
+    gap: 16px;
+    padding: 12px 18px;
+  }
+
+  .aether-space-tabs {
+    gap: 0;
+    min-height: 44px;
+    overflow-x: auto;
+    padding: 0 12px;
+  }
+
+  .aether-space-content {
+    min-height: 0;
+    flex: 1;
+    overflow-y: auto;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    background: var(--color-bg);
+    box-shadow: var(--surface-highlight);
+  }
+
+  .aether-theme-option {
+    display: flex;
+    min-height: 86px;
+    align-items: flex-start;
+    gap: 10px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-xl);
+    padding: 14px;
+    background: var(--color-bg-elevated);
+    color: var(--color-text-primary);
+    text-align: left;
+    box-shadow: var(--surface-highlight);
+  }
+
+  .aether-theme-option[aria-pressed='true'] {
+    border-color: var(--color-accent-border);
+    background: var(--color-accent-muted) !important;
+    color: var(--color-accent) !important;
+  }
+}
+
+@keyframes commandIn {
+  from {
+    opacity: 0;
+    transform: scale(0.975) translateY(-7px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
 ::selection {
   background-color: var(--color-accent-muted);
   color: var(--color-text-primary);
 }
 
-/* Reduced motion */
+@media (max-width: 1120px) {
+  .aether-sidebar {
+    width: 204px;
+    flex-basis: 204px;
+  }
+
+  .aether-page {
+    padding: 28px 28px 40px;
+  }
+
+  .aether-pulse-empty-grid,
+  .aether-pulse-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(270px, 0.68fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .aether-pulse-empty-grid,
+  .aether-pulse-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-height: 680px) {
+  .aether-page {
+    padding-top: 24px;
+  }
+
+  .aether-page-header {
+    margin-bottom: 22px;
+  }
+
+  .aether-empty {
+    min-height: 250px;
+    padding-block: 32px;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
+    scroll-behavior: auto !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;

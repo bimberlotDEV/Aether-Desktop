@@ -8,7 +8,7 @@
 | Last updated     | 2026-08-25                    |
 | Updated by       | Codex                         |
 | Repository       | `bimberlotDEV/Aether-Desktop` |
-| Branch           | `codex/alpha-legacy-upgrade`  |
+| Branch           | `codex/ui-makeover`           |
 | Baseline commit  | `f775a58` (current `master`)  |
 | Product maturity | Alpha                         |
 
@@ -44,8 +44,9 @@
 | `AI-CHAT-003`      | Eliminate stale-load prompt hiding and ship 0.3.1  | `complete` | A deterministic load/stream race test passes and the installed 0.3.1 bundle contains the verified frontend.                         |
 | `AI-CHAT-004`      | Reconcile completed responses without page reload  | `complete` | Terminal events upsert missing messages and every completed stream reconciles the visible conversation with persisted SQLite state. |
 | `HARD-001`         | Safely upgrade personal-beta databases             | `complete` | Populated legacy databases upgrade transactionally with current repository and Vault safety invariants intact.                      |
+| `UI-001`           | Reimagine the Aether interface system              | `complete` | Every core surface is cohesive, premium, responsive, accessible, and distinctly Aether without behavior regressions.                |
 
-`HARD-001` is complete as the first checkpoint in the owner-approved Milestone A — Alpha Hardening roadmap.
+`AI-CHAT-004`, `HARD-001`, and `UI-001` are complete and integrated in the release train.
 
 ## Completed product milestones
 
@@ -72,8 +73,8 @@
 
 | Check                                       | Last result | Date       | Notes                                                                                          |
 | ------------------------------------------- | ----------- | ---------- | ---------------------------------------------------------------------------------------------- |
-| `pnpm check`                                | Pass        | 2026-08-11 | Typecheck and lint clean; Vitest 53/53 across 24 files.                                        |
-| `pnpm build`                                | Pass        | 2026-08-11 | Production build is 497.35 kB JS / 137.60 kB gzip and has no chunk-size warning.               |
+| `pnpm check`                                | Pass        | 2026-08-25 | Integrated UI, AI, and migration branch: 56/56 tests across 25 files.                          |
+| `pnpm build`                                | Pass        | 2026-08-25 | Integrated production build: 492.28 kB JS / 138.46 kB gzip; no chunk-size warning.             |
 | `pnpm audit --audit-level high`             | Pass        | 2026-08-11 | No known vulnerabilities.                                                                      |
 | `cargo test`                                | Pass        | 2026-08-25 | 63/63 tests pass, including populated legacy upgrade, filesystem retry, and rollback coverage. |
 | `cargo build`                               | Pass        | 2026-08-11 | Windows production build compiles with DPAPI and single-instance support.                      |
@@ -115,6 +116,7 @@ Full rationale belongs in `.ai/ARCHITECTURE.md` or a dedicated ADR under `docs/d
 | `ADR-012` | Memory is explicit, user-authored, scoped, attributable, and attached to AI only by choice.                                  | Accepted                |
 | `ADR-013` | Native Windows lifecycle uses tray persistence, non-fatal shortcut registration, OS notifications, and gated signed updates. | Accepted                |
 | `ADR-014` | Workspace export uses a sanitized, integrity-checked SQLite snapshot and excludes credentials and Vault file bytes.          | Accepted                |
+| `ADR-015` | Build Aether's frontend from an internal semantic interface system with a distinctive shell and reusable primitives.         | Accepted                |
 
 ## Next
 

@@ -16,6 +16,7 @@ import type { Space, VaultItem, VaultStorageMode } from '@/lib/db/types'
 import { useVault } from '@/hooks/useVault'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { VaultEditor } from '@/components/vault/VaultEditor'
+import { Button, EmptyState, PageHeader, Surface } from '@/components/ui/AetherUI'
 
 interface VaultViewProps {
   spaces: Space[]
@@ -211,24 +212,21 @@ export function VaultView({
   const hasFilters =
     !!search.trim() || mode !== 'all' || (!spaceId && selectedSpace !== 'all')
   return (
-    <div className="mx-auto max-w-[940px] px-8 py-7">
-      <div className="mb-6 flex items-start gap-4">
-        <div className="flex-1">
-          <h1 className="text-xl font-semibold text-[var(--color-text-primary)]">
-            {title}
-          </h1>
-          <p className="mt-1 text-sm text-[var(--color-text-secondary)]">{description}</p>
-        </div>
-        <button
-          onClick={() => void chooseFile()}
-          className="inline-flex items-center gap-2 rounded-md bg-[var(--color-accent)] px-3 py-2 text-sm font-medium text-[var(--color-accent-text)] focus-ring"
-        >
-          <Plus size={15} /> Add file
-        </button>
-      </div>
+    <div className="mx-auto w-full max-w-[1040px] px-8 py-8">
+      <PageHeader
+        eyebrow="Local knowledge"
+        icon={FolderOpen}
+        title={title}
+        description={description}
+        actions={
+          <Button variant="primary" icon={Plus} onClick={() => void chooseFile()}>
+            Add file
+          </Button>
+        }
+      />
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        <label className="flex h-9 min-w-56 flex-1 items-center gap-2 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-3">
+        <label className="aether-field flex h-9 min-w-56 flex-1 items-center gap-2 px-3">
           <Search size={14} className="text-[var(--color-text-tertiary)]" />
           <span className="sr-only">Search Vault</span>
           <input
@@ -242,7 +240,7 @@ export function VaultView({
           aria-label="Filter by storage"
           value={mode}
           onChange={(event) => setMode(event.target.value as VaultStorageMode | 'all')}
-          className="h-9 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-2.5 text-sm outline-none"
+          className="aether-field h-9 px-2.5 text-sm outline-none"
         >
           <option value="all">All storage</option>
           <option value="linked">Linked</option>
@@ -253,7 +251,7 @@ export function VaultView({
             aria-label="Filter by Space"
             value={selectedSpace}
             onChange={(event) => setSelectedSpace(event.target.value)}
-            className="h-9 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-2.5 text-sm outline-none"
+            className="aether-field h-9 px-2.5 text-sm outline-none"
           >
             <option value="all">All Spaces</option>
             <option value="unassigned">No Space</option>
@@ -280,33 +278,29 @@ export function VaultView({
           Loading files…
         </p>
       ) : vault.items.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-[var(--color-border)] px-8 py-16 text-center">
-          <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--color-accent-muted)] text-[var(--color-accent)]">
-            {hasFilters ? <Search size={20} /> : <FolderOpen size={20} />}
-          </div>
-          <h2 className="text-base font-semibold text-[var(--color-text-primary)]">
-            {hasFilters
+        <EmptyState
+          icon={hasFilters ? Search : FolderOpen}
+          eyebrow={hasFilters ? 'Nothing found' : 'Private file space'}
+          title={
+            hasFilters
               ? 'No matching files'
               : spaceId
                 ? 'No files in this Space'
-                : 'Your Vault is empty'}
-          </h2>
-          <p className="mt-1 max-w-sm text-sm leading-relaxed text-[var(--color-text-secondary)]">
-            {hasFilters
+                : 'Your Vault is ready'
+          }
+          description={
+            hasFilters
               ? 'Try a different search or filter.'
-              : 'Link an existing file or let Aether keep a managed copy.'}
-          </p>
-          {!hasFilters && (
-            <button
-              onClick={() => void chooseFile()}
-              className="mt-5 inline-flex items-center gap-2 rounded-md border border-[var(--color-border)] px-3 py-2 text-sm font-medium hover:bg-[var(--color-bg-tertiary)] focus-ring"
-            >
-              <FileInput size={15} /> Choose a file
-            </button>
-          )}
-        </div>
+              : 'Link an existing file or let Aether keep a managed copy inside your local workspace.'
+          }
+          action={
+            hasFilters
+              ? undefined
+              : { label: 'Choose a file', onClick: () => void chooseFile() }
+          }
+        />
       ) : (
-        <div className="overflow-visible rounded-xl border border-[var(--color-border)] bg-[var(--color-bg)]">
+        <Surface className="overflow-visible">
           <div className="grid grid-cols-[minmax(0,1fr)_110px_110px_40px] gap-4 border-b border-[var(--color-border)] px-3 py-2 text-xs font-medium text-[var(--color-text-tertiary)]">
             <span>File</span>
             <span>Space</span>
@@ -324,7 +318,7 @@ export function VaultView({
               onRemove={() => setRemoveItem(item)}
             />
           ))}
-        </div>
+        </Surface>
       )}
 
       {importPath && (

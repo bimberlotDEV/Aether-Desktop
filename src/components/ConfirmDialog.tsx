@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { AlertTriangle } from 'lucide-react'
+import { Button } from '@/components/ui/AetherUI'
 
 interface Props {
   title: string
@@ -48,7 +49,7 @@ export function ConfirmDialog({
         aria-labelledby="confirm-dialog-title"
         aria-describedby="confirm-dialog-message"
         tabIndex={-1}
-        className="relative w-full max-w-[380px] rounded-xl p-6 shadow-2xl"
+        className="aether-dialog relative w-full max-w-[400px] p-6"
         style={{
           backgroundColor: 'var(--color-bg-elevated)',
           border: '1px solid var(--color-border)',
@@ -78,28 +79,16 @@ export function ConfirmDialog({
           {message}
         </p>
         <div className="flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="rounded-lg px-4 py-2 text-sm font-medium transition-colors focus-ring"
-            style={{
-              backgroundColor: 'var(--color-bg-tertiary)',
-              color: 'var(--color-text-primary)',
-            }}
-          >
+          <Button type="button" variant="secondary" onClick={onCancel}>
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant={danger ? 'danger' : 'primary'}
             onClick={onConfirm}
-            className="rounded-lg px-4 py-2 text-sm font-medium transition-colors focus-ring"
-            style={{
-              backgroundColor: danger ? 'var(--color-danger)' : 'var(--color-accent)',
-              color: '#fff',
-            }}
           >
             {confirmLabel}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
