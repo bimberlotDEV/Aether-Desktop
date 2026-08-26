@@ -2,7 +2,7 @@
 
 > A calm, local-first personal workspace for Windows.
 
-Aether combines Spaces, Markdown Notes, Tasks, Pulse, Vault, explicit Memory, and opt-in AI assistance in a Tauri desktop application.
+Aether combines Spaces, Markdown Notes, Tasks, Pulse, Vault, explicit Memory, authorized local Sources, and opt-in AI assistance in a Tauri desktop application.
 
 **Current release:** Alpha 0.3.2. The core roadmap through Phase 10 is implemented and release-gated. Installers are currently unsigned and intended for alpha testing.
 
@@ -12,6 +12,7 @@ Aether combines Spaces, Markdown Notes, Tasks, Pulse, Vault, explicit Memory, an
 - Markdown Notes with autosave, search, pinning, archive, move, and duplication
 - Global and Space Tasks with subtasks, filters, due attention, and Pulse integration
 - Linked or managed Vault items with ownership-aware deletion
+- Explicit local folder Sources with bounded, metadata-only indexing and revocable access
 - Explicit global or Space Memory that the user may attach to AI
 - DeepSeek chat with cancellable streaming, persisted conversations, response modes, visible context, and confirmed Task proposals
 - Windows tray lifecycle, `Ctrl+Shift+Space`, notifications, and restored window state

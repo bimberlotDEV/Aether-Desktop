@@ -5,11 +5,11 @@
 | Field            | Value                         |
 | ---------------- | ----------------------------- |
 | Schema version   | 1                             |
-| Last updated     | 2026-08-25                    |
+| Last updated     | 2026-08-26                    |
 | Updated by       | Codex                         |
 | Repository       | `bimberlotDEV/Aether-Desktop` |
-| Branch           | `codex/release-0.3.2`         |
-| Baseline commit  | `3748947` (current `master`)  |
+| Branch           | `codex/context-foundation`    |
+| Baseline commit  | `3459e0f` (current `master`)  |
 | Product maturity | Alpha                         |
 
 ## Responsibility of this file
@@ -46,8 +46,9 @@
 | `HARD-001`         | Safely upgrade personal-beta databases             | `complete` | Populated legacy databases upgrade transactionally with current repository and Vault safety invariants intact.                      |
 | `UI-001`           | Reimagine the Aether interface system              | `complete` | Every core surface is cohesive, premium, responsive, accessible, and distinctly Aether without behavior regressions.                |
 | `RELEASE-032`      | Consolidate and install Alpha 0.3.2                | `complete` | Merged AI, migration, and UI work ships as a versioned, hashed, installed, and CI-green Windows release candidate.                  |
+| `CTX-001`          | Explicit Sources and metadata indexing             | `complete` | Authorized directories can be safely indexed, inspected, rescanned, associated, and revoked without mutating user files.            |
 
-`RELEASE-032` is complete on draft PR #37: 0.3.2 is locally built, backed up, installed, responsive, hashed, published, and independently CI-green.
+`RELEASE-032` is merged through PR #37. Milestone B — Context Foundation is complete through PR #38 with explicit Sources, bounded local metadata indexing, revocation, and green local/GitHub Windows quality gates.
 
 ## Completed product milestones
 
@@ -59,6 +60,7 @@
 | Phase 3 — Spaces                  | `complete`     | CRUD, hierarchy, templates, module editing, archive/restore, favourite, duplication, deletion, synchronized views, and accessible reorder flows are implemented.           |
 | Phase 4 — Notes                   | `complete`     | Persistence, serialized autosave with teardown flush, current-Space full-content search, pin, archive/restore/delete, move, and duplication are implemented.               |
 | Phase 7 — AI integration          | `mvp_complete` | Secure credentials, current cancellable streaming, persisted conversations, explicit Space-isolated context, response modes, and confirmed Task proposals are implemented. |
+| Milestone B — Context Foundation  | `complete`     | Explicit Sources, bounded metadata-only indexing, change reconciliation, inspection, Space association, and safe revocation are implemented.                               |
 
 ## Not started or placeholder milestones
 
@@ -72,17 +74,18 @@
 
 ## Quality snapshot
 
-| Check                                       | Last result | Date       | Notes                                                                                          |
-| ------------------------------------------- | ----------- | ---------- | ---------------------------------------------------------------------------------------------- |
-| `pnpm check`                                | Pass        | 2026-08-25 | Release 0.3.2 branch: 56/56 tests across 25 files.                                             |
-| `pnpm build`                                | Pass        | 2026-08-25 | Release 0.3.2: 492.28 kB JS / 138.46 kB gzip; no chunk-size warning.                           |
-| `pnpm audit --audit-level high`             | Pass        | 2026-08-11 | No known vulnerabilities.                                                                      |
-| `cargo test`                                | Pass        | 2026-08-25 | 63/63 tests pass, including populated legacy upgrade, filesystem retry, and rollback coverage. |
-| `cargo build`                               | Pass        | 2026-08-11 | Windows production build compiles with DPAPI and single-instance support.                      |
-| `cargo fmt --check`                         | Pass        | 2026-08-11 | Repository Rust formatting is clean.                                                           |
-| `cargo clippy --all-targets -- -D warnings` | Pass        | 2026-08-11 | Library, binary, and test targets are warning-free.                                            |
-| `pnpm tauri:build`                          | Pass        | 2026-08-25 | Alpha 0.3.2 x64 MSI and NSIS bundles built and SHA-256 hashes recorded.                        |
-| Release startup smoke                       | Pass        | 2026-08-25 | 0.3.2 installed with exit code 0; database hash unchanged and process responsive.              |
+| Check                                       | Last result | Date       | Notes                                                                                                   |
+| ------------------------------------------- | ----------- | ---------- | ------------------------------------------------------------------------------------------------------- |
+| `pnpm check`                                | Pass        | 2026-08-26 | Context branch: 60/60 tests across 26 files.                                                            |
+| `pnpm build`                                | Pass        | 2026-08-26 | 493.59 kB main JS and 7.26 kB lazy Sources chunk; no chunk-size warning.                                |
+| `pnpm audit --audit-level high`             | Pass        | 2026-08-26 | No known vulnerabilities.                                                                               |
+| `cargo test`                                | Pass        | 2026-08-26 | 70/70 tests pass, including Source migration, reconciliation, and filesystem safety coverage.           |
+| `cargo build`                               | Pass        | 2026-08-11 | Windows production build compiles with DPAPI and single-instance support.                               |
+| `cargo fmt --check`                         | Pass        | 2026-08-26 | Repository Rust formatting is clean.                                                                    |
+| `cargo clippy --all-targets -- -D warnings` | Pass        | 2026-08-26 | Library, binary, and test targets are warning-free.                                                     |
+| `pnpm tauri:build`                          | Pass        | 2026-08-26 | Context candidate x64 MSI and NSIS bundles build successfully.                                          |
+| GitHub Actions                              | Pass        | 2026-08-26 | Runs 32972614553 and 32973076347 pass frontend quality/build, Rust format, strict lint, and Rust tests. |
+| Release startup smoke                       | Pass        | 2026-08-25 | 0.3.2 installed with exit code 0; database hash unchanged and process responsive.                       |
 
 ## Active blockers
 
@@ -118,10 +121,11 @@ Full rationale belongs in `.ai/ARCHITECTURE.md` or a dedicated ADR under `docs/d
 | `ADR-013` | Native Windows lifecycle uses tray persistence, non-fatal shortcut registration, OS notifications, and gated signed updates. | Accepted                |
 | `ADR-014` | Workspace export uses a sanitized, integrity-checked SQLite snapshot and excludes credentials and Vault file bytes.          | Accepted                |
 | `ADR-015` | Build Aether's frontend from an internal semantic interface system with a distinctive shell and reusable primitives.         | Accepted                |
+| `ADR-016` | Require explicit Sources and bounded, metadata-only, non-mutating local directory snapshots before file intelligence.        | Accepted                |
 
 ## Next
 
-The product-evolution roadmap proceeds through Milestone A — Alpha Hardening before Context Foundation, Universal Search, Continuity, Pulse 2.0, Safe Actions, AI evolution, onboarding, Public Beta, and commercial readiness. `AI-CHAT-004` fixes completed-response reconciliation and `HARD-001` closes the first data-safety checkpoint. Public signing and updater activation remain owner-controlled release operations.
+Milestones A and B are complete. The next roadmap phase is Milestone C — Universal Search over explicit local domains. Public signing and updater activation remain owner-controlled release operations.
 
 ## Reusable update template
 

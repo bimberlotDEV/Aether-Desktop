@@ -262,6 +262,52 @@ export const BackupResultSchema = z.object({
 })
 export type BackupResult = z.infer<typeof BackupResultSchema>
 
+// ─── Context Sources ────────────────────────────────────
+
+export const SourceSchema = z.object({
+  id: z.string(),
+  rootPath: z.string(),
+  displayName: z.string(),
+  spaceId: z.string().nullable(),
+  scanStatus: z.enum(['never', 'scanning', 'complete', 'error']),
+  lastScanAt: z.string().nullable(),
+  lastError: z.string().nullable(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+})
+export type Source = z.infer<typeof SourceSchema>
+
+export const IndexedFileSchema = z.object({
+  id: z.string(),
+  sourceId: z.string(),
+  relativePath: z.string(),
+  filename: z.string(),
+  extension: z.string().nullable(),
+  sizeBytes: z.number().int().nonnegative(),
+  createdAtFs: z.number().int().nullable(),
+  modifiedAtFs: z.number().int().nullable(),
+  state: z.enum(['present', 'removed']),
+  firstSeenAt: z.string(),
+  lastSeenAt: z.string(),
+  updatedAt: z.string(),
+})
+export type IndexedFile = z.infer<typeof IndexedFileSchema>
+
+export const SourceScanResultSchema = z.object({
+  sourceId: z.string(),
+  scanned: z.number().int().nonnegative(),
+  added: z.number().int().nonnegative(),
+  changed: z.number().int().nonnegative(),
+  renamed: z.number().int().nonnegative(),
+  removed: z.number().int().nonnegative(),
+  unchanged: z.number().int().nonnegative(),
+  skipped: z.number().int().nonnegative(),
+  errors: z.number().int().nonnegative(),
+  truncated: z.boolean(),
+  completedAt: z.string(),
+})
+export type SourceScanResult = z.infer<typeof SourceScanResultSchema>
+
 // ─── AI Types ────────────────────────────────────────────
 
 export const AiConversationSchema = z.object({

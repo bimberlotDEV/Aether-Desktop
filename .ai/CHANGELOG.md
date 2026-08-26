@@ -26,6 +26,17 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-08-26 — `CTX-001` — Explicit local Sources and safe metadata indexing
+
+- **Type:** Feature, privacy, data, test, and docs
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review
+- **Summary:** Added explicit, revocable local-directory Sources with optional Space ownership, bounded metadata-only scanning, transactional change and rename reconciliation, inspectable relative-path indexes, and a dedicated accessible desktop route.
+- **Files:** `src-tauri/src/context.rs`, Source migration/repository/commands, typed frontend bridge, `src/routes/Sources.tsx`, tests, ADR-016, architecture/readme, `.ai/*`
+- **Verification:** 60/60 frontend tests, production build, dependency audit, Rust format, strict Clippy, 70/70 Rust tests, MSI/NSIS packaging, browser-mode smoke, packaged startup smoke, SQLite migration/integrity inspection, and GitHub Actions runs 32972614553 and 32973076347 pass.
+- **Decisions/deviations:** Native Windows picker interaction could not be programmatically driven without enabling a prohibited WebView debug boundary. The supported picker integration is covered at the React boundary, while canonical authorization, real temporary-directory scanning, revocation, and filesystem non-mutation are covered in Rust. A consistent pre-test SQLite backup was created with SQLite's backup API; no Source remained authorized in the owner's database.
+- **Follow-up:** `SEARCH-001` — design Universal Search over explicit local domains without expanding AI access.
+
 ## 2026-08-25 — `RELEASE-032` — Alpha 0.3.2 candidate installed and published
 
 - **Type:** Build, release, docs, and process

@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { Navigate, Routes, Route } from 'react-router-dom'
 import { Sidebar } from '@/components/Sidebar'
 import { CommandPalette } from '@/components/CommandPalette'
@@ -12,6 +13,10 @@ import { Tasks } from '@/routes/Tasks'
 import { AI } from '@/routes/AI'
 import { Memory } from '@/routes/Memory'
 
+const Sources = lazy(() =>
+  import('@/routes/Sources').then((module) => ({ default: module.Sources })),
+)
+
 export function App() {
   return (
     <div className="aether-shell">
@@ -24,6 +29,20 @@ export function App() {
           <Route path="/spaces/:spaceId/*" element={<SpaceDetailLayout />} />
           <Route path="/tasks" element={<Tasks />} />
           <Route path="/vault" element={<Vault />} />
+          <Route
+            path="/sources"
+            element={
+              <Suspense
+                fallback={
+                  <div className="aether-page p-8 text-sm text-[var(--color-text-tertiary)]">
+                    Loading Sources…
+                  </div>
+                }
+              >
+                <Sources />
+              </Suspense>
+            }
+          />
           <Route path="/ai" element={<AI />} />
           <Route path="/memory" element={<Memory />} />
           <Route path="/activity" element={<Activity />} />

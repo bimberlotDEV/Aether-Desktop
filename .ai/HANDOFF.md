@@ -1,49 +1,60 @@
 # Codex Task Contract
 
-| Field             | Value                             |
-| ----------------- | --------------------------------- |
-| Schema version    | 2                                 |
-| Task ID           | `RELEASE-032`                     |
-| Status            | `complete`                        |
-| Owner             | Codex                             |
-| Last updated      | 2026-08-25                        |
-| Related milestone | Alpha 0.3.2 release consolidation |
-| Classification    | `planned_codex`                   |
+| Field             | Value                            |
+| ----------------- | -------------------------------- |
+| Schema version    | 2                                |
+| Task ID           | `CTX-001`                        |
+| Status            | `complete`                       |
+| Owner             | Codex                            |
+| Last updated      | 2026-08-26                       |
+| Related milestone | Milestone B — Context Foundation |
+| Classification    | `planned_codex`                  |
 
 ## Objective
 
-Publish a reproducible Aether 0.3.2 Alpha release candidate from merged `master`, install it as a verified upgrade on this Windows PC without losing user data, and publish exact artifacts, hashes, release notes, and validation evidence for review.
+Add the first privacy-preserving Context Engine slice: users can explicitly authorize a local directory as a Source, optionally associate it with a Space, run a bounded non-destructive metadata scan, inspect its status and indexed files, rescan for changes, and revoke access without Aether modifying any user file.
 
 ## Context
 
-PR #34 (AI response reconciliation), PR #35 (personal-beta database upgrades), and PR #36 (complete interface makeover) are merged in order on `master` at `3748947`, and every post-merge Windows CI run passed. The installed application already contains the locally integrated 0.3.1 candidate, but repository metadata still identifies it as 0.3.1 and the final merged source has not been emitted as a separately versioned release. A new patch version gives Windows a clear upgrade boundary and makes the integrated release auditable.
+Alpha Hardening and release 0.3.2 are complete on merged PR #37. The product-evolution roadmap identifies Context Foundation as the next milestone and requires transparent, revocable directory authorization, local-first indexing, change detection, background work, and append-only database evolution. The current Vault supports individual linked/managed files, but there is no authorized-directory model or file index. ADR-016 defines the new trust boundary.
 
 ## Acceptance criteria
 
-- [x] `package.json`, Rust package metadata, Cargo lock metadata, Tauri configuration, and visible in-app version labels agree on `0.3.2`; the pnpm lockfile has no root-version field and passes frozen installation unchanged.
-- [x] Product changelog and release artifact documentation describe AI response reconciliation, safe personal-beta upgrades, and the interface makeover without overstating public signing or updater support.
-- [x] Frontend typecheck, lint, 56 tests, production build, dependency audit, Rust formatting, strict Clippy, 63 Rust tests, release build, and Tauri packaging all pass from the release branch.
-- [x] The generated x64 MSI, NSIS installer, and release executable exist and have recorded byte sizes and SHA-256 hashes.
-- [x] No generated binary, database, credential, environment file, log, private key, or user backup is staged or committed.
-- [x] A complete pre-upgrade copy of `%APPDATA%/com.aether.desktop` is created outside the repository after stopping the verified process and before replacing the installed app.
-- [x] The NSIS installer exits successfully, Windows installs version 0.3.2, and the installed executable starts and remains responsive.
-- [x] The existing database remains present after upgrade with the same or greater file size; migration safety is additionally covered by the 63-test Rust suite.
-- [x] The final diff is limited to release metadata, visible version labels, release/control documentation, and generated lock metadata.
-- [x] The verified work is committed, pushed, represented by draft PR #37, and receives a green refreshed GitHub CI run.
+- [x] Migration `009_context_sources` creates constrained `sources` and `indexed_files` tables plus query indexes without changing existing migrations; fresh creation, upgrade, and idempotence tests pass.
+- [x] Adding a Source requires an explicitly selected absolute directory, canonicalizes it in trusted Rust, rejects filesystem roots, regular files, duplicates, and the Aether application-data tree, and never grants broader access than the selected directory.
+- [x] Scanning runs off the UI thread, never follows symlinks or Windows reparse points, skips known dependency/build internals, has deterministic depth/file limits, and records regular-file metadata using relative paths.
+- [x] A completed rescan reports new, changed, renamed, removed, unchanged, skipped, error, and truncation counts; rename inference only occurs for an unambiguous metadata match.
+- [x] Revoking a Source deletes only Aether's Source/index records and never moves, renames, writes, or deletes user files.
+- [x] Source commands are narrow and validated; indexed-file responses expose relative paths and metadata but not reconstructed absolute child paths.
+- [x] Users can add, rescan, associate, inspect, and revoke Sources from a dedicated accessible route with explicit privacy language, loading/progress feedback, empty state, error state, and destructive confirmation.
+- [x] Browser mode presents an honest installed-app requirement and no fake persistence or scan results.
+- [x] No Source metadata or indexed file content is sent to DeepSeek or attached to AI in this task.
+- [x] Frontend and Rust quality gates, production build, migration tests, repository tests, filesystem safety tests, and final diff/security review pass locally; GitHub CI is pending publication.
 
 ## Allowed paths
 
-- `package.json`
-- `pnpm-lock.yaml`
-- `src-tauri/Cargo.toml`
-- `src-tauri/Cargo.lock`
-- `src-tauri/tauri.conf.json`
+- `src-tauri/src/context.rs`
+- `src-tauri/src/db/migrations.rs`
+- `src-tauri/src/db/repositories/mod.rs`
+- `src-tauri/src/db/repositories/sources.rs`
+- `src-tauri/src/commands.rs`
+- `src-tauri/src/lib.rs`
+- `src/lib/db/types.ts`
+- `src/lib/db/tauri.ts`
+- `src/lib/db/tauri.test.ts`
+- `src/routes/Sources.tsx`
+- `src/routes/Sources.test.tsx`
+- `src/App.tsx`
+- `src/App.test.tsx`
 - `src/components/Sidebar.tsx`
-- `src/routes/Settings.tsx`
-- `CHANGELOG.md`
+- `src/components/Sidebar.test.tsx`
+- `src/components/CommandPalette.tsx`
+- `src/components/CommandPalette.test.tsx`
+- `src/styles/index.css`
+- `docs/decisions/016-context-sources-and-indexing.md`
+- `docs/architecture.md`
 - `README.md`
-- `docs/native-desktop.md`
-- `docs/release-artifacts-0.3.2.md`
+- `.ai/ARCHITECTURE.md`
 - `.ai/CHANGELOG.md`
 - `.ai/HANDOFF.md`
 - `.ai/PROJECT_STATE.md`
@@ -52,57 +63,61 @@ PR #34 (AI response reconciliation), PR #35 (personal-beta database upgrades), a
 
 ## Non-goals
 
-- Adding product features, schema migrations, dependencies, permissions, signing, an updater, telemetry, restore behavior, or Vault-byte backup semantics.
-- Publishing a GitHub Release or marking the draft PR merged without a separate owner request.
-- Sending a live DeepSeek request with the owner's credentials.
-- Removing old installers, previous backups, legacy Vault recovery copies, or user content.
+- Filesystem watchers, automatic startup/background schedules, continuous monitoring, or scanning an unselected directory.
+- Universal search UI/ranking, FTS, embeddings, similarity, file recommendations, or AI context attachment.
+- Reading or persisting file contents, PDF extraction, hashes, thumbnails, previews, or semantic classification.
+- Moving, renaming, copying, opening, deleting, or reorganizing user files.
+- Automatic Space assignment, assignment rules, or AI suggestions.
+- Backup/restore or Vault managed-byte archive behavior.
+- Cloud sync, collaboration, telemetry, licensing, signing, or updater activation.
 
 ## Dependencies and evidence
 
-- Merged baseline: `3748947` on `master`.
-- Successful post-merge Windows CI for PRs #34, #35, and #36.
-- Existing release checklist in `docs/release-checklist.md`.
-- Existing 0.3.1 metadata and artifact-record pattern.
-- Existing verified backup root under `%LOCALAPPDATA%/AetherInstallBackups`.
+- Merged 0.3.2 baseline: `3459e0f` on `master`.
+- Product-evolution masterprompt sections 3, 6–8, 30–32, and Milestone B.
+- Existing Rust repository → Tauri command → typed wrapper → React boundary.
+- Existing directory dialog capability from `tauri-plugin-dialog`.
+- ADR-010 for filesystem ownership safety and ADR-014 for local data-export disclosure patterns.
+- Accepted ADR-016 for Source authorization and snapshot-index semantics.
 
 ## Risks and safeguards
 
-- **Installer replacement risk:** resolve exact source, backup, installer, and installed executable paths before mutation; stop only the verified `aether.exe` process.
-- **User-data risk:** make a complete timestamped backup before installation and never delete the source or backup.
-- **Version drift:** search all first-party 0.3.1 references, update only machine/version-display references, and verify locks through native package tooling.
-- **Artifact ambiguity:** hash exact release executable, MSI, and NSIS outputs after the final build and document their full filenames.
-- **Unsigned distribution:** preserve the existing explicit unsigned/no-updater limitation.
-- **Rollback:** the pre-upgrade backup and previous 0.3.1 installer remain available; reverting the release commit restores repository metadata.
+- **Scope escape:** canonicalize the authorized root, derive only relative child records, skip symlinks/reparse points, and never accept a child path from the frontend.
+- **Resource exhaustion:** iterative bounded traversal, maximum depth and file count, excluded generated/dependency directories, metadata-only indexing, and blocking work outside the async UI path.
+- **Concurrent scans:** a process-local runtime guard permits one scan per Source and releases on every success/error path.
+- **Stale or missing files:** snapshot application is transactional; unseen rows become `removed` only after a complete non-truncated scan.
+- **Rename false positives:** preserve identity only when one removed and one new file share an otherwise unique size/modified-time signature; ambiguous cases remain remove+add.
+- **User-data loss:** scanner uses metadata/read-directory operations only; revoke deletes database rows through cascade and has explicit UI confirmation.
+- **Privacy leakage:** the frontend sees an authorized root only for Source transparency and sees relative indexed paths; no AI integration is introduced.
+- **Rollback:** reverting code leaves append-only tables unused; removing a Source is safe and does not touch the selected directory.
 
 ## Required validation
 
 ```text
-pnpm install --frozen-lockfile
-pnpm check
+pnpm typecheck
+pnpm lint
+pnpm test
 pnpm build
-pnpm audit --audit-level high
 cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check
 cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --all-features -- -D warnings
 cargo test --manifest-path src-tauri/Cargo.toml --all-targets --all-features
-cargo build --manifest-path src-tauri/Cargo.toml --release
-pnpm tauri:build
 git diff --check
-SHA-256 and byte-size capture for release artifacts
-pre-install backup verification
-silent NSIS upgrade and installed process/version smoke
+fresh migration, upgrade, and idempotence tests
+filesystem root/file/duplicate/app-data/symlink/reparse/depth/count safety tests
+new/changed/removed/unambiguous-rename/truncated snapshot tests
+browser-mode route and accessibility smoke
+installed Tauri directory-selection and scan smoke on a temporary owner-created fixture
 GitHub PR CI
 ```
 
 ## Blocking decisions
 
-None. The owner explicitly authorized the next release step. Public signing, automatic updates, and GitHub Release publication remain excluded because they require separate owner-controlled trust material or publication direction.
+None. The owner authorized the next roadmap phase. ADR-016 selects a reversible metadata-only snapshot foundation; cloud use, automatic monitoring, actions, restore, and broader indexing remain excluded.
 
 ## Self-review record
 
-- **Status:** Pass. Release commit `6d96178` is pushed in draft PR #37, and GitHub Actions run 32894361551 completed the Windows quality-gate job successfully.
-- **Version and scope:** All first-party machine/display sources resolve to 0.3.2. Remaining 0.3.1 references are historical changelog, completed-task evidence, dependency versions, and the previous artifact record. The changed paths match the contract and add no dependency, permission, migration, or runtime behavior.
-- **Automated evidence:** Frozen install, typecheck, lint, 56/56 frontend tests, production build, clean high-severity audit, Rust formatting, strict Clippy, 63/63 Rust tests, optimized release build, Tauri MSI/NSIS packaging, and `git diff --check` pass.
-- **Artifact evidence:** Loose executable: 16,096,768 bytes / `1AFF3FFA67E741B2B13A5CB59C13A171DA39250F184449F7CE4A762CACA450E7`; MSI: 7,086,080 bytes / `C5A02C8FEFA9A99D55BF2130E421EFFA310BF0B677A16EF56DDE6974BDB3FEFB`; NSIS: 4,228,661 bytes / `D0402AB4ADAC9E7A392957CD0A84404CF9C53ABDB691BFD9B603C37E91E7BE2B`. All are explicitly unsigned.
-- **Data and install evidence:** Backup `pre-release-032-20260825-220627` matches the source database at 258,048 bytes and SHA-256 `F2808F56E2D421A54745118D880B566A3809B0632018806C4C9C1DD8A6E3BD2F`. The same offline database size/hash remained after the NSIS exit-code-0 upgrade; installed product version is 0.3.2 and its process is responsive.
-- **Findings:** Corrected the initial lockfile criterion after confirming pnpm's importer does not encode the root package version. No secret, generated binary, database, backup, unsafe operation, or unrelated change is present in the diff.
-- **Publication evidence:** Draft PR `https://github.com/bimberlotDEV/Aether-Desktop/pull/37`; CI run `https://github.com/bimberlotDEV/Aether-Desktop/actions/runs/32894361551`. All Windows job steps passed, including frozen dependency installation, frontend quality/build, Rust format, strict lint, and Rust tests.
+- **Status:** Complete. Local implementation, self-review, draft PR publication, clean Windows CI, packaged startup, live migration inspection, and consistent database backup pass.
+- **Acceptance mapping:** Migration 009 and migration tests cover append-only persistence; `context.rs` covers canonical authorization and bounded traversal; the Source repository covers transactional snapshot reconciliation and safe revocation; narrow Tauri commands and typed wrappers enforce the IPC boundary; the lazy-loaded Sources route covers transparent authorization, inspection, rescan, Space association, and confirmed revocation.
+- **Automated evidence:** `pnpm check` passes 60/60 tests across 26 files; `pnpm build` produces a 493.59 kB main chunk and 7.26 kB lazy Sources chunk without a size warning; `pnpm audit --audit-level high`, Rust formatting, strict Clippy, 70/70 Rust tests, `pnpm tauri:build`, and `git diff --check` pass. GitHub Actions run 32972614553 repeats frontend quality/build, Rust formatting, strict lint, and Rust tests successfully on a clean Windows runner.
+- **Interactive evidence:** Browser-mode `/sources` renders the installed-app disclosure, privacy boundary, accessible navigation, and a disabled Add folder action without console errors. Packaged candidates startup-smoke as responsive. The live owner database applies migration 009 and remains with zero authorized Sources. Native Windows picker interaction was not programmatically driven because doing so required enabling a prohibited WebView debug boundary; picker invocation is covered at the React boundary, while canonical authorization, real temporary-directory scanning, revocation, and non-mutation are covered in Rust.
+- **Findings corrected:** Removed two React hook dependency warnings; lazy-loaded Sources to remove the main-chunk warning; fixed reappearing-file identity collisions with regression coverage; clarified large-index count disclosure. The final security review found no Source code path that writes, copies, renames, deletes, or attaches data to AI.

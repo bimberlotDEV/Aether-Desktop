@@ -1,39 +1,33 @@
 # Session Notes
 
-| Field          | Value         |
-| -------------- | ------------- |
-| Schema version | 2             |
-| Session date   | 2026-08-25    |
-| Active task    | `RELEASE-032` |
-| Agent          | Codex         |
-| State          | `complete`    |
+| Field          | Value      |
+| -------------- | ---------- |
+| Schema version | 2          |
+| Session date   | 2026-08-26 |
+| Active task    | `CTX-001`  |
+| Agent          | Codex      |
+| State          | `complete` |
 
 ## Current work
 
-- Completed `UI-001`, a product-wide Aether interface makeover classified as `planned_codex` and governed by ADR-015.
-- Added semantic interface tokens and reusable Page, PageHeader, Button, Surface, EmptyState, SectionLabel, and StatusDot primitives.
-- Rebuilt the application shell, Pulse, Spaces, Tasks, Vault, AI, Memory, Activity, Settings, Space Detail, Notes, dialogs, and command palette into one restrained futuristic visual language.
-- Preserved every existing persistence, domain, security, and AI confirmation boundary; no backend, migration, credential, or user-data behavior changed.
-- Completed dark/light and responsive browser QA, including locally persisted browser-mode Space and Note flows.
-- Validated the standalone UI branch and a local integration with AI response synchronization and legacy-upgrade branches.
-- Built, backed up, installed, and started the combined Windows 0.3.1 package.
-- Integrated merged PRs #34 and #35 into the UI branch while preserving AI response reconciliation, database migration safeguards, and all three task histories.
-- Merged PRs #34, #35, and #36 in order; every refreshed PR and post-merge `master` Windows-CI run passed.
-- Classified the formal 0.3.2 packaging and installation as `planned_codex` and completed the `RELEASE-032` readiness contract.
-- Synchronized 0.3.2 metadata and labels, passed every local release gate, built and hashed MSI/NSIS artifacts, verified an offline backup, installed the NSIS upgrade, proved the database hash unchanged, and restarted a responsive 0.3.2 process.
-- Published release commit `6d96178` through draft PR #37 and verified the refreshed GitHub Windows quality gate passed in Actions run 32894361551.
+- Merged the green Alpha 0.3.2 release candidate through PR #37 at `3459e0f`.
+- Re-read the product-evolution roadmap and selected Milestone B — Context Foundation after completed Alpha Hardening.
+- Inspected existing SQLite migration, repository, Tauri command, Vault filesystem, route, navigation, and backup trust boundaries.
+- Accepted ADR-016: explicit canonical Sources, bounded metadata-only snapshot scans, no symlink/reparse traversal, no file mutation, and no AI exposure.
+- Completed the `CTX-001` planned-task contract and readiness gate.
+- Implemented append-only Source/index persistence, bounded metadata-only scanning, transactional change reconciliation, narrow IPC wrappers, and a dedicated lazy-loaded Sources route.
+- Added explicit Space association, transparent scan results, file-index inspection, confirmed revocation, browser-mode disclosure, and privacy language without AI attachment or user-file mutation.
+- Self-review corrected hook dependency warnings, a reappearing-file identity collision, unclear large-index disclosure, and initial bundle-size pressure.
 
 ## Verification snapshot
 
-- Standalone `pnpm check`: 54/54 tests pass.
-- Combined `pnpm check`: 56/56 tests pass across 25 files.
-- Combined `pnpm build`: 492.28 kB JS (138.46 kB gzip), 48.63 kB CSS (9.80 kB gzip), no chunk warning.
-- `pnpm audit --audit-level high`: no known vulnerabilities.
-- `pnpm tauri:build`: MSI and NSIS x64 bundles pass.
-- Installed startup smoke: version 0.3.2 process is responsive and the existing 258,048-byte database remains byte-for-byte unchanged.
-- Pre-install backup: `C:\Users\bim\AppData\Local\AetherInstallBackups\pre-release-032-20260825-220627`.
-- GitHub publication: draft PR #37; Windows CI run 32894361551 passed every step.
+- `pnpm check` passes 60/60 frontend tests; `pnpm build` passes without a chunk-size warning; the Sources route is split into a 7.26 kB lazy chunk.
+- Dependency audit, Rust formatting, strict Clippy, 70/70 Rust tests, full Tauri packaging, and `git diff --check` pass.
+- Browser-mode `/sources` passes navigation, disclosure, disabled-action, and console-error smoke checks. Packaged candidates start responsively; native picker invocation is covered at the React boundary and its trusted filesystem behavior by real temporary-directory Rust tests.
+- Draft PR #38 is published at commit `100bbf7`; GitHub Actions run 32972614553 passes every Windows quality-gate step.
+- GitHub Actions run 32973076347 also passes after the CI-evidence commit. The live database contains migration 009, zero authorized Sources, and passes integrity inspection through a consistent SQLite backup.
+- Native picker automation was deliberately not forced through a prohibited WebView debugging boundary; supported UI invocation plus Rust filesystem tests provide the bounded evidence accepted for this milestone.
 
 ## Exact resume point
 
-`RELEASE-032` is complete. Draft PR #37 remains intentionally unmerged; the next task should be selected from the owner-approved roadmap without publishing a GitHub Release, enabling signing/updating, or expanding restore semantics implicitly.
+Milestone B is complete. After PR #38 is merged into `master`, start Milestone C — Universal Search as a new `planned_codex` task and preserve the explicit Source/Space privacy boundaries.

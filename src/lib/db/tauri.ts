@@ -29,6 +29,9 @@ import type {
   MemoryItem,
   NativeStatus,
   BackupResult,
+  Source,
+  IndexedFile,
+  SourceScanResult,
 } from './types'
 
 // ─── Native desktop ─────────────────────────────────────
@@ -40,6 +43,36 @@ export async function sendTestNotification(): Promise<void> {
 }
 export async function exportWorkspaceBackup(destination: string): Promise<BackupResult> {
   return invoke('export_workspace_backup', { destination })
+}
+
+// ─── Context Sources ────────────────────────────────────
+export async function createSource(input: {
+  rootPath: string
+  displayName: string
+  spaceId: string | null
+}): Promise<Source> {
+  return invoke('create_source', { input })
+}
+export async function listSources(): Promise<Source[]> {
+  return invoke('list_sources')
+}
+export async function updateSourceSpace(
+  id: string,
+  spaceId: string | null,
+): Promise<Source | null> {
+  return invoke('update_source_space', { id, spaceId })
+}
+export async function revokeSource(id: string): Promise<boolean> {
+  return invoke('revoke_source', { id })
+}
+export async function listIndexedFiles(
+  sourceId: string,
+  includeRemoved = false,
+): Promise<IndexedFile[]> {
+  return invoke('list_indexed_files', { sourceId, includeRemoved })
+}
+export async function scanSource(id: string): Promise<SourceScanResult> {
+  return invoke('scan_source', { id })
 }
 
 // ─── Settings ────────────────────────────────────────────

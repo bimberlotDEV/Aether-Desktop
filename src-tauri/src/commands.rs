@@ -5,6 +5,7 @@ use crate::ai::credentials;
 use crate::ai::provider::{self, ChatCompletionRequest, ChatMessage, ProviderConfig};
 use crate::ai::runtime::AiRuntime;
 use crate::backup;
+use crate::context::{self as local_context, ContextRuntime};
 use crate::db::repositories::{self, with_conn};
 use crate::db::Database;
 use crate::native::NativeStatus;
@@ -54,6 +55,93 @@ pub fn export_workspace_backup(
         .lock()
         .map_err(|error| format!("Lock error: {error}"))?;
     backup::export(&conn, &destination)
+}
+
+// ─── Context Sources ────────────────────────────────────
+
+#[tauri::command]
+pub fn create_source(
+    app: AppHandle,
+    db: State<Database>,
+    input: repositories::sources::CreateSourceInput,
+) -> Result<repositories::sources::Source, String> {
+    let app_data = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Could not resolve Aether data directory: {e}"))?;
+    let root = local_context::authorize_directory(&PathBuf::from(&input.root_path), &app_data)?;
+    let validated = repositories::sources::CreateSourceInput {
+        root_path: local_context::canonical_text(&root)?,
+        display_name: input.display_name,
+        space_id: input.space_id,
+    };
+    with_conn(&db.conn, |conn| {
+        repositories::sources::create(conn, &validated)
+    })
+}
+
+#[tauri::command]
+pub fn list_sources(db: State<Database>) -> Result<Vec<repositories::sources::Source>, String> {
+    with_conn(&db.conn, repositories::sources::list)
+}
+
+#[tauri::command]
+pub fn update_source_space(
+    db: State<Database>,
+    id: String,
+    space_id: Option<String>,
+) -> Result<Option<repositories::sources::Source>, String> {
+    with_conn(&db.conn, |conn| {
+        repositories::sources::update_space(conn, &id, space_id.as_deref())
+    })
+}
+
+#[tauri::command]
+pub fn revoke_source(db: State<Database>, id: String) -> Result<bool, String> {
+    with_conn(&db.conn, |conn| repositories::sources::delete(conn, &id))
+}
+
+#[tauri::command]
+pub fn list_indexed_files(
+    db: State<Database>,
+    source_id: String,
+    include_removed: Option<bool>,
+) -> Result<Vec<repositories::sources::IndexedFile>, String> {
+    with_conn(&db.conn, |conn| {
+        repositories::sources::list_files(conn, &source_id, include_removed.unwrap_or(false))
+    })
+}
+
+#[tauri::command]
+pub async fn scan_source(
+    db: State<'_, Database>,
+    runtime: State<'_, ContextRuntime>,
+    id: String,
+) -> Result<repositories::sources::ScanResult, String> {
+    runtime.begin(&id)?;
+    let result = async {
+        let source = with_conn(&db.conn, |conn| repositories::sources::get(conn, &id))?
+            .ok_or_else(|| "Source does not exist".to_string())?;
+        with_conn(&db.conn, |conn| {
+            repositories::sources::mark_scanning(conn, &id)
+        })?;
+        let root = PathBuf::from(source.root_path);
+        let snapshot =
+            tauri::async_runtime::spawn_blocking(move || local_context::scan_directory(&root))
+                .await
+                .map_err(|e| format!("Source scan worker failed: {e}"))??;
+        with_conn(&db.conn, |conn| {
+            repositories::sources::apply_snapshot(conn, &id, snapshot)
+        })
+    }
+    .await;
+    if let Err(error) = &result {
+        let _ = with_conn(&db.conn, |conn| {
+            repositories::sources::mark_error(conn, &id, error)
+        });
+    }
+    runtime.finish(&id);
+    result
 }
 
 // ─── Settings ───────────────────────────────────────────
