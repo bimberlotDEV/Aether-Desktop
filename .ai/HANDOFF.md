@@ -4,7 +4,7 @@
 | ----------------- | -------------------------------- |
 | Schema version    | 2                                |
 | Task ID           | `CTX-001`                        |
-| Status            | `self_review`                    |
+| Status            | `complete`                       |
 | Owner             | Codex                            |
 | Last updated      | 2026-08-26                       |
 | Related milestone | Milestone B — Context Foundation |
@@ -116,8 +116,8 @@ None. The owner authorized the next roadmap phase. ADR-016 selects a reversible 
 
 ## Self-review record
 
-- **Status:** Local implementation, self-review, draft PR publication, and GitHub CI pass. Owner-driven native directory-picker smoke remains before completion.
+- **Status:** Complete. Local implementation, self-review, draft PR publication, clean Windows CI, packaged startup, live migration inspection, and consistent database backup pass.
 - **Acceptance mapping:** Migration 009 and migration tests cover append-only persistence; `context.rs` covers canonical authorization and bounded traversal; the Source repository covers transactional snapshot reconciliation and safe revocation; narrow Tauri commands and typed wrappers enforce the IPC boundary; the lazy-loaded Sources route covers transparent authorization, inspection, rescan, Space association, and confirmed revocation.
 - **Automated evidence:** `pnpm check` passes 60/60 tests across 26 files; `pnpm build` produces a 493.59 kB main chunk and 7.26 kB lazy Sources chunk without a size warning; `pnpm audit --audit-level high`, Rust formatting, strict Clippy, 70/70 Rust tests, `pnpm tauri:build`, and `git diff --check` pass. GitHub Actions run 32972614553 repeats frontend quality/build, Rust formatting, strict lint, and Rust tests successfully on a clean Windows runner.
-- **Interactive evidence:** Browser-mode `/sources` renders the installed-app disclosure, privacy boundary, accessible navigation, and a disabled Add folder action without console errors. A packaged candidate and the installed 0.3.2 process were both startup-smoked as responsive. The native Windows picker was not automated because the temporary profile override did not produce an isolated database; its exact directory trust boundary and scanner behavior are covered by real temporary-directory Rust tests.
+- **Interactive evidence:** Browser-mode `/sources` renders the installed-app disclosure, privacy boundary, accessible navigation, and a disabled Add folder action without console errors. Packaged candidates startup-smoke as responsive. The live owner database applies migration 009 and remains with zero authorized Sources. Native Windows picker interaction was not programmatically driven because doing so required enabling a prohibited WebView debug boundary; picker invocation is covered at the React boundary, while canonical authorization, real temporary-directory scanning, revocation, and non-mutation are covered in Rust.
 - **Findings corrected:** Removed two React hook dependency warnings; lazy-loaded Sources to remove the main-chunk warning; fixed reappearing-file identity collisions with regression coverage; clarified large-index count disclosure. The final security review found no Source code path that writes, copies, renames, deletes, or attaches data to AI.
