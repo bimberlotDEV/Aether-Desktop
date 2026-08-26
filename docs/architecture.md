@@ -26,6 +26,7 @@ The webview is untrusted relative to native resources. It never executes SQL, re
 | Native lifecycle   | Tauri plugins and `native.rs`                           | tray, shortcut, notifications, Settings   |
 | Backup             | `backup.rs` and SQLite online backup API                | Settings                                  |
 | Context Sources    | SQLite metadata plus bounded `context.rs` scanner       | Sources                                   |
+| Universal Search   | Rust search repository, Notes FTS5, metadata ranking    | Ctrl+K                                    |
 
 ## Data and concurrency
 
@@ -34,6 +35,8 @@ SQLite is bundled with `rusqlite`; versioned migrations are append-only. The liv
 Workspace export uses SQLite's online backup API while holding the connection boundary. It writes a sibling partial database, removes the `secrets` table, verifies integrity, and finalizes with rollback protection for an existing destination. See ADR-014.
 
 Context Sources store an explicitly authorized canonical root and relative child metadata. Scans run outside the UI thread, do not follow symlinks or Windows reparse points, enforce depth/file limits, and never read contents or mutate files. Snapshot application is transactional; truncated scans cannot mark unseen files removed. See ADR-016.
+
+Universal Search uses one typed Rust repository and command. Notes content is retrieved through the existing FTS5 index; active metadata domains use parameterized bounded queries. Rust applies deterministic text-quality, current-Space, favourite/pinned, open-Task, and recency signals before returning a globally capped result set. Commands remain frontend-owned. Source results expose only Source identity and relative indexed paths, and search never invokes AI. See ADR-017.
 
 ## Security and privacy
 

@@ -308,6 +308,34 @@ export const SourceScanResultSchema = z.object({
 })
 export type SourceScanResult = z.infer<typeof SourceScanResultSchema>
 
+// ─── Universal Search ──────────────────────────────────
+
+export const UniversalSearchKindSchema = z.enum([
+  'space',
+  'note',
+  'task',
+  'vault',
+  'memory',
+  'conversation',
+  'activity',
+  'file',
+])
+export type UniversalSearchKind = z.infer<typeof UniversalSearchKindSchema>
+
+export const UniversalSearchResultSchema = z.object({
+  kind: UniversalSearchKindSchema,
+  entityId: z.string(),
+  spaceId: z.string().nullable(),
+  title: z.string(),
+  subtitle: z.string(),
+  provenance: z.string(),
+  score: z.number().int(),
+  updatedAt: z.string(),
+  sourceId: z.string().nullable(),
+  relativePath: z.string().nullable(),
+})
+export type UniversalSearchResult = z.infer<typeof UniversalSearchResultSchema>
+
 // ─── AI Types ────────────────────────────────────────────
 
 export const AiConversationSchema = z.object({

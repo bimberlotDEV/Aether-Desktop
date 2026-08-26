@@ -32,6 +32,7 @@ import type {
   Source,
   IndexedFile,
   SourceScanResult,
+  UniversalSearchResult,
 } from './types'
 
 // ─── Native desktop ─────────────────────────────────────
@@ -73,6 +74,14 @@ export async function listIndexedFiles(
 }
 export async function scanSource(id: string): Promise<SourceScanResult> {
   return invoke('scan_source', { id })
+}
+
+export async function universalSearch(
+  query: string,
+  currentSpaceId: string | null = null,
+  limit = 30,
+): Promise<UniversalSearchResult[]> {
+  return invoke('universal_search', { query, currentSpaceId, limit })
 }
 
 // ─── Settings ────────────────────────────────────────────

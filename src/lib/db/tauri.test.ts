@@ -38,6 +38,7 @@ import {
   createSource,
   scanSource,
   revokeSource,
+  universalSearch,
 } from '@/lib/db/tauri'
 
 describe('Tauri database boundary', () => {
@@ -89,6 +90,16 @@ describe('Tauri database boundary', () => {
     })
     expect(invoke).toHaveBeenNthCalledWith(2, 'scan_source', { id: 'source-1' })
     expect(invoke).toHaveBeenNthCalledWith(3, 'revoke_source', { id: 'source-1' })
+  })
+
+  it('passes Universal Search scope and limits through one narrow invoke', async () => {
+    invoke.mockResolvedValueOnce([])
+    await universalSearch('gradient descent', 'space-1', 25)
+    expect(invoke).toHaveBeenCalledWith('universal_search', {
+      query: 'gradient descent',
+      currentSpaceId: 'space-1',
+      limit: 25,
+    })
   })
 
   it('maps cleared optional Space fields to empty persisted values', async () => {
