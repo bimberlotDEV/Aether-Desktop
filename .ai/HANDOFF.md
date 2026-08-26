@@ -4,7 +4,7 @@
 | ----------------- | ------------------------------ |
 | Schema version    | 2                              |
 | Task ID           | `SEARCH-001`                   |
-| Status            | `self_review`                  |
+| Status            | `complete`                     |
 | Owner             | Codex                          |
 | Last updated      | 2026-08-26                     |
 | Related milestone | Milestone C — Universal Search |
@@ -28,7 +28,7 @@ Milestones A and B are complete on merged `master` at `1d11ac0`. The existing pa
 - [x] Ctrl+K debounces desktop search, merges commands and domain results into one keyboard-operable accessible list, shows type/provenance/loading/error/empty states, and opens the most specific supported destination.
 - [x] Browser mode remains an honest command/navigation search and does not fabricate database results.
 - [x] Tests cover every result domain, archived/removed exclusions, current-Space ranking, special-character queries, limits, IPC argument shape, keyboard navigation, stale-response suppression, and browser behavior.
-- [x] Frontend/Rust gates, production and Tauri builds, dependency audit, diff/security review, and packaged startup smoke pass locally; GitHub Windows CI is pending publication.
+- [x] Frontend/Rust gates, production and Tauri builds, dependency audit, diff/security review, packaged startup smoke, and GitHub Windows CI pass.
 
 ## Allowed paths
 
@@ -93,7 +93,7 @@ None. The owner explicitly authorized Milestone C followed by D. ADR-017 chooses
 
 ## Self-review record
 
-- **Status:** Local implementation and self-review pass; publication and GitHub CI remain.
+- **Status:** Complete. Draft PR #39 is published and exact-head GitHub CI run 32983855580 attempt 2 passes every Windows quality gate.
 - **Acceptance mapping:** `search.rs` owns validated cross-domain retrieval, FTS/LIKE safety, exclusions, privacy, scoring, limits, and stable ordering; one command and typed wrapper own IPC; the Ctrl+K component owns command merging, debounce, stale suppression, provenance, keyboard behavior, and honest browser disclosure.
-- **Evidence:** `pnpm check` passes 64/64 tests across 26 files; production build passes at 496.41 kB main JS / 139.94 kB gzip without a size warning; dependency audit, Rust formatting, strict Clippy, 73/73 Rust tests, final diff check, MSI/NSIS packaging, browser-mode Ctrl+K smoke, keyboard open/close, zero console errors, and packaged startup pass.
+- **Evidence:** `pnpm check` passes 64/64 tests across 26 files; production build passes at 496.41 kB main JS / 139.94 kB gzip without a size warning; dependency audit, Rust formatting, strict Clippy, 73/73 Rust tests, final diff check, MSI/NSIS packaging, browser-mode Ctrl+K smoke, keyboard open/close, zero console errors, packaged startup, and GitHub Actions run 32983855580 attempt 2 pass.
 - **Findings corrected:** Bounded metadata candidates now have deterministic recency/id ordering and a larger diversity cap before global ranking; Activity matches humanized event names; empty-result ArrowDown cannot produce index `-1`; the inherited forbidden `glass-surface` class was removed. The first Tauri build failed only because the running prior candidate locked `aether.exe`; after stopping that exact process, the unchanged build completed both bundles.
