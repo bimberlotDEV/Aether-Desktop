@@ -14,6 +14,7 @@ import {
   FolderOpen,
   Sparkles,
   Brain,
+  Database,
   type LucideIcon,
 } from 'lucide-react'
 import { useThemeStore } from '@/stores/themeStore'
@@ -67,6 +68,13 @@ const defaultCommands: Command[] = [
     description: 'Review explicit context Aether remembers',
     keywords: ['remember', 'context', 'knowledge'],
     action: () => navigateTo('/memory'),
+  },
+  {
+    id: 'sources',
+    label: 'Open Sources',
+    description: 'Manage authorized local folders',
+    keywords: ['context', 'files', 'index'],
+    action: () => navigateTo('/sources'),
   },
   {
     id: 'create-note',
@@ -133,6 +141,7 @@ const iconMap: Record<string, LucideIcon> = {
   Open: Settings,
   AI: Sparkles,
   Memory: Brain,
+  Sources: Database,
   Create: Plus,
   Tasks: CheckSquare,
   Switch: Sun,
@@ -144,6 +153,7 @@ const iconMap: Record<string, LucideIcon> = {
 function getIcon(label: string): LucideIcon {
   if (label.includes('AI')) return Sparkles
   if (label.includes('Memory')) return Brain
+  if (label.includes('Sources')) return Database
   for (const [key, icon] of Object.entries(iconMap)) {
     if (label.includes(key)) return icon
   }

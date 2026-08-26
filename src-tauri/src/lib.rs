@@ -1,6 +1,7 @@
 mod ai;
 mod backup;
 mod commands;
+mod context;
 mod db;
 mod native;
 mod vault;
@@ -68,6 +69,7 @@ pub fn run() {
             // Store database in Tauri state
             app.manage(database);
             app.manage(AiRuntime::default());
+            app.manage(context::ContextRuntime::default());
             let native_status = native::setup(app)?;
             app.manage(native_status);
 
@@ -77,6 +79,12 @@ pub fn run() {
             commands::native_get_status,
             commands::native_test_notification,
             commands::export_workspace_backup,
+            commands::create_source,
+            commands::list_sources,
+            commands::update_source_space,
+            commands::revoke_source,
+            commands::list_indexed_files,
+            commands::scan_source,
             commands::get_setting,
             commands::set_setting,
             commands::delete_setting,

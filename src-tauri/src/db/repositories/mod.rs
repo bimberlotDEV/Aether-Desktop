@@ -4,6 +4,7 @@ pub mod memory;
 pub mod notes;
 pub mod profile;
 pub mod settings;
+pub mod sources;
 pub mod spaces;
 pub mod tasks;
 pub mod vault;

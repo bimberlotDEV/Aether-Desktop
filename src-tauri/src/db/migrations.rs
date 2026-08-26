@@ -273,6 +273,46 @@ const MIGRATIONS: &[(&str, &str)] = &[
         END;
         ",
     ),
+    // Migration 009: Explicit Context Sources and indexed file metadata
+    (
+        "009_context_sources",
+        "
+        CREATE TABLE IF NOT EXISTS sources (
+            id               TEXT PRIMARY KEY NOT NULL,
+            root_path        TEXT NOT NULL UNIQUE COLLATE NOCASE CHECK(length(trim(root_path)) > 0),
+            display_name     TEXT NOT NULL CHECK(length(trim(display_name)) BETWEEN 1 AND 200),
+            space_id         TEXT REFERENCES spaces(id) ON DELETE SET NULL,
+            scan_status      TEXT NOT NULL DEFAULT 'never' CHECK(scan_status IN ('never', 'scanning', 'complete', 'error')),
+            last_scan_at     TEXT,
+            last_error       TEXT,
+            created_at       TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at       TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_sources_space ON sources(space_id);
+        CREATE INDEX IF NOT EXISTS idx_sources_status ON sources(scan_status);
+
+        CREATE TABLE IF NOT EXISTS indexed_files (
+            id               TEXT PRIMARY KEY NOT NULL,
+            source_id        TEXT NOT NULL REFERENCES sources(id) ON DELETE CASCADE,
+            relative_path    TEXT NOT NULL COLLATE NOCASE CHECK(length(trim(relative_path)) > 0),
+            filename         TEXT NOT NULL CHECK(length(trim(filename)) > 0),
+            extension        TEXT,
+            size_bytes       INTEGER NOT NULL CHECK(size_bytes >= 0),
+            created_at_fs    INTEGER,
+            modified_at_fs   INTEGER,
+            state            TEXT NOT NULL DEFAULT 'present' CHECK(state IN ('present', 'removed')),
+            first_seen_at    TEXT NOT NULL DEFAULT (datetime('now')),
+            last_seen_at     TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at       TEXT NOT NULL DEFAULT (datetime('now')),
+            UNIQUE(source_id, relative_path)
+        );
+
+        CREATE INDEX IF NOT EXISTS idx_indexed_files_source_state ON indexed_files(source_id, state);
+        CREATE INDEX IF NOT EXISTS idx_indexed_files_name ON indexed_files(filename);
+        CREATE INDEX IF NOT EXISTS idx_indexed_files_modified ON indexed_files(modified_at_fs);
+        ",
+    ),
 ];
 
 fn ensure_migrations_table(conn: &Connection) -> Result<(), String> {
@@ -744,6 +784,8 @@ mod tests {
         assert!(tables.contains(&"tasks".to_string()));
         assert!(tables.contains(&"vault_items".to_string()));
         assert!(tables.contains(&"memory_items".to_string()));
+        assert!(tables.contains(&"sources".to_string()));
+        assert!(tables.contains(&"indexed_files".to_string()));
     }
 
     #[test]
@@ -751,6 +793,32 @@ mod tests {
         let conn = in_memory_db();
         run(&conn).unwrap();
         run(&conn).unwrap();
+    }
+
+    #[test]
+    fn upgrades_current_workspace_with_context_tables() {
+        let conn = in_memory_db();
+        run(&conn).unwrap();
+        conn.execute_batch(
+            "DROP TABLE indexed_files;
+             DROP TABLE sources;
+             DELETE FROM _migrations WHERE name = '009_context_sources';",
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO spaces (id, name) VALUES ('kept', 'Kept workspace')",
+            [],
+        )
+        .unwrap();
+        run(&conn).unwrap();
+        let kept: String = conn
+            .query_row("SELECT name FROM spaces WHERE id='kept'", [], |row| {
+                row.get(0)
+            })
+            .unwrap();
+        let context_tables: i64 = conn.query_row("SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name IN ('sources','indexed_files')", [], |row| row.get(0)).unwrap();
+        assert_eq!(kept, "Kept workspace");
+        assert_eq!(context_tables, 2);
     }
 
     #[test]

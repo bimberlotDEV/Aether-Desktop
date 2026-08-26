@@ -35,6 +35,9 @@ import {
   getNativeStatus,
   sendTestNotification,
   exportWorkspaceBackup,
+  createSource,
+  scanSource,
+  revokeSource,
 } from '@/lib/db/tauri'
 
 describe('Tauri database boundary', () => {
@@ -74,6 +77,18 @@ describe('Tauri database boundary', () => {
     expect(invoke).toHaveBeenCalledWith('export_workspace_backup', {
       destination: 'C:\\Backups\\workspace.aether-backup.db',
     })
+  })
+
+  it('keeps Source authorization and scanning behind narrow commands', async () => {
+    await createSource({ rootPath: 'C:\\Work', displayName: 'Work', spaceId: null })
+    await scanSource('source-1')
+    await revokeSource('source-1')
+
+    expect(invoke).toHaveBeenNthCalledWith(1, 'create_source', {
+      input: { rootPath: 'C:\\Work', displayName: 'Work', spaceId: null },
+    })
+    expect(invoke).toHaveBeenNthCalledWith(2, 'scan_source', { id: 'source-1' })
+    expect(invoke).toHaveBeenNthCalledWith(3, 'revoke_source', { id: 'source-1' })
   })
 
   it('maps cleared optional Space fields to empty persisted values', async () => {

@@ -8,6 +8,7 @@ import {
   Layers,
   LayoutDashboard,
   Search,
+  Database,
   Settings,
   Sparkles,
   type LucideIcon,
@@ -30,6 +31,7 @@ const workspaceItems: NavItem[] = [
 ]
 
 const intelligenceItems: NavItem[] = [
+  { to: '/sources', icon: Database, label: 'Sources' },
   { to: '/ai', icon: Sparkles, label: 'AI' },
   { to: '/memory', icon: Brain, label: 'Memory' },
   { to: '/activity', icon: Activity, label: 'Activity' },
