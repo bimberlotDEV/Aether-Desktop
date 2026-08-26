@@ -48,7 +48,7 @@
 | `RELEASE-032`      | Consolidate and install Alpha 0.3.2                | `complete`    | Merged AI, migration, and UI work ships as a versioned, hashed, installed, and CI-green Windows release candidate.                  |
 | `CTX-001`          | Explicit Sources and metadata indexing             | `self_review` | Authorized directories can be safely indexed, inspected, rescanned, associated, and revoked without mutating user files.            |
 
-`RELEASE-032` is merged through PR #37. The first bounded Context Engine slice passes local implementation and self-review; draft PR publication and GitHub CI remain pending.
+`RELEASE-032` is merged through PR #37. The first bounded Context Engine slice is published through draft PR #38 and passes local and GitHub Windows quality gates. An owner-driven native directory-picker smoke remains before task completion.
 
 ## Completed product milestones
 
@@ -83,6 +83,7 @@
 | `cargo fmt --check`                         | Pass        | 2026-08-26 | Repository Rust formatting is clean.                                                          |
 | `cargo clippy --all-targets -- -D warnings` | Pass        | 2026-08-26 | Library, binary, and test targets are warning-free.                                           |
 | `pnpm tauri:build`                          | Pass        | 2026-08-26 | Context candidate x64 MSI and NSIS bundles build successfully.                                |
+| GitHub Actions                              | Pass        | 2026-08-26 | Run 32972614553 passes frontend quality/build, Rust format, strict lint, and Rust tests.      |
 | Release startup smoke                       | Pass        | 2026-08-25 | 0.3.2 installed with exit code 0; database hash unchanged and process responsive.             |
 
 ## Active blockers
