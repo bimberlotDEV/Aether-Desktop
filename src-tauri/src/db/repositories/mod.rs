@@ -3,6 +3,7 @@ pub mod conversations;
 pub mod memory;
 pub mod notes;
 pub mod profile;
+pub mod search;
 pub mod settings;
 pub mod sources;
 pub mod spaces;

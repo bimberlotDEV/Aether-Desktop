@@ -53,7 +53,8 @@
 | P1       | `UI-001`           | Redesign the complete Aether interface system              | Product and accessibility | `done`      | Owner direction, ADR-015    | Every core surface feels cohesive, premium, responsive, accessible, and distinctly Aether without behavior regressions. |
 | P0       | `RELEASE-032`      | Consolidate and install Alpha 0.3.2                        | Quality and release       | `done`      | PRs #34, #35, #36 merged    | Versioned Windows artifacts are validated, hashed, installed safely, and published through green draft PR #37.          |
 | P0       | `CTX-001`          | Add explicit Sources and safe metadata indexing            | Product, privacy, data    | `done`      | Milestone A and ADR-016     | Users authorize, inspect, rescan, associate, and revoke bounded local directory Sources without file mutation.          |
-| P0       | `SEARCH-001`       | Design and implement Universal Search                      | Product, privacy, data    | `candidate` | `CTX-001`                   | Users search permitted local domains quickly with clear type, scope, provenance, and no implicit AI disclosure.         |
+| P0       | `SEARCH-001`       | Design and implement Universal Search                      | Product, privacy, data    | `done`      | `CTX-001`                   | Users search permitted local domains quickly with clear type, scope, provenance, and no implicit AI disclosure.         |
+| P0       | `CONT-001`         | Build Continuity and meaningful Activity                   | Product, privacy, data    | `candidate` | `SEARCH-001`                | Each Space offers a concise, deterministic resume view and Activity shows only meaningful local changes.                |
 | P1       | `VAULT-EPIC`       | Design and implement Vault                                 | Product                   | `done`      | ADR-010                     | Safe storage and complete global/Space MVP are implemented.                                                             |
 | P1       | `PHASE6-001`       | Build Vault persistence and native filesystem foundation   | Product and security      | `done`      | ADR-010                     | Safe linked/managed storage commands and tests pass.                                                                    |
 | P1       | `PHASE6-002`       | Build Vault UI and Space integration                       | Product                   | `done`      | `PHASE6-001`                | Import, metadata, search, open/reveal, and safe removal are usable.                                                     |
@@ -71,17 +72,17 @@
 
 ## Feature status index
 
-| Feature        | Status                | Next planning action                                                              |
-| -------------- | --------------------- | --------------------------------------------------------------------------------- |
-| Spaces         | `mvp_complete`        | Extend only when a later roadmap phase requires it.                               |
-| Notes          | `mvp_complete`        | Extend only when a later roadmap phase requires it.                               |
-| Tasks          | `mvp_complete`        | Extend only when a later roadmap phase requires it.                               |
-| Vault          | `mvp_complete`        | Extend only when a later roadmap phase requires previews or indexing.             |
-| AI             | `mvp_complete`        | Validate live provider behavior during the release smoke test.                    |
-| Memory         | `mvp_complete`        | Extend only after a separately reviewed automatic-suggestion consent design.      |
-| Native desktop | `alpha_complete`      | Activate signing/updater only after owner-controlled trust infrastructure exists. |
-| Backup/export  | `foundation_complete` | Design restore and Vault-byte archive semantics as a separate later task.         |
-| Context engine | `foundation_complete` | Begin Universal Search without automatic content extraction or AI attachment.     |
+| Feature        | Status                | Next planning action                                                                  |
+| -------------- | --------------------- | ------------------------------------------------------------------------------------- |
+| Spaces         | `mvp_complete`        | Extend only when a later roadmap phase requires it.                                   |
+| Notes          | `mvp_complete`        | Extend only when a later roadmap phase requires it.                                   |
+| Tasks          | `mvp_complete`        | Extend only when a later roadmap phase requires it.                                   |
+| Vault          | `mvp_complete`        | Extend only when a later roadmap phase requires previews or indexing.                 |
+| AI             | `mvp_complete`        | Validate live provider behavior during the release smoke test.                        |
+| Memory         | `mvp_complete`        | Extend only after a separately reviewed automatic-suggestion consent design.          |
+| Native desktop | `alpha_complete`      | Activate signing/updater only after owner-controlled trust infrastructure exists.     |
+| Backup/export  | `foundation_complete` | Design restore and Vault-byte archive semantics as a separate later task.             |
+| Context engine | `search_complete`     | Build deterministic continuity without automatic content extraction or AI attachment. |
 
 ## New item template
 

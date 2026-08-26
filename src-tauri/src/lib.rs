@@ -80,6 +80,7 @@ pub fn run() {
             commands::native_test_notification,
             commands::export_workspace_backup,
             commands::create_source,
+            commands::universal_search,
             commands::list_sources,
             commands::update_source_space,
             commands::revoke_source,

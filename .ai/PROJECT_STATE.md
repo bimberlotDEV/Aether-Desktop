@@ -8,8 +8,8 @@
 | Last updated     | 2026-08-26                    |
 | Updated by       | Codex                         |
 | Repository       | `bimberlotDEV/Aether-Desktop` |
-| Branch           | `codex/context-foundation`    |
-| Baseline commit  | `3459e0f` (current `master`)  |
+| Branch           | `codex/universal-search`      |
+| Baseline commit  | `1d11ac0` (current `master`)  |
 | Product maturity | Alpha                         |
 
 ## Responsibility of this file
@@ -47,8 +47,9 @@
 | `UI-001`           | Reimagine the Aether interface system              | `complete` | Every core surface is cohesive, premium, responsive, accessible, and distinctly Aether without behavior regressions.                |
 | `RELEASE-032`      | Consolidate and install Alpha 0.3.2                | `complete` | Merged AI, migration, and UI work ships as a versioned, hashed, installed, and CI-green Windows release candidate.                  |
 | `CTX-001`          | Explicit Sources and metadata indexing             | `complete` | Authorized directories can be safely indexed, inspected, rescanned, associated, and revoked without mutating user files.            |
+| `SEARCH-001`       | Universal Search                                   | `complete` | Ctrl+K searches commands and permitted local domains quickly with deterministic ranking, provenance, and safe navigation.           |
 
-`RELEASE-032` is merged through PR #37. Milestone B — Context Foundation is complete through PR #38 with explicit Sources, bounded local metadata indexing, revocation, and green local/GitHub Windows quality gates.
+Milestones A and B are merged and complete. Milestone C is complete on published PR #39 with exact-head Windows CI green; merge is the remaining repository operation before Milestone D begins.
 
 ## Completed product milestones
 
@@ -61,6 +62,7 @@
 | Phase 4 — Notes                   | `complete`     | Persistence, serialized autosave with teardown flush, current-Space full-content search, pin, archive/restore/delete, move, and duplication are implemented.               |
 | Phase 7 — AI integration          | `mvp_complete` | Secure credentials, current cancellable streaming, persisted conversations, explicit Space-isolated context, response modes, and confirmed Task proposals are implemented. |
 | Milestone B — Context Foundation  | `complete`     | Explicit Sources, bounded metadata-only indexing, change reconciliation, inspection, Space association, and safe revocation are implemented.                               |
+| Milestone C — Universal Search    | `complete`     | Ctrl+K searches commands and permitted local domains with bounded deterministic ranking, provenance, privacy-safe results, and accessible navigation.                      |
 
 ## Not started or placeholder milestones
 
@@ -74,18 +76,18 @@
 
 ## Quality snapshot
 
-| Check                                       | Last result | Date       | Notes                                                                                                   |
-| ------------------------------------------- | ----------- | ---------- | ------------------------------------------------------------------------------------------------------- |
-| `pnpm check`                                | Pass        | 2026-08-26 | Context branch: 60/60 tests across 26 files.                                                            |
-| `pnpm build`                                | Pass        | 2026-08-26 | 493.59 kB main JS and 7.26 kB lazy Sources chunk; no chunk-size warning.                                |
-| `pnpm audit --audit-level high`             | Pass        | 2026-08-26 | No known vulnerabilities.                                                                               |
-| `cargo test`                                | Pass        | 2026-08-26 | 70/70 tests pass, including Source migration, reconciliation, and filesystem safety coverage.           |
-| `cargo build`                               | Pass        | 2026-08-11 | Windows production build compiles with DPAPI and single-instance support.                               |
-| `cargo fmt --check`                         | Pass        | 2026-08-26 | Repository Rust formatting is clean.                                                                    |
-| `cargo clippy --all-targets -- -D warnings` | Pass        | 2026-08-26 | Library, binary, and test targets are warning-free.                                                     |
-| `pnpm tauri:build`                          | Pass        | 2026-08-26 | Context candidate x64 MSI and NSIS bundles build successfully.                                          |
-| GitHub Actions                              | Pass        | 2026-08-26 | Runs 32972614553 and 32973076347 pass frontend quality/build, Rust format, strict lint, and Rust tests. |
-| Release startup smoke                       | Pass        | 2026-08-25 | 0.3.2 installed with exit code 0; database hash unchanged and process responsive.                       |
+| Check                                       | Last result | Date       | Notes                                                                                              |
+| ------------------------------------------- | ----------- | ---------- | -------------------------------------------------------------------------------------------------- |
+| `pnpm check`                                | Pass        | 2026-08-26 | Universal Search branch: 64/64 tests across 26 files.                                              |
+| `pnpm build`                                | Pass        | 2026-08-26 | 496.41 kB main JS and 7.26 kB lazy Sources chunk; no chunk-size warning.                           |
+| `pnpm audit --audit-level high`             | Pass        | 2026-08-26 | No known vulnerabilities.                                                                          |
+| `cargo test`                                | Pass        | 2026-08-26 | 73/73 tests pass, including cross-domain search isolation, limits, and ranking coverage.           |
+| `cargo build`                               | Pass        | 2026-08-11 | Windows production build compiles with DPAPI and single-instance support.                          |
+| `cargo fmt --check`                         | Pass        | 2026-08-26 | Repository Rust formatting is clean.                                                               |
+| `cargo clippy --all-targets -- -D warnings` | Pass        | 2026-08-26 | Library, binary, and test targets are warning-free.                                                |
+| `pnpm tauri:build`                          | Pass        | 2026-08-26 | Universal Search candidate x64 MSI and NSIS bundles build successfully.                            |
+| GitHub Actions                              | Pass        | 2026-08-26 | Run 32983855580 attempt 2 passes frontend quality/build, Rust format, strict lint, and Rust tests. |
+| Release startup smoke                       | Pass        | 2026-08-25 | 0.3.2 installed with exit code 0; database hash unchanged and process responsive.                  |
 
 ## Active blockers
 
@@ -125,7 +127,7 @@ Full rationale belongs in `.ai/ARCHITECTURE.md` or a dedicated ADR under `docs/d
 
 ## Next
 
-Milestones A and B are complete. The next roadmap phase is Milestone C — Universal Search over explicit local domains. Public signing and updater activation remain owner-controlled release operations.
+Milestones A through C are complete. The next roadmap phase is Milestone D — Continuity and meaningful Activity over explicit local state. Public signing and updater activation remain owner-controlled release operations.
 
 ## Reusable update template
 

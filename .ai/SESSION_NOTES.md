@@ -1,33 +1,32 @@
 # Session Notes
 
-| Field          | Value      |
-| -------------- | ---------- |
-| Schema version | 2          |
-| Session date   | 2026-08-26 |
-| Active task    | `CTX-001`  |
-| Agent          | Codex      |
-| State          | `complete` |
+| Field          | Value        |
+| -------------- | ------------ |
+| Schema version | 2            |
+| Session date   | 2026-08-26   |
+| Active task    | `SEARCH-001` |
+| Agent          | Codex        |
+| State          | `complete`   |
 
 ## Current work
 
-- Merged the green Alpha 0.3.2 release candidate through PR #37 at `3459e0f`.
-- Re-read the product-evolution roadmap and selected Milestone B — Context Foundation after completed Alpha Hardening.
-- Inspected existing SQLite migration, repository, Tauri command, Vault filesystem, route, navigation, and backup trust boundaries.
-- Accepted ADR-016: explicit canonical Sources, bounded metadata-only snapshot scans, no symlink/reparse traversal, no file mutation, and no AI exposure.
-- Completed the `CTX-001` planned-task contract and readiness gate.
-- Implemented append-only Source/index persistence, bounded metadata-only scanning, transactional change reconciliation, narrow IPC wrappers, and a dedicated lazy-loaded Sources route.
-- Added explicit Space association, transparent scan results, file-index inspection, confirmed revocation, browser-mode disclosure, and privacy language without AI attachment or user-file mutation.
-- Self-review corrected hook dependency warnings, a reappearing-file identity collision, unclear large-index disclosure, and initial bundle-size pressure.
+- Milestone B merged through PR #38 at `1d11ac0`; synchronized `master` and the packaged candidate are healthy.
+- Classified Universal Search as `planned_codex` because it crosses every local data domain and the privacy/ranking/IPC/UI boundaries.
+- Accepted ADR-017: one Rust search repository, existing Notes FTS5, bounded metadata matching, deterministic ranking, one typed command, and frontend-owned commands.
+- Completed the `SEARCH-001` readiness contract on branch `codex/universal-search`.
+- Implemented one bounded cross-domain search repository/command and transformed Ctrl+K into the accessible Universal Search surface.
+- Completed local self-review and corrected candidate ordering, humanized Activity matching, empty-list keyboard behavior, and an inherited forbidden glass class.
+- Published draft PR #39 and verified exact-head GitHub Actions run 32983855580 attempt 2 passes every Windows quality gate.
 
 ## Verification snapshot
 
-- `pnpm check` passes 60/60 frontend tests; `pnpm build` passes without a chunk-size warning; the Sources route is split into a 7.26 kB lazy chunk.
-- Dependency audit, Rust formatting, strict Clippy, 70/70 Rust tests, full Tauri packaging, and `git diff --check` pass.
-- Browser-mode `/sources` passes navigation, disclosure, disabled-action, and console-error smoke checks. Packaged candidates start responsively; native picker invocation is covered at the React boundary and its trusted filesystem behavior by real temporary-directory Rust tests.
-- Draft PR #38 is published at commit `100bbf7`; GitHub Actions run 32972614553 passes every Windows quality-gate step.
-- GitHub Actions run 32973076347 also passes after the CI-evidence commit. The live database contains migration 009, zero authorized Sources, and passes integrity inspection through a consistent SQLite backup.
-- Native picker automation was deliberately not forced through a prohibited WebView debugging boundary; supported UI invocation plus Rust filesystem tests provide the bounded evidence accepted for this milestone.
+- Baseline `master` is clean and synchronized at `1d11ac0`.
+- Existing search capabilities are fragmented: Ctrl+K filters commands/loaded Spaces, Notes use FTS5, and Tasks/Vault/Memory use separate metadata filters.
+- No migration or external dependency is required for the first conventional Universal Search slice.
+- 64/64 frontend and 73/73 Rust tests, production build, audit, formatting, strict lint, packaging, browser-mode interaction, zero-console-error, and packaged startup gates pass.
+- Initial packaging was blocked by the intentionally running prior candidate; the identical rerun passed after stopping that exact process.
+- The first GitHub attempt was cancelled before producing logs; the authorized failed-job rerun completed normally and passed all steps without code changes.
 
 ## Exact resume point
 
-Milestone B is complete. After PR #38 is merged into `master`, start Milestone C — Universal Search as a new `planned_codex` task and preserve the explicit Source/Space privacy boundaries.
+Publish this closure documentation, verify CI on the new exact head, merge PR #39, synchronize `master`, and create the separate `CONT-001` Milestone D contract before production changes.

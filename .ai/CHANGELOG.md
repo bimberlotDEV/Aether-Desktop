@@ -26,6 +26,17 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-08-26 — `SEARCH-001` — Private local Universal Search
+
+- **Type:** Feature, privacy, accessibility, test, and docs
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review
+- **Summary:** Turned Ctrl+K into a bounded Universal Search across commands and permitted local Spaces, Notes, Tasks, Vault metadata, explicit Memory, AI conversation titles, meaningful Activity, and present Source-file metadata with deterministic ranking and provenance.
+- **Files:** `src-tauri/src/db/repositories/search.rs`, search command and typed bridge, `src/components/CommandPalette.tsx`, tests, ADR-017, architecture/readme, `.ai/*`
+- **Verification:** 64/64 frontend tests, production build, dependency audit, Rust format, strict Clippy, 73/73 Rust tests, MSI/NSIS packaging, browser-mode and packaged-startup smoke, final diff/security review, and GitHub Actions run 32983855580 attempt 2 pass.
+- **Decisions/deviations:** Search is conventional and entirely local: Notes use FTS5, other domains use bounded parameterized metadata matching, Source results never expose absolute child paths or content, and no query invokes AI or mutates data.
+- **Follow-up:** `CONT-001` — build deterministic Space continuity and a meaningful Activity timeline.
+
 ## 2026-08-26 — `CTX-001` — Explicit local Sources and safe metadata indexing
 
 - **Type:** Feature, privacy, data, test, and docs

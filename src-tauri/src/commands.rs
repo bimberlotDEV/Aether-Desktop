@@ -86,6 +86,18 @@ pub fn list_sources(db: State<Database>) -> Result<Vec<repositories::sources::So
 }
 
 #[tauri::command]
+pub fn universal_search(
+    db: State<Database>,
+    query: String,
+    current_space_id: Option<String>,
+    limit: Option<u32>,
+) -> Result<Vec<repositories::search::SearchResult>, String> {
+    with_conn(&db.conn, |conn| {
+        repositories::search::search(conn, &query, current_space_id.as_deref(), limit)
+    })
+}
+
+#[tauri::command]
 pub fn update_source_space(
     db: State<Database>,
     id: String,
