@@ -1,75 +1,84 @@
 # Codex Task Contract
 
-| Field             | Value                          |
-| ----------------- | ------------------------------ |
-| Schema version    | 2                              |
-| Task ID           | `SEARCH-001`                   |
-| Status            | `complete`                     |
-| Owner             | Codex                          |
-| Last updated      | 2026-08-26                     |
-| Related milestone | Milestone C — Universal Search |
-| Classification    | `planned_codex`                |
+| Field             | Value                                 |
+| ----------------- | ------------------------------------- |
+| Schema version    | 2                                     |
+| Task ID           | `CONT-001`                            |
+| Status            | `self_review`                         |
+| Owner             | Codex                                 |
+| Last updated      | 2026-08-27                            |
+| Related milestone | Milestone D — Continuity and Activity |
+| Classification    | `planned_codex`                       |
 
 ## Objective
 
-Turn Ctrl+K into a fast, accessible Universal Search over Aether commands and permitted local domains with transparent deterministic ranking, useful navigation, honest browser behavior, and no AI or Source-content disclosure.
+Make every Space resumable from real local state and turn Activity into a useful, quiet timeline of meaningful actions, without AI-generated summaries, content extraction, hidden tracking, or cross-Space leakage.
 
 ## Context
 
-Milestones A and B are complete on merged `master` at `1d11ac0`. The existing palette searches commands and loaded Spaces only. Notes already have FTS5; other domains have bounded repositories and indexes. ADR-017 selects a hybrid local search repository and a single typed IPC boundary.
+Milestones A through C are merged on `master` at `36a6a67`. Aether already stores `activity_events` and records selected Task, Vault, and Memory mutations, but the global Activity route is a static empty state, Note and Source changes are incomplete, Space opens are not meaningful events, and the Space overview does not help the user resume work. ADR-018 selects one deterministic continuity read model over existing tables and a curated backend-owned event vocabulary.
 
 ## Acceptance criteria
 
-- [x] One validated Rust command searches active Spaces, Notes, non-archived Tasks, Vault metadata, explicit Memory, non-archived AI conversation titles, meaningful Activity metadata, and present indexed-file metadata with strict query and result limits.
-- [x] Notes content uses existing SQLite FTS5; all other queries are parameterized and escape wildcard/syntax input without raw SQL construction from user text.
-- [x] Ranking is deterministic and test-covered using text quality, current Space, favourite/pinned, open Task, and recency signals with stable tie-breaking.
-- [x] File results expose only Source identity, Source display name, and relative indexed paths; no file content, reconstructed absolute child path, removed row, or unapproved directory is returned.
-- [x] Search never invokes DeepSeek, changes Memory scope, attaches context to AI, records noisy per-keystroke Activity, or mutates domain data.
-- [x] Ctrl+K debounces desktop search, merges commands and domain results into one keyboard-operable accessible list, shows type/provenance/loading/error/empty states, and opens the most specific supported destination.
-- [x] Browser mode remains an honest command/navigation search and does not fabricate database results.
-- [x] Tests cover every result domain, archived/removed exclusions, current-Space ranking, special-character queries, limits, IPC argument shape, keyboard navigation, stale-response suppression, and browser behavior.
-- [x] Frontend/Rust gates, production and Tauri builds, dependency audit, diff/security review, packaged startup smoke, and GitHub Windows CI pass.
+- [x] One typed Rust continuity command returns a Space-scoped, bounded snapshot containing last-worked time, recent Notes, open Tasks, recent present Source files, latest active AI conversation, meaningful Activity, and one deterministic suggested next step.
+- [x] Every continuity query enforces the requested active Space in SQL; archived Notes/Tasks/conversations, removed indexed files, unrelated/global Memory, and entities from other Spaces cannot leak into the snapshot.
+- [x] Suggestions are derived from visible local records using a documented fixed priority; no DeepSeek call, prompt, embedding, fabricated narrative, or automatic mutation is involved.
+- [x] Meaningful backend events cover Space opened, Note created/edited, Task created/completed, Vault file imported/updated/removed, Memory added/updated/deleted, Source scan changes, and successful AI conversation use.
+- [x] Repeated Space opens are deduplicated in a fixed quiet window, Note autosave records only a bounded deduplicated edit signal, and Source scans with no changes do not create timeline noise.
+- [x] Frontend callers cannot inject arbitrary event names or unvalidated metadata; events are emitted by domain commands and the public raw `record_activity` IPC surface is removed.
+- [x] The global Activity route loads real local events with clear type, Space/provenance, time, accessible destinations, honest loading/error/empty states, and no raw JSON or absolute Source path disclosure.
+- [x] Each active Space overview displays a calm resume surface with compact real sections and a useful next action, without turning into a generic widget dashboard.
+- [x] Browser mode explicitly explains that continuity requires the installed desktop app and never fabricates persisted state.
+- [x] Tests cover scope isolation, archive/removal exclusions, deterministic suggestion ordering, event allowlisting/deduplication, safe Source metadata, typed IPC arguments, Activity navigation, error/empty states, and browser behavior.
+- [ ] Frontend/Rust gates, production and Tauri builds, dependency audit, diff/security review, browser smoke, packaged startup, and GitHub Windows CI pass.
 
 ## Allowed paths
 
-- `src-tauri/src/db/repositories/search.rs`
+- `src-tauri/src/db/repositories/activity.rs`
+- `src-tauri/src/db/repositories/continuity.rs`
 - `src-tauri/src/db/repositories/mod.rs`
 - `src-tauri/src/commands.rs`
 - `src-tauri/src/lib.rs`
 - `src/lib/db/types.ts`
 - `src/lib/db/tauri.ts`
 - `src/lib/db/tauri.test.ts`
-- `src/components/CommandPalette.tsx`
-- `src/components/CommandPalette.test.tsx`
-- `src/components/Sidebar.tsx`
-- `src/stores/commandStore.ts`
-- `docs/decisions/017-universal-search-ranking.md`
+- `src/hooks/useContinuity.ts`
+- `src/hooks/useContinuity.test.ts`
+- `src/routes/Activity.tsx`
+- `src/routes/Activity.test.tsx`
+- `src/routes/SpaceDetail.tsx`
+- `src/routes/SpaceDetail.test.tsx`
+- `src/App.tsx`
+- `src/components/ui/AetherUI.tsx`
+- `src/styles/index.css`
+- `docs/decisions/018-deterministic-continuity.md`
 - `docs/architecture.md`
 - `README.md`
 - `.ai/*`
 
 ## Non-goals
 
-- Source file-content extraction, PDF parsing, OCR, embeddings, vector search, semantic ranking, or AI reranking.
-- Search-driven mutations, autonomous actions, filesystem writes, telemetry, cloud search, or new external dependencies.
-- Milestone D continuity summaries, Pulse changes, or expanding the Activity event model.
-- Perfect entity highlighting where the destination route does not yet expose a stable selection contract.
+- AI-generated daily briefs, automatic Memory, semantic embeddings, file-content extraction, notifications, telemetry, analytics, or background filesystem watchers.
+- A complete audit log, undo log, version history, compliance ledger, or exposure of deleted content.
+- New dashboards, fake metrics, charts, decorative feeds, or autonomous suggested actions.
+- Backup/restore redesign, public release signing, or updater activation.
 
 ## Dependencies and evidence
 
-- Merged Context Foundation: PR #38 at `1d11ac0`.
-- Existing `notes_fts`, domain repositories, typed invoke wrappers, and Ctrl+K store.
-- ADR-011/012/016 privacy and Space-scope boundaries.
-- Accepted ADR-017.
+- Merged Universal Search: PR #39 at `36a6a67`.
+- Existing versioned `activity_events` schema, local-first repositories, active/archived predicates, Source metadata index, and typed Tauri bridge.
+- ADR-011/012/016/017 privacy, Space-isolation, explicit-context, and bounded-metadata boundaries.
+- Accepted ADR-018.
 
 ## Risks and safeguards
 
-- **Query injection/syntax errors:** validate length, parameterize every value, escape LIKE wildcards, and construct FTS expressions only from quoted tokens.
-- **Latency:** cap per-domain candidates, query off the React layer, debounce input, suppress stale responses, and cap final results.
-- **Privacy:** metadata-only Source results, no absolute child paths or AI calls, explicit provenance on every result.
-- **Ranking surprises:** fixed documented weights, stable tie-breaking, and current-Space boost only when explicitly supplied.
-- **Archived leakage:** each domain query owns explicit active/present predicates.
-- **Rollback:** no schema change; remove the command and restore command-only filtering.
+- **Cross-Space disclosure:** bind `space_id` at every query boundary and test adversarial mixed-Space fixtures.
+- **Activity noise:** backend-owned allowlist plus per-event quiet windows; no per-keystroke or no-change scan events.
+- **Misleading summaries:** expose structured facts and fixed local suggestions, never generated prose presented as fact.
+- **Sensitive metadata:** normalize event labels in Rust and return only presentation-safe fields; never raw metadata JSON, file contents, credentials, or absolute Source child paths.
+- **Autosave coupling:** event recording occurs in the same transaction as domain persistence and cannot make a successful edit appear failed after the fact.
+- **Performance:** indexed, bounded queries with small per-section limits and one command per Space overview load.
+- **Rollback:** no migration is planned; remove the command/UI and retain harmless existing events if rollback is required.
 
 ## Required validation
 
@@ -82,18 +91,26 @@ cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --all-features -
 cargo test --manifest-path src-tauri/Cargo.toml --all-targets --all-features
 pnpm tauri:build
 git diff --check
-browser-mode Ctrl+K smoke
+browser Activity and Space-overview smoke
 packaged desktop startup smoke
 GitHub PR CI
 ```
 
 ## Blocking decisions
 
-None. The owner explicitly authorized Milestone C followed by D. ADR-017 chooses the reversible conventional-search foundation required by the roadmap.
+None. The owner explicitly authorized Milestone D immediately after C. The continuity model is deterministic, local, reversible, and stays inside the approved roadmap.
 
-## Self-review record
+## Readiness review
 
-- **Status:** Complete. Draft PR #39 is published and exact-head GitHub CI run 32983855580 attempt 2 passes every Windows quality gate.
-- **Acceptance mapping:** `search.rs` owns validated cross-domain retrieval, FTS/LIKE safety, exclusions, privacy, scoring, limits, and stable ordering; one command and typed wrapper own IPC; the Ctrl+K component owns command merging, debounce, stale suppression, provenance, keyboard behavior, and honest browser disclosure.
-- **Evidence:** `pnpm check` passes 64/64 tests across 26 files; production build passes at 496.41 kB main JS / 139.94 kB gzip without a size warning; dependency audit, Rust formatting, strict Clippy, 73/73 Rust tests, final diff check, MSI/NSIS packaging, browser-mode Ctrl+K smoke, keyboard open/close, zero console errors, packaged startup, and GitHub Actions run 32983855580 attempt 2 pass.
-- **Findings corrected:** Bounded metadata candidates now have deterministic recency/id ordering and a larger diversity cap before global ranking; Activity matches humanized event names; empty-result ArrowDown cannot produce index `-1`; the inherited forbidden `glass-surface` class was removed. The first Tauri build failed only because the running prior candidate locked `aether.exe`; after stopping that exact process, the unchanged build completed both bundles.
+- **Status:** Ready. Scope, data boundaries, event vocabulary, privacy constraints, rollback, validation, and acceptance evidence are explicit.
+- **Architecture gate:** ADR-018 is accepted before production changes.
+- **Migration gate:** No schema migration is required; existing indexed tables and `activity_events` support the bounded read model and deduplication queries.
+- **Security gate:** Arbitrary frontend event injection is removed; all new output is Space-bound and presentation-safe.
+
+## Self-review
+
+- **Outcome:** Local implementation is complete; GitHub Windows CI remains the final acceptance item.
+- **Acceptance evidence:** 69/69 frontend tests and 77/77 Rust tests cover the typed bridge, UI states, event allowlisting/deduplication, deterministic ordering, exclusions, and adversarial Space isolation.
+- **Architecture/security:** The final diff keeps SQL in Rust repositories, removes raw frontend event injection, exposes no raw metadata or absolute Source child paths, adds no migration/dependency/AI call, and performs no autonomous mutation.
+- **Corrections made:** Route destinations now fall back when a Space module is disabled, Activity and Space Detail are lazy-loaded to keep the main bundle below the warning threshold, and semantic surface props preserve accessible live-region markup.
+- **Validation:** `pnpm check`, `pnpm build`, high-severity dependency audit, Rust formatting, strict Clippy, all-target/all-feature Rust tests, `pnpm tauri:build`, `git diff --check`, browser smoke, and packaged startup smoke pass on 2026-08-27.

@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react'
+import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react'
 import type { LucideIcon } from 'lucide-react'
 import { ArrowRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -87,9 +87,8 @@ export function Surface({
   children,
   className,
   interactive = false,
-}: {
-  children: ReactNode
-  className?: string
+  ...props
+}: HTMLAttributes<HTMLDivElement> & {
   interactive?: boolean
 }) {
   return (
@@ -99,6 +98,7 @@ export function Surface({
         interactive && 'aether-surface--interactive',
         className,
       )}
+      {...props}
     >
       {children}
     </div>

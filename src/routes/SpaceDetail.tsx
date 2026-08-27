@@ -15,6 +15,8 @@ import {
   Activity as ActivityIcon,
   LayoutDashboard,
   Brain,
+  Clock3,
+  ArrowRight,
 } from 'lucide-react'
 import { useSpaceDetail, useSpaces } from '@/hooks/useSpaces'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
@@ -27,6 +29,8 @@ import { TaskView } from '@/components/tasks/TaskView'
 import { VaultView } from '@/components/vault/VaultView'
 import { AiView } from '@/components/ai/AiView'
 import { MemoryView } from '@/components/memory/MemoryView'
+import { useSpaceContinuity } from '@/hooks/useContinuity'
+import type { ContinuityItem } from '@/lib/db/types'
 
 const MODULE_ICONS: Record<
   string,
@@ -305,7 +309,7 @@ export function SpaceDetailLayout() {
   )
 }
 
-function OverviewTab({
+export function OverviewTab({
   space,
   modules,
   children,
@@ -314,6 +318,15 @@ function OverviewTab({
   modules: ModuleInstance[]
   children: Space[]
 }) {
+  const navigate = useNavigate()
+  const {
+    data: continuity,
+    loading,
+    error,
+    isDesktop,
+    reload,
+  } = useSpaceContinuity(space.id)
+
   return (
     <div className="mx-auto w-full max-w-[920px] px-8 py-8 space-y-8">
       {/* Space info */}
@@ -345,6 +358,119 @@ function OverviewTab({
           )}
         </div>
       </div>
+
+      <section aria-labelledby="continue-heading">
+        <div className="aether-continuity-heading">
+          <div>
+            <p className="aether-eyebrow">Continue where you left off</p>
+            <h2
+              id="continue-heading"
+              className="text-base font-semibold text-[var(--color-text-primary)]"
+            >
+              {continuity
+                ? `Last active ${relativeMoment(continuity.lastWorkedAt)}`
+                : 'Your Space at a glance'}
+            </h2>
+          </div>
+          {isDesktop && error && (
+            <button
+              className="text-xs text-[var(--color-accent)]"
+              onClick={() => void reload()}
+            >
+              Try again
+            </button>
+          )}
+        </div>
+
+        {!isDesktop ? (
+          <div className="aether-continuity-disclosure">
+            Open Aether Desktop to compose this overview from your private local
+            workspace.
+          </div>
+        ) : loading ? (
+          <div className="aether-continuity-disclosure" role="status">
+            Building a private local overview…
+          </div>
+        ) : error ? (
+          <div className="aether-continuity-disclosure" role="alert">
+            {error}
+          </div>
+        ) : continuity ? (
+          <div className="aether-continuity-panel">
+            <button
+              className="aether-continuity-next"
+              onClick={() => navigate(continuity.suggestedNextStep.destination)}
+            >
+              <span className="aether-continuity-next-icon" aria-hidden="true">
+                <Clock3 size={17} strokeWidth={1.8} />
+              </span>
+              <span className="min-w-0 flex-1 text-left">
+                <span className="block text-sm font-semibold text-[var(--color-text-primary)]">
+                  {continuity.suggestedNextStep.title}
+                </span>
+                <span className="mt-0.5 block truncate text-xs text-[var(--color-text-secondary)]">
+                  {continuity.suggestedNextStep.detail}
+                </span>
+              </span>
+              <ArrowRight size={15} aria-hidden="true" />
+            </button>
+
+            <div className="aether-continuity-columns">
+              <ContinuitySection
+                title="Open Tasks"
+                empty="No open Tasks"
+                items={continuity.openTasks.slice(0, 3)}
+                onOpen={(item) => navigate(item.destination)}
+              />
+              <ContinuitySection
+                title="Recent Notes"
+                empty="No recent Notes"
+                items={continuity.recentNotes.slice(0, 3)}
+                onOpen={(item) => navigate(item.destination)}
+              />
+              <ContinuitySection
+                title="Recent Files"
+                empty="No indexed files"
+                items={continuity.recentFiles.slice(0, 3)}
+                onOpen={(item) => navigate(item.destination)}
+              />
+            </div>
+            {(continuity.latestConversation || continuity.recentActivity.length > 0) && (
+              <div className="aether-continuity-foot">
+                {continuity.latestConversation && (
+                  <button
+                    className="aether-continuity-conversation"
+                    onClick={() => navigate(continuity.latestConversation!.destination)}
+                  >
+                    <Sparkles size={15} aria-hidden="true" />
+                    <span className="min-w-0 text-left">
+                      <span className="block text-[0.6875rem] uppercase tracking-[0.08em] text-[var(--color-text-tertiary)]">
+                        Latest AI conversation
+                      </span>
+                      <span className="block truncate text-xs font-medium text-[var(--color-text-primary)]">
+                        {continuity.latestConversation.title}
+                      </span>
+                    </span>
+                  </button>
+                )}
+                {continuity.recentActivity.length > 0 && (
+                  <div className="aether-continuity-trail">
+                    <span className="text-[0.6875rem] uppercase tracking-[0.08em] text-[var(--color-text-tertiary)]">
+                      Recent trail
+                    </span>
+                    <span className="truncate text-xs text-[var(--color-text-secondary)]">
+                      {continuity.recentActivity
+                        .slice(0, 3)
+                        .map((event) => event.title)
+                        .join(' · ')}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        ) : null}
+      </section>
 
       {/* Child Spaces (School subjects) */}
       {children.length > 0 && (
@@ -405,6 +531,50 @@ function OverviewTab({
       )}
     </div>
   )
+}
+
+function ContinuitySection({
+  title,
+  empty,
+  items,
+  onOpen,
+}: {
+  title: string
+  empty: string
+  items: ContinuityItem[]
+  onOpen: (item: ContinuityItem) => void
+}) {
+  return (
+    <div className="aether-continuity-section">
+      <p className="aether-section-kicker">{title}</p>
+      {items.length === 0 ? (
+        <p className="text-xs text-[var(--color-text-tertiary)]">{empty}</p>
+      ) : (
+        <ul className="space-y-1">
+          {items.map((item) => (
+            <li key={item.id}>
+              <button className="aether-continuity-item" onClick={() => onOpen(item)}>
+                <span className="block truncate font-medium">{item.title}</span>
+                <span className="block truncate text-[var(--color-text-tertiary)]">
+                  {item.detail}
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+function relativeMoment(value: string) {
+  const parsed = new Date(/[zZ]|[+-]\d\d:\d\d$/.test(value) ? value : `${value}Z`)
+  const hours = Math.max(0, Math.floor((Date.now() - parsed.getTime()) / 3_600_000))
+  if (hours < 1) return 'just now'
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.floor(hours / 24)
+  if (days < 7) return `${days}d ago`
+  return parsed.toLocaleDateString()
 }
 
 function ChildSpaceRow({ space }: { space: Space }) {

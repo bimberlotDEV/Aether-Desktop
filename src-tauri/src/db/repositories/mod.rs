@@ -1,4 +1,5 @@
 pub mod activity;
+pub mod continuity;
 pub mod conversations;
 pub mod memory;
 pub mod notes;

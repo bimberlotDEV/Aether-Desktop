@@ -39,6 +39,8 @@ import {
   scanSource,
   revokeSource,
   universalSearch,
+  listActivity,
+  getSpaceContinuity,
 } from '@/lib/db/tauri'
 
 describe('Tauri database boundary', () => {
@@ -90,6 +92,19 @@ describe('Tauri database boundary', () => {
     })
     expect(invoke).toHaveBeenNthCalledWith(2, 'scan_source', { id: 'source-1' })
     expect(invoke).toHaveBeenNthCalledWith(3, 'revoke_source', { id: 'source-1' })
+  })
+
+  it('reads curated Activity and Space continuity through narrow commands', async () => {
+    await listActivity({ spaceId: 'space-1', limit: 20 })
+    await getSpaceContinuity('space-1')
+
+    expect(invoke).toHaveBeenNthCalledWith(1, 'list_activity', {
+      spaceId: 'space-1',
+      limit: 20,
+    })
+    expect(invoke).toHaveBeenNthCalledWith(2, 'get_space_continuity', {
+      spaceId: 'space-1',
+    })
   })
 
   it('passes Universal Search scope and limits through one narrow invoke', async () => {

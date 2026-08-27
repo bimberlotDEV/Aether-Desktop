@@ -5,7 +5,7 @@ import type {
   Space,
   ModuleInstance,
   SpaceWithDetails,
-  ActivityEvent,
+  ActivityItem,
   Note,
   NoteListItem,
   NoteSearchResult,
@@ -33,6 +33,7 @@ import type {
   IndexedFile,
   SourceScanResult,
   UniversalSearchResult,
+  SpaceContinuity,
 } from './types'
 
 // ─── Native desktop ─────────────────────────────────────
@@ -500,28 +501,16 @@ export async function clearAiContext(conversationId: string): Promise<number> {
 }
 
 // ─── Activity ────────────────────────────────────────────
-export async function recordActivity(params: {
-  eventType: string
-  entityType?: string
-  entityId?: string
-  spaceId?: string
-  metadataJson?: string
-}): Promise<ActivityEvent> {
-  return invoke('record_activity', {
-    eventType: params.eventType,
-    entityType: params.entityType ?? null,
-    entityId: params.entityId ?? null,
-    spaceId: params.spaceId ?? null,
-    metadataJson: params.metadataJson ?? null,
-  })
-}
-
 export async function listActivity(params?: {
   spaceId?: string
   limit?: number
-}): Promise<ActivityEvent[]> {
+}): Promise<ActivityItem[]> {
   return invoke('list_activity', {
     spaceId: params?.spaceId ?? null,
     limit: params?.limit ?? null,
   })
+}
+
+export async function getSpaceContinuity(spaceId: string): Promise<SpaceContinuity> {
+  return invoke('get_space_continuity', { spaceId })
 }

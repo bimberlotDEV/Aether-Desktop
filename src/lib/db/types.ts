@@ -55,16 +55,68 @@ export const SpaceWithDetailsSchema = z.object({
 })
 export type SpaceWithDetails = z.infer<typeof SpaceWithDetailsSchema>
 
-export const ActivityEventSchema = z.object({
+export const ActivityEventTypeSchema = z.enum([
+  'space_opened',
+  'note_created',
+  'note_edited',
+  'task_created',
+  'task_created_from_ai_proposal',
+  'task_completed',
+  'task_archived',
+  'vault_imported',
+  'vault_updated',
+  'vault_removed',
+  'memory_created',
+  'memory_updated',
+  'memory_deleted',
+  'source_scanned',
+  'ai_conversation_used',
+])
+
+export const ActivityItemSchema = z.object({
   id: z.string(),
-  event_type: z.string(),
-  entity_type: z.string().nullable(),
-  entity_id: z.string().nullable(),
-  space_id: z.string().nullable(),
-  metadata_json: z.string().nullable(),
-  created_at: z.string(),
+  eventType: ActivityEventTypeSchema,
+  title: z.string(),
+  detail: z.string().nullable(),
+  spaceId: z.string().nullable(),
+  spaceName: z.string().nullable(),
+  entityType: z.string().nullable(),
+  entityId: z.string().nullable(),
+  destination: z.string(),
+  createdAt: z.string(),
 })
-export type ActivityEvent = z.infer<typeof ActivityEventSchema>
+export type ActivityItem = z.infer<typeof ActivityItemSchema>
+
+export const ContinuityItemSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  detail: z.string(),
+  updatedAt: z.string(),
+  destination: z.string(),
+  provenance: z.string(),
+})
+export type ContinuityItem = z.infer<typeof ContinuityItemSchema>
+
+export const ContinuitySuggestionSchema = z.object({
+  title: z.string(),
+  detail: z.string(),
+  destination: z.string(),
+  sourceType: z.enum(['task', 'note', 'conversation', 'file', 'empty']),
+  sourceId: z.string().nullable(),
+})
+
+export const SpaceContinuitySchema = z.object({
+  spaceId: z.string(),
+  spaceName: z.string(),
+  lastWorkedAt: z.string(),
+  recentNotes: z.array(ContinuityItemSchema),
+  openTasks: z.array(ContinuityItemSchema),
+  recentFiles: z.array(ContinuityItemSchema),
+  latestConversation: ContinuityItemSchema.nullable(),
+  recentActivity: z.array(ActivityItemSchema),
+  suggestedNextStep: ContinuitySuggestionSchema,
+})
+export type SpaceContinuity = z.infer<typeof SpaceContinuitySchema>
 
 export const NoteSchema = z.object({
   id: z.string(),

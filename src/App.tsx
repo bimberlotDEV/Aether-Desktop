@@ -5,9 +5,7 @@ import { CommandPalette } from '@/components/CommandPalette'
 import { Pulse } from '@/routes/Pulse'
 import { Spaces } from '@/routes/Spaces'
 import { ArchivedSpaces } from '@/routes/ArchivedSpaces'
-import { SpaceDetailLayout } from '@/routes/SpaceDetail'
 import { Vault } from '@/routes/Vault'
-import { Activity } from '@/routes/Activity'
 import { Settings } from '@/routes/Settings'
 import { Tasks } from '@/routes/Tasks'
 import { AI } from '@/routes/AI'
@@ -15,6 +13,14 @@ import { Memory } from '@/routes/Memory'
 
 const Sources = lazy(() =>
   import('@/routes/Sources').then((module) => ({ default: module.Sources })),
+)
+const Activity = lazy(() =>
+  import('@/routes/Activity').then((module) => ({ default: module.Activity })),
+)
+const SpaceDetailLayout = lazy(() =>
+  import('@/routes/SpaceDetail').then((module) => ({
+    default: module.SpaceDetailLayout,
+  })),
 )
 
 export function App() {
@@ -26,7 +32,20 @@ export function App() {
           <Route path="/" element={<Pulse />} />
           <Route path="/spaces" element={<Spaces />} />
           <Route path="/spaces/archived" element={<ArchivedSpaces />} />
-          <Route path="/spaces/:spaceId/*" element={<SpaceDetailLayout />} />
+          <Route
+            path="/spaces/:spaceId/*"
+            element={
+              <Suspense
+                fallback={
+                  <div className="aether-page p-8 text-sm text-[var(--color-text-tertiary)]">
+                    Opening Space…
+                  </div>
+                }
+              >
+                <SpaceDetailLayout />
+              </Suspense>
+            }
+          />
           <Route path="/tasks" element={<Tasks />} />
           <Route path="/vault" element={<Vault />} />
           <Route
@@ -45,7 +64,20 @@ export function App() {
           />
           <Route path="/ai" element={<AI />} />
           <Route path="/memory" element={<Memory />} />
-          <Route path="/activity" element={<Activity />} />
+          <Route
+            path="/activity"
+            element={
+              <Suspense
+                fallback={
+                  <div className="aether-page p-8 text-sm text-[var(--color-text-tertiary)]">
+                    Loading Activity…
+                  </div>
+                }
+              >
+                <Activity />
+              </Suspense>
+            }
+          />
           <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
