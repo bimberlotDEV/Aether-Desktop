@@ -15,6 +15,7 @@ Aether combines Spaces, Markdown Notes, Tasks, Pulse, Vault, explicit Memory, au
 - Explicit local folder Sources with bounded, metadata-only indexing and revocable access
 - `Ctrl+K` Universal Search across commands and permitted local workspace domains with deterministic ranking
 - Deterministic per-Space continuity and a curated local Activity timeline for resuming real work
+- Pulse 2.0 with explainable Today, Continue, New, Recent, and user-controlled Ask Aether entry points
 - Explicit global or Space Memory that the user may attach to AI
 - DeepSeek chat with cancellable streaming, persisted conversations, response modes, visible context, and confirmed Task proposals
 - Windows tray lifecycle, `Ctrl+Shift+Space`, notifications, and restored window state

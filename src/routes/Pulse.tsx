@@ -3,19 +3,16 @@ import { useNavigate } from 'react-router-dom'
 import {
   ArrowRight,
   CalendarDays,
-  Check,
-  CheckSquare,
-  FileText,
+  CheckCircle2,
+  Clock3,
+  Database,
+  History,
   Layers,
-  Pin,
+  RefreshCw,
   Sparkles,
-  Star,
 } from 'lucide-react'
-import { useSpaces } from '@/hooks/useSpaces'
-import { useGlobalNotes } from '@/hooks/useNotes'
-import { useTaskAttention } from '@/hooks/useTasks'
-import type { Task } from '@/lib/db/types'
-import { iconToEmoji } from '@/lib/iconToEmoji'
+import { usePulse } from '@/hooks/usePulse'
+import type { PulseSnapshot, PulseTask } from '@/lib/db/types'
 import {
   Button,
   EmptyState,
@@ -26,14 +23,14 @@ import {
   Surface,
 } from '@/components/ui/AetherUI'
 
-function getGreeting(): string {
+function greeting() {
   const hour = new Date().getHours()
   if (hour < 12) return 'Good morning'
   if (hour < 17) return 'Good afternoon'
   return 'Good evening'
 }
 
-function formatDate(): string {
+function displayDate() {
   return new Date().toLocaleDateString('en-US', {
     weekday: 'long',
     month: 'long',
@@ -43,193 +40,191 @@ function formatDate(): string {
 
 export function Pulse() {
   const navigate = useNavigate()
-  const { spaces } = useSpaces()
-  const greeting = useMemo(() => getGreeting(), [])
-  const date = useMemo(() => formatDate(), [])
-  const activeSpaces = spaces.filter((space) => !space.archived_at)
-  const favouriteSpaces = activeSpaces.filter((space) => space.favourite)
-  const recentSpaces = activeSpaces.filter((space) => !space.favourite).slice(0, 4)
+  const { data, loading, error, isDesktop, reload } = usePulse()
+  const title = useMemo(greeting, [])
+  const date = useMemo(displayDate, [])
 
   return (
     <Page width="wide" className="aether-pulse">
       <PageHeader
-        eyebrow="Today"
-        title={greeting}
+        eyebrow="Pulse"
+        title={title}
         description={date}
         actions={
           <div className="aether-presence">
             <StatusDot />
-            <span>Workspace ready</span>
+            <span>{isDesktop ? 'Local signals ready' : 'Desktop data unavailable'}</span>
           </div>
         }
       />
 
-      {activeSpaces.length === 0 ? (
-        <div className="space-y-4">
-          <div className="aether-pulse-empty-grid">
-            <EmptyState
-              icon={Sparkles}
-              eyebrow="A quiet place to begin"
-              title="Shape your first Space"
-              description="Bring notes, tasks, files, and AI-assisted thinking together around something that matters to you."
-              action={{ label: 'Create a Space', onClick: () => navigate('/spaces') }}
-            />
-            <Surface className="aether-launch-panel">
-              <SectionLabel meta="Ctrl K">Start anywhere</SectionLabel>
-              <button
-                onClick={() => navigate('/spaces')}
-                className="aether-launch-row focus-ring"
-              >
-                <span className="aether-icon-frame">
-                  <Layers size={16} />
-                </span>
-                <span>
-                  <strong>Organize a project</strong>
-                  <small>Create a focused Space</small>
-                </span>
-                <ArrowRight size={14} />
-              </button>
-              <button
-                onClick={() => navigate('/tasks')}
-                className="aether-launch-row focus-ring"
-              >
-                <span className="aether-icon-frame">
-                  <CheckSquare size={16} />
-                </span>
-                <span>
-                  <strong>Capture something</strong>
-                  <small>Add it to your Task Inbox</small>
-                </span>
-                <ArrowRight size={14} />
-              </button>
-              <button
-                onClick={() => navigate('/ai')}
-                className="aether-launch-row focus-ring"
-              >
-                <span className="aether-icon-frame">
-                  <Sparkles size={16} />
-                </span>
-                <span>
-                  <strong>Think with AI</strong>
-                  <small>Open a private conversation</small>
-                </span>
-                <ArrowRight size={14} />
-              </button>
-            </Surface>
+      {!isDesktop ? (
+        <Surface className="aether-pulse-disclosure" role="status">
+          <Database size={18} aria-hidden="true" />
+          <div>
+            <strong>Pulse reads your local workspace in the installed app</strong>
+            <p>
+              This browser preview does not invent Tasks, files, activity, or relevance.
+            </p>
           </div>
-          <PulseTasks />
-        </div>
-      ) : (
-        <div className="aether-pulse-grid">
-          <div className="space-y-6">
-            <Surface className="p-4">
-              <SectionLabel meta={`${activeSpaces.length} active`}>Spaces</SectionLabel>
-              <div className="aether-space-launcher-grid">
-                {[...favouriteSpaces, ...recentSpaces].slice(0, 6).map((space) => (
-                  <button
-                    key={space.id}
-                    onClick={() => navigate(`/spaces/${space.id}`)}
-                    className="aether-space-launcher focus-ring"
-                  >
-                    <span
-                      className="aether-space-emoji"
-                      style={{
-                        backgroundColor: space.accent
-                          ? `${space.accent}18`
-                          : 'var(--color-accent-muted)',
-                      }}
-                    >
-                      {space.icon ? iconToEmoji(space.icon) : '📚'}
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <strong>{space.name}</strong>
-                      <small>{space.favourite ? 'Favourite Space' : 'Open Space'}</small>
-                    </span>
-                    {space.favourite ? <Star size={13} /> : <ArrowRight size={13} />}
-                  </button>
-                ))}
-              </div>
-              <Button variant="quiet" icon={Layers} onClick={() => navigate('/spaces')}>
-                View all Spaces
+        </Surface>
+      ) : loading ? (
+        <Surface className="aether-pulse-status" role="status" aria-live="polite">
+          <Clock3 size={18} aria-hidden="true" />
+          <p>Finding the few things that matter today…</p>
+        </Surface>
+      ) : error ? (
+        <Surface className="aether-pulse-status" role="alert">
+          <div>
+            <strong>Pulse could not read your workspace</strong>
+            <p>{error}</p>
+          </div>
+          <Button variant="secondary" icon={RefreshCw} onClick={() => void reload()}>
+            Try again
+          </Button>
+        </Surface>
+      ) : data ? (
+        <div className="space-y-6">
+          <div className="aether-pulse-lead-grid">
+            <Surface className="aether-pulse-focus">
+              <SectionLabel meta="Grounded in local state">
+                Suggested next step
+              </SectionLabel>
+              <p className="aether-pulse-focus-title">{data.suggestedNextStep.title}</p>
+              <p>{data.suggestedNextStep.detail}</p>
+              <Button
+                variant="primary"
+                icon={ArrowRight}
+                onClick={() => navigate(data.suggestedNextStep.destination)}
+              >
+                Continue
               </Button>
             </Surface>
-            <PulseNotes />
+            <Surface className="aether-pulse-ask">
+              <span className="aether-icon-frame aether-icon-frame--accent">
+                <Sparkles size={17} aria-hidden="true" />
+              </span>
+              <div>
+                <SectionLabel>Ask Aether</SectionLabel>
+                <strong>Think with the context you choose</strong>
+                <p>
+                  Open a private conversation, then attach only the Notes, Tasks, files,
+                  or Memory you want.
+                </p>
+              </div>
+              <Button variant="secondary" onClick={() => navigate('/ai')}>
+                Open AI
+              </Button>
+            </Surface>
           </div>
-          <PulseTasks />
+
+          <div className="aether-pulse-grid">
+            <TodayPanel data={data} onOpen={navigate} />
+            <ContinuePanel spaces={data.continueSpaces} onOpen={navigate} />
+          </div>
+
+          <div className="aether-pulse-secondary-grid">
+            <Surface className="p-4">
+              <SectionLabel
+                meta={data.newFiles.length ? `${data.newFiles.length} detected` : 'Quiet'}
+              >
+                New
+              </SectionLabel>
+              {data.newFiles.length ? (
+                <div className="aether-pulse-list">
+                  {data.newFiles.map((file) => (
+                    <button
+                      key={file.id}
+                      className="aether-pulse-row focus-ring"
+                      onClick={() => navigate(file.destination)}
+                    >
+                      <Database size={15} aria-hidden="true" />
+                      <span>
+                        <strong>{file.title}</strong>
+                        <small>{file.detail}</small>
+                      </span>
+                      <ArrowRight size={13} aria-hidden="true" />
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <QuietState text="No newly detected Source files in the last seven days." />
+              )}
+            </Surface>
+
+            <Surface className="p-4">
+              <SectionLabel
+                meta={
+                  data.recentActivity.length
+                    ? `${data.recentActivity.length} meaningful`
+                    : 'Quiet'
+                }
+              >
+                Recent
+              </SectionLabel>
+              {data.recentActivity.length ? (
+                <div className="aether-pulse-list">
+                  {data.recentActivity.map((item) => (
+                    <button
+                      key={item.id}
+                      className="aether-pulse-row focus-ring"
+                      onClick={() => navigate(item.destination)}
+                    >
+                      <History size={15} aria-hidden="true" />
+                      <span>
+                        <strong>{item.title}</strong>
+                        <small>{item.spaceName ?? 'Workspace'}</small>
+                      </span>
+                      <ArrowRight size={13} aria-hidden="true" />
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <QuietState text="Meaningful local changes will appear here." />
+              )}
+            </Surface>
+          </div>
         </div>
+      ) : (
+        <EmptyState
+          icon={Sparkles}
+          title="Pulse is quiet"
+          description="No local snapshot is available yet."
+        />
       )}
     </Page>
   )
 }
 
-function localToday(): string {
-  const now = new Date()
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
-}
-
-function dueLabel(task: Task): string {
-  if (!task.due_date) return ''
-  const today = localToday()
-  if (task.due_date === today) return 'Today'
-  const [year, month, day] = task.due_date.split('-').map(Number)
-  return new Date(year, month - 1, day).toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-  })
-}
-
-function runQuietly(operation: Promise<unknown>) {
-  void operation.catch(() => undefined)
-}
-
-function PulseTasks() {
-  const navigate = useNavigate()
-  const { tasks, loading, error, toggleComplete } = useTaskAttention()
-  const today = localToday()
-  const overdue = tasks.filter((task) => !!task.due_date && task.due_date < today)
-  const upcoming = tasks.filter((task) => !!task.due_date && task.due_date >= today)
-
+function TodayPanel({
+  data,
+  onOpen,
+}: {
+  data: PulseSnapshot
+  onOpen: (path: string) => void
+}) {
+  const count = data.overdue.length + data.dueToday.length + data.upcoming.length
   return (
     <Surface className="aether-attention-panel">
-      <SectionLabel meta={tasks.length ? `${tasks.length} due` : 'Clear'}>
-        Your attention
-      </SectionLabel>
-      {loading ? (
-        <p className="aether-inline-message">Checking what needs attention…</p>
-      ) : error ? (
-        <p className="aether-inline-message text-[var(--color-danger)]">{error}</p>
-      ) : tasks.length === 0 ? (
+      <SectionLabel meta={count ? `${count} open` : 'Clear'}>Today</SectionLabel>
+      {count ? (
+        <div className="space-y-5">
+          <TaskGroup label="Overdue" tasks={data.overdue} danger onOpen={onOpen} />
+          <TaskGroup label="Due today" tasks={data.dueToday} onOpen={onOpen} />
+          <TaskGroup label="Next seven days" tasks={data.upcoming} onOpen={onOpen} />
+        </div>
+      ) : (
         <div className="aether-clear-state">
           <span className="aether-icon-frame aether-icon-frame--accent">
-            <Check size={17} />
+            <CheckCircle2 size={17} />
           </span>
           <div>
-            <strong>Your day is clear</strong>
+            <strong>Your dated Tasks are clear</strong>
             <p>No overdue or upcoming Tasks need attention.</p>
           </div>
         </div>
-      ) : (
-        <div className="space-y-5">
-          <TaskGroup
-            label="Overdue"
-            tasks={overdue}
-            danger
-            onComplete={(task) => runQuietly(toggleComplete(task))}
-            onOpen={(task) =>
-              navigate(task.space_id ? `/spaces/${task.space_id}/tasks` : '/tasks')
-            }
-          />
-          <TaskGroup
-            label="Coming up"
-            tasks={upcoming}
-            onComplete={(task) => runQuietly(toggleComplete(task))}
-            onOpen={(task) =>
-              navigate(task.space_id ? `/spaces/${task.space_id}/tasks` : '/tasks')
-            }
-          />
-        </div>
       )}
-      <Button variant="quiet" icon={CalendarDays} onClick={() => navigate('/tasks')}>
+      <Button variant="quiet" icon={CalendarDays} onClick={() => onOpen('/tasks')}>
         Open Task Inbox
       </Button>
     </Surface>
@@ -240,16 +235,14 @@ function TaskGroup({
   label,
   tasks,
   danger = false,
-  onComplete,
   onOpen,
 }: {
   label: string
-  tasks: Task[]
+  tasks: PulseTask[]
   danger?: boolean
-  onComplete: (task: Task) => void
-  onOpen: (task: Task) => void
+  onOpen: (path: string) => void
 }) {
-  if (tasks.length === 0) return null
+  if (!tasks.length) return null
   return (
     <div>
       <p
@@ -261,62 +254,67 @@ function TaskGroup({
       >
         {label}
       </p>
-      <div className="space-y-1">
+      <div className="aether-pulse-list">
         {tasks.map((task) => (
-          <div key={task.id} className="aether-attention-row">
-            <button
-              onClick={() => onComplete(task)}
-              className="aether-task-check focus-ring"
-              aria-label={`Complete ${task.title}`}
-            >
-              <Check size={10} />
-            </button>
-            <button
-              onClick={() => onOpen(task)}
-              className="min-w-0 flex-1 text-left focus-ring"
-            >
-              <span className="block truncate text-sm text-[var(--color-text-primary)]">
-                {task.title}
-              </span>
-            </button>
-            <span
-              className={
-                danger
-                  ? 'text-xs text-[var(--color-danger)]'
-                  : 'text-xs text-[var(--color-text-tertiary)]'
-              }
-            >
-              {dueLabel(task)}
+          <button
+            key={task.id}
+            className="aether-pulse-row focus-ring"
+            onClick={() => onOpen(task.destination)}
+          >
+            <Clock3 size={15} aria-hidden="true" />
+            <span>
+              <strong>{task.title}</strong>
+              <small>
+                {task.spaceName ?? 'Task Inbox'} · {task.dueDate}
+              </small>
             </span>
-          </div>
+            <ArrowRight size={13} aria-hidden="true" />
+          </button>
         ))}
       </div>
     </div>
   )
 }
 
-function PulseNotes() {
-  const navigate = useNavigate()
-  const { recent, pinned } = useGlobalNotes()
-  const notes = [...pinned.slice(0, 2), ...recent.slice(0, 3)]
-  if (notes.length === 0) return null
-
+function ContinuePanel({
+  spaces,
+  onOpen,
+}: {
+  spaces: PulseSnapshot['continueSpaces']
+  onOpen: (path: string) => void
+}) {
   return (
     <Surface className="p-4">
-      <SectionLabel meta={`${notes.length} recent`}>Notes</SectionLabel>
-      <div className="space-y-1">
-        {notes.map((note, index) => (
-          <button
-            key={`${note.id}-${index}`}
-            onClick={() => navigate(`/spaces/${note.space_id}/notes`)}
-            className="aether-note-row focus-ring"
-          >
-            {note.pinned ? <Pin size={13} /> : <FileText size={13} />}
-            <span>{note.title || 'Untitled'}</span>
-            <ArrowRight size={12} />
-          </button>
-        ))}
-      </div>
+      <SectionLabel meta={spaces.length ? `${spaces.length} active` : 'Quiet'}>
+        Continue
+      </SectionLabel>
+      {spaces.length ? (
+        <div className="aether-pulse-list">
+          {spaces.map((space) => (
+            <button
+              key={space.id}
+              className="aether-pulse-row focus-ring"
+              onClick={() => onOpen(space.destination)}
+            >
+              <Layers size={15} aria-hidden="true" />
+              <span>
+                <strong>{space.name}</strong>
+                <small>{space.reason}</small>
+              </span>
+              <ArrowRight size={13} aria-hidden="true" />
+            </button>
+          ))}
+        </div>
+      ) : (
+        <QuietState text="Work in a Space and Pulse will keep your place." />
+      )}
+      <Button variant="quiet" icon={Layers} onClick={() => onOpen('/spaces')}>
+        View all Spaces
+      </Button>
     </Surface>
   )
+}
+
+function QuietState({ text }: { text: string }) {
+  return <p className="aether-pulse-quiet">{text}</p>
 }

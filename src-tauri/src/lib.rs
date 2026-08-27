@@ -79,6 +79,7 @@ pub fn run() {
             commands::native_get_status,
             commands::native_test_notification,
             commands::export_workspace_backup,
+            commands::get_pulse,
             commands::create_source,
             commands::universal_search,
             commands::list_sources,

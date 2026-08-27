@@ -210,6 +210,57 @@ export const TaskFilterSchema = z.object({
 })
 export type TaskFilter = z.infer<typeof TaskFilterSchema>
 
+export const PulseTaskSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  spaceId: z.string().nullable(),
+  spaceName: z.string().nullable(),
+  dueDate: LocalDateSchema,
+  priority: TaskPrioritySchema,
+  destination: z.string(),
+})
+export type PulseTask = z.infer<typeof PulseTaskSchema>
+
+export const PulseSpaceSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  reason: z.string(),
+  lastWorkedAt: z.string(),
+  destination: z.string(),
+})
+export type PulseSpace = z.infer<typeof PulseSpaceSchema>
+
+export const PulseFileSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  detail: z.string(),
+  spaceId: z.string().nullable(),
+  spaceName: z.string().nullable(),
+  detectedAt: z.string(),
+  destination: z.string(),
+})
+export type PulseFile = z.infer<typeof PulseFileSchema>
+
+export const PulseSuggestionSchema = z.object({
+  title: z.string(),
+  detail: z.string(),
+  destination: z.string(),
+  sourceType: z.enum(['task', 'space', 'file', 'empty']),
+  sourceId: z.string().nullable(),
+})
+
+export const PulseSnapshotSchema = z.object({
+  today: LocalDateSchema,
+  overdue: z.array(PulseTaskSchema),
+  dueToday: z.array(PulseTaskSchema),
+  upcoming: z.array(PulseTaskSchema),
+  continueSpaces: z.array(PulseSpaceSchema),
+  newFiles: z.array(PulseFileSchema),
+  recentActivity: z.array(ActivityItemSchema),
+  suggestedNextStep: PulseSuggestionSchema,
+})
+export type PulseSnapshot = z.infer<typeof PulseSnapshotSchema>
+
 // ─── Vault Types ─────────────────────────────────────────
 
 export const VaultStorageModeSchema = z.enum(['linked', 'managed'])

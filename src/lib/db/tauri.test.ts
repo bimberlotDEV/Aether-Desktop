@@ -41,6 +41,7 @@ import {
   universalSearch,
   listActivity,
   getSpaceContinuity,
+  getPulse,
 } from '@/lib/db/tauri'
 
 describe('Tauri database boundary', () => {
@@ -72,6 +73,11 @@ describe('Tauri database boundary', () => {
 
     expect(invoke).toHaveBeenNthCalledWith(1, 'native_get_status')
     expect(invoke).toHaveBeenNthCalledWith(2, 'native_test_notification')
+  })
+
+  it('loads Pulse through one read-only command without frontend scope input', async () => {
+    await getPulse()
+    expect(invoke).toHaveBeenCalledWith('get_pulse')
   })
 
   it('passes only the chosen destination to the backup command', async () => {

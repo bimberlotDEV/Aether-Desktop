@@ -1,27 +1,26 @@
 # Session Notes
 
-| Field          | Value      |
-| -------------- | ---------- |
-| Schema version | 2          |
-| Session date   | 2026-08-27 |
-| Active task    | `CONT-001` |
-| Agent          | Codex      |
-| State          | `complete` |
+| Field          | Value         |
+| -------------- | ------------- |
+| Schema version | 2             |
+| Session date   | 2026-08-27    |
+| Active task    | `PULSE-002`   |
+| Agent          | Codex         |
+| State          | `self_review` |
 
 ## Current work
 
-- Milestone D implements a backend-owned meaningful Activity vocabulary and one bounded, deterministic, Space-isolated continuity snapshot.
-- Activity and Space Overview now render real local state with accessible loading, empty, error, navigation, and installed-app disclosure behavior.
-- Self-review corrected module-aware destinations and code-split the two routes; no migration, dependency, AI generation, content extraction, or autonomous mutation was added.
+- Milestones A–D are merged through PR #40 at `854d5b8`; exact-head CI and the integrated security/privacy audit pass.
+- Created `codex/pulse-2` for separately reviewable Milestone E.
+- Classified Pulse 2.0 as `planned_codex` because it crosses Tasks, Spaces, Sources, Activity, IPC, relevance rules, and a core route.
+- Accepted ADR-019 and completed the ready contract before production changes.
 
 ## Verification snapshot
 
-- `pnpm check`: 28 files and 69/69 tests pass.
-- Production build and high-severity dependency audit pass; main bundle is 425.49 kB (122.15 kB gzip) without a size warning.
-- Rust format, strict all-target/all-feature Clippy, and 77/77 tests pass.
-- MSI and NSIS packaging, browser Activity/Space smoke, `git diff --check`, and packaged executable startup pass.
-- GitHub Actions run 33071798193 attempt 2 passes on the exact implementation head; attempt 1 only hit the unchanged Vault test's known fixed-timeout flake.
+- Pulse now loads one read-only local snapshot with factual Today, Continue, New, Recent, and suggested-next-step sections.
+- 72/72 frontend tests, production build, dependency audit, Rust format, strict Clippy, and 79/79 Rust tests pass.
+- MSI/NSIS packaging, browser disclosure/responsive/error-free smoke, diff/security review, and packaged startup pass.
 
 ## Exact resume point
 
-Publish this closure evidence, verify its exact head in Windows CI, merge PR #40, then run the integrated Milestones A–D audit on synchronized `master`.
+Publish Milestone E, wait for exact-head CI, record closure evidence, merge, then create the separate Milestone F Safe Actions contract from synchronized `master`.
