@@ -4,7 +4,7 @@
 | ----------------- | -------------------------- |
 | Schema version    | 2                          |
 | Task ID           | `ACTION-001`               |
-| Status            | `self_review`              |
+| Status            | `complete`                 |
 | Owner             | Codex                      |
 | Last updated      | 2026-08-27                 |
 | Related milestone | Milestone F — Safe Actions |
@@ -93,7 +93,7 @@ None. The owner explicitly authorized Milestone F. The initial vocabulary is nar
 
 ## Codex self-review
 
-**Verdict:** Implementation satisfies the ready contract locally; exact-head Windows CI remains the publication gate.
+**Verdict:** Complete. The implementation and every required local/remote gate satisfy the ready contract.
 
 | Acceptance criterion                   | Evidence                                                                                                                                                                                                          |
 | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -105,4 +105,4 @@ None. The owner explicitly authorized Milestone F. The initial vocabulary is nar
 | Privacy and authority                  | Preview/result never contain Source roots or file contents. Security diff scan found no shell/process/recursive-delete/network/general-executable capability.                                                     |
 | Validation                             | 77/77 frontend tests, 85/85 Rust tests, typecheck, lint, production build, high audit, fmt, strict Clippy, diff check, MSI/NSIS build, 1024×640 browser smoke, and packaged startup pass.                         |
 
-No unresolved P0/P1 findings remain. File mutations intentionally require a later Source rescan to refresh indexed metadata; the route discloses this rather than silently expanding Action authority.
+No unresolved P0/P1 findings remain. File mutations intentionally require a later Source rescan to refresh indexed metadata; the route discloses this rather than silently expanding Action authority. GitHub Actions run `33092882774` passed on exact implementation head `27839e98e8bf0164235226f5e3f648a1920a8523`.

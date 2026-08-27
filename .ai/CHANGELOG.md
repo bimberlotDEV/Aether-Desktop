@@ -26,6 +26,17 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-08-27 — `ACTION-001` — Typed user-approved Safe Actions
+
+- **Type:** Feature, security, accessibility, test, and docs
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review
+- **Summary:** Added eight closed Action types for Task/Note creation, contained single-folder/file operations, and opening authorized Source targets through a visible preview → approve/cancel → result flow.
+- **Files:** `src-tauri/src/actions.rs`, Safe Action commands and Activity integration, typed frontend bridge/hook, `src/routes/Actions.tsx`, tests, ADR-020, architecture/readme, `.ai/*`
+- **Verification:** 77/77 frontend tests, production build, clean dependency audit, Rust format, strict Clippy, 85/85 Rust tests, Windows symlink escape and audit-rollback coverage, MSI/NSIS packaging, 1024×640 browser smoke, packaged startup, security/diff review, and GitHub Actions run `33092882774` pass.
+- **Decisions/deviations:** No shell, delete, recursive operation, overwrite, arbitrary executable, cross-Source transfer, network action, or model-owned approval exists. Source metadata requires an explicit rescan after file changes.
+- **Follow-up:** Milestone G may propose only this existing closed vocabulary under a separately reviewed AI consent boundary.
+
 ## 2026-08-27 — `PULSE-002` — Explainable daily Pulse relevance
 
 - **Type:** Feature, privacy, accessibility, test, and docs
