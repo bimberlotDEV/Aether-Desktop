@@ -4,7 +4,7 @@
 
 Aether combines Spaces, Markdown Notes, Tasks, Pulse, Vault, explicit Memory, authorized local Sources, and opt-in AI assistance in a Tauri desktop application.
 
-**Current release:** Alpha 0.3.2. The core roadmap through Phase 10 is implemented and release-gated. Installers are currently unsigned and intended for alpha testing.
+**Current release:** Alpha 0.4.0. The core roadmap through Phase 10 and product evolution Milestones A–G is implemented and release-gated. Installers are currently unsigned and intended for alpha testing.
 
 ## What is included
 
@@ -24,7 +24,7 @@ Aether combines Spaces, Markdown Notes, Tasks, Pulse, Vault, explicit Memory, au
 
 ## Privacy and data
 
-Workspace data is stored in SQLite at `%APPDATA%/Aether/aether.db`. There is no account or telemetry. AI is opt-in: only a prompt and context items explicitly attached to a conversation are sent to the provider shown on each response. DeepSeek and OpenAI API keys are separately encrypted for the current Windows user with DPAPI. Auto selects only a configured provider, explains its route, and never silently retries through another provider.
+Workspace data is stored in SQLite at `%APPDATA%/com.aether.desktop/aether.db`. There is no account or telemetry. AI is opt-in: only a prompt and context items explicitly attached to a conversation are sent to the provider shown on each response. DeepSeek and OpenAI API keys are separately encrypted for the current Windows user with DPAPI. Auto selects only a configured provider, explains its route, and never silently retries through another provider.
 
 Database exports contain workspace records and Vault metadata, but omit credentials and all managed or linked Vault file contents. Automated restore is not part of this alpha.
 

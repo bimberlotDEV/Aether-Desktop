@@ -5,7 +5,7 @@
 | Field          | Value                                   |
 | -------------- | --------------------------------------- |
 | Schema version | 1                                       |
-| Last updated   | 2026-08-27                              |
+| Last updated   | 2026-08-28                              |
 | Prioritized by | Codex within the owner-approved roadmap |
 
 ## Responsibility of this file
@@ -58,6 +58,7 @@
 | P0       | `PULSE-002`        | Make daily relevance visible on Pulse                      | Product, privacy, data    | `done` | `CONT-001`                  | Pulse calmly surfaces Today, Continue, New, Recent, and a grounded AI entry point.                                      |
 | P0       | `ACTION-001`       | Build narrow user-approved Safe Actions                    | Product, security, data   | `done` | `PULSE-002`                 | Eight typed actions pass explicit review, one-time approval, containment, rollback, audit, UI, packaging, and CI gates. |
 | P0       | `AI-EVOL-001`      | Evolve providers, transparent Auto, and approved AI drafts | Product, security, data   | `done`   | `ACTION-001`              | DeepSeek/OpenAI, deterministic routing, provenance, and Task/Note drafts reuse the Safe Actions consent boundary.        |
+| P0       | `RELEASE-040`      | Cut and install integrated Alpha 0.4.0                     | Quality and release       | `active` | `AI-EVOL-001`             | Versioned artifacts, protected data-preserving upgrade, installed startup, publication, and exact-head CI pass.          |
 | P1       | `VAULT-EPIC`       | Design and implement Vault                                 | Product                   | `done` | ADR-010                     | Safe storage and complete global/Space MVP are implemented.                                                             |
 | P1       | `PHASE6-001`       | Build Vault persistence and native filesystem foundation   | Product and security      | `done` | ADR-010                     | Safe linked/managed storage commands and tests pass.                                                                    |
 | P1       | `PHASE6-002`       | Build Vault UI and Space integration                       | Product                   | `done` | `PHASE6-001`                | Import, metadata, search, open/reveal, and safe removal are usable.                                                     |

@@ -102,7 +102,7 @@ At the start of every session, read the control documents in the order defined b
 ## Database architecture
 
 - SQLite via `rusqlite` (bundled) — no system dependency
-- Database at `%APPDATA%/Aether/aether.db`
+- Database at `%APPDATA%/com.aether.desktop/aether.db` (Tauri's runtime app-data directory for the configured identifier)
 - All queries through Tauri commands — no frontend SQL
 - Versioned migrations in `src-tauri/src/db/migrations.rs`
 - Repository pattern: Rust repos → Tauri commands → TS invoke wrappers

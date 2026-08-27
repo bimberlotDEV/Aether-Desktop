@@ -13,7 +13,7 @@ Vault must support both references to existing local files and copies owned by A
 
 1. Vault records use one `vault_items` table with an explicit `storage_mode` of `linked` or `managed`.
 2. Linked items store a canonical absolute path. Removing a linked item deletes only its database record and never touches the source file.
-3. Managed items store a relative path below `%APPDATA%/Aether/vault/items/<item-id>/`. Import copies run on a blocking worker, use a partial file followed by an atomic rename, and clean up on failure.
+3. Managed items store a relative path below Tauri's runtime app-data directory (`%APPDATA%/com.aether.desktop/vault/items/<item-id>/` for the configured identifier). Import copies run on a blocking worker, use a partial file followed by an atomic rename, and clean up on failure.
 4. Every managed open, reveal, or delete operation resolves the stored relative path against the canonical Vault root and rejects traversal or ownership-boundary violations.
 5. Managed deletion first moves the owned item directory into a Vault-local quarantine, then deletes the database record transactionally. A database failure restores the directory; successful records may leave only a safe orphan in quarantine if final cleanup fails.
 6. Native file selection uses the official Tauri dialog plugin. Opening and revealing use the official opener plugin from a trusted Rust command after resolving an item by database ID; arbitrary frontend paths are never accepted for those operations.

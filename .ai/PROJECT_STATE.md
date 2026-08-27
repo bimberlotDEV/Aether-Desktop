@@ -5,11 +5,11 @@
 | Field            | Value                         |
 | ---------------- | ----------------------------- |
 | Schema version   | 1                             |
-| Last updated     | 2026-08-27                    |
+| Last updated     | 2026-08-28                    |
 | Updated by       | Codex                         |
 | Repository       | `bimberlotDEV/Aether-Desktop` |
-| Branch           | `codex/ai-evolution`          |
-| Baseline commit  | `51fd6d9` (current `master`)  |
+| Branch           | `codex/release-040`           |
+| Baseline commit  | `da4ca98` (current `master`)  |
 | Product maturity | Alpha                         |
 
 ## Responsibility of this file
@@ -52,8 +52,9 @@
 | `PULSE-002`        | Pulse 2.0                                          | `complete` | Pulse makes today’s real local relevance visible without noise, hidden AI, or mutation.                                             |
 | `ACTION-001`       | Safe Actions                                       | `complete` | Typed preview, approval, one-time execution, containment, rollback, audit, UX, packaging, and exact-head CI pass.                   |
 | `AI-EVOL-001`      | AI Evolution                                       | `complete`  | DeepSeek/OpenAI, transparent Auto routing, response provenance, approved Task/Note drafts, local release gates, and exact-head CI pass. |
+| `RELEASE-040`      | Cut and install integrated Alpha 0.4.0             | `self_review` | Local gates, protected upgrade, artifacts, data preservation, and startup pass; publication and exact-head CI remain.                  |
 
-Milestones A through F are merged and verified. Milestone G is complete and published for review in draft PR #43; all local release gates and exact-head Windows CI pass.
+Milestones A through G are merged and verified on `master` through PR #43. `RELEASE-040` is creating an honest, protected Windows upgrade boundary for the integrated product.
 
 ## Completed product milestones
 
@@ -134,7 +135,7 @@ Full rationale belongs in `.ai/ARCHITECTURE.md` or a dedicated ADR under `docs/d
 
 ## Next
 
-Milestones A through F are complete. Milestone G — AI Evolution is in release review. Public signing, updater activation, automated restore, and Vault-byte archives remain separately governed work.
+Milestones A through G are complete. Alpha 0.4.0 release consolidation is active. Public signing, updater activation, automated restore, and Vault-byte archives remain separately governed work.
 
 ## Reusable update template
 
