@@ -27,6 +27,7 @@ The webview is untrusted relative to native resources. It never executes SQL, re
 | Backup             | `backup.rs` and SQLite online backup API                | Settings                                  |
 | Context Sources    | SQLite metadata plus bounded `context.rs` scanner       | Sources                                   |
 | Universal Search   | Rust search repository, Notes FTS5, metadata ranking    | Ctrl+K                                    |
+| Continuity         | Space-scoped Rust read model plus curated Activity      | Space overview, Activity                  |
 
 ## Data and concurrency
 
@@ -38,6 +39,8 @@ Context Sources store an explicitly authorized canonical root and relative child
 
 Universal Search uses one typed Rust repository and command. Notes content is retrieved through the existing FTS5 index; active metadata domains use parameterized bounded queries. Rust applies deterministic text-quality, current-Space, favourite/pinned, open-Task, and recency signals before returning a globally capped result set. Commands remain frontend-owned. Source results expose only Source identity and relative indexed paths, and search never invokes AI. See ADR-017.
 
+Continuity composes bounded active Notes, open Tasks, present Source-file metadata, the latest active conversation, and curated Activity for exactly one active Space. Suggested next steps use a fixed local priority rather than generated prose. Domain commands own a closed meaningful event vocabulary with quiet-window deduplication; the webview cannot submit arbitrary events or receive raw metadata JSON. Activity and Space detail are lazy route chunks. See ADR-018.
+
 ## Security and privacy
 
 - Tauri CSP restricts scripts to the application and capabilities expose only required native actions.
@@ -46,6 +49,7 @@ Universal Search uses one typed Rust repository and command. Notes content is re
 - Linked Vault files are never deleted; managed deletion is containment-checked and recoverable during the operation.
 - Database exports exclude secrets and disclose that Vault file bytes are out of scope.
 - Source roots are explicit and revocable; indexed child APIs expose relative metadata only and are not attached to AI.
+- Continuity is deterministic and Space-bound; it exposes structured facts and presentation-safe Activity without sending data to DeepSeek.
 - There is no telemetry, account backend, active updater, or embedded signing secret.
 
 ## Quality and delivery

@@ -144,8 +144,8 @@ pub fn run() {
             commands::remove_vault_item,
             commands::open_vault_item,
             commands::reveal_vault_item,
-            commands::record_activity,
             commands::list_activity,
+            commands::get_space_continuity,
             // AI
             commands::ai_get_key_status,
             commands::ai_set_api_key,

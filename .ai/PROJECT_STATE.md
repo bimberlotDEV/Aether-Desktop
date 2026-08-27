@@ -5,11 +5,11 @@
 | Field            | Value                         |
 | ---------------- | ----------------------------- |
 | Schema version   | 1                             |
-| Last updated     | 2026-08-26                    |
+| Last updated     | 2026-08-27                    |
 | Updated by       | Codex                         |
 | Repository       | `bimberlotDEV/Aether-Desktop` |
-| Branch           | `codex/universal-search`      |
-| Baseline commit  | `1d11ac0` (current `master`)  |
+| Branch           | `codex/continuity`            |
+| Baseline commit  | `36a6a67` (current `master`)  |
 | Product maturity | Alpha                         |
 
 ## Responsibility of this file
@@ -48,8 +48,9 @@
 | `RELEASE-032`      | Consolidate and install Alpha 0.3.2                | `complete` | Merged AI, migration, and UI work ships as a versioned, hashed, installed, and CI-green Windows release candidate.                  |
 | `CTX-001`          | Explicit Sources and metadata indexing             | `complete` | Authorized directories can be safely indexed, inspected, rescanned, associated, and revoked without mutating user files.            |
 | `SEARCH-001`       | Universal Search                                   | `complete` | Ctrl+K searches commands and permitted local domains quickly with deterministic ranking, provenance, and safe navigation.           |
+| `CONT-001`         | Continuity and meaningful Activity                 | `complete` | Every Space has a deterministic resume view and Activity contains only curated, presentation-safe local changes.                    |
 
-Milestones A and B are merged and complete. Milestone C is complete on published PR #39 with exact-head Windows CI green; merge is the remaining repository operation before Milestone D begins.
+Milestones A through D are implementation-complete. Milestone D passes all local gates and GitHub Actions run 33071798193 attempt 2 on `codex/continuity`.
 
 ## Completed product milestones
 
@@ -127,7 +128,7 @@ Full rationale belongs in `.ai/ARCHITECTURE.md` or a dedicated ADR under `docs/d
 
 ## Next
 
-Milestones A through C are complete. The next roadmap phase is Milestone D — Continuity and meaningful Activity over explicit local state. Public signing and updater activation remain owner-controlled release operations.
+Milestones A through D are implementation-complete and locally integrated; merge and the final read-only A–D audit remain. Public signing and updater activation remain owner-controlled release operations.
 
 ## Reusable update template
 

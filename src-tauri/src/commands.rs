@@ -131,20 +131,37 @@ pub async fn scan_source(
     id: String,
 ) -> Result<repositories::sources::ScanResult, String> {
     runtime.begin(&id)?;
-    let result = async {
+    let result: Result<repositories::sources::ScanResult, String> = async {
         let source = with_conn(&db.conn, |conn| repositories::sources::get(conn, &id))?
             .ok_or_else(|| "Source does not exist".to_string())?;
         with_conn(&db.conn, |conn| {
             repositories::sources::mark_scanning(conn, &id)
         })?;
-        let root = PathBuf::from(source.root_path);
+        let root = PathBuf::from(&source.root_path);
         let snapshot =
             tauri::async_runtime::spawn_blocking(move || local_context::scan_directory(&root))
                 .await
                 .map_err(|e| format!("Source scan worker failed: {e}"))??;
-        with_conn(&db.conn, |conn| {
+        let scan = with_conn(&db.conn, |conn| {
             repositories::sources::apply_snapshot(conn, &id, snapshot)
-        })
+        })?;
+        if scan.added + scan.changed + scan.renamed + scan.removed > 0 {
+            let event = repositories::activity::ActivityEvent {
+                id: Uuid::now_v7().to_string(),
+                event_type: "source_scanned".to_string(),
+                entity_type: Some("source".to_string()),
+                entity_id: Some(source.id.clone()),
+                space_id: source.space_id.clone(),
+                metadata_json: None,
+                created_at: String::new(),
+            };
+            if let Err(error) = with_conn(&db.conn, |conn| {
+                repositories::activity::record_deduped(conn, &event, 10).map(|_| ())
+            }) {
+                log::warn!("Source scan Activity could not be recorded: {error}");
+            }
+        }
+        Ok(scan)
     }
     .await;
     if let Err(error) = &result {
@@ -379,9 +396,27 @@ pub fn create_school_space(
 pub fn get_space(db: State<Database>, id: String) -> Result<Option<serde_json::Value>, String> {
     with_conn(&db.conn, |conn| {
         if let Some(space) = repositories::spaces::get_by_id(conn, &id)? {
-            repositories::spaces::touch_last_opened(conn, &id)?;
-            let modules = repositories::spaces::list_modules(conn, &id)?;
-            let children = repositories::spaces::list_by_parent(conn, &id)?;
+            let transaction = conn
+                .unchecked_transaction()
+                .map_err(|error| format!("Space open transaction error: {error}"))?;
+            repositories::spaces::touch_last_opened(&transaction, &id)?;
+            if space.archived_at.is_none() {
+                let event = repositories::activity::ActivityEvent {
+                    id: Uuid::now_v7().to_string(),
+                    event_type: "space_opened".to_string(),
+                    entity_type: Some("space".to_string()),
+                    entity_id: Some(id.clone()),
+                    space_id: Some(id.clone()),
+                    metadata_json: None,
+                    created_at: String::new(),
+                };
+                repositories::activity::record_deduped(&transaction, &event, 30)?;
+            }
+            let modules = repositories::spaces::list_modules(&transaction, &id)?;
+            let children = repositories::spaces::list_by_parent(&transaction, &id)?;
+            transaction
+                .commit()
+                .map_err(|error| format!("Space open transaction commit error: {error}"))?;
             Ok(Some(serde_json::json!({
                 "space": json_space(&space),
                 "modules": modules.iter().map(json_module).collect::<Vec<_>>(),
@@ -761,43 +796,23 @@ pub fn reveal_vault_item(app: AppHandle, db: State<Database>, id: String) -> Res
 // ─── Activity ───────────────────────────────────────────
 
 #[tauri::command]
-pub fn record_activity(
-    db: State<Database>,
-    event_type: String,
-    entity_type: Option<String>,
-    entity_id: Option<String>,
-    space_id: Option<String>,
-    metadata_json: Option<String>,
-) -> Result<serde_json::Value, String> {
-    let event = repositories::activity::ActivityEvent {
-        id: Uuid::now_v7().to_string(),
-        event_type,
-        entity_type,
-        entity_id,
-        space_id,
-        metadata_json,
-        created_at: String::new(),
-    };
-    with_conn(&db.conn, |conn| {
-        Ok(json_activity(&repositories::activity::record(
-            conn, &event,
-        )?))
-    })
-}
-
-#[tauri::command]
 pub fn list_activity(
     db: State<Database>,
     space_id: Option<String>,
     limit: Option<u32>,
-) -> Result<Vec<serde_json::Value>, String> {
+) -> Result<Vec<repositories::activity::ActivityItem>, String> {
     with_conn(&db.conn, |conn| {
-        let events = if let Some(sid) = space_id {
-            repositories::activity::list_by_space(conn, &sid, limit)?
-        } else {
-            repositories::activity::list_recent(conn, limit)?
-        };
-        Ok(events.iter().map(json_activity).collect())
+        repositories::activity::list_items(conn, space_id.as_deref(), limit)
+    })
+}
+
+#[tauri::command]
+pub fn get_space_continuity(
+    db: State<Database>,
+    space_id: String,
+) -> Result<repositories::continuity::SpaceContinuity, String> {
+    with_conn(&db.conn, |conn| {
+        repositories::continuity::get(conn, &space_id)
     })
 }
 
@@ -1122,7 +1137,27 @@ pub fn delete_memory(db: State<Database>, id: String) -> Result<bool, String> {
 #[tauri::command]
 pub fn create_note(db: State<Database>, space_id: String) -> Result<serde_json::Value, String> {
     with_conn(&db.conn, |conn| {
-        Ok(json_note(&repositories::notes::create(conn, &space_id)?))
+        let transaction = conn
+            .unchecked_transaction()
+            .map_err(|error| format!("Note transaction error: {error}"))?;
+        let note = repositories::notes::create(&transaction, &space_id)?;
+        repositories::activity::record(
+            &transaction,
+            &repositories::activity::ActivityEvent {
+                id: Uuid::now_v7().to_string(),
+                event_type: "note_created".to_string(),
+                entity_type: Some("note".to_string()),
+                entity_id: Some(note.id.clone()),
+                space_id: Some(note.space_id.clone()),
+                metadata_json: None,
+                created_at: String::new(),
+            },
+        )?;
+        let value = json_note(&note);
+        transaction
+            .commit()
+            .map_err(|error| format!("Note transaction commit error: {error}"))?;
+        Ok(value)
     })
 }
 
@@ -1148,15 +1183,34 @@ pub fn update_note(
     expected_revision: Option<i64>,
 ) -> Result<Option<serde_json::Value>, String> {
     with_conn(&db.conn, |conn| {
-        Ok(repositories::notes::update(
-            conn,
+        let transaction = conn
+            .unchecked_transaction()
+            .map_err(|error| format!("Note transaction error: {error}"))?;
+        let updated = repositories::notes::update(
+            &transaction,
             &id,
             title.as_deref(),
             content.as_deref(),
             excerpt.as_deref(),
             expected_revision,
-        )?
-        .map(|n| json_note(&n)))
+        )?;
+        if let Some(note) = updated.as_ref() {
+            let event = repositories::activity::ActivityEvent {
+                id: Uuid::now_v7().to_string(),
+                event_type: "note_edited".to_string(),
+                entity_type: Some("note".to_string()),
+                entity_id: Some(note.id.clone()),
+                space_id: Some(note.space_id.clone()),
+                metadata_json: None,
+                created_at: String::new(),
+            };
+            repositories::activity::record_deduped(&transaction, &event, 10)?;
+        }
+        let value = updated.map(|note| json_note(&note));
+        transaction
+            .commit()
+            .map_err(|error| format!("Note transaction commit error: {error}"))?;
+        Ok(value)
     })
 }
 
@@ -1327,10 +1381,6 @@ fn json_setting(s: &repositories::settings::AppSetting) -> serde_json::Value {
 
 fn json_profile(p: &repositories::profile::UserProfile) -> serde_json::Value {
     serde_json::json!({"id": p.id, "display_name": p.display_name, "onboarding_completed": p.onboarding_completed, "created_at": p.created_at, "updated_at": p.updated_at})
-}
-
-fn json_activity(a: &repositories::activity::ActivityEvent) -> serde_json::Value {
-    serde_json::json!({"id": a.id, "event_type": a.event_type, "entity_type": a.entity_type, "entity_id": a.entity_id, "space_id": a.space_id, "metadata_json": a.metadata_json, "created_at": a.created_at})
 }
 
 // ─── AI Credentials ─────────────────────────────────────
@@ -1685,15 +1735,32 @@ pub async fn ai_stream_message(
         Ok(()) => {
             let metadata = serde_json::json!({ "mode": mode }).to_string();
             let message = with_conn(&db.conn, |conn| {
-                repositories::conversations::finish_message(
-                    conn,
+                let transaction = conn
+                    .unchecked_transaction()
+                    .map_err(|error| format!("AI completion transaction error: {error}"))?;
+                let message = repositories::conversations::finish_message(
+                    &transaction,
                     &assistant_message.id,
                     &final_content,
                     "complete",
                     Some(&metadata),
                     None,
                 )?
-                .ok_or_else(|| "Assistant message no longer exists.".to_string())
+                .ok_or_else(|| "Assistant message no longer exists.".to_string())?;
+                let event = repositories::activity::ActivityEvent {
+                    id: Uuid::now_v7().to_string(),
+                    event_type: "ai_conversation_used".to_string(),
+                    entity_type: Some("conversation".to_string()),
+                    entity_id: Some(conversation.id.clone()),
+                    space_id: conversation.space_id.clone(),
+                    metadata_json: None,
+                    created_at: String::new(),
+                };
+                repositories::activity::record_deduped(&transaction, &event, 10)?;
+                transaction
+                    .commit()
+                    .map_err(|error| format!("AI completion commit error: {error}"))?;
+                Ok(message)
             })?;
             AiStreamEvent::Complete {
                 message: Box::new(message),
