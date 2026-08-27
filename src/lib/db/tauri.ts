@@ -21,9 +21,10 @@ import type {
   AiMessage,
   AiMode,
   AiModel,
+  AiProvider,
+  AiProviderStatus,
   AiResolvedContextItem,
   AiStreamEvent,
-  KeyStatus,
   MemoryFilter,
   MemoryInput,
   MemoryItem,
@@ -37,6 +38,7 @@ import type {
   PulseSnapshot,
   ActionPreview,
   ActionRequest,
+  AiActionDraft,
   ActionResult,
 } from './types'
 
@@ -333,9 +335,6 @@ export async function duplicateNote(id: string): Promise<Note> {
 export async function createTask(input: TaskInput): Promise<Task> {
   return invoke('create_task', { input })
 }
-export async function createTasksBatch(inputs: TaskInput[]): Promise<Task[]> {
-  return invoke('create_tasks_batch', { inputs })
-}
 export async function getTask(id: string): Promise<Task | null> {
   return invoke('get_task', { id })
 }
@@ -415,29 +414,55 @@ export async function deleteMemory(id: string): Promise<boolean> {
 }
 
 // ─── AI ─────────────────────────────────────────────────
-export async function getAiKeyStatus(): Promise<KeyStatus> {
-  return invoke('ai_get_key_status')
-}
-export async function setAiApiKey(apiKey: string): Promise<void> {
-  return invoke('ai_set_api_key', { apiKey })
-}
-export async function removeAiApiKey(): Promise<boolean> {
-  return invoke('ai_remove_api_key')
-}
-export async function testAiConnection(): Promise<string> {
-  return invoke('ai_test_connection')
-}
 export async function listAiModels(): Promise<AiModel[]> {
   return invoke('ai_list_models')
+}
+export async function parseAiActionProposals(
+  conversationId: string,
+  messageId: string,
+): Promise<AiActionDraft[]> {
+  return invoke('ai_parse_action_proposals', { conversationId, messageId })
+}
+export async function previewAiActionProposal(
+  conversationId: string,
+  messageId: string,
+  index: number,
+): Promise<ActionPreview> {
+  return invoke('ai_preview_action_proposal', { conversationId, messageId, index })
+}
+export async function listAiProviders(): Promise<AiProvider[]> {
+  return invoke('ai_list_providers')
+}
+export async function listAiProviderStatuses(): Promise<AiProviderStatus[]> {
+  return invoke('ai_list_provider_statuses')
+}
+export async function setAiProviderApiKey(
+  provider: AiProvider['id'],
+  apiKey: string,
+): Promise<void> {
+  return invoke('ai_set_provider_api_key', { provider, apiKey })
+}
+export async function removeAiProviderApiKey(
+  provider: AiProvider['id'],
+): Promise<boolean> {
+  return invoke('ai_remove_provider_api_key', { provider })
+}
+export async function testAiProviderConnection(
+  provider: AiProvider['id'],
+  model: string,
+): Promise<string> {
+  return invoke('ai_test_provider_connection', { provider, model })
 }
 export async function createAiConversation(params: {
   spaceId?: string
   title?: string
+  provider?: 'auto' | 'deepseek' | 'openai'
   model?: string
 }): Promise<AiConversation> {
   return invoke('ai_create_conversation', {
     spaceId: params.spaceId ?? null,
     title: params.title ?? null,
+    provider: params.provider ?? null,
     model: params.model ?? null,
   })
 }

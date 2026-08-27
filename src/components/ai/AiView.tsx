@@ -13,11 +13,11 @@ import {
   Trash2,
   X,
 } from 'lucide-react'
-import type { AiConversation, AiMessage, AiMode } from '@/lib/db/types'
+import type { AiActionDraft, AiConversation, AiMessage, AiMode } from '@/lib/db/types'
 import { useAiConversation, useAiConversations, useAiSettings } from '@/hooks/useAi'
 import { AiContextPicker } from '@/components/ai/AiContextPicker'
-import { AiTaskProposal } from '@/components/ai/AiTaskProposal'
-import { parseTaskProposal, type TaskProposal } from '@/lib/aiProposal'
+import { AiActionProposals } from '@/components/ai/AiActionProposals'
+import * as db from '@/lib/db/tauri'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { cn } from '@/lib/utils'
 import { EmptyState } from '@/components/ui/AetherUI'
@@ -28,8 +28,17 @@ const MODES: { id: AiMode; label: string }[] = [
   { id: 'explain', label: 'Explain' },
   { id: 'plan', label: 'Plan' },
   { id: 'rewrite', label: 'Rewrite' },
-  { id: 'create_tasks', label: 'Propose Tasks' },
+  { id: 'propose_actions', label: 'Propose Actions' },
 ]
+
+function routeLabel(provider: string, model: string) {
+  if (provider === 'auto') return 'Auto'
+  if (model === 'deepseek-v4-pro') return 'DeepSeek V4 Pro'
+  if (model === 'deepseek-v4-flash') return 'DeepSeek V4 Flash'
+  if (model === 'gpt-5-mini') return 'GPT-5 mini'
+  if (model === 'gpt-5.2') return 'GPT-5.2'
+  return model
+}
 
 function modeFromMessage(message: AiMessage): AiMode {
   try {
@@ -37,6 +46,15 @@ function modeFromMessage(message: AiMessage): AiMode {
     return MODES.some((candidate) => candidate.id === mode) ? mode : 'ask'
   } catch {
     return 'ask'
+  }
+}
+
+function contextCountFromMessage(message: AiMessage) {
+  try {
+    const count = JSON.parse(message.metadata_json ?? '{}').contextCount
+    return typeof count === 'number' && count >= 0 ? count : null
+  } catch {
+    return null
   }
 }
 
@@ -73,7 +91,7 @@ function ConversationRow({
       >
         <span className="block truncate text-sm font-medium">{conversation.title}</span>
         <span className="mt-0.5 block text-xs text-[var(--color-text-tertiary)]">
-          {conversation.model === 'deepseek-v4-pro' ? 'V4 Pro' : 'V4 Flash'}
+          {routeLabel(conversation.provider, conversation.model)}
         </span>
       </button>
       <div className="mr-1 flex opacity-0 group-hover:opacity-100 focus-within:opacity-100">
@@ -100,11 +118,16 @@ export function AiView({ spaceId }: { spaceId?: string }) {
   const list = useAiConversations(spaceId)
   const settings = useAiSettings()
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [model, setModel] = useState('deepseek-v4-flash')
+  const [model, setModel] = useState('auto')
   const [draft, setDraft] = useState('')
   const [mode, setMode] = useState<AiMode>('ask')
   const [showContext, setShowContext] = useState(false)
-  const [proposal, setProposal] = useState<TaskProposal | null>(null)
+  const [proposal, setProposal] = useState<{
+    conversationId: string
+    messageId: string
+    actions: AiActionDraft[]
+  } | null>(null)
+  const [proposalError, setProposalError] = useState<string | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<AiConversation | null>(null)
   const [renaming, setRenaming] = useState(false)
   const [titleDraft, setTitleDraft] = useState('')
@@ -147,6 +170,23 @@ export function AiView({ spaceId }: { spaceId?: string }) {
       await list.rename(selected.id, title)
     setRenaming(false)
   }
+  async function reviewProposal(messageId: string) {
+    if (!selectedId) return
+    setProposalError(null)
+    try {
+      setProposal({
+        conversationId: selectedId,
+        messageId,
+        actions: await db.parseAiActionProposals(selectedId, messageId),
+      })
+    } catch (cause) {
+      setProposalError(
+        cause instanceof Error
+          ? cause.message
+          : 'This response is not a valid Action proposal.',
+      )
+    }
+  }
 
   if (!list.isTauri) {
     return (
@@ -156,7 +196,8 @@ export function AiView({ spaceId }: { spaceId?: string }) {
             <p className="aether-eyebrow">Private intelligence</p>
             <h1 className="aether-page-title">AI workspace</h1>
             <p className="aether-page-description">
-              Think with DeepSeek while you stay in control of every piece of context.
+              Choose a provider or let transparent Auto routing decide while you control
+              context.
             </p>
           </div>
           <EmptyState
@@ -181,8 +222,11 @@ export function AiView({ spaceId }: { spaceId?: string }) {
               onChange={(event) => setModel(event.target.value)}
               className="aether-field min-w-0 flex-1 px-2 py-1.5 text-xs"
             >
+              <option value="auto">Auto</option>
               <option value="deepseek-v4-flash">V4 Flash</option>
               <option value="deepseek-v4-pro">V4 Pro</option>
+              <option value="gpt-5-mini">GPT-5 mini</option>
+              <option value="gpt-5.2">GPT-5.2</option>
             </select>
             <button
               onClick={() => void createConversation()}
@@ -229,7 +273,7 @@ export function AiView({ spaceId }: { spaceId?: string }) {
               icon={Brain}
               eyebrow="A focused thinking space"
               title="Start a new conversation"
-              description="Choose Flash for everyday work or Pro for more demanding reasoning. You decide what context is attached."
+              description="Choose Auto for a transparent route, or pin a provider and model. You decide what context is attached."
               action={{
                 label: 'New conversation',
                 onClick: () => void createConversation(),
@@ -268,7 +312,7 @@ export function AiView({ spaceId }: { spaceId?: string }) {
                   </button>
                 )}
                 <span className="text-xs text-[var(--color-text-tertiary)]">
-                  {selected.model === 'deepseek-v4-pro' ? 'V4 Pro' : 'V4 Flash'}
+                  {routeLabel(selected.provider, selected.model)}
                 </span>
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-1.5">
@@ -311,17 +355,19 @@ export function AiView({ spaceId }: { spaceId?: string }) {
                     What would you like to work on?
                   </h2>
                   <p className="mt-2 text-sm leading-relaxed text-[var(--color-text-secondary)]">
-                    Aether sends only this conversation and the context shown above to
-                    DeepSeek.
+                    Aether sends only this conversation and the context shown above to the
+                    selected provider.
                   </p>
                 </div>
               ) : (
                 <div className="mx-auto max-w-[760px] space-y-5">
                   {chat.messages.map((message, index) => {
-                    const proposals =
-                      message.role === 'assistant' && message.status === 'complete'
-                        ? parseTaskProposal(message.content)
-                        : null
+                    const hasProposals =
+                      message.role === 'assistant' &&
+                      message.status === 'complete' &&
+                      ['create_tasks', 'propose_actions'].includes(
+                        modeFromMessage(message),
+                      )
                     const retryUser =
                       message.role === 'assistant' &&
                       ['error', 'cancelled'].includes(message.status)
@@ -359,6 +405,18 @@ export function AiView({ spaceId }: { spaceId?: string }) {
                               Response failed
                             </p>
                           )}
+                          {message.role === 'assistant' && message.provider && (
+                            <p
+                              className="mt-2 text-[10px] text-[var(--color-text-tertiary)]"
+                              title={message.route_reason ?? undefined}
+                            >
+                              {message.routing_mode === 'auto' ? 'Auto · ' : ''}
+                              {routeLabel(message.provider, message.model ?? '')} · Remote
+                              {contextCountFromMessage(message) !== null
+                                ? ` · ${contextCountFromMessage(message)} context item${contextCountFromMessage(message) === 1 ? '' : 's'}`
+                                : ''}
+                            </p>
+                          )}
                           <div className="mt-2 flex gap-2">
                             {retryUser && !chat.streaming && (
                               <button
@@ -374,12 +432,12 @@ export function AiView({ spaceId }: { spaceId?: string }) {
                                 <RefreshCw size={11} /> Retry
                               </button>
                             )}
-                            {proposals && (
+                            {hasProposals && (
                               <button
-                                onClick={() => setProposal(proposals)}
+                                onClick={() => void reviewProposal(message.id)}
                                 className="inline-flex items-center gap-1 text-xs font-medium text-[var(--color-accent)]"
                               >
-                                <CheckSquare size={12} /> Review proposed Tasks
+                                <CheckSquare size={12} /> Review proposed Actions
                               </button>
                             )}
                           </div>
@@ -396,6 +454,14 @@ export function AiView({ spaceId }: { spaceId?: string }) {
                   className="mx-auto mt-4 max-w-[760px] text-sm text-[var(--color-danger)]"
                 >
                   {chat.error}
+                </p>
+              )}
+              {proposalError && (
+                <p
+                  role="alert"
+                  className="mx-auto mt-4 max-w-[760px] text-sm text-[var(--color-danger)]"
+                >
+                  {proposalError}
                 </p>
               )}
             </div>
@@ -434,9 +500,9 @@ export function AiView({ spaceId }: { spaceId?: string }) {
                       }
                     }}
                     placeholder={
-                      mode === 'create_tasks'
-                        ? 'Describe the work you want broken into Tasks…'
-                        : 'Message DeepSeek…'
+                      mode === 'propose_actions'
+                        ? 'Describe the Tasks or Notes you want proposed…'
+                        : 'Message AI…'
                     }
                     rows={2}
                     maxLength={32000}
@@ -462,8 +528,8 @@ export function AiView({ spaceId }: { spaceId?: string }) {
                   )}
                 </div>
                 <p className="mt-2 text-center text-[10px] text-[var(--color-text-tertiary)]">
-                  Conversation history and visible attachments are sent to DeepSeek. AI
-                  can make mistakes.
+                  Conversation history and visible attachments go only to the shown
+                  provider. AI can make mistakes.
                 </p>
               </div>
             </footer>
@@ -480,11 +546,12 @@ export function AiView({ spaceId }: { spaceId?: string }) {
         />
       )}
       {proposal && (
-        <AiTaskProposal
-          tasks={proposal}
-          spaceId={spaceId}
+        <AiActionProposals
+          actions={proposal.actions}
+          conversationId={proposal.conversationId}
+          messageId={proposal.messageId}
           onClose={() => setProposal(null)}
-          onCreated={() => setProposal(null)}
+          onExecuted={() => undefined}
         />
       )}
       {deleteTarget && (

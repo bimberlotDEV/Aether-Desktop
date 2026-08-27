@@ -3,66 +3,80 @@
 | Field             | Value                      |
 | ----------------- | -------------------------- |
 | Schema version    | 2                          |
-| Task ID           | `ACTION-001`               |
-| Status            | `complete`                 |
+| Task ID           | `AI-EVOL-001`              |
+| Status            | `in_review`                |
 | Owner             | Codex                      |
 | Last updated      | 2026-08-27                 |
-| Related milestone | Milestone F — Safe Actions |
+| Related milestone | Milestone G — AI Evolution |
 | Classification    | `planned_codex`            |
 
 ## Objective
 
-Add a narrow, useful Action subsystem in which every native or persistent mutation is typed, previewed, explicitly approved, validated in Rust, executed once, and recorded without exposing unrestricted computer control.
+Evolve Aether from a DeepSeek-specific chat into a transparent multi-provider intelligence layer with deterministic Auto routing and strictly user-approved AI proposals that reuse the existing Safe Actions boundary.
+
+## Context
+
+Milestones A–F are merged at `51fd6d9`. AI already has cancellable streaming, persisted Space-isolated conversations, explicit context, response modes, DPAPI-protected DeepSeek credentials, and a provider trait. The implementation still hardcodes DeepSeek in conversation validation, schemas, settings, model selection, provider creation, and error text. Milestone F now supplies a closed preview → approval → one-time execution Action boundary.
+
+Official provider contracts checked on 2026-08-27: DeepSeek and OpenAI both expose SSE Chat Completions; their provider-specific request fields and error semantics differ. Official documentation explicitly requires generated tool arguments to be treated as untrusted and validated before use.
+
+## Ordered checkpoints
+
+1. **Provider foundation:** capability registry, provider-aware encrypted credentials, OpenAI adapter, dynamic typed model catalog, and unchanged DeepSeek behavior.
+2. **Auto routing:** deterministic Rust route decision from mode, configured providers, model capabilities, and user preference; no silent remote fallback; persisted per-response provenance and visible disclosure.
+3. **Approved proposals:** a strict Rust-parsed Task/Note draft mode that can only enter the existing Safe Actions review; the model never receives an approval token or execution command.
+4. **Product integration:** provider settings, Auto/manual selection, route explanations, accessible proposal card, honest browser/offline/error states, docs, release verification, publication, and merge.
 
 ## Acceptance criteria
 
-- [ ] Rust defines a closed Action request vocabulary for create Task, create Note, create folder, copy/move/rename file inside one authorized Source, open Source file, and open Source folder.
-- [ ] Preview validates and normalizes the request, returns a presentation-safe consequence summary, and issues only a short-lived opaque one-time token; absolute Source roots never cross IPC.
-- [ ] Execution accepts only an unexpired pending token, consumes it before work, and cannot be replayed or replaced with arbitrary arguments.
-- [ ] Filesystem writes remain inside the canonical authorized Source root, reject traversal/rooted paths, symlink escape, missing parents, directory-as-file input, and existing destinations, and never delete or overwrite user data.
-- [ ] Create Task/Note validates active Space ownership and persists transactionally; every successful write receives a curated Activity record in the same transaction.
-- [ ] Filesystem failures are surfaced clearly; if audit recording fails after a reversible filesystem write, the operation is rolled back where safe.
-- [ ] No command exposes shell execution, arbitrary executable launch, raw path access, delete, automation, model-triggered approval, or unrestricted external application control.
-- [ ] The Actions route provides an accessible proposal → review → approve/cancel → result flow and an honest browser-mode disclosure.
-- [ ] Tests cover every action type, one-time/expiry behavior, validation, traversal, containment, symlink-safe canonicalization, no-overwrite, rollback/audit semantics, typed IPC, confirmation, cancellation, errors, and browser behavior.
-- [ ] Frontend/Rust gates, build, audit, packaging, diff/security review, browser smoke, packaged startup, and exact-head Windows CI pass.
+- [x] Rust owns a closed provider registry for `deepseek` and `openai`, fixed official endpoints, curated model capabilities, provider-specific request shaping, uniform cancellation/streaming, and presentation-safe errors.
+- [x] Provider API keys are separately DPAPI-encrypted, never returned/logged/exported, independently testable/removable, and the legacy DeepSeek key continues to work without destructive migration.
+- [x] OpenAI can be manually selected through the same persisted conversation/streaming flow; no custom endpoint, arbitrary URL, SDK secret, or provider credential crosses IPC.
+- [x] `Auto` is a real Rust route preference, not a provider/model alias. It deterministically selects only a configured provider, records the resolved provider/model/reason on each assistant response, and never silently retries through another remote provider.
+- [x] Existing conversations and populated personal-beta databases upgrade append-only and remain readable; fresh creation, upgrade, idempotence, rollback, and repository behavior are tested.
+- [x] The UI exposes connected-provider state, test/save/remove controls, Auto plus explicit model choices, and a calm per-response route disclosure including remote processing and visible context count.
+- [x] AI Action output is parsed strictly in Rust into only `createTask` or `createNote`, is size/count bounded, validated against the current active Space, attributed to its conversation/message, and cannot contain file, shell, delete, network, or approval capabilities.
+- [x] An AI draft cannot execute directly: the user must open the existing Safe Actions preview and separately choose “Approve and execute”; cancellation, expiry, replay protection, and audit behavior remain owned by Milestone F.
+- [x] Existing `create_tasks` behavior remains compatible or is safely converged without introducing a weaker second mutation path.
+- [x] Cross-Space context, prompt-injected tool text, malformed JSON, unknown provider/model, missing credentials, stale route state, stream races, and provider failures have automated coverage.
+- [ ] Frontend/Rust gates, migration tests, build/audit, packaging, diff/security review, responsive theme/browser smoke, packaged startup, and exact-head Windows CI pass.
 
 ## Allowed paths
 
+- `src-tauri/src/ai/`
 - `src-tauri/src/actions.rs`
 - `src-tauri/src/commands.rs`
 - `src-tauri/src/lib.rs`
+- `src-tauri/src/db/migrations.rs`
+- `src-tauri/src/db/repositories/conversations.rs`
 - `src-tauri/src/db/repositories/activity.rs`
-- `src/lib/db/types.ts`
-- `src/lib/db/tauri.ts`
-- `src/lib/db/tauri.test.ts`
-- `src/hooks/useActions.ts`
-- `src/routes/Actions.tsx`
-- `src/routes/Actions.test.tsx`
-- `src/App.tsx`
-- `src/components/Sidebar.tsx`
-- `src/components/CommandPalette.tsx`
-- `src/components/CommandPalette.test.tsx`
+- `src/lib/db/`
+- `src/hooks/useAi*.ts`
+- `src/components/ai/`
+- `src/routes/AI.tsx`
+- `src/routes/Settings.tsx`
 - `src/styles/index.css`
-- `docs/decisions/020-safe-actions.md`
-- `docs/architecture.md`
 - `README.md`
+- `docs/architecture.md`
+- `docs/decisions/021-ai-provider-routing.md`
 - `.ai/*`
 
 ## Non-goals
 
-- Delete actions, recursive directory operations, overwrite, arbitrary shell/terminal commands, scripts, downloads, network calls, arbitrary application launch, background automation, or model-owned approval.
-- Cross-Source moves/copies, unmanaged filesystem paths, rollback across process crashes, or generalized plugin execution.
-- AI proposal generation; Milestone G may propose only these existing types through a separately reviewed boundary.
+- General autonomous computer control, background agents, automation schedules, multi-step plans, browser/shell execution, arbitrary endpoints, plugin/tool execution, destructive actions, or model-owned approval.
+- File Action proposals until a separate design makes Source/file metadata an explicit visible AI attachment; existing manual file Actions remain available.
+- Silent cross-provider fallback, automatic Memory, telemetry, cloud sync, managed billing, subscriptions, Anthropic/Gemini support, or a bundled local-model runtime.
+- Replacing the entire AI API with OpenAI Responses during this milestone; Chat Completions preserves the existing stable streaming abstraction while provider-specific adapters remain separable.
 
 ## Risks and safeguards
 
-- **Path escape/spoofing:** component validation plus canonical root/source/parent containment in Rust.
-- **Replay:** pending tokens are random, short-lived, process-local, and removed before execution.
-- **Data loss:** no delete/overwrite; file writes are single-item and rollback when post-write audit fails.
-- **Confused deputy:** frontend never supplies an absolute path to execution and cannot mutate a reviewed proposal.
-- **Audit privacy:** curated Activity exposes type/entity/provenance only, never absolute paths or file contents.
-- **Rollback:** remove the route/commands/runtime and retain harmless curated Activity rows; no migration is added.
+- **Secret exposure:** namespaced secret keys remain behind the DPAPI Rust boundary; status IPC returns booleans only.
+- **Unexpected data recipient:** Auto considers configured providers but selects one before sending; the UI identifies remote provider/model and there is no automatic fallback after send failure.
+- **Provider drift:** capability/model catalogs are centralized, tested, and rejected when unknown; provider-specific bodies are separate.
+- **Migration damage:** append nullable provenance columns only; legacy rows need no rewrite and upgrade runs transactionally.
+- **Prompt injection/confused deputy:** model output is untrusted data, strict Rust parsing permits only two non-file drafts, and execution still needs an opaque F token plus explicit approval.
+- **Single approval policy:** AI proposal mutation exists only through Safe Actions; the former direct Task batch command is removed.
+- **Rollback:** remove OpenAI/Auto/proposal UI and commands, retain nullable provenance, legacy secret, and readable conversations; no user content is deleted.
 
 ## Required validation
 
@@ -75,34 +89,31 @@ cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --all-features -
 cargo test --manifest-path src-tauri/Cargo.toml --all-targets --all-features
 pnpm tauri:build
 git diff --check
-browser Actions smoke
+browser AI/Settings smoke at 1024x640 in dark and light themes
 packaged desktop startup smoke
-GitHub PR CI
+GitHub PR exact-head CI
 ```
+
+Live OpenAI/DeepSeek requests are not required for acceptance because no owner credentials may be requested, extracted, or logged. HTTP request shaping, SSE decoding, routing, credential isolation, and failure behavior require deterministic local tests; the UI must honestly report unconfigured providers.
 
 ## Blocking decisions
 
-None. The owner explicitly authorized Milestone F. The initial vocabulary is narrow, reversible where practical, and intentionally excludes destructive/general autonomy.
+None. The owner authorized the next milestone. Adding one fixed-endpoint provider, transparent Auto, and Task/Note-only drafts is reversible and follows the approved roadmap without enabling general autonomy.
+
+## Implementation evidence and self-review
+
+- Provider request-shaping, SSE, routing, secret isolation, strict proposal parsing, migration preservation, Space isolation, one-time approval, and AI-origin audit tests pass locally.
+- The direct `create_tasks_batch` mutation command and its frontend bridge were removed; AI drafts can now reach mutation only through a server-reconstructed Safe Action preview.
+- `pnpm check` passes 77/77 tests across 29 files; production build and high-severity dependency audit pass.
+- strict Rust format and Clippy pass; 95/95 Rust tests pass.
+- MSI and NSIS package successfully; the final release executable starts and remains responsive.
+- AI and Settings smoke at 1024×640 passes in light/dark themes with no browser warnings or errors.
+- Diff/security review found only two fixed official provider URLs, no credential return path, no arbitrary endpoint, no silent fallback, and no model-owned token or execution path.
+- Live provider calls were intentionally not run because owner credentials are neither required nor available; exact-head GitHub CI remains the final review item after publication.
 
 ## Readiness review
 
-- **Status:** Ready. Action types, authority boundaries, confirmation semantics, rollback, privacy, and validation are explicit.
-- **Architecture gate:** ADR-020 is accepted before production implementation.
-- **Migration gate:** No migration is required; curated Activity supplies the durable audit signal.
-- **Security gate:** Rust owns proposal state, validation, execution, containment, and audit recording.
-
-## Codex self-review
-
-**Verdict:** Complete. The implementation and every required local/remote gate satisfy the ready contract.
-
-| Acceptance criterion                   | Evidence                                                                                                                                                                                                          |
-| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Closed Action vocabulary               | `ActionRequest` contains only the eight contracted Task, Note, contained file/folder, and open variants; typed TS IPC mirrors it.                                                                                 |
-| Preview and one-time execution         | Rust returns only a presentation-safe preview and opaque ten-minute token; execution removes the token before revalidation; replay, cancellation, expiry, and the 128-proposal bound are tested.                  |
-| Filesystem containment and data safety | Canonical Source/path checks reject traversal, outside symlinks, unindexed files, missing parents, non-files, and existing destinations. Copy uses `create_new`; no delete/overwrite/cross-Source command exists. |
-| Transaction and rollback               | Task/Note plus Activity commit in one transaction. A forced Activity failure proves a copied file is removed and its original remains.                                                                            |
-| Explicit confirmation UX               | The desktop route separates proposal from review and invokes execution only from “Approve and execute”; cancellation and honest browser mode are tested.                                                          |
-| Privacy and authority                  | Preview/result never contain Source roots or file contents. Security diff scan found no shell/process/recursive-delete/network/general-executable capability.                                                     |
-| Validation                             | 77/77 frontend tests, 85/85 Rust tests, typecheck, lint, production build, high audit, fmt, strict Clippy, diff check, MSI/NSIS build, 1024×640 browser smoke, and packaged startup pass.                         |
-
-No unresolved P0/P1 findings remain. File mutations intentionally require a later Source rescan to refresh indexed metadata; the route discloses this rather than silently expanding Action authority. GitHub Actions run `33092882774` passed on exact implementation head `27839e98e8bf0164235226f5e3f648a1920a8523`.
+- **Status:** Ready. Provider scope, routing semantics, consent boundary, migration, rollback, evidence, and non-goals are explicit.
+- **Architecture gate:** ADR-021 is accepted before production implementation.
+- **Migration gate:** append-only nullable message provenance; no existing row or secret is rewritten.
+- **Security gate:** Rust selects the recipient, resolves explicit context, parses drafts, and delegates approval/execution exclusively to Safe Actions.

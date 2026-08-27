@@ -27,7 +27,6 @@ import {
   streamAiMessage,
   addAiContext,
   cancelAiRequest,
-  createTasksBatch,
   createMemory,
   listMemory,
   updateMemory,
@@ -45,6 +44,11 @@ import {
   previewAction,
   executeAction,
   cancelAction,
+  listAiProviderStatuses,
+  setAiProviderApiKey,
+  testAiProviderConnection,
+  parseAiActionProposals,
+  previewAiActionProposal,
 } from '@/lib/db/tauri'
 
 describe('Tauri database boundary', () => {
@@ -276,6 +280,7 @@ describe('Tauri database boundary', () => {
     expect(invoke).toHaveBeenNthCalledWith(1, 'ai_create_conversation', {
       spaceId: 'space-1',
       title: null,
+      provider: null,
       model: 'deepseek-v4-pro',
     })
     expect(invoke).toHaveBeenNthCalledWith(
@@ -300,23 +305,31 @@ describe('Tauri database boundary', () => {
     })
   })
 
-  it('passes AI-approved Tasks through the transactional batch boundary', async () => {
-    const inputs = [
-      {
-        spaceId: 'space-1',
-        parentTaskId: null,
-        title: 'Review proposal',
-        description: 'Confirm the generated implementation plan.',
-        status: 'inbox' as const,
-        priority: 'high' as const,
-        dueDate: '2026-08-12',
-        tags: ['ai', 'review'],
-      },
-    ]
+  it('keeps provider credentials and AI drafts behind narrow commands', async () => {
+    await listAiProviderStatuses()
+    await setAiProviderApiKey('openai', 'sk-secret')
+    await testAiProviderConnection('openai', 'gpt-5-mini')
+    await parseAiActionProposals('conversation-1', 'message-1')
+    await previewAiActionProposal('conversation-1', 'message-1', 0)
 
-    await createTasksBatch(inputs)
-
-    expect(invoke).toHaveBeenCalledWith('create_tasks_batch', { inputs })
+    expect(invoke).toHaveBeenNthCalledWith(1, 'ai_list_provider_statuses')
+    expect(invoke).toHaveBeenNthCalledWith(2, 'ai_set_provider_api_key', {
+      provider: 'openai',
+      apiKey: 'sk-secret',
+    })
+    expect(invoke).toHaveBeenNthCalledWith(3, 'ai_test_provider_connection', {
+      provider: 'openai',
+      model: 'gpt-5-mini',
+    })
+    expect(invoke).toHaveBeenNthCalledWith(4, 'ai_parse_action_proposals', {
+      conversationId: 'conversation-1',
+      messageId: 'message-1',
+    })
+    expect(invoke).toHaveBeenNthCalledWith(5, 'ai_preview_action_proposal', {
+      conversationId: 'conversation-1',
+      messageId: 'message-1',
+      index: 0,
+    })
   })
 
   it('passes explicit Memory scope and content through typed boundaries', async () => {

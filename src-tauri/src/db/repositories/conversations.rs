@@ -26,8 +26,19 @@ pub struct AiMessage {
     pub provider_message_id: Option<String>,
     pub error_code: Option<String>,
     pub metadata_json: Option<String>,
+    pub provider: Option<String>,
+    pub model: Option<String>,
+    pub routing_mode: Option<String>,
+    pub route_reason: Option<String>,
     pub created_at: String,
     pub updated_at: String,
+}
+
+pub struct AiRouteProvenance<'a> {
+    pub provider: &'a str,
+    pub model: &'a str,
+    pub routing_mode: &'a str,
+    pub route_reason: &'a str,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -53,11 +64,17 @@ pub fn create_conversation(
     if title.is_empty() || title.chars().count() > 200 {
         return Err("Conversation title must contain 1 to 200 characters.".to_string());
     }
-    if provider != "deepseek" {
+    if !["auto", "deepseek", "openai"].contains(&provider) {
         return Err("Unsupported AI provider.".to_string());
     }
-    if !["deepseek-v4-flash", "deepseek-v4-pro"].contains(&model) {
-        return Err("Unsupported DeepSeek model.".to_string());
+    let valid_model = match provider {
+        "auto" => model == "auto",
+        "deepseek" => ["deepseek-v4-flash", "deepseek-v4-pro"].contains(&model),
+        "openai" => ["gpt-5-mini", "gpt-5.2"].contains(&model),
+        _ => false,
+    };
+    if !valid_model {
+        return Err("Unsupported AI provider and model combination.".to_string());
     }
     let id = Uuid::now_v7().to_string();
     let now = chrono::Utc::now().to_rfc3339();
@@ -254,7 +271,8 @@ pub fn get_message(conn: &Connection, id: &str) -> Result<Option<AiMessage>, Str
     let mut stmt = conn
         .prepare(
             "SELECT id, conversation_id, role, content, status, provider_message_id,
-                    error_code, metadata_json, created_at, updated_at
+                    error_code, metadata_json, provider, model, routing_mode, route_reason,
+                    created_at, updated_at
              FROM ai_messages WHERE id = ?1",
         )
         .map_err(|e| format!("Query error: {}", e))?;
@@ -269,8 +287,12 @@ pub fn get_message(conn: &Connection, id: &str) -> Result<Option<AiMessage>, Str
             provider_message_id: row.get(5)?,
             error_code: row.get(6)?,
             metadata_json: row.get(7)?,
-            created_at: row.get(8)?,
-            updated_at: row.get(9)?,
+            provider: row.get(8)?,
+            model: row.get(9)?,
+            routing_mode: row.get(10)?,
+            route_reason: row.get(11)?,
+            created_at: row.get(12)?,
+            updated_at: row.get(13)?,
         })
     });
 
@@ -287,10 +309,12 @@ pub fn list_messages(
     limit: Option<i64>,
 ) -> Result<Vec<AiMessage>, String> {
     let sql = "SELECT id, conversation_id, role, content, status, provider_message_id,
-                      error_code, metadata_json, created_at, updated_at
+                      error_code, metadata_json, provider, model, routing_mode, route_reason,
+                      created_at, updated_at
                FROM (
                  SELECT id, conversation_id, role, content, status, provider_message_id,
-                        error_code, metadata_json, created_at, updated_at
+                        error_code, metadata_json, provider, model, routing_mode, route_reason,
+                        created_at, updated_at
                  FROM ai_messages WHERE conversation_id = ?1
                  ORDER BY created_at DESC LIMIT ?2
                ) ORDER BY created_at ASC";
@@ -311,8 +335,12 @@ pub fn list_messages(
                 provider_message_id: row.get(5)?,
                 error_code: row.get(6)?,
                 metadata_json: row.get(7)?,
-                created_at: row.get(8)?,
-                updated_at: row.get(9)?,
+                provider: row.get(8)?,
+                model: row.get(9)?,
+                routing_mode: row.get(10)?,
+                route_reason: row.get(11)?,
+                created_at: row.get(12)?,
+                updated_at: row.get(13)?,
             })
         })
         .map_err(|e| format!("Query error: {}", e))?;
@@ -328,6 +356,7 @@ pub fn finish_message(
     status: &str,
     error_code: Option<&str>,
     metadata_json: Option<&str>,
+    route: Option<&AiRouteProvenance<'_>>,
 ) -> Result<Option<AiMessage>, String> {
     if !["complete", "error", "cancelled"].contains(&status) {
         return Err("Invalid terminal AI message status.".to_string());
@@ -335,8 +364,20 @@ pub fn finish_message(
     let now = chrono::Utc::now().to_rfc3339();
     conn.execute(
         "UPDATE ai_messages SET content = ?1, status = ?2, error_code = ?3,
-         metadata_json = ?4, updated_at = ?5 WHERE id = ?6",
-        params![content, status, error_code, metadata_json, now, id],
+         metadata_json = ?4, provider = ?5, model = ?6, routing_mode = ?7,
+         route_reason = ?8, updated_at = ?9 WHERE id = ?10",
+        params![
+            content,
+            status,
+            error_code,
+            metadata_json,
+            route.map(|value| value.provider),
+            route.map(|value| value.model),
+            route.map(|value| value.routing_mode),
+            route.map(|value| value.route_reason),
+            now,
+            id
+        ],
     )
     .map_err(|e| format!("Finish message error: {}", e))?;
     get_message(conn, id)
@@ -456,6 +497,7 @@ mod tests {
                 id TEXT PRIMARY KEY, conversation_id TEXT NOT NULL REFERENCES ai_conversations(id) ON DELETE CASCADE,
                 role TEXT NOT NULL, content TEXT DEFAULT '', status TEXT DEFAULT 'complete',
                 provider_message_id TEXT, error_code TEXT, metadata_json TEXT,
+                provider TEXT, model TEXT, routing_mode TEXT, route_reason TEXT,
                 created_at TEXT, updated_at TEXT
             );
             CREATE TABLE ai_context_items (
@@ -522,7 +564,7 @@ mod tests {
         let messages = list_messages(&conn, &conv.id, None).unwrap();
         assert_eq!(messages.len(), 2);
 
-        let updated = finish_message(&conn, &msg1.id, "Hello world", "complete", None, None)
+        let updated = finish_message(&conn, &msg1.id, "Hello world", "complete", None, None, None)
             .unwrap()
             .unwrap();
         assert_eq!(updated.content, "Hello world");
@@ -538,6 +580,7 @@ mod tests {
             "partial",
             "error",
             Some("network"),
+            None,
             None,
         )
         .unwrap()

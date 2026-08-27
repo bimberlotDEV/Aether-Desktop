@@ -3,6 +3,9 @@ use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
 use tokio_util::sync::CancellationToken;
 
+const DEEPSEEK_ENDPOINT: &str = "https://api.deepseek.com/chat/completions";
+const OPENAI_ENDPOINT: &str = "https://api.openai.com/v1/chat/completions";
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ChatMessage {
     pub role: String,
@@ -36,13 +39,11 @@ struct ChatCompletionResponse {
     #[serde(default)]
     choices: Vec<Choice>,
 }
-
 #[derive(Debug, Clone, Deserialize)]
 struct Choice {
     #[serde(default)]
     delta: Option<ChoiceDelta>,
 }
-
 #[derive(Debug, Clone, Deserialize)]
 struct ChoiceDelta {
     #[serde(default)]
@@ -51,11 +52,71 @@ struct ChoiceDelta {
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
+pub struct ProviderInfo {
+    pub id: String,
+    pub display_name: String,
+    pub remote: bool,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
 pub struct ModelInfo {
     pub id: String,
+    pub display_name: String,
     pub provider: String,
     pub supports_streaming: bool,
     pub supports_thinking: bool,
+    pub supports_structured_output: bool,
+}
+
+pub fn provider_catalog() -> Vec<ProviderInfo> {
+    vec![
+        ProviderInfo {
+            id: "deepseek".into(),
+            display_name: "DeepSeek".into(),
+            remote: true,
+        },
+        ProviderInfo {
+            id: "openai".into(),
+            display_name: "OpenAI".into(),
+            remote: true,
+        },
+    ]
+}
+
+pub fn model_catalog() -> Vec<ModelInfo> {
+    [
+        ("deepseek-v4-flash", "DeepSeek V4 Flash", "deepseek", true),
+        ("deepseek-v4-pro", "DeepSeek V4 Pro", "deepseek", true),
+        ("gpt-5-mini", "GPT-5 mini", "openai", false),
+        ("gpt-5.2", "GPT-5.2", "openai", false),
+    ]
+    .into_iter()
+    .map(
+        |(id, display_name, provider, supports_thinking)| ModelInfo {
+            id: id.into(),
+            display_name: display_name.into(),
+            provider: provider.into(),
+            supports_streaming: true,
+            supports_thinking,
+            supports_structured_output: true,
+        },
+    )
+    .collect()
+}
+
+pub fn validate_provider_model(provider: &str, model: &str) -> Result<(), ProviderError> {
+    if model_catalog()
+        .iter()
+        .any(|item| item.provider == provider && item.id == model)
+    {
+        Ok(())
+    } else {
+        Err(ProviderError::new(
+            "unsupported_route",
+            "This AI provider and model combination is not supported.",
+        ))
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -63,7 +124,6 @@ pub struct ProviderError {
     pub code: &'static str,
     pub message: String,
 }
-
 impl ProviderError {
     fn new(code: &'static str, message: impl Into<String>) -> Self {
         Self {
@@ -78,30 +138,28 @@ pub struct ProviderConfig {
     pub provider: String,
     pub api_key: String,
     pub model: String,
-    pub base_url: String,
     pub temperature: Option<f32>,
     pub max_tokens: Option<u32>,
     pub thinking_enabled: bool,
 }
 
 impl ProviderConfig {
-    pub fn default_deepseek(api_key: String) -> Self {
-        Self {
-            provider: "deepseek".to_string(),
+    pub fn for_route(provider: &str, api_key: String, model: &str) -> Result<Self, ProviderError> {
+        validate_provider_model(provider, model)?;
+        Ok(Self {
+            provider: provider.into(),
             api_key,
-            model: "deepseek-v4-flash".to_string(),
-            base_url: "https://api.deepseek.com".to_string(),
+            model: model.into(),
             temperature: Some(0.2),
             max_tokens: Some(4096),
             thinking_enabled: false,
-        }
+        })
     }
 }
 
 #[async_trait]
 pub trait AiProvider: Send + Sync {
     fn name(&self) -> &str;
-    fn available_models(&self) -> Vec<ModelInfo>;
     async fn test_connection(&self) -> Result<(), ProviderError>;
     async fn stream_chat(
         &self,
@@ -111,13 +169,20 @@ pub trait AiProvider: Send + Sync {
     ) -> Result<(), ProviderError>;
 }
 
-pub struct DeepSeekProvider {
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum Protocol {
+    DeepSeek,
+    OpenAi,
+}
+
+pub struct ChatCompletionsProvider {
     config: ProviderConfig,
+    protocol: Protocol,
     client: reqwest::Client,
 }
 
-impl DeepSeekProvider {
-    pub fn new(config: ProviderConfig) -> Result<Self, ProviderError> {
+impl ChatCompletionsProvider {
+    fn new(config: ProviderConfig, protocol: Protocol) -> Result<Self, ProviderError> {
         let client = reqwest::Client::builder()
             .connect_timeout(std::time::Duration::from_secs(15))
             .timeout(std::time::Duration::from_secs(300))
@@ -125,38 +190,58 @@ impl DeepSeekProvider {
             .map_err(|_| {
                 ProviderError::new("provider_setup", "Could not initialize AI networking.")
             })?;
-        Ok(Self { config, client })
+        Ok(Self {
+            config,
+            protocol,
+            client,
+        })
     }
-
-    fn build_request(
-        &self,
-        request: &ChatCompletionRequest,
-        stream: bool,
-    ) -> ChatCompletionRequest {
-        let mut request = request.clone();
-        if request.model.is_empty() {
-            request.model.clone_from(&self.config.model);
+    fn endpoint(&self) -> &'static str {
+        match self.protocol {
+            Protocol::DeepSeek => DEEPSEEK_ENDPOINT,
+            Protocol::OpenAi => OPENAI_ENDPOINT,
         }
-        if request.temperature.is_none() {
-            request.temperature = self.config.temperature;
+    }
+    fn build_body(&self, request: &ChatCompletionRequest, stream: bool) -> serde_json::Value {
+        let model = if request.model.is_empty() {
+            &self.config.model
+        } else {
+            &request.model
+        };
+        let mut body =
+            serde_json::json!({ "model": model, "messages": request.messages, "stream": stream });
+        let object = body.as_object_mut().expect("request body is an object");
+        if let Some(top_p) = request.top_p {
+            object.insert("top_p".into(), serde_json::json!(top_p));
         }
-        if request.max_tokens.is_none() {
-            request.max_tokens = self.config.max_tokens;
-        }
-        request.stream = Some(stream);
-        if request.thinking.is_none() {
-            request.thinking = Some(ThinkingConfig {
-                thinking_type: if self.config.thinking_enabled {
-                    "enabled"
-                } else {
-                    "disabled"
+        let max_tokens = request.max_tokens.or(self.config.max_tokens);
+        match self.protocol {
+            Protocol::DeepSeek => {
+                if let Some(temperature) = request.temperature.or(self.config.temperature) {
+                    object.insert("temperature".into(), serde_json::json!(temperature));
                 }
-                .to_string(),
-            });
+                if let Some(limit) = max_tokens {
+                    object.insert("max_tokens".into(), serde_json::json!(limit));
+                }
+                let thinking = request
+                    .thinking
+                    .as_ref()
+                    .map(|value| value.thinking_type.as_str())
+                    .unwrap_or(if self.config.thinking_enabled {
+                        "enabled"
+                    } else {
+                        "disabled"
+                    });
+                object.insert("thinking".into(), serde_json::json!({ "type": thinking }));
+            }
+            Protocol::OpenAi => {
+                if let Some(limit) = max_tokens {
+                    object.insert("max_completion_tokens".into(), serde_json::json!(limit));
+                }
+            }
         }
-        request
+        body
     }
-
     async fn send(
         &self,
         request: &ChatCompletionRequest,
@@ -164,75 +249,53 @@ impl DeepSeekProvider {
     ) -> Result<reqwest::Response, ProviderError> {
         let response = self
             .client
-            .post(format!("{}/chat/completions", self.config.base_url))
+            .post(self.endpoint())
             .bearer_auth(&self.config.api_key)
-            .json(&self.build_request(request, stream))
+            .json(&self.build_body(request, stream))
             .send()
             .await
-            .map_err(classify_network_error)?;
+            .map_err(|error| classify_network_error(error, self.name()))?;
         if !response.status().is_success() {
-            return Err(classify_status(response.status()));
+            return Err(classify_status(response.status(), self.name()));
         }
         Ok(response)
     }
 }
 
 #[async_trait]
-impl AiProvider for DeepSeekProvider {
+impl AiProvider for ChatCompletionsProvider {
     fn name(&self) -> &str {
-        "deepseek"
+        &self.config.provider
     }
-
-    fn available_models(&self) -> Vec<ModelInfo> {
-        ["deepseek-v4-flash", "deepseek-v4-pro"]
-            .into_iter()
-            .map(|id| ModelInfo {
-                id: id.to_string(),
-                provider: "deepseek".to_string(),
-                supports_streaming: true,
-                supports_thinking: true,
-            })
-            .collect()
-    }
-
     async fn test_connection(&self) -> Result<(), ProviderError> {
         let request = ChatCompletionRequest {
             model: self.config.model.clone(),
             messages: vec![ChatMessage {
-                role: "user".to_string(),
-                content: "Reply with OK.".to_string(),
+                role: "user".into(),
+                content: "Reply with OK.".into(),
             }],
-            temperature: Some(0.0),
-            max_tokens: Some(2),
+            temperature: None,
+            max_tokens: Some(8),
             top_p: None,
             stream: Some(false),
-            thinking: Some(ThinkingConfig {
-                thinking_type: "disabled".to_string(),
-            }),
+            thinking: None,
         };
         self.send(&request, false).await?;
         Ok(())
     }
-
     async fn stream_chat(
         &self,
         request: &ChatCompletionRequest,
         cancellation: CancellationToken,
         on_delta: &(dyn Fn(String) -> Result<(), String> + Send + Sync),
     ) -> Result<(), ProviderError> {
-        let response = tokio::select! {
-            _ = cancellation.cancelled() => return Err(cancelled()),
-            response = self.send(request, true) => response?,
-        };
+        let response = tokio::select! { _ = cancellation.cancelled() => return Err(cancelled()), response = self.send(request, true) => response?, };
         let mut stream = response.bytes_stream();
         let mut decoder = SseDecoder::default();
         loop {
-            let next = tokio::select! {
-                _ = cancellation.cancelled() => return Err(cancelled()),
-                next = stream.next() => next,
-            };
+            let next = tokio::select! { _ = cancellation.cancelled() => return Err(cancelled()), next = stream.next() => next, };
             let Some(chunk) = next else { break };
-            let chunk = chunk.map_err(classify_network_error)?;
+            let chunk = chunk.map_err(|error| classify_network_error(error, self.name()))?;
             for event in decoder.push(&chunk)? {
                 match event {
                     SseEvent::Delta(content) => on_delta(content).map_err(|_| cancelled())?,
@@ -242,46 +305,63 @@ impl AiProvider for DeepSeekProvider {
         }
         Err(ProviderError::new(
             "network",
-            "The DeepSeek stream ended before completion. Try again.",
+            format!(
+                "The {} stream ended before completion. Try again.",
+                provider_label(self.name())
+            ),
         ))
     }
 }
 
+fn provider_label(provider: &str) -> &'static str {
+    match provider {
+        "openai" => "OpenAI",
+        _ => "DeepSeek",
+    }
+}
 fn cancelled() -> ProviderError {
     ProviderError::new("cancelled", "The AI response was cancelled.")
 }
-
-fn classify_network_error(error: reqwest::Error) -> ProviderError {
+fn classify_network_error(error: reqwest::Error, provider: &str) -> ProviderError {
+    let label = provider_label(provider);
     if error.is_timeout() {
-        ProviderError::new("timeout", "DeepSeek took too long to respond. Try again.")
+        ProviderError::new(
+            "timeout",
+            format!("{label} took too long to respond. Try again."),
+        )
     } else if error.is_connect() {
         ProviderError::new(
             "offline",
-            "Could not connect to DeepSeek. Check your connection.",
+            format!("Could not connect to {label}. Check your connection."),
         )
     } else {
-        ProviderError::new("network", "The connection to DeepSeek was interrupted.")
+        ProviderError::new(
+            "network",
+            format!("The connection to {label} was interrupted."),
+        )
     }
 }
-
-fn classify_status(status: reqwest::StatusCode) -> ProviderError {
+fn classify_status(status: reqwest::StatusCode, provider: &str) -> ProviderError {
+    let label = provider_label(provider);
     match status.as_u16() {
-        401 | 403 => ProviderError::new("invalid_api_key", "DeepSeek rejected the API key."),
+        401 | 403 => {
+            ProviderError::new("invalid_api_key", format!("{label} rejected the API key."))
+        }
         402 => ProviderError::new(
             "insufficient_balance",
-            "The DeepSeek account has insufficient credit.",
+            format!("The {label} account has insufficient credit."),
         ),
         429 => ProviderError::new(
             "rate_limited",
-            "DeepSeek is rate limiting requests. Try again shortly.",
+            format!("{label} is rate limiting requests. Try again shortly."),
         ),
         500..=599 => ProviderError::new(
             "provider_unavailable",
-            "DeepSeek is temporarily unavailable.",
+            format!("{label} is temporarily unavailable."),
         ),
         _ => ProviderError::new(
             "provider_error",
-            format!("DeepSeek returned HTTP {}.", status.as_u16()),
+            format!("{label} returned HTTP {}.", status.as_u16()),
         ),
     }
 }
@@ -291,19 +371,20 @@ enum SseEvent {
     Delta(String),
     Done,
 }
-
 #[derive(Default)]
 struct SseDecoder {
     buffer: Vec<u8>,
 }
-
 impl SseDecoder {
     fn push(&mut self, bytes: &[u8]) -> Result<Vec<SseEvent>, ProviderError> {
         self.buffer.extend_from_slice(bytes);
         let mut events = Vec::new();
         while let Some((end, delimiter_len)) = event_boundary(&self.buffer) {
             let block = String::from_utf8(self.buffer[..end].to_vec()).map_err(|_| {
-                ProviderError::new("invalid_response", "DeepSeek returned invalid UTF-8.")
+                ProviderError::new(
+                    "invalid_response",
+                    "The AI provider returned invalid UTF-8.",
+                )
             })?;
             self.buffer.drain(..end + delimiter_len);
             for line in block.lines().map(str::trim) {
@@ -318,7 +399,7 @@ impl SseDecoder {
                     serde_json::from_str(data).map_err(|_| {
                         ProviderError::new(
                             "invalid_response",
-                            "DeepSeek returned an invalid stream event.",
+                            "The AI provider returned an invalid stream event.",
                         )
                     })?;
                 events.extend(response.choices.into_iter().filter_map(|choice| {
@@ -333,7 +414,6 @@ impl SseDecoder {
         Ok(events)
     }
 }
-
 fn event_boundary(bytes: &[u8]) -> Option<(usize, usize)> {
     let lf = bytes
         .windows(2)
@@ -350,19 +430,75 @@ fn event_boundary(bytes: &[u8]) -> Option<(usize, usize)> {
 }
 
 pub fn create_provider(config: ProviderConfig) -> Result<Box<dyn AiProvider>, ProviderError> {
-    match config.provider.as_str() {
-        "deepseek" => Ok(Box::new(DeepSeekProvider::new(config)?)),
-        _ => Err(ProviderError::new(
-            "unknown_provider",
-            "Unknown AI provider.",
-        )),
-    }
+    validate_provider_model(&config.provider, &config.model)?;
+    let protocol = match config.provider.as_str() {
+        "deepseek" => Protocol::DeepSeek,
+        "openai" => Protocol::OpenAi,
+        _ => {
+            return Err(ProviderError::new(
+                "unknown_provider",
+                "Unknown AI provider.",
+            ))
+        }
+    };
+    Ok(Box::new(ChatCompletionsProvider::new(config, protocol)?))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-
+    fn request() -> ChatCompletionRequest {
+        ChatCompletionRequest {
+            model: String::new(),
+            messages: vec![ChatMessage {
+                role: "user".into(),
+                content: "Hi".into(),
+            }],
+            temperature: None,
+            max_tokens: None,
+            top_p: None,
+            stream: None,
+            thinking: None,
+        }
+    }
+    #[test]
+    fn registry_is_closed_and_models_belong_to_known_providers() {
+        assert_eq!(
+            provider_catalog()
+                .iter()
+                .map(|item| item.id.as_str())
+                .collect::<Vec<_>>(),
+            vec!["deepseek", "openai"]
+        );
+        assert!(model_catalog().iter().all(|model| provider_catalog()
+            .iter()
+            .any(|provider| provider.id == model.provider)));
+        assert!(ProviderConfig::for_route("other", "secret".into(), "model").is_err());
+        assert!(ProviderConfig::for_route("openai", "secret".into(), "deepseek-v4-pro").is_err());
+    }
+    #[test]
+    fn provider_protocols_shape_requests_without_cross_leaking_fields() {
+        let deepseek = ChatCompletionsProvider::new(
+            ProviderConfig::for_route("deepseek", "secret".into(), "deepseek-v4-flash").unwrap(),
+            Protocol::DeepSeek,
+        )
+        .unwrap();
+        let deepseek_body = deepseek.build_body(&request(), true);
+        assert_eq!(deepseek.endpoint(), DEEPSEEK_ENDPOINT);
+        assert!(deepseek_body.get("thinking").is_some());
+        assert!(deepseek_body.get("max_tokens").is_some());
+        assert!(deepseek_body.get("max_completion_tokens").is_none());
+        let openai = ChatCompletionsProvider::new(
+            ProviderConfig::for_route("openai", "secret".into(), "gpt-5-mini").unwrap(),
+            Protocol::OpenAi,
+        )
+        .unwrap();
+        let openai_body = openai.build_body(&request(), true);
+        assert_eq!(openai.endpoint(), OPENAI_ENDPOINT);
+        assert!(openai_body.get("thinking").is_none());
+        assert!(openai_body.get("temperature").is_none());
+        assert!(openai_body.get("max_completion_tokens").is_some());
+    }
     #[test]
     fn decoder_handles_split_crlf_events_and_done() {
         let mut decoder = SseDecoder::default();
@@ -370,22 +506,18 @@ mod tests {
             .push(b"data: {\"choices\":[{\"delta\":{\"content\":\"Hel")
             .unwrap()
             .is_empty());
-        let events = decoder
-            .push(b"lo\"}}]}\r\n\r\ndata: [DONE]\r\n\r\n")
-            .unwrap();
         assert_eq!(
-            events,
-            vec![SseEvent::Delta("Hello".to_string()), SseEvent::Done]
+            decoder
+                .push(b"lo\"}}]}\r\n\r\ndata: [DONE]\r\n\r\n")
+                .unwrap(),
+            vec![SseEvent::Delta("Hello".into()), SseEvent::Done]
         );
     }
-
     #[test]
     fn decoder_ignores_keep_alive_and_reasoning_only_chunks() {
         let mut decoder = SseDecoder::default();
-        let events = decoder.push(b": keep-alive\n\ndata: {\"choices\":[{\"delta\":{\"reasoning_content\":\"private\"}}]}\n\n").unwrap();
-        assert!(events.is_empty());
+        assert!(decoder.push(b": keep-alive\n\ndata: {\"choices\":[{\"delta\":{\"reasoning_content\":\"private\"}}]}\n\n").unwrap().is_empty());
     }
-
     #[test]
     fn decoder_preserves_utf8_split_between_network_chunks() {
         let payload = "data: {\"choices\":[{\"delta\":{\"content\":\"hé 👋\"}}]}\n\n".as_bytes();
@@ -394,19 +526,7 @@ mod tests {
         assert!(decoder.push(&payload[..split]).unwrap().is_empty());
         assert_eq!(
             decoder.push(&payload[split..]).unwrap(),
-            vec![SseEvent::Delta("hé 👋".to_string())]
+            vec![SseEvent::Delta("hé 👋".into())]
         );
-    }
-
-    #[test]
-    fn current_models_replace_retired_aliases() {
-        let provider =
-            DeepSeekProvider::new(ProviderConfig::default_deepseek("secret".to_string())).unwrap();
-        let ids: Vec<_> = provider
-            .available_models()
-            .into_iter()
-            .map(|model| model.id)
-            .collect();
-        assert_eq!(ids, vec!["deepseek-v4-flash", "deepseek-v4-pro"]);
     }
 }

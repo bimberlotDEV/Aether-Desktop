@@ -36,6 +36,10 @@ function userMessage(id: string, content: string): AiMessage {
     provider_message_id: null,
     error_code: null,
     metadata_json: null,
+    provider: null,
+    model: null,
+    routing_mode: null,
+    route_reason: null,
     created_at: '2026-08-11T00:00:00Z',
     updated_at: '2026-08-11T00:00:00Z',
   }
@@ -71,6 +75,10 @@ describe('AiView message scrolling', () => {
     })
     hookMocks.useAiSettings.mockReturnValue({
       status: 'configured',
+      statuses: [
+        { provider: 'deepseek', configured: true, status: 'configured' },
+        { provider: 'openai', configured: false, status: 'missing' },
+      ],
       loading: false,
       error: null,
       save: vi.fn(),

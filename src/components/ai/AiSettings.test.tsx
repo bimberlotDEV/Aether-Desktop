@@ -20,6 +20,10 @@ describe('AI settings', () => {
     mocks.test.mockReset().mockResolvedValue('Connection successful.')
     mocks.useAiSettings.mockReturnValue({
       status: 'configured',
+      statuses: [
+        { provider: 'deepseek', configured: true, status: 'configured' },
+        { provider: 'openai', configured: false, status: 'missing' },
+      ],
       loading: false,
       error: null,
       isTauri: true,
@@ -37,15 +41,15 @@ describe('AI settings', () => {
     expect(input).toHaveAttribute('type', 'password')
     await user.type(input, 'sk-secret')
     await user.click(screen.getByRole('button', { name: 'Replace' }))
-    expect(mocks.save).toHaveBeenCalledWith('sk-secret')
+    expect(mocks.save).toHaveBeenCalledWith('deepseek', 'sk-secret')
     expect(input).toHaveValue('')
 
-    await user.click(screen.getByRole('button', { name: 'Test connection' }))
-    expect(mocks.test).toHaveBeenCalledOnce()
+    await user.click(screen.getByRole('button', { name: 'Test DeepSeek' }))
+    expect(mocks.test).toHaveBeenCalledWith('deepseek')
     expect(await screen.findByRole('status')).toHaveTextContent('Connection successful.')
 
-    await user.click(screen.getByRole('button', { name: 'Remove key' }))
-    await user.click(screen.getAllByRole('button', { name: 'Remove key' })[1])
-    expect(mocks.remove).toHaveBeenCalledOnce()
+    await user.click(screen.getByRole('button', { name: 'Remove DeepSeek key' }))
+    await user.click(screen.getAllByRole('button', { name: 'Remove DeepSeek key' })[1])
+    expect(mocks.remove).toHaveBeenCalledWith('deepseek')
   })
 })

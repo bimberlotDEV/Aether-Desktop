@@ -18,13 +18,13 @@ Aether combines Spaces, Markdown Notes, Tasks, Pulse, Vault, explicit Memory, au
 - Pulse 2.0 with explainable Today, Continue, New, Recent, and user-controlled Ask Aether entry points
 - Safe Actions for previewed, explicitly approved Task/Note creation and bounded single-file operations inside authorized Sources
 - Explicit global or Space Memory that the user may attach to AI
-- DeepSeek chat with cancellable streaming, persisted conversations, response modes, visible context, and confirmed Task proposals
+- DeepSeek and OpenAI chat with cancellable streaming, persisted conversations, explicit model choice, transparent Auto routing, visible context, and separately approved Task/Note proposals
 - Windows tray lifecycle, `Ctrl+Shift+Space`, notifications, and restored window state
 - Sanitized workspace database export from Settings
 
 ## Privacy and data
 
-Workspace data is stored in SQLite at `%APPDATA%/Aether/aether.db`. There is no account or telemetry. AI is opt-in: only a prompt and context items explicitly attached to a conversation are sent to DeepSeek. The API key is encrypted for the current Windows user with DPAPI.
+Workspace data is stored in SQLite at `%APPDATA%/Aether/aether.db`. There is no account or telemetry. AI is opt-in: only a prompt and context items explicitly attached to a conversation are sent to the provider shown on each response. DeepSeek and OpenAI API keys are separately encrypted for the current Windows user with DPAPI. Auto selects only a configured provider, explains its route, and never silently retries through another provider.
 
 Database exports contain workspace records and Vault metadata, but omit credentials and all managed or linked Vault file contents. Automated restore is not part of this alpha.
 
@@ -82,6 +82,7 @@ React UI -> hooks/stores -> typed invoke wrappers -> Tauri commands
 - Universal Search keeps SQL and ranking in Rust, uses existing Notes FTS5, and returns only bounded typed results with local provenance.
 - Continuity is composed locally in Rust from Space-scoped structured records; it never invokes AI or fabricates a summary.
 - Safe Actions store reviewed requests in Rust behind short-lived one-time tokens; execution cannot accept replacement arguments, shell commands, deletion, or overwrite.
+- AI Task/Note drafts are parsed from the persisted assistant message in Rust, inherit that conversation's Space, and enter the same Safe Actions preview; the model cannot create or approve anything directly.
 - `docs/decisions/` contains architecture decisions.
 - `.ai/` contains the canonical engineering state and task contracts.
 

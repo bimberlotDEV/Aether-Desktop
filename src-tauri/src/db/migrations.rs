@@ -313,6 +313,17 @@ const MIGRATIONS: &[(&str, &str)] = &[
         CREATE INDEX IF NOT EXISTS idx_indexed_files_modified ON indexed_files(modified_at_fs);
         ",
     ),
+    // Migration 010: Per-response AI routing provenance. Nullable columns keep
+    // historical messages byte-for-byte intact and make the upgrade additive.
+    (
+        "010_ai_route_provenance",
+        "
+        ALTER TABLE ai_messages ADD COLUMN provider TEXT;
+        ALTER TABLE ai_messages ADD COLUMN model TEXT;
+        ALTER TABLE ai_messages ADD COLUMN routing_mode TEXT;
+        ALTER TABLE ai_messages ADD COLUMN route_reason TEXT;
+        ",
+    ),
 ];
 
 fn ensure_migrations_table(conn: &Connection) -> Result<(), String> {
@@ -1027,6 +1038,35 @@ mod tests {
             .query_row("SELECT COUNT(*) FROM _migrations", [], |row| row.get(0))
             .unwrap();
         assert_eq!(count, MIGRATIONS.len() as i64);
+    }
+
+    #[test]
+    fn ai_route_provenance_upgrade_preserves_existing_messages() {
+        let conn = in_memory_db();
+        let tx = conn.unchecked_transaction().unwrap();
+        ensure_migrations_table(&tx).unwrap();
+        for (name, sql) in &MIGRATIONS[..MIGRATIONS.len() - 1] {
+            apply_migration(&tx, name, sql).unwrap();
+        }
+        tx.execute(
+            "INSERT INTO ai_conversations (id, title, provider, model) VALUES ('conv', 'Legacy', 'deepseek', 'deepseek-v4-flash')",
+            [],
+        ).unwrap();
+        tx.execute(
+            "INSERT INTO ai_messages (id, conversation_id, role, content, status) VALUES ('msg', 'conv', 'assistant', 'preserve me', 'complete')",
+            [],
+        ).unwrap();
+        tx.commit().unwrap();
+
+        run(&conn).unwrap();
+        let row: (String, Option<String>, Option<String>, Option<String>, Option<String>) = conn
+            .query_row(
+                "SELECT content, provider, model, routing_mode, route_reason FROM ai_messages WHERE id = 'msg'",
+                [],
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?, row.get(4)?)),
+            )
+            .unwrap();
+        assert_eq!(row, ("preserve me".to_string(), None, None, None, None));
     }
 
     #[test]
