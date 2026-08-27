@@ -17,6 +17,9 @@ const Sources = lazy(() =>
 const Activity = lazy(() =>
   import('@/routes/Activity').then((module) => ({ default: module.Activity })),
 )
+const Actions = lazy(() =>
+  import('@/routes/Actions').then((module) => ({ default: module.Actions })),
+)
 const SpaceDetailLayout = lazy(() =>
   import('@/routes/SpaceDetail').then((module) => ({
     default: module.SpaceDetailLayout,
@@ -64,6 +67,20 @@ export function App() {
           />
           <Route path="/ai" element={<AI />} />
           <Route path="/memory" element={<Memory />} />
+          <Route
+            path="/actions"
+            element={
+              <Suspense
+                fallback={
+                  <div className="aether-page p-8 text-sm text-[var(--color-text-tertiary)]">
+                    Loading Actions…
+                  </div>
+                }
+              >
+                <Actions />
+              </Suspense>
+            }
+          />
           <Route
             path="/activity"
             element={

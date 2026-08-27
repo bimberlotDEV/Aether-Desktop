@@ -1,67 +1,68 @@
 # Codex Task Contract
 
-| Field             | Value                   |
-| ----------------- | ----------------------- |
-| Schema version    | 2                       |
-| Task ID           | `PULSE-002`             |
-| Status            | `complete`              |
-| Owner             | Codex                   |
-| Last updated      | 2026-08-27              |
-| Related milestone | Milestone E — Pulse 2.0 |
-| Classification    | `planned_codex`         |
+| Field             | Value                      |
+| ----------------- | -------------------------- |
+| Schema version    | 2                          |
+| Task ID           | `ACTION-001`               |
+| Status            | `complete`                 |
+| Owner             | Codex                      |
+| Last updated      | 2026-08-27                 |
+| Related milestone | Milestone F — Safe Actions |
+| Classification    | `planned_codex`            |
 
 ## Objective
 
-Turn Pulse into a calm, immediately useful answer to “What needs my attention today?” using only bounded, explainable local state.
-
-## Context
-
-Milestones A–D are merged at `854d5b8`. Pulse currently composes separate frontend hooks for Spaces, Notes, and due Tasks; it has no single relevance model, Continue/New/Recent sections, or honest desktop boundary. ADR-019 selects one deterministic Rust read model over existing indexed data.
+Add a narrow, useful Action subsystem in which every native or persistent mutation is typed, previewed, explicitly approved, validated in Rust, executed once, and recorded without exposing unrestricted computer control.
 
 ## Acceptance criteria
 
-- [x] One typed Rust command returns bounded Today, Continue, New, Recent, and suggested-next-step data from active local records.
-- [x] Today separates overdue, due-today, and upcoming open Tasks, orders deterministically, and never fabricates urgency.
-- [x] Continue ranks recently worked active Spaces with a real reason and safe destination; archived and unrelated entities cannot leak.
-- [x] New exposes only present metadata from explicitly authorized Sources, never contents or absolute child paths.
-- [x] Recent uses the curated presentation-safe Activity model and contains no raw metadata JSON.
-- [x] Suggested next step is derived by fixed documented priority and explains the supporting local fact; no AI call or mutation occurs.
-- [x] Pulse provides a prominent Ask Aether entry point while explaining that context remains user-controlled.
-- [x] Loading, error, empty, browser, keyboard, responsive, dark, and light states are honest and accessible.
-- [x] Rust and frontend tests cover ordering, limits, inactive-row exclusions, Space isolation, safe Source metadata, typed IPC, navigation, and error/empty/browser behavior.
-- [x] Frontend/Rust gates, build, audit, packaging, diff/security review, browser smoke, packaged startup, and exact-head Windows CI pass.
+- [ ] Rust defines a closed Action request vocabulary for create Task, create Note, create folder, copy/move/rename file inside one authorized Source, open Source file, and open Source folder.
+- [ ] Preview validates and normalizes the request, returns a presentation-safe consequence summary, and issues only a short-lived opaque one-time token; absolute Source roots never cross IPC.
+- [ ] Execution accepts only an unexpired pending token, consumes it before work, and cannot be replayed or replaced with arbitrary arguments.
+- [ ] Filesystem writes remain inside the canonical authorized Source root, reject traversal/rooted paths, symlink escape, missing parents, directory-as-file input, and existing destinations, and never delete or overwrite user data.
+- [ ] Create Task/Note validates active Space ownership and persists transactionally; every successful write receives a curated Activity record in the same transaction.
+- [ ] Filesystem failures are surfaced clearly; if audit recording fails after a reversible filesystem write, the operation is rolled back where safe.
+- [ ] No command exposes shell execution, arbitrary executable launch, raw path access, delete, automation, model-triggered approval, or unrestricted external application control.
+- [ ] The Actions route provides an accessible proposal → review → approve/cancel → result flow and an honest browser-mode disclosure.
+- [ ] Tests cover every action type, one-time/expiry behavior, validation, traversal, containment, symlink-safe canonicalization, no-overwrite, rollback/audit semantics, typed IPC, confirmation, cancellation, errors, and browser behavior.
+- [ ] Frontend/Rust gates, build, audit, packaging, diff/security review, browser smoke, packaged startup, and exact-head Windows CI pass.
 
 ## Allowed paths
 
-- `src-tauri/src/db/repositories/pulse.rs`
-- `src-tauri/src/db/repositories/mod.rs`
+- `src-tauri/src/actions.rs`
 - `src-tauri/src/commands.rs`
 - `src-tauri/src/lib.rs`
+- `src-tauri/src/db/repositories/activity.rs`
 - `src/lib/db/types.ts`
 - `src/lib/db/tauri.ts`
 - `src/lib/db/tauri.test.ts`
-- `src/hooks/usePulse.ts`
-- `src/routes/Pulse.tsx`
-- `src/routes/Pulse.test.tsx`
+- `src/hooks/useActions.ts`
+- `src/routes/Actions.tsx`
+- `src/routes/Actions.test.tsx`
+- `src/App.tsx`
+- `src/components/Sidebar.tsx`
+- `src/components/CommandPalette.tsx`
+- `src/components/CommandPalette.test.tsx`
 - `src/styles/index.css`
-- `docs/decisions/019-deterministic-pulse.md`
+- `docs/decisions/020-safe-actions.md`
 - `docs/architecture.md`
 - `README.md`
 - `.ai/*`
 
 ## Non-goals
 
-- AI-generated briefs, inferred emotion/importance, notifications, analytics, automatic Memory, background watchers, or autonomous actions.
-- New persistence, migrations, dependencies, file-content extraction, or changes to Source authorization.
-- Milestone F action execution.
+- Delete actions, recursive directory operations, overwrite, arbitrary shell/terminal commands, scripts, downloads, network calls, arbitrary application launch, background automation, or model-owned approval.
+- Cross-Source moves/copies, unmanaged filesystem paths, rollback across process crashes, or generalized plugin execution.
+- AI proposal generation; Milestone G may propose only these existing types through a separately reviewed boundary.
 
 ## Risks and safeguards
 
-- **False urgency:** local date/status predicates and visible factual explanations only.
-- **Privacy:** Space-bound joins, active predicates, bounded metadata, and no provider call.
-- **Noise:** small fixed limits and the existing curated Activity vocabulary.
-- **Performance:** one command composed from indexed bounded queries.
-- **Rollback:** remove the read model and restore the previous Pulse composition; no stored data changes.
+- **Path escape/spoofing:** component validation plus canonical root/source/parent containment in Rust.
+- **Replay:** pending tokens are random, short-lived, process-local, and removed before execution.
+- **Data loss:** no delete/overwrite; file writes are single-item and rollback when post-write audit fails.
+- **Confused deputy:** frontend never supplies an absolute path to execution and cannot mutate a reviewed proposal.
+- **Audit privacy:** curated Activity exposes type/entity/provenance only, never absolute paths or file contents.
+- **Rollback:** remove the route/commands/runtime and retain harmless curated Activity rows; no migration is added.
 
 ## Required validation
 
@@ -74,26 +75,34 @@ cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --all-features -
 cargo test --manifest-path src-tauri/Cargo.toml --all-targets --all-features
 pnpm tauri:build
 git diff --check
-browser Pulse smoke
+browser Actions smoke
 packaged desktop startup smoke
 GitHub PR CI
 ```
 
 ## Blocking decisions
 
-None. The owner explicitly authorized milestone E. The deterministic, read-only design follows the approved roadmap and is reversible.
+None. The owner explicitly authorized Milestone F. The initial vocabulary is narrow, reversible where practical, and intentionally excludes destructive/general autonomy.
 
 ## Readiness review
 
-- **Status:** Ready. Scope, relevance rules, privacy boundaries, rollback, and evidence requirements are explicit.
-- **Architecture gate:** ADR-019 is accepted before production implementation.
-- **Migration gate:** No migration is required.
-- **Security gate:** The command is read-only and returns presentation-safe typed facts.
+- **Status:** Ready. Action types, authority boundaries, confirmation semantics, rollback, privacy, and validation are explicit.
+- **Architecture gate:** ADR-020 is accepted before production implementation.
+- **Migration gate:** No migration is required; curated Activity supplies the durable audit signal.
+- **Security gate:** Rust owns proposal state, validation, execution, containment, and audit recording.
 
-## Self-review
+## Codex self-review
 
-- **Outcome:** Complete. All local and remote acceptance evidence is green.
-- **Acceptance evidence:** 72/72 frontend tests and 79/79 Rust tests cover typed IPC, factual grouping/priority, inactive exclusions, safe Source metadata, browser/error states, and navigation.
-- **Architecture/security:** All queries remain in the Rust repository; the command is read-only, bounded, parameterized, and exposes no file contents, absolute Source roots, raw Activity metadata, provider call, or mutation.
-- **Corrections made:** Activity filtering now propagates database failures rather than hiding them, Continue accepts only the curated event vocabulary, and never-opened Spaces use a factual changed-state reason.
-- **Validation:** Frontend check/build, dependency audit, Rust format, strict Clippy, all-target/all-feature tests, MSI/NSIS packaging, browser 1024×640 smoke with zero console errors, diff/security review, packaged startup, and GitHub Actions run 33083523023 pass on 2026-08-27.
+**Verdict:** Complete. The implementation and every required local/remote gate satisfy the ready contract.
+
+| Acceptance criterion                   | Evidence                                                                                                                                                                                                          |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Closed Action vocabulary               | `ActionRequest` contains only the eight contracted Task, Note, contained file/folder, and open variants; typed TS IPC mirrors it.                                                                                 |
+| Preview and one-time execution         | Rust returns only a presentation-safe preview and opaque ten-minute token; execution removes the token before revalidation; replay, cancellation, expiry, and the 128-proposal bound are tested.                  |
+| Filesystem containment and data safety | Canonical Source/path checks reject traversal, outside symlinks, unindexed files, missing parents, non-files, and existing destinations. Copy uses `create_new`; no delete/overwrite/cross-Source command exists. |
+| Transaction and rollback               | Task/Note plus Activity commit in one transaction. A forced Activity failure proves a copied file is removed and its original remains.                                                                            |
+| Explicit confirmation UX               | The desktop route separates proposal from review and invokes execution only from “Approve and execute”; cancellation and honest browser mode are tested.                                                          |
+| Privacy and authority                  | Preview/result never contain Source roots or file contents. Security diff scan found no shell/process/recursive-delete/network/general-executable capability.                                                     |
+| Validation                             | 77/77 frontend tests, 85/85 Rust tests, typecheck, lint, production build, high audit, fmt, strict Clippy, diff check, MSI/NSIS build, 1024×640 browser smoke, and packaged startup pass.                         |
+
+No unresolved P0/P1 findings remain. File mutations intentionally require a later Source rescan to refresh indexed metadata; the route discloses this rather than silently expanding Action authority. GitHub Actions run `33092882774` passed on exact implementation head `27839e98e8bf0164235226f5e3f648a1920a8523`.

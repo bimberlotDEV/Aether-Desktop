@@ -14,6 +14,7 @@ import {
   Search,
   Settings,
   Sparkles,
+  ShieldCheck,
   Sun,
   type LucideIcon,
 } from 'lucide-react'
@@ -54,6 +55,13 @@ const defaultCommands: Command[] = [
     '/activity',
   ),
   command('ai', 'Open AI', 'Start or continue a DeepSeek conversation', ['chat'], '/ai'),
+  command(
+    'actions',
+    'Open Actions',
+    'Preview and approve a bounded local action',
+    ['execute', 'safe', 'files'],
+    '/actions',
+  ),
   command(
     'memory',
     'Open Memory',
@@ -395,6 +403,7 @@ function commandIcon(label: string): LucideIcon {
   if (label.includes('Theme'))
     return label.includes('Light') ? Sun : label.includes('Dark') ? Moon : MemoryStick
   if (label.includes('AI')) return Sparkles
+  if (label.includes('Actions')) return ShieldCheck
   if (label.includes('Memory')) return Brain
   if (label.includes('Sources')) return Database
   if (label.includes('Tasks')) return CheckSquare

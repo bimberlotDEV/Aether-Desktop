@@ -8,8 +8,8 @@
 | Last updated     | 2026-08-27                    |
 | Updated by       | Codex                         |
 | Repository       | `bimberlotDEV/Aether-Desktop` |
-| Branch           | `codex/pulse-2`               |
-| Baseline commit  | `854d5b8` (current `master`)  |
+| Branch           | `codex/safe-actions`          |
+| Baseline commit  | `678d7d2` (current `master`)  |
 | Product maturity | Alpha                         |
 
 ## Responsibility of this file
@@ -50,8 +50,9 @@
 | `SEARCH-001`       | Universal Search                                   | `complete` | Ctrl+K searches commands and permitted local domains quickly with deterministic ranking, provenance, and safe navigation.           |
 | `CONT-001`         | Continuity and meaningful Activity                 | `complete` | Every Space has a deterministic resume view and Activity contains only curated, presentation-safe local changes.                    |
 | `PULSE-002`        | Pulse 2.0                                          | `complete` | Pulse makes today’s real local relevance visible without noise, hidden AI, or mutation.                                             |
+| `ACTION-001`       | Safe Actions                                       | `complete` | Typed preview, approval, one-time execution, containment, rollback, audit, UX, packaging, and exact-head CI pass.                   |
 
-Milestones A through D are merged and verified. Milestone E is implementation-complete with all local gates and GitHub Actions run 33083523023 green.
+Milestones A through E are merged and verified. Milestone F is implementation-complete with all local gates and GitHub Actions run `33092882774` green.
 
 ## Completed product milestones
 
@@ -65,6 +66,9 @@ Milestones A through D are merged and verified. Milestone E is implementation-co
 | Phase 7 — AI integration          | `mvp_complete` | Secure credentials, current cancellable streaming, persisted conversations, explicit Space-isolated context, response modes, and confirmed Task proposals are implemented. |
 | Milestone B — Context Foundation  | `complete`     | Explicit Sources, bounded metadata-only indexing, change reconciliation, inspection, Space association, and safe revocation are implemented.                               |
 | Milestone C — Universal Search    | `complete`     | Ctrl+K searches commands and permitted local domains with bounded deterministic ranking, provenance, privacy-safe results, and accessible navigation.                      |
+| Milestone D — Continuity          | `complete`     | Space resume views and meaningful Activity are deterministic, bounded, local, and Space-isolated.                                                                          |
+| Milestone E — Pulse 2.0           | `complete`     | Today, Continue, New, Recent, and the suggested next step use factual local signals without hidden AI or mutation.                                                         |
+| Milestone F — Safe Actions        | `complete`     | Eight typed actions require visible review and one-time approval; native execution is contained, non-destructive, audited, and release-gated.                              |
 
 ## Not started or placeholder milestones
 
@@ -78,18 +82,18 @@ Milestones A through D are merged and verified. Milestone E is implementation-co
 
 ## Quality snapshot
 
-| Check                                       | Last result | Date       | Notes                                                                                              |
-| ------------------------------------------- | ----------- | ---------- | -------------------------------------------------------------------------------------------------- |
-| `pnpm check`                                | Pass        | 2026-08-26 | Universal Search branch: 64/64 tests across 26 files.                                              |
-| `pnpm build`                                | Pass        | 2026-08-26 | 496.41 kB main JS and 7.26 kB lazy Sources chunk; no chunk-size warning.                           |
-| `pnpm audit --audit-level high`             | Pass        | 2026-08-26 | No known vulnerabilities.                                                                          |
-| `cargo test`                                | Pass        | 2026-08-26 | 73/73 tests pass, including cross-domain search isolation, limits, and ranking coverage.           |
-| `cargo build`                               | Pass        | 2026-08-11 | Windows production build compiles with DPAPI and single-instance support.                          |
-| `cargo fmt --check`                         | Pass        | 2026-08-26 | Repository Rust formatting is clean.                                                               |
-| `cargo clippy --all-targets -- -D warnings` | Pass        | 2026-08-26 | Library, binary, and test targets are warning-free.                                                |
-| `pnpm tauri:build`                          | Pass        | 2026-08-26 | Universal Search candidate x64 MSI and NSIS bundles build successfully.                            |
-| GitHub Actions                              | Pass        | 2026-08-26 | Run 32983855580 attempt 2 passes frontend quality/build, Rust format, strict lint, and Rust tests. |
-| Release startup smoke                       | Pass        | 2026-08-25 | 0.3.2 installed with exit code 0; database hash unchanged and process responsive.                  |
+| Check                                       | Last result | Date       | Notes                                                                                                                 |
+| ------------------------------------------- | ----------- | ---------- | --------------------------------------------------------------------------------------------------------------------- |
+| `pnpm check`                                | Pass        | 2026-08-27 | Safe Actions branch: 77/77 tests across 29 files.                                                                     |
+| `pnpm build`                                | Pass        | 2026-08-27 | Production build passes; Actions is a lazy 10.01 kB chunk.                                                            |
+| `pnpm audit --audit-level high`             | Pass        | 2026-08-27 | No known vulnerabilities.                                                                                             |
+| `cargo test`                                | Pass        | 2026-08-27 | 85/85 tests pass, including containment, symlink escape, one-time execution, and rollback.                            |
+| `cargo build`                               | Pass        | 2026-08-11 | Windows production build compiles with DPAPI and single-instance support.                                             |
+| `cargo fmt --check`                         | Pass        | 2026-08-27 | Repository Rust formatting is clean.                                                                                  |
+| `cargo clippy --all-targets -- -D warnings` | Pass        | 2026-08-27 | Library, binary, and test targets are warning-free.                                                                   |
+| `pnpm tauri:build`                          | Pass        | 2026-08-27 | Safe Actions candidate x64 MSI and NSIS bundles build successfully.                                                   |
+| GitHub Actions                              | Pass        | 2026-08-27 | Run 33092882774 passes frontend quality/build, Rust format, strict lint, and Rust tests on exact implementation head. |
+| Release startup smoke                       | Pass        | 2026-08-27 | Exact workspace release executable started and remained responsive.                                                   |
 
 ## Active blockers
 
@@ -129,7 +133,7 @@ Full rationale belongs in `.ai/ARCHITECTURE.md` or a dedicated ADR under `docs/d
 
 ## Next
 
-Milestones A through D are complete. The active roadmap phase is Milestone E — Pulse 2.0. Public signing and updater activation remain owner-controlled release operations.
+Milestones A through F are complete. Public signing, updater activation, automated restore, and Vault-byte archives remain separately governed work.
 
 ## Reusable update template
 

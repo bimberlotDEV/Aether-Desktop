@@ -35,6 +35,9 @@ import type {
   UniversalSearchResult,
   SpaceContinuity,
   PulseSnapshot,
+  ActionPreview,
+  ActionRequest,
+  ActionResult,
 } from './types'
 
 // ─── Native desktop ─────────────────────────────────────
@@ -49,6 +52,15 @@ export async function exportWorkspaceBackup(destination: string): Promise<Backup
 }
 export async function getPulse(): Promise<PulseSnapshot> {
   return invoke('get_pulse')
+}
+export async function previewAction(request: ActionRequest): Promise<ActionPreview> {
+  return invoke('preview_action', { request })
+}
+export async function executeAction(token: string): Promise<ActionResult> {
+  return invoke('execute_action', { token })
+}
+export async function cancelAction(token: string): Promise<boolean> {
+  return invoke('cancel_action', { token })
 }
 
 // ─── Context Sources ────────────────────────────────────

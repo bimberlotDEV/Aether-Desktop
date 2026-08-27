@@ -11,6 +11,7 @@ import {
   Database,
   Settings,
   Sparkles,
+  ShieldCheck,
   type LucideIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -33,6 +34,7 @@ const workspaceItems: NavItem[] = [
 const intelligenceItems: NavItem[] = [
   { to: '/sources', icon: Database, label: 'Sources' },
   { to: '/ai', icon: Sparkles, label: 'AI' },
+  { to: '/actions', icon: ShieldCheck, label: 'Actions' },
   { to: '/memory', icon: Brain, label: 'Memory' },
   { to: '/activity', icon: Activity, label: 'Activity' },
 ]

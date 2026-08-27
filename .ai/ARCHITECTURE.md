@@ -109,6 +109,7 @@ SQLite / native capabilities / external providers
 | `ADR-017` | Use one local typed search repository with Notes FTS5, bounded metadata matching, and deterministic explainable ranking.                                                                        | Accepted                | `docs/decisions/017-universal-search-ranking.md`     |
 | `ADR-018` | Compose Space continuity from bounded local read models and curate meaningful Activity in backend domain commands.                                                                              | Accepted                | `docs/decisions/018-deterministic-continuity.md`     |
 | `ADR-019` | Compose Pulse from bounded local facts with deterministic, explainable daily relevance.                                                                                                         | Accepted                | `docs/decisions/019-deterministic-pulse.md`          |
+| `ADR-020` | Execute only typed, Rust-validated Actions through preview, explicit approval, one-time tokens, and curated audit records.                                                                      | Accepted                | `docs/decisions/020-safe-actions.md`                 |
 
 ## Architecture change protocol
 

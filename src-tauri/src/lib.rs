@@ -1,3 +1,4 @@
+mod actions;
 mod ai;
 mod backup;
 mod commands;
@@ -10,6 +11,7 @@ use db::Database;
 use std::path::PathBuf;
 use tauri::Manager;
 
+use crate::actions::ActionRuntime;
 use crate::ai::credentials::DpapiCrypto;
 use crate::ai::runtime::AiRuntime;
 
@@ -69,6 +71,7 @@ pub fn run() {
             // Store database in Tauri state
             app.manage(database);
             app.manage(AiRuntime::default());
+            app.manage(ActionRuntime::default());
             app.manage(context::ContextRuntime::default());
             let native_status = native::setup(app)?;
             app.manage(native_status);
@@ -79,6 +82,9 @@ pub fn run() {
             commands::native_get_status,
             commands::native_test_notification,
             commands::export_workspace_backup,
+            commands::preview_action,
+            commands::execute_action,
+            commands::cancel_action,
             commands::get_pulse,
             commands::create_source,
             commands::universal_search,

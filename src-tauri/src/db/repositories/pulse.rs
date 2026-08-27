@@ -162,7 +162,7 @@ fn list_continue_spaces(conn: &Connection) -> Result<Vec<PulseSpace>, String> {
                 UNION ALL SELECT so.space_id, f.updated_at, 'New Source metadata' FROM indexed_files f JOIN sources so ON so.id = f.source_id WHERE f.state = 'present' AND so.space_id IS NOT NULL
                 UNION ALL SELECT space_id, updated_at, 'Recent AI conversation' FROM ai_conversations WHERE archived_at IS NULL AND space_id IS NOT NULL
                 UNION ALL SELECT space_id, created_at, 'Meaningful recent activity' FROM activity_events
-                  WHERE space_id IS NOT NULL AND event_type IN ('note_created','note_edited','task_created','task_created_from_ai_proposal','task_completed','task_archived','vault_imported','vault_updated','vault_removed','memory_created','memory_updated','memory_deleted','source_scanned','ai_conversation_used')
+                  WHERE space_id IS NOT NULL AND event_type IN ('note_created','note_edited','task_created','task_created_from_ai_proposal','task_completed','task_archived','vault_imported','vault_updated','vault_removed','memory_created','memory_updated','memory_deleted','source_scanned','ai_conversation_used','action_executed')
                 UNION ALL SELECT id, last_opened_at, 'Recently opened' FROM spaces WHERE last_opened_at IS NOT NULL
                 UNION ALL SELECT id, updated_at, 'Space recently changed' FROM spaces
              ), ranked AS (
