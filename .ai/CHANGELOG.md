@@ -26,6 +26,17 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-08-27 — `AI-EVOL-001` — Transparent multi-provider AI Evolution
+
+- **Type:** Feature, security, data, migration, accessibility, test, docs
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review
+- **Summary:** Added fixed-endpoint DeepSeek/OpenAI support, provider-isolated DPAPI credentials, deterministic transparent Auto routing, per-response provenance, and strictly approved Task/Note AI drafts.
+- **Files:** `src-tauri/src/ai/`, `src-tauri/src/db/`, `src-tauri/src/actions.rs`, `src/components/ai/`, `src/routes/AI.tsx`, `src/routes/Settings.tsx`, `docs/decisions/021-ai-provider-routing.md`, `.ai/`
+- **Verification:** 77 frontend tests, production build/audit, Rust fmt/strict Clippy, 95 Rust tests, MSI/NSIS packaging, 1024×640 light/dark browser smoke, packaged startup, and exact-head GitHub Actions run `33101730042` — Pass
+- **Decisions/deviations:** Fixed official endpoints only; no silent provider fallback, general autonomy, model-owned approval, or weaker direct Task batch mutation route.
+- **Follow-up:** None
+
 ## 2026-08-27 — `ACTION-001` — Typed user-approved Safe Actions
 
 - **Type:** Feature, security, accessibility, test, and docs

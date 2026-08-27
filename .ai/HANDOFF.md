@@ -4,7 +4,7 @@
 | ----------------- | -------------------------- |
 | Schema version    | 2                          |
 | Task ID           | `AI-EVOL-001`              |
-| Status            | `in_review`                |
+| Status            | `complete`                 |
 | Owner             | Codex                      |
 | Last updated      | 2026-08-27                 |
 | Related milestone | Milestone G — AI Evolution |
@@ -39,7 +39,7 @@ Official provider contracts checked on 2026-08-27: DeepSeek and OpenAI both expo
 - [x] An AI draft cannot execute directly: the user must open the existing Safe Actions preview and separately choose “Approve and execute”; cancellation, expiry, replay protection, and audit behavior remain owned by Milestone F.
 - [x] Existing `create_tasks` behavior remains compatible or is safely converged without introducing a weaker second mutation path.
 - [x] Cross-Space context, prompt-injected tool text, malformed JSON, unknown provider/model, missing credentials, stale route state, stream races, and provider failures have automated coverage.
-- [ ] Frontend/Rust gates, migration tests, build/audit, packaging, diff/security review, responsive theme/browser smoke, packaged startup, and exact-head Windows CI pass.
+- [x] Frontend/Rust gates, migration tests, build/audit, packaging, diff/security review, responsive theme/browser smoke, packaged startup, and exact-head Windows CI pass.
 
 ## Allowed paths
 
@@ -109,7 +109,7 @@ None. The owner authorized the next milestone. Adding one fixed-endpoint provide
 - MSI and NSIS package successfully; the final release executable starts and remains responsive.
 - AI and Settings smoke at 1024×640 passes in light/dark themes with no browser warnings or errors.
 - Diff/security review found only two fixed official provider URLs, no credential return path, no arbitrary endpoint, no silent fallback, and no model-owned token or execution path.
-- Live provider calls were intentionally not run because owner credentials are neither required nor available; exact-head GitHub CI remains the final review item after publication.
+- Live provider calls were intentionally not run because owner credentials are neither required nor available; GitHub Actions run `33101730042` passed on implementation head `ca94354`.
 
 ## Readiness review
 

@@ -51,9 +51,9 @@
 | `CONT-001`         | Continuity and meaningful Activity                 | `complete` | Every Space has a deterministic resume view and Activity contains only curated, presentation-safe local changes.                    |
 | `PULSE-002`        | Pulse 2.0                                          | `complete` | Pulse makes today’s real local relevance visible without noise, hidden AI, or mutation.                                             |
 | `ACTION-001`       | Safe Actions                                       | `complete` | Typed preview, approval, one-time execution, containment, rollback, audit, UX, packaging, and exact-head CI pass.                   |
-| `AI-EVOL-001`      | AI Evolution                                       | `in_review` | Local release gates pass; provider expansion, transparent Auto, provenance, and Safe Action-bound Task/Note drafts await exact-head CI. |
+| `AI-EVOL-001`      | AI Evolution                                       | `complete`  | DeepSeek/OpenAI, transparent Auto routing, response provenance, approved Task/Note drafts, local release gates, and exact-head CI pass. |
 
-Milestones A through F are merged and verified. Milestone G is implemented on `codex/ai-evolution`; all local release gates pass and exact-head CI is the remaining review item.
+Milestones A through F are merged and verified. Milestone G is complete and published for review in draft PR #43; all local release gates and exact-head Windows CI pass.
 
 ## Completed product milestones
 
