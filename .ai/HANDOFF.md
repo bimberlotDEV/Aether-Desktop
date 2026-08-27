@@ -4,7 +4,7 @@
 | ----------------- | ------------------------------------- |
 | Schema version    | 2                                     |
 | Task ID           | `CONT-001`                            |
-| Status            | `self_review`                         |
+| Status            | `complete`                            |
 | Owner             | Codex                                 |
 | Last updated      | 2026-08-27                            |
 | Related milestone | Milestone D — Continuity and Activity |
@@ -30,7 +30,7 @@ Milestones A through C are merged on `master` at `36a6a67`. Aether already store
 - [x] Each active Space overview displays a calm resume surface with compact real sections and a useful next action, without turning into a generic widget dashboard.
 - [x] Browser mode explicitly explains that continuity requires the installed desktop app and never fabricates persisted state.
 - [x] Tests cover scope isolation, archive/removal exclusions, deterministic suggestion ordering, event allowlisting/deduplication, safe Source metadata, typed IPC arguments, Activity navigation, error/empty states, and browser behavior.
-- [ ] Frontend/Rust gates, production and Tauri builds, dependency audit, diff/security review, browser smoke, packaged startup, and GitHub Windows CI pass.
+- [x] Frontend/Rust gates, production and Tauri builds, dependency audit, diff/security review, browser smoke, packaged startup, and GitHub Windows CI pass.
 
 ## Allowed paths
 
@@ -109,8 +109,8 @@ None. The owner explicitly authorized Milestone D immediately after C. The conti
 
 ## Self-review
 
-- **Outcome:** Local implementation is complete; GitHub Windows CI remains the final acceptance item.
+- **Outcome:** Complete. All local and remote acceptance evidence is green.
 - **Acceptance evidence:** 69/69 frontend tests and 77/77 Rust tests cover the typed bridge, UI states, event allowlisting/deduplication, deterministic ordering, exclusions, and adversarial Space isolation.
 - **Architecture/security:** The final diff keeps SQL in Rust repositories, removes raw frontend event injection, exposes no raw metadata or absolute Source child paths, adds no migration/dependency/AI call, and performs no autonomous mutation.
 - **Corrections made:** Route destinations now fall back when a Space module is disabled, Activity and Space Detail are lazy-loaded to keep the main bundle below the warning threshold, and semantic surface props preserve accessible live-region markup.
-- **Validation:** `pnpm check`, `pnpm build`, high-severity dependency audit, Rust formatting, strict Clippy, all-target/all-feature Rust tests, `pnpm tauri:build`, `git diff --check`, browser smoke, and packaged startup smoke pass on 2026-08-27.
+- **Validation:** `pnpm check`, `pnpm build`, high-severity dependency audit, Rust formatting, strict Clippy, all-target/all-feature Rust tests, `pnpm tauri:build`, `git diff --check`, browser smoke, packaged startup smoke, and GitHub Actions run 33071798193 attempt 2 pass on 2026-08-27. Attempt 1 failed only when the unchanged existing Vault interaction test exceeded its fixed timeout by 11 ms.

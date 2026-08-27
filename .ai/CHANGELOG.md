@@ -26,6 +26,17 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-08-27 — `CONT-001` — Deterministic Space continuity and meaningful Activity
+
+- **Type:** Feature, privacy, accessibility, test, and docs
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review
+- **Summary:** Replaced placeholder Activity with a curated local timeline and added a calm Space resume surface composed deterministically from bounded active Notes, Tasks, Source metadata, AI conversations, and meaningful events.
+- **Files:** `src-tauri/src/db/repositories/activity.rs`, `src-tauri/src/db/repositories/continuity.rs`, domain commands and typed bridge, `src/routes/Activity.tsx`, `src/routes/SpaceDetail.tsx`, tests, ADR-018, architecture/readme, `.ai/*`
+- **Verification:** 69/69 frontend tests, production build, clean dependency audit, Rust format, strict Clippy, 77/77 Rust tests, MSI/NSIS packaging, browser and packaged-startup smoke, diff/security review, and GitHub Actions run 33071798193 attempt 2 pass.
+- **Decisions/deviations:** Continuity remains local, deterministic, Space-isolated, metadata-bounded, and module-aware; it performs no DeepSeek call, content extraction, telemetry, or autonomous mutation. The first CI attempt only hit the unchanged Vault test's known fixed-timeout flake.
+- **Follow-up:** Run the integrated Milestones A–D audit; restore, Vault-byte archives, public signing, and updater activation remain separately governed release work.
+
 ## 2026-08-26 — `SEARCH-001` — Private local Universal Search
 
 - **Type:** Feature, privacy, accessibility, test, and docs
