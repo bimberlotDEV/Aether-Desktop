@@ -3,7 +3,9 @@
 use crate::actions::{self, ActionRuntime, OpenTarget};
 use crate::ai::context;
 use crate::ai::credentials;
+use crate::ai::proposals;
 use crate::ai::provider::{self, ChatCompletionRequest, ChatMessage, ProviderConfig};
+use crate::ai::routing;
 use crate::ai::runtime::AiRuntime;
 use crate::backup;
 use crate::context::{self as local_context, ContextRuntime};
@@ -893,45 +895,6 @@ pub fn create_task(
 }
 
 #[tauri::command]
-pub fn create_tasks_batch(
-    db: State<Database>,
-    inputs: Vec<repositories::tasks::TaskInput>,
-) -> Result<Vec<serde_json::Value>, String> {
-    if inputs.is_empty() || inputs.len() > 20 {
-        return Err("A task proposal must contain 1 to 20 Tasks.".to_string());
-    }
-    with_conn(&db.conn, |conn| {
-        let transaction = conn
-            .unchecked_transaction()
-            .map_err(|error| format!("Task batch transaction error: {}", error))?;
-        let mut values = Vec::with_capacity(inputs.len());
-        for input in &inputs {
-            let task = repositories::tasks::create(&transaction, input)?;
-            repositories::activity::record(
-                &transaction,
-                &repositories::activity::ActivityEvent {
-                    id: Uuid::now_v7().to_string(),
-                    event_type: "task_created_from_ai_proposal".to_string(),
-                    entity_type: Some("task".to_string()),
-                    entity_id: Some(task.id.clone()),
-                    space_id: task.space_id.clone(),
-                    metadata_json: None,
-                    created_at: String::new(),
-                },
-            )?;
-            values.push(
-                serde_json::to_value(task)
-                    .map_err(|error| format!("Task serialization error: {}", error))?,
-            );
-        }
-        transaction
-            .commit()
-            .map_err(|error| format!("Task batch commit error: {}", error))?;
-        Ok(values)
-    })
-}
-
-#[tauri::command]
 pub fn get_task(db: State<Database>, id: String) -> Result<Option<serde_json::Value>, String> {
     with_conn(&db.conn, |conn| {
         repositories::tasks::get_by_id(conn, &id)?
@@ -1429,64 +1392,151 @@ fn json_profile(p: &repositories::profile::UserProfile) -> serde_json::Value {
 // ─── AI Credentials ─────────────────────────────────────
 
 #[derive(serde::Serialize)]
-pub struct KeyStatus {
+#[serde(rename_all = "camelCase")]
+pub struct ProviderStatus {
+    pub provider: String,
     pub configured: bool,
-    pub status: String, // "configured", "missing", "unavailable"
+    pub status: String,
 }
 
-#[tauri::command]
-pub fn ai_get_key_status(db: State<Database>) -> Result<KeyStatus, String> {
-    match credentials::get(&db, credentials::AI_API_KEY) {
-        Ok(Some(_)) => Ok(KeyStatus {
+fn provider_status(db: &Database, provider_name: &str) -> ProviderStatus {
+    match credentials::get_provider_key(db, provider_name) {
+        Ok(Some(_)) => ProviderStatus {
+            provider: provider_name.to_string(),
             configured: true,
             status: "configured".to_string(),
-        }),
-        Ok(None) => Ok(KeyStatus {
+        },
+        Ok(None) => ProviderStatus {
+            provider: provider_name.to_string(),
             configured: false,
             status: "missing".to_string(),
-        }),
-        Err(_) => Ok(KeyStatus {
+        },
+        Err(_) => ProviderStatus {
+            provider: provider_name.to_string(),
             configured: false,
             status: "unavailable".to_string(),
-        }),
+        },
     }
-}
-
-#[tauri::command]
-pub fn ai_set_api_key(db: State<Database>, api_key: String) -> Result<(), String> {
-    let api_key = api_key.trim();
-    if api_key.is_empty() || api_key.len() > 512 {
-        return Err("Enter a valid DeepSeek API key.".to_string());
-    }
-    credentials::store(&db, credentials::AI_API_KEY, api_key)
-}
-
-#[tauri::command]
-pub fn ai_remove_api_key(db: State<Database>) -> Result<bool, String> {
-    credentials::remove(&db, credentials::AI_API_KEY)
-}
-
-#[tauri::command]
-pub async fn ai_test_connection(db: State<'_, Database>) -> Result<String, String> {
-    let key = credentials::get(&db, credentials::AI_API_KEY)?
-        .ok_or_else(|| "No API key configured".to_string())?;
-
-    let config = ProviderConfig::default_deepseek(key);
-    let provider = provider::create_provider(config).map_err(|error| error.message)?;
-
-    provider
-        .test_connection()
-        .await
-        .map_err(|error| error.message)?;
-    Ok("Connection successful".to_string())
 }
 
 #[tauri::command]
 pub fn ai_list_models() -> Result<Vec<provider::ModelInfo>, String> {
-    let provider = provider::create_provider(ProviderConfig::default_deepseek(String::new()))
+    Ok(provider::model_catalog())
+}
+
+#[tauri::command]
+pub fn ai_parse_action_proposals(
+    db: State<Database>,
+    conversation_id: String,
+    message_id: String,
+) -> Result<Vec<proposals::ActionDraft>, String> {
+    with_conn(&db.conn, |conn| {
+        let actions = stored_ai_proposals(conn, &conversation_id, &message_id)?;
+        Ok(proposals::describe(&actions))
+    })
+}
+
+#[tauri::command]
+pub fn ai_preview_action_proposal(
+    db: State<Database>,
+    runtime: State<ActionRuntime>,
+    conversation_id: String,
+    message_id: String,
+    index: usize,
+) -> Result<actions::ActionPreview, String> {
+    with_conn(&db.conn, |conn| {
+        let mut proposals = stored_ai_proposals(conn, &conversation_id, &message_id)?;
+        if index >= proposals.len() {
+            return Err("AI Action proposal index is out of range.".to_string());
+        }
+        let request = proposals.remove(index);
+        actions::preview_ai(
+            conn,
+            &runtime,
+            request,
+            actions::ActionOrigin {
+                conversation_id,
+                message_id,
+            },
+        )
+    })
+}
+
+fn stored_ai_proposals(
+    conn: &rusqlite::Connection,
+    conversation_id: &str,
+    message_id: &str,
+) -> Result<Vec<actions::ActionRequest>, String> {
+    let conversation = repositories::conversations::get_conversation(conn, conversation_id)?
+        .ok_or_else(|| "Conversation not found.".to_string())?;
+    let message = repositories::conversations::get_message(conn, message_id)?
+        .ok_or_else(|| "AI proposal message not found.".to_string())?;
+    if message.conversation_id != conversation.id
+        || message.role != "assistant"
+        || message.status != "complete"
+    {
+        return Err(
+            "Only a completed assistant message from this conversation can be reviewed."
+                .to_string(),
+        );
+    }
+    proposals::parse(&message.content, conversation.space_id.as_deref())
+}
+
+#[tauri::command]
+pub fn ai_list_providers() -> Result<Vec<provider::ProviderInfo>, String> {
+    Ok(provider::provider_catalog())
+}
+
+#[tauri::command]
+pub fn ai_list_provider_statuses(db: State<Database>) -> Result<Vec<ProviderStatus>, String> {
+    Ok(provider::provider_catalog()
+        .iter()
+        .map(|item| provider_status(&db, &item.id))
+        .collect())
+}
+
+#[tauri::command]
+pub fn ai_set_provider_api_key(
+    db: State<Database>,
+    provider: String,
+    api_key: String,
+) -> Result<(), String> {
+    if !provider::provider_catalog()
+        .iter()
+        .any(|item| item.id == provider)
+    {
+        return Err("Unknown AI provider.".to_string());
+    }
+    let api_key = api_key.trim();
+    if api_key.is_empty() || api_key.len() > 512 {
+        return Err("Enter a valid API key.".to_string());
+    }
+    credentials::store_provider_key(&db, &provider, api_key)
+}
+
+#[tauri::command]
+pub fn ai_remove_provider_api_key(db: State<Database>, provider: String) -> Result<bool, String> {
+    credentials::remove_provider_key(&db, &provider)
+}
+
+#[tauri::command]
+pub async fn ai_test_provider_connection(
+    db: State<'_, Database>,
+    provider: String,
+    model: String,
+) -> Result<String, String> {
+    provider::validate_provider_model(&provider, &model).map_err(|error| error.message)?;
+    let key = credentials::get_provider_key(&db, &provider)?
+        .ok_or_else(|| "No API key configured for this provider.".to_string())?;
+    let config =
+        ProviderConfig::for_route(&provider, key, &model).map_err(|error| error.message)?;
+    provider::create_provider(config)
+        .map_err(|error| error.message)?
+        .test_connection()
+        .await
         .map_err(|error| error.message)?;
-    debug_assert_eq!(provider.name(), "deepseek");
-    Ok(provider.available_models())
+    Ok("Connection successful".to_string())
 }
 
 // ─── AI Conversations ────────────────────────────────────
@@ -1496,15 +1546,41 @@ pub fn ai_create_conversation(
     db: State<Database>,
     space_id: Option<String>,
     title: Option<String>,
+    provider: Option<String>,
     model: Option<String>,
 ) -> Result<serde_json::Value, String> {
+    let provider = provider.unwrap_or_else(|| {
+        if model
+            .as_deref()
+            .is_some_and(|value| value.starts_with("deepseek-"))
+        {
+            "deepseek".to_string()
+        } else if model
+            .as_deref()
+            .is_some_and(|value| value.starts_with("gpt-"))
+        {
+            "openai".to_string()
+        } else {
+            "auto".to_string()
+        }
+    });
+    let model = model.unwrap_or_else(|| {
+        if provider == "auto" {
+            "auto"
+        } else if provider == "openai" {
+            "gpt-5-mini"
+        } else {
+            "deepseek-v4-flash"
+        }
+        .to_string()
+    });
     with_conn(&db.conn, |conn| {
         let conv = repositories::conversations::create_conversation(
             conn,
             space_id.as_deref(),
             title.as_deref().unwrap_or("New conversation"),
-            "deepseek",
-            model.as_deref().unwrap_or("deepseek-v4-flash"),
+            &provider,
+            &model,
         )?;
         serde_json::to_value(conv).map_err(|e| format!("Serialize error: {}", e))
     })
@@ -1623,9 +1699,6 @@ pub async fn ai_stream_message(
     if retry_user_message_id.is_none() && (content.is_empty() || content.chars().count() > 32_000) {
         return Err("Message must contain 1 to 32,000 characters.".to_string());
     }
-    let key = credentials::get(&db, credentials::AI_API_KEY)?.ok_or_else(|| {
-        "No API key configured. Configure DeepSeek in Settings first.".to_string()
-    })?;
     let mode = mode.unwrap_or_else(|| "ask".to_string());
     let mode_instruction = match mode.as_str() {
         "ask" => None,
@@ -1633,7 +1706,7 @@ pub async fn ai_stream_message(
         "explain" => Some("Explain the topic clearly in plain language. Use the attached context only when relevant."),
         "plan" => Some("Create a practical ordered plan with clear next actions. Do not claim to execute actions."),
         "rewrite" => Some("Rewrite the supplied text while preserving its meaning. Return the rewritten text without unnecessary preamble."),
-        "create_tasks" => Some("Propose tasks but do not execute them. Return only valid JSON shaped as {\"tasks\":[{\"title\":\"...\",\"description\":\"...\",\"priority\":\"none|low|medium|high\",\"dueDate\":null,\"tags\":[]}]} with at most 20 tasks."),
+        "create_tasks" | "propose_actions" => Some("Propose Tasks or Notes but do not execute them. Return only valid JSON shaped as {\"actions\":[{\"type\":\"createTask\",\"title\":\"...\",\"description\":\"...\",\"dueDate\":null},{\"type\":\"createNote\",\"title\":\"...\",\"content\":\"...\"}]} with 1 to 20 actions. Use only createTask and createNote. Do not include space IDs or any other fields."),
         _ => return Err("Unsupported AI response mode.".to_string()),
     };
     let conversation = with_conn(&db.conn, |conn| {
@@ -1643,6 +1716,31 @@ pub async fn ai_stream_message(
     if conversation.archived_at.is_some() {
         return Err("Restore this conversation before sending a message.".to_string());
     }
+    let route = if conversation.provider == "auto" {
+        let deepseek_configured = credentials::get_provider_key(&db, "deepseek")?.is_some();
+        let openai_configured = credentials::get_provider_key(&db, "openai")?.is_some();
+        routing::select_route(
+            "auto",
+            "auto",
+            &mode,
+            deepseek_configured,
+            openai_configured,
+        )?
+    } else {
+        routing::select_route(
+            &conversation.provider,
+            &conversation.model,
+            &mode,
+            false,
+            false,
+        )?
+    };
+    let key = credentials::get_provider_key(&db, &route.provider)?.ok_or_else(|| {
+        format!(
+            "No API key configured for {}. Configure it in Settings first.",
+            route.provider
+        )
+    })?;
     let retry_user = if let Some(message_id) = retry_user_message_id.as_deref() {
         let message = with_conn(&db.conn, |conn| {
             repositories::conversations::get_message(conn, message_id)?
@@ -1656,8 +1754,8 @@ pub async fn ai_stream_message(
     } else {
         None
     };
-    let mut config = ProviderConfig::default_deepseek(key);
-    config.model = conversation.model.clone();
+    let config = ProviderConfig::for_route(&route.provider, key, &route.model)
+        .map_err(|error| error.message)?;
     let provider = provider::create_provider(config).map_err(|error| error.message)?;
     let cancellation = runtime.start(&request_id)?;
     let _request_guard = AiRequestGuard {
@@ -1665,73 +1763,83 @@ pub async fn ai_stream_message(
         request_id: request_id.clone(),
     };
 
-    let (user_message, assistant_message, mut chat_messages) = with_conn(&db.conn, |conn| {
-        let transaction = conn
-            .unchecked_transaction()
-            .map_err(|error| format!("AI transaction error: {}", error))?;
-        let user_message = if let Some(message) = retry_user.clone() {
-            message
-        } else {
-            repositories::conversations::add_message(
+    let (user_message, assistant_message, mut chat_messages, context_count) =
+        with_conn(&db.conn, |conn| {
+            let transaction = conn
+                .unchecked_transaction()
+                .map_err(|error| format!("AI transaction error: {}", error))?;
+            let user_message = if let Some(message) = retry_user.clone() {
+                message
+            } else {
+                repositories::conversations::add_message(
+                    &transaction,
+                    &conversation_id,
+                    "user",
+                    &content,
+                    "complete",
+                )?
+            };
+            let assistant_message = repositories::conversations::add_message(
                 &transaction,
                 &conversation_id,
-                "user",
-                &content,
-                "complete",
-            )?
-        };
-        let assistant_message = repositories::conversations::add_message(
-            &transaction,
-            &conversation_id,
-            "assistant",
-            "",
-            "streaming",
-        )?;
-        if retry_user.is_none() && conversation.title == "New conversation" {
-            let title: String = content.chars().take(60).collect();
-            repositories::conversations::update_conversation(
-                &transaction,
-                &conversation_id,
-                Some(&title),
-                None,
+                "assistant",
+                "",
+                "streaming",
             )?;
-        }
-        let history =
-            repositories::conversations::list_messages(&transaction, &conversation_id, Some(50))?;
-        let attachments =
-            repositories::conversations::list_context_items(&transaction, &conversation_id)?;
-        let resolved =
-            context::resolve_all(&transaction, conversation.space_id.as_deref(), &attachments)?;
-        let mut chat_messages = Vec::new();
-        if let Some(system) = context::system_message(&resolved)? {
-            chat_messages.push(ChatMessage {
-                role: "system".to_string(),
-                content: system,
-            });
-        }
-        if let Some(instruction) = mode_instruction {
-            chat_messages.push(ChatMessage {
-                role: "system".to_string(),
-                content: instruction.to_string(),
-            });
-        }
-        chat_messages.extend(
-            history
-                .iter()
-                .filter(|message| {
-                    message.status == "complete"
-                        && ["user", "assistant"].contains(&message.role.as_str())
-                })
-                .map(|message| ChatMessage {
-                    role: message.role.clone(),
-                    content: message.content.clone(),
-                }),
-        );
-        transaction
-            .commit()
-            .map_err(|error| format!("AI transaction commit error: {}", error))?;
-        Ok((user_message, assistant_message, chat_messages))
-    })?;
+            if retry_user.is_none() && conversation.title == "New conversation" {
+                let title: String = content.chars().take(60).collect();
+                repositories::conversations::update_conversation(
+                    &transaction,
+                    &conversation_id,
+                    Some(&title),
+                    None,
+                )?;
+            }
+            let history = repositories::conversations::list_messages(
+                &transaction,
+                &conversation_id,
+                Some(50),
+            )?;
+            let attachments =
+                repositories::conversations::list_context_items(&transaction, &conversation_id)?;
+            let resolved =
+                context::resolve_all(&transaction, conversation.space_id.as_deref(), &attachments)?;
+            let context_count = resolved.len();
+            let mut chat_messages = Vec::new();
+            if let Some(system) = context::system_message(&resolved)? {
+                chat_messages.push(ChatMessage {
+                    role: "system".to_string(),
+                    content: system,
+                });
+            }
+            if let Some(instruction) = mode_instruction {
+                chat_messages.push(ChatMessage {
+                    role: "system".to_string(),
+                    content: instruction.to_string(),
+                });
+            }
+            chat_messages.extend(
+                history
+                    .iter()
+                    .filter(|message| {
+                        message.status == "complete"
+                            && ["user", "assistant"].contains(&message.role.as_str())
+                    })
+                    .map(|message| ChatMessage {
+                        role: message.role.clone(),
+                        content: message.content.clone(),
+                    }),
+            );
+            transaction
+                .commit()
+                .map_err(|error| format!("AI transaction commit error: {}", error))?;
+            Ok((
+                user_message,
+                assistant_message,
+                chat_messages,
+                context_count,
+            ))
+        })?;
     if on_event
         .send(AiStreamEvent::Started {
             request_id: request_id.clone(),
@@ -1750,7 +1858,7 @@ pub async fn ai_stream_message(
         });
     }
     let request = ChatCompletionRequest {
-        model: conversation.model.clone(),
+        model: route.model.clone(),
         messages: chat_messages,
         temperature: None,
         max_tokens: None,
@@ -1773,10 +1881,17 @@ pub async fn ai_stream_message(
     let final_content = collected
         .into_inner()
         .map_err(|_| "AI response buffer is unavailable.".to_string())?;
+    let provenance = repositories::conversations::AiRouteProvenance {
+        provider: &route.provider,
+        model: &route.model,
+        routing_mode: &route.routing_mode,
+        route_reason: &route.reason,
+    };
 
     let terminal = match result {
         Ok(()) => {
-            let metadata = serde_json::json!({ "mode": mode }).to_string();
+            let metadata =
+                serde_json::json!({ "mode": mode, "contextCount": context_count }).to_string();
             let message = with_conn(&db.conn, |conn| {
                 let transaction = conn
                     .unchecked_transaction()
@@ -1786,8 +1901,9 @@ pub async fn ai_stream_message(
                     &assistant_message.id,
                     &final_content,
                     "complete",
-                    Some(&metadata),
                     None,
+                    Some(&metadata),
+                    Some(&provenance),
                 )?
                 .ok_or_else(|| "Assistant message no longer exists.".to_string())?;
                 let event = repositories::activity::ActivityEvent {
@@ -1810,7 +1926,8 @@ pub async fn ai_stream_message(
             }
         }
         Err(error) if error.code == "cancelled" => {
-            let metadata = serde_json::json!({ "mode": mode }).to_string();
+            let metadata =
+                serde_json::json!({ "mode": mode, "contextCount": context_count }).to_string();
             let message = with_conn(&db.conn, |conn| {
                 repositories::conversations::finish_message(
                     conn,
@@ -1819,6 +1936,7 @@ pub async fn ai_stream_message(
                     "cancelled",
                     Some(error.code),
                     Some(&metadata),
+                    Some(&provenance),
                 )?
                 .ok_or_else(|| "Assistant message no longer exists.".to_string())
             })?;
@@ -1827,7 +1945,8 @@ pub async fn ai_stream_message(
             }
         }
         Err(error) => {
-            let metadata = serde_json::json!({ "mode": mode }).to_string();
+            let metadata =
+                serde_json::json!({ "mode": mode, "contextCount": context_count }).to_string();
             let assistant_message = with_conn(&db.conn, |conn| {
                 repositories::conversations::finish_message(
                     conn,
@@ -1836,6 +1955,7 @@ pub async fn ai_stream_message(
                     "error",
                     Some(error.code),
                     Some(&metadata),
+                    Some(&provenance),
                 )?
                 .ok_or_else(|| "Assistant message no longer exists.".to_string())
             })?;

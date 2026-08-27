@@ -16,8 +16,44 @@ const SECRETS_TABLE_SQL: &str = "
     );
 ";
 
-/// Key names stored in the secrets table.
+/// Legacy DeepSeek key name retained for upgrades from pre-provider builds.
 pub const AI_API_KEY: &str = "ai_api_key";
+const DEEPSEEK_API_KEY: &str = "ai_api_key:deepseek";
+const OPENAI_API_KEY: &str = "ai_api_key:openai";
+
+fn provider_key(provider: &str) -> Result<&'static str, String> {
+    match provider {
+        "deepseek" => Ok(DEEPSEEK_API_KEY),
+        "openai" => Ok(OPENAI_API_KEY),
+        _ => Err("Unknown AI provider.".to_string()),
+    }
+}
+
+/// Store a credential under its provider namespace. Values never cross providers.
+pub fn store_provider_key(db: &Database, provider: &str, value: &str) -> Result<(), String> {
+    store(db, provider_key(provider)?, value)
+}
+
+/// Read a provider credential. DeepSeek falls back to the legacy key without
+/// rewriting or deleting it, so an interrupted upgrade cannot lose the secret.
+pub fn get_provider_key(db: &Database, provider: &str) -> Result<Option<String>, String> {
+    let current = get(db, provider_key(provider)?)?;
+    if current.is_some() || provider != "deepseek" {
+        return Ok(current);
+    }
+    get(db, AI_API_KEY)
+}
+
+/// Remove only the requested provider's credential. DeepSeek also removes its
+/// backward-compatible legacy entry, while OpenAI cannot affect it.
+pub fn remove_provider_key(db: &Database, provider: &str) -> Result<bool, String> {
+    let removed = remove(db, provider_key(provider)?)?;
+    if provider == "deepseek" {
+        Ok(remove(db, AI_API_KEY)? || removed)
+    } else {
+        Ok(removed)
+    }
+}
 
 /// Encryption boundary used by credential persistence.
 pub trait SecretCrypto: Send + Sync {
@@ -316,5 +352,46 @@ mod tests {
         store(&db, "test_key", "second").unwrap();
         let result = get(&db, "test_key").unwrap();
         assert_eq!(result, Some("second".to_string()));
+    }
+
+    #[test]
+    fn provider_keys_are_isolated() {
+        let db = test_db();
+        store_provider_key(&db, "deepseek", "deep-key").unwrap();
+        store_provider_key(&db, "openai", "openai-key").unwrap();
+        assert_eq!(
+            get_provider_key(&db, "deepseek").unwrap().as_deref(),
+            Some("deep-key")
+        );
+        assert_eq!(
+            get_provider_key(&db, "openai").unwrap().as_deref(),
+            Some("openai-key")
+        );
+        remove_provider_key(&db, "openai").unwrap();
+        assert_eq!(
+            get_provider_key(&db, "deepseek").unwrap().as_deref(),
+            Some("deep-key")
+        );
+        assert_eq!(get_provider_key(&db, "openai").unwrap(), None);
+    }
+
+    #[test]
+    fn deepseek_reads_and_removes_legacy_key() {
+        let db = test_db();
+        store(&db, AI_API_KEY, "legacy-key").unwrap();
+        assert_eq!(
+            get_provider_key(&db, "deepseek").unwrap().as_deref(),
+            Some("legacy-key")
+        );
+        assert!(remove_provider_key(&db, "deepseek").unwrap());
+        assert_eq!(get(&db, AI_API_KEY).unwrap(), None);
+    }
+
+    #[test]
+    fn unknown_provider_cannot_create_arbitrary_secret_names() {
+        let db = test_db();
+        assert!(store_provider_key(&db, "custom", "secret").is_err());
+        assert!(get_provider_key(&db, "custom").is_err());
+        assert!(remove_provider_key(&db, "custom").is_err());
     }
 }

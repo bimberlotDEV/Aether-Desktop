@@ -1,23 +1,23 @@
 # Session Notes
 
-| Field          | Value        |
-| -------------- | ------------ |
-| Schema version | 2            |
-| Session date   | 2026-08-27   |
-| Active task    | `ACTION-001` |
-| Agent          | Codex        |
-| State          | `complete`   |
+| Field          | Value         |
+| -------------- | ------------- |
+| Schema version | 2             |
+| Session date   | 2026-08-27    |
+| Active task    | `AI-EVOL-001` |
+| Agent          | Codex         |
+| State          | `complete`    |
 
 ## Current work
 
-- Milestone E merged through PR #41 at `678d7d2` after both implementation and closure heads passed Windows CI.
-- Created `codex/safe-actions` from synchronized `master`.
-- Classified Safe Actions as `planned_codex` because it crosses native filesystem authority, persistence, IPC, Activity, routing, and confirmation UX.
-- Accepted ADR-020 and completed the ready contract before production changes.
-- Implemented the closed Rust Action runtime, typed IPC, Activity audit, rollback, containment, Actions route, navigation, and tests.
-- Local gates pass: frontend 77/77, Rust 85/85, strict lint/format, build/audit, MSI/NSIS, responsive packaged startup, and 1024×640 browser smoke without overflow or error boundary.
-- Published draft PR #42; exact implementation head `27839e9` passed GitHub Actions run `33092882774`.
+- Milestone F merged through PR #42 at `51fd6d9`; local `master` and `origin/master` were synchronized and clean.
+- Classified Milestone G as `planned_codex` because it changes provider, credential, migration, privacy, routing, and Action consent boundaries.
+- Inspected the existing provider trait, DeepSeek-specific creation/validation, DPAPI secret store, conversation persistence, explicit context resolver, Safe Actions, and current AI UI.
+- Verified current official DeepSeek and OpenAI Chat Completions/SSE contracts. Arbitrary endpoints are excluded.
+- Accepted ADR-021 and completed the `AI-EVOL-001` ready contract before production changes.
+- Implemented and self-reviewed provider-isolated credentials, fixed-endpoint DeepSeek/OpenAI adapters, deterministic Auto routing, per-response provenance, and server-reconstructed Task/Note Safe Action drafts.
+- All local release gates, package/startup smoke, responsive browser smoke, and exact-head GitHub Actions run `33101730042` pass; draft PR #43 is published.
 
 ## Exact resume point
 
-Publish this closure-only documentation head, require exact-head CI, merge PR #42, synchronize `master`, and leave the verified workspace release executable running for the owner.
+Milestone G is complete. Inspect the next prioritized roadmap item before opening a new task contract; merge draft PR #43 only with explicit owner approval.

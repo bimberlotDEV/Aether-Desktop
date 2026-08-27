@@ -307,6 +307,13 @@ export const ActionRequestSchema = z.discriminatedUnion('type', [
   z.object({ type: z.literal('openFolder'), sourceId: z.string().min(1) }),
 ])
 export type ActionRequest = z.infer<typeof ActionRequestSchema>
+export const AiActionDraftSchema = z.object({
+  index: z.number().int().nonnegative(),
+  actionType: z.enum(['createTask', 'createNote']),
+  title: z.string(),
+  detail: z.string(),
+})
+export type AiActionDraft = z.infer<typeof AiActionDraftSchema>
 
 const ActionTypeSchema = z.enum([
   'createTask',
@@ -541,6 +548,10 @@ export const AiMessageSchema = z.object({
   provider_message_id: z.string().nullable(),
   error_code: z.string().nullable(),
   metadata_json: z.string().nullable(),
+  provider: z.enum(['deepseek', 'openai']).nullable(),
+  model: z.string().nullable(),
+  routing_mode: z.enum(['auto', 'manual']).nullable(),
+  route_reason: z.string().nullable(),
   created_at: z.string(),
   updated_at: z.string(),
 })
@@ -557,12 +568,28 @@ export const AiContextItemSchema = z.object({
 export type AiContextItem = z.infer<typeof AiContextItemSchema>
 
 export const AiModelSchema = z.object({
-  id: z.enum(['deepseek-v4-flash', 'deepseek-v4-pro']),
-  provider: z.literal('deepseek'),
+  id: z.string().min(1),
+  displayName: z.string(),
+  provider: z.enum(['deepseek', 'openai']),
   supportsStreaming: z.boolean(),
   supportsThinking: z.boolean(),
+  supportsStructuredOutput: z.boolean(),
 })
 export type AiModel = z.infer<typeof AiModelSchema>
+
+export const AiProviderSchema = z.object({
+  id: z.enum(['deepseek', 'openai']),
+  displayName: z.string(),
+  remote: z.boolean(),
+})
+export type AiProvider = z.infer<typeof AiProviderSchema>
+
+export const AiProviderStatusSchema = z.object({
+  provider: z.enum(['deepseek', 'openai']),
+  configured: z.boolean(),
+  status: z.enum(['configured', 'missing', 'unavailable']),
+})
+export type AiProviderStatus = z.infer<typeof AiProviderStatusSchema>
 
 export const AiResolvedContextItemSchema = z.object({
   attachmentId: z.string(),
@@ -580,14 +607,9 @@ export const AiModeSchema = z.enum([
   'plan',
   'rewrite',
   'create_tasks',
+  'propose_actions',
 ])
 export type AiMode = z.infer<typeof AiModeSchema>
-
-export const KeyStatusSchema = z.object({
-  configured: z.boolean(),
-  status: z.enum(['configured', 'missing', 'unavailable']),
-})
-export type KeyStatus = z.infer<typeof KeyStatusSchema>
 
 export const AiStreamEventSchema = z.discriminatedUnion('event', [
   z.object({

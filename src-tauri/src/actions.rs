@@ -13,7 +13,7 @@ use uuid::Uuid;
 const PROPOSAL_TTL_MINUTES: i64 = 10;
 const MAX_PENDING_PROPOSALS: usize = 128;
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(
     tag = "type",
     rename_all = "camelCase",
@@ -89,7 +89,14 @@ pub enum OpenTarget {
 #[derive(Debug, Clone)]
 struct PendingAction {
     request: ActionRequest,
+    origin: Option<ActionOrigin>,
     expires_at: chrono::DateTime<Utc>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ActionOrigin {
+    pub conversation_id: String,
+    pub message_id: String,
 }
 
 #[derive(Default)]
@@ -116,6 +123,24 @@ pub fn preview(
     runtime: &ActionRuntime,
     request: ActionRequest,
 ) -> Result<ActionPreview, String> {
+    preview_with_origin(conn, runtime, request, None)
+}
+
+pub fn preview_ai(
+    conn: &Connection,
+    runtime: &ActionRuntime,
+    request: ActionRequest,
+    origin: ActionOrigin,
+) -> Result<ActionPreview, String> {
+    preview_with_origin(conn, runtime, request, Some(origin))
+}
+
+fn preview_with_origin(
+    conn: &Connection,
+    runtime: &ActionRuntime,
+    request: ActionRequest,
+    origin: Option<ActionOrigin>,
+) -> Result<ActionPreview, String> {
     let descriptor = validate(conn, &request)?;
     let token = Uuid::now_v7().to_string();
     let expires_at = Utc::now() + Duration::minutes(PROPOSAL_TTL_MINUTES);
@@ -131,6 +156,7 @@ pub fn preview(
         token.clone(),
         PendingAction {
             request,
+            origin,
             expires_at,
         },
     );
@@ -185,12 +211,13 @@ where
             description,
             due_date.as_deref(),
             space_id.as_deref(),
+            pending.origin.as_ref(),
         )?,
         ActionRequest::CreateNote {
             title,
             content,
             space_id,
-        } => execute_note(conn, title, content, space_id)?,
+        } => execute_note(conn, title, content, space_id, pending.origin.as_ref())?,
         ActionRequest::CreateFolder { .. } => execute_filesystem(conn, &pending.request)?,
         ActionRequest::CopyFile { .. } => execute_filesystem(conn, &pending.request)?,
         ActionRequest::MoveFile { .. } => execute_filesystem(conn, &pending.request)?,
@@ -210,6 +237,7 @@ where
                 &pending.request,
                 Some("source"),
                 Some(&paths.source.id),
+                None,
             )?;
             ActionResult {
                 action_type: descriptor.action_type.clone(),
@@ -339,6 +367,7 @@ fn execute_task(
     description: &str,
     due_date: Option<&str>,
     space_id: Option<&str>,
+    origin: Option<&ActionOrigin>,
 ) -> Result<ActionResult, String> {
     let transaction = conn.transaction().map_err(db_error)?;
     let task = tasks::create(
@@ -364,6 +393,7 @@ fn execute_task(
         },
         Some("task"),
         Some(&task.id),
+        origin,
     )?;
     transaction.commit().map_err(db_error)?;
     Ok(ActionResult {
@@ -380,6 +410,7 @@ fn execute_note(
     title: &str,
     content: &str,
     space_id: &str,
+    origin: Option<&ActionOrigin>,
 ) -> Result<ActionResult, String> {
     let transaction = conn.transaction().map_err(db_error)?;
     validate_space(&transaction, Some(space_id), true)?;
@@ -404,6 +435,7 @@ fn execute_note(
         },
         Some("note"),
         Some(&note.id),
+        origin,
     )?;
     transaction.commit().map_err(db_error)?;
     Ok(ActionResult {
@@ -474,7 +506,7 @@ fn execute_filesystem(conn: &Connection, request: &ActionRequest) -> Result<Acti
         }
         _ => return Err("Unsupported filesystem Action".into()),
     };
-    if let Err(error) = record_action(conn, request, Some("source"), Some(&source_id)) {
+    if let Err(error) = record_action(conn, request, Some("source"), Some(&source_id), None) {
         rollback.apply()?;
         return Err(format!(
             "Action audit failed and the file change was rolled back: {error}"
@@ -745,6 +777,7 @@ fn record_action(
     request: &ActionRequest,
     entity_type: Option<&str>,
     entity_id: Option<&str>,
+    origin: Option<&ActionOrigin>,
 ) -> Result<(), String> {
     let space_id = match request {
         ActionRequest::CreateTask { space_id, .. } => space_id.clone(),
@@ -766,7 +799,14 @@ fn record_action(
             entity_type: entity_type.map(str::to_string),
             entity_id: entity_id.map(str::to_string),
             space_id,
-            metadata_json: None,
+            metadata_json: origin.map(|value| {
+                serde_json::json!({
+                    "origin": "ai_proposal",
+                    "conversationId": value.conversation_id,
+                    "messageId": value.message_id,
+                })
+                .to_string()
+            }),
             created_at: String::new(),
         },
     )?;
@@ -831,6 +871,37 @@ mod tests {
         execute(&mut connection, &runtime, &note_token, |_, _| Ok(())).unwrap();
         let counts: (i64, i64, i64) = connection.query_row("SELECT (SELECT COUNT(*) FROM tasks),(SELECT COUNT(*) FROM notes),(SELECT COUNT(*) FROM activity_events WHERE event_type='action_executed')", [], |row| Ok((row.get(0)?,row.get(1)?,row.get(2)?))).unwrap();
         assert_eq!(counts, (1, 1, 2));
+    }
+
+    #[test]
+    fn ai_preview_keeps_trusted_message_attribution_in_the_action_audit() {
+        let (mut connection, runtime, _directory) = setup();
+        let preview = preview_ai(
+            &connection,
+            &runtime,
+            ActionRequest::CreateTask {
+                title: "Attributed".into(),
+                description: "".into(),
+                due_date: None,
+                space_id: Some("s1".into()),
+            },
+            ActionOrigin {
+                conversation_id: "conversation-1".into(),
+                message_id: "message-1".into(),
+            },
+        )
+        .unwrap();
+        execute(&mut connection, &runtime, &preview.token, |_, _| Ok(())).unwrap();
+        let metadata: String = connection
+            .query_row(
+                "SELECT metadata_json FROM activity_events WHERE event_type = 'action_executed'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert!(metadata.contains("conversation-1"));
+        assert!(metadata.contains("message-1"));
+        assert!(metadata.contains("ai_proposal"));
     }
 
     #[test]

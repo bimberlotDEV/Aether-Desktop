@@ -8,8 +8,8 @@
 | Last updated     | 2026-08-27                    |
 | Updated by       | Codex                         |
 | Repository       | `bimberlotDEV/Aether-Desktop` |
-| Branch           | `codex/safe-actions`          |
-| Baseline commit  | `678d7d2` (current `master`)  |
+| Branch           | `codex/ai-evolution`          |
+| Baseline commit  | `51fd6d9` (current `master`)  |
 | Product maturity | Alpha                         |
 
 ## Responsibility of this file
@@ -51,8 +51,9 @@
 | `CONT-001`         | Continuity and meaningful Activity                 | `complete` | Every Space has a deterministic resume view and Activity contains only curated, presentation-safe local changes.                    |
 | `PULSE-002`        | Pulse 2.0                                          | `complete` | Pulse makes today’s real local relevance visible without noise, hidden AI, or mutation.                                             |
 | `ACTION-001`       | Safe Actions                                       | `complete` | Typed preview, approval, one-time execution, containment, rollback, audit, UX, packaging, and exact-head CI pass.                   |
+| `AI-EVOL-001`      | AI Evolution                                       | `complete`  | DeepSeek/OpenAI, transparent Auto routing, response provenance, approved Task/Note drafts, local release gates, and exact-head CI pass. |
 
-Milestones A through E are merged and verified. Milestone F is implementation-complete with all local gates and GitHub Actions run `33092882774` green.
+Milestones A through F are merged and verified. Milestone G is complete and published for review in draft PR #43; all local release gates and exact-head Windows CI pass.
 
 ## Completed product milestones
 
@@ -133,7 +134,7 @@ Full rationale belongs in `.ai/ARCHITECTURE.md` or a dedicated ADR under `docs/d
 
 ## Next
 
-Milestones A through F are complete. Public signing, updater activation, automated restore, and Vault-byte archives remain separately governed work.
+Milestones A through F are complete. Milestone G — AI Evolution is in release review. Public signing, updater activation, automated restore, and Vault-byte archives remain separately governed work.
 
 ## Reusable update template
 

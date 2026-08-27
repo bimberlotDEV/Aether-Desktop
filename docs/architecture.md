@@ -22,7 +22,7 @@ The webview is untrusted relative to native resources. It never executes SQL, re
 | Tasks              | SQLite repository                                       | Tasks, Pulse, Space Tasks                 |
 | Vault              | SQLite metadata plus Rust filesystem service            | Vault, Space Vault                        |
 | Memory             | SQLite repository                                       | Memory, Space Memory, explicit AI context |
-| AI                 | SQLite conversations/context plus Rust provider service | AI, Space AI, Settings                    |
+| AI                 | SQLite conversations/context plus closed Rust provider registry and router | AI, Space AI, Settings                    |
 | Native lifecycle   | Tauri plugins and `native.rs`                           | tray, shortcut, notifications, Settings   |
 | Backup             | `backup.rs` and SQLite online backup API                | Settings                                  |
 | Context Sources    | SQLite metadata plus bounded `context.rs` scanner       | Sources                                   |
@@ -47,10 +47,12 @@ Pulse composes a single read-only snapshot from dated open Tasks, recently worke
 
 Safe Actions uses a closed Rust request enum and keeps each validated proposal in process behind a short-lived opaque token. Approval supplies only that token, which is consumed before revalidation and execution. Database writes and their curated Activity audit are transactional; reversible file writes roll back on audit failure. Filesystem actions canonicalize one explicitly authorized Source, require indexed input files, reject traversal, symlink escape, missing parents, directories, and existing destinations, and never expose absolute roots over IPC. There is no shell, delete, arbitrary executable, cross-Source transfer, or model-owned approval. See ADR-020.
 
+AI providers are a closed Rust registry with fixed official DeepSeek and OpenAI endpoints. Credentials are separately DPAPI-protected; Auto chooses a configured route deterministically before disclosure and never performs silent cross-provider fallback. Each assistant response stores its resolved provider, model, routing mode, and human-readable reason. AI Action JSON is re-read from the persisted assistant message, strictly parsed into Task/Note drafts, bound to the conversation Space and message origin, and previewed through Safe Actions one item at a time. See ADR-021.
+
 ## Security and privacy
 
 - Tauri CSP restricts scripts to the application and capabilities expose only required native actions.
-- DeepSeek credentials are protected with Windows DPAPI and never returned to the frontend.
+- DeepSeek and OpenAI credentials are separately protected with Windows DPAPI and never returned to the frontend.
 - AI context is user-selected, bounded, and Space-isolated in Rust.
 - Linked Vault files are never deleted; managed deletion is containment-checked and recoverable during the operation.
 - Database exports exclude secrets and disclose that Vault file bytes are out of scope.

@@ -110,6 +110,7 @@ SQLite / native capabilities / external providers
 | `ADR-018` | Compose Space continuity from bounded local read models and curate meaningful Activity in backend domain commands.                                                                              | Accepted                | `docs/decisions/018-deterministic-continuity.md`     |
 | `ADR-019` | Compose Pulse from bounded local facts with deterministic, explainable daily relevance.                                                                                                         | Accepted                | `docs/decisions/019-deterministic-pulse.md`          |
 | `ADR-020` | Execute only typed, Rust-validated Actions through preview, explicit approval, one-time tokens, and curated audit records.                                                                      | Accepted                | `docs/decisions/020-safe-actions.md`                 |
+| `ADR-021` | Route AI through a closed Rust provider registry with transparent deterministic Auto decisions; AI drafts reuse Safe Actions and never approve or execute.                                     | Accepted                | `docs/decisions/021-ai-provider-routing.md`          |
 
 ## Architecture change protocol
 

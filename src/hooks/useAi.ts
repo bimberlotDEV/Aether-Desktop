@@ -5,6 +5,8 @@ import type {
   AiMessage,
   AiMode,
   AiResolvedContextItem,
+  AiProvider,
+  AiProviderStatus,
 } from '@/lib/db/types'
 import * as db from '@/lib/db/tauri'
 
@@ -28,52 +30,60 @@ function upsertMessage(messages: AiMessage[], next: AiMessage) {
 }
 
 export function useAiSettings() {
-  const [status, setStatus] = useState<'configured' | 'missing' | 'unavailable'>(
-    isTauri ? 'unavailable' : 'missing',
-  )
+  const [statuses, setStatuses] = useState<AiProviderStatus[]>([])
   const [loading, setLoading] = useState(isTauri)
   const [error, setError] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     if (!isTauri) return
     setLoading(true)
+    setError(null)
     try {
-      setStatus((await db.getAiKeyStatus()).status)
+      setStatuses(await db.listAiProviderStatuses())
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not read AI settings.')
-      setStatus('unavailable')
     } finally {
       setLoading(false)
     }
   }, [])
   useEffect(() => void load(), [load])
 
-  const save = useCallback(async (apiKey: string) => {
+  const save = useCallback(
+    async (provider: AiProvider['id'], apiKey: string) => {
+      setError(null)
+      try {
+        await db.setAiProviderApiKey(provider, apiKey)
+        await load()
+      } catch (cause) {
+        setError(cause instanceof Error ? cause.message : 'Could not save the API key.')
+        throw cause
+      }
+    },
+    [load],
+  )
+  const remove = useCallback(
+    async (provider: AiProvider['id']) => {
+      setError(null)
+      await db.removeAiProviderApiKey(provider)
+      await load()
+    },
+    [load],
+  )
+  const test = useCallback(async (provider: AiProvider['id']) => {
     setError(null)
     try {
-      await db.setAiApiKey(apiKey)
-      setStatus('configured')
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Could not save the API key.')
-      throw cause
-    }
-  }, [])
-  const remove = useCallback(async () => {
-    setError(null)
-    await db.removeAiApiKey()
-    setStatus('missing')
-  }, [])
-  const test = useCallback(async () => {
-    setError(null)
-    try {
-      return await db.testAiConnection()
+      return await db.testAiProviderConnection(
+        provider,
+        provider === 'openai' ? 'gpt-5-mini' : 'deepseek-v4-flash',
+      )
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Connection test failed.')
       throw cause
     }
   }, [])
 
-  return { status, loading, error, save, remove, test, isTauri }
+  const status = statuses.some((item) => item.configured) ? 'configured' : 'missing'
+  return { status, statuses, loading, error, save, remove, test, isTauri }
 }
 
 export function useAiConversations(spaceId?: string) {
@@ -212,6 +222,10 @@ export function useAiConversation(conversationId: string | null) {
             provider_message_id: null,
             error_code: null,
             metadata_json: JSON.stringify({ mode }),
+            provider: null,
+            model: null,
+            routing_mode: null,
+            route_reason: null,
             created_at: now,
             updated_at: now,
           },
