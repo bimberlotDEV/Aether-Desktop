@@ -52,9 +52,9 @@
 | `PULSE-002`        | Pulse 2.0                                          | `complete` | Pulse makes today’s real local relevance visible without noise, hidden AI, or mutation.                                             |
 | `ACTION-001`       | Safe Actions                                       | `complete` | Typed preview, approval, one-time execution, containment, rollback, audit, UX, packaging, and exact-head CI pass.                   |
 | `AI-EVOL-001`      | AI Evolution                                       | `complete`  | DeepSeek/OpenAI, transparent Auto routing, response provenance, approved Task/Note drafts, local release gates, and exact-head CI pass. |
-| `RELEASE-040`      | Cut and install integrated Alpha 0.4.0             | `self_review` | Local gates, protected upgrade, artifacts, data preservation, and startup pass; publication and exact-head CI remain.                  |
+| `RELEASE-040`      | Cut and install integrated Alpha 0.4.0             | `complete`    | Versioning, full gates, protected upgrade, artifacts, data preservation, installed startup, publication, and exact-head CI pass.      |
 
-Milestones A through G are merged and verified on `master` through PR #43. `RELEASE-040` is creating an honest, protected Windows upgrade boundary for the integrated product.
+Milestones A through G are merged and verified on `master` through PR #43. `RELEASE-040` completed the honest, protected Windows upgrade boundary for the integrated product.
 
 ## Completed product milestones
 
@@ -86,16 +86,16 @@ Milestones A through G are merged and verified on `master` through PR #43. `RELE
 
 | Check                                       | Last result | Date       | Notes                                                                                                                 |
 | ------------------------------------------- | ----------- | ---------- | --------------------------------------------------------------------------------------------------------------------- |
-| `pnpm check`                                | Pass        | 2026-08-27 | Safe Actions branch: 77/77 tests across 29 files.                                                                     |
-| `pnpm build`                                | Pass        | 2026-08-27 | Production build passes; Actions is a lazy 10.01 kB chunk.                                                            |
-| `pnpm audit --audit-level high`             | Pass        | 2026-08-27 | No known vulnerabilities.                                                                                             |
-| `cargo test`                                | Pass        | 2026-08-27 | 85/85 tests pass, including containment, symlink escape, one-time execution, and rollback.                            |
-| `cargo build`                               | Pass        | 2026-08-11 | Windows production build compiles with DPAPI and single-instance support.                                             |
-| `cargo fmt --check`                         | Pass        | 2026-08-27 | Repository Rust formatting is clean.                                                                                  |
-| `cargo clippy --all-targets -- -D warnings` | Pass        | 2026-08-27 | Library, binary, and test targets are warning-free.                                                                   |
-| `pnpm tauri:build`                          | Pass        | 2026-08-27 | Safe Actions candidate x64 MSI and NSIS bundles build successfully.                                                   |
-| GitHub Actions                              | Pass        | 2026-08-27 | Run 33092882774 passes frontend quality/build, Rust format, strict lint, and Rust tests on exact implementation head. |
-| Release startup smoke                       | Pass        | 2026-08-27 | Exact workspace release executable started and remained responsive.                                                   |
+| `pnpm check`                                | Pass        | 2026-08-28 | Alpha 0.4.0: 77/77 tests across 29 files.                                                                              |
+| `pnpm build`                                | Pass        | 2026-08-28 | Alpha 0.4.0 production frontend build passes.                                                                          |
+| `pnpm audit --audit-level high`             | Pass        | 2026-08-28 | No known vulnerabilities.                                                                                              |
+| `cargo test`                                | Pass        | 2026-08-28 | 95/95 all-target/all-feature tests pass.                                                                               |
+| `cargo build --release`                     | Pass        | 2026-08-28 | Optimized Aether 0.4.0 Windows executable builds successfully.                                                         |
+| `cargo fmt --check`                         | Pass        | 2026-08-28 | Repository Rust formatting is clean.                                                                                   |
+| `cargo clippy --all-targets -- -D warnings` | Pass        | 2026-08-28 | All targets and features are warning-free.                                                                             |
+| `pnpm tauri:build`                          | Pass        | 2026-08-28 | Aether 0.4.0 x64 MSI and NSIS bundles build successfully with recorded hashes.                                        |
+| GitHub Actions                              | Pass        | 2026-08-28 | Run 33122769813 passes frontend quality/build, Rust format, strict lint, and Rust tests on exact implementation head.  |
+| Release startup smoke                       | Pass        | 2026-08-28 | Installed Aether 0.4.0 starts from its registered location and remains responsive with preserved workspace data.      |
 
 ## Active blockers
 
@@ -135,7 +135,7 @@ Full rationale belongs in `.ai/ARCHITECTURE.md` or a dedicated ADR under `docs/d
 
 ## Next
 
-Milestones A through G are complete. Alpha 0.4.0 release consolidation is active. Public signing, updater activation, automated restore, and Vault-byte archives remain separately governed work.
+Milestones A through G and the protected Alpha 0.4.0 release are complete. Public signing, updater activation, automated restore, and Vault-byte archives remain separately governed work.
 
 ## Reusable update template
 

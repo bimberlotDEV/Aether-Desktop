@@ -6,7 +6,7 @@
 | Session date   | 2026-08-28    |
 | Active task    | `RELEASE-040` |
 | Agent          | Codex         |
-| State          | `self_review` |
+| State          | `complete`    |
 
 ## Current work
 
@@ -19,7 +19,8 @@
 - Reconciled all current release identifiers to 0.4.0 and corrected the runtime app-data documentation to `%APPDATA%/com.aether.desktop`.
 - Passed frozen install, 77 frontend tests, production build/audit, Rust format/strict Clippy, 95 Rust tests, release build, and MSI/NSIS packaging.
 - Preserved and integrity-checked the complete live app-data/install backup, silently upgraded from installed 0.3.2 to 0.4.0 with exact database preservation, and started responsive installed Aether 0.4.0.
+- Published implementation commit `8f97dbc` in draft PR #44; exact-head GitHub Actions run `33122769813` passed every Windows quality gate.
 
 ## Exact resume point
 
-Complete diff/security self-review, publish the verified release patch as a draft PR, wait for exact-head Windows CI, then record final closure evidence without merging unless explicitly authorized.
+`RELEASE-040` is complete. Leave draft PR #44 unmerged until explicit owner authorization; the next separately planned data-lifecycle milestone should design restore and Vault-byte archive semantics.

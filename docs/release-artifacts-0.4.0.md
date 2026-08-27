@@ -15,6 +15,7 @@ Built on Windows x64 on 2026-08-28 from `codex/release-040`, based on merged Mil
 - `pnpm tauri:build` produced both 0.4.0 x64 installers with updater artifacts disabled.
 - The loose executable and NSIS installer both report product/file version 0.4.0. The MSI filename and package configuration identify 0.4.0.
 - Diff and security review found no signing material, updater endpoint, credential, database, backup, generated bundle, or behavior change in the publishable patch.
+- GitHub Actions run `33122769813` passed frontend quality/build, Rust formatting, strict lint, and Rust tests on exact implementation head `8f97dbc`.
 
 ## Protected installation
 

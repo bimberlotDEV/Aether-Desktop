@@ -4,7 +4,7 @@
 | ----------------- | ------------------------------ |
 | Schema version    | 2                              |
 | Task ID           | `RELEASE-040`                  |
-| Status            | `in_progress`                  |
+| Status            | `complete`                     |
 | Owner             | Codex                          |
 | Last updated      | 2026-08-28                     |
 | Related milestone | Integrated Alpha 0.4.0 release |
@@ -35,7 +35,7 @@ Milestones A–G are merged through PR #43 at `da4ca98`; pull-request and post-m
 - [x] Installing 0.4.0 succeeds without deleting or corrupting existing workspace data; the post-install database passes SQLite integrity validation and its exact preservation outcome is recorded.
 - [x] The installed executable reports product version 0.4.0, starts from the installed location, remains responsive, and preserves the existing workspace row counts.
 - [x] No database, credential, backup, generated bundle, private key, environment file, or unrelated worktree change is committed.
-- [ ] Release documentation, `.ai` state, changelog, backlog, branch/head evidence, and exact-head GitHub Windows CI agree.
+- [x] Release documentation, `.ai` state, changelog, backlog, branch/head evidence, and exact-head GitHub Windows CI agree.
 
 ## Allowed paths
 
@@ -108,4 +108,4 @@ None. The owner explicitly authorized the next milestone after accepting the rec
 - A verified external pre-install backup retained the full runtime app-data and installed directories. Source/backup hashes, SQLite integrity, and domain row counts match.
 - Silent installation returned zero, preserved the database byte-for-byte before first launch, registered 0.4.0, and started a responsive installed 0.4.0 process.
 - Review corrected a pre-existing documentation mismatch: Tauri resolves the configured identifier to `%APPDATA%/com.aether.desktop`, which is now used consistently by release and database documentation.
-- No unresolved local acceptance finding remains; exact-head GitHub CI is the final publication gate.
+- No unresolved acceptance finding remains; GitHub Actions run `33122769813` passed on exact implementation head `8f97dbc`.
