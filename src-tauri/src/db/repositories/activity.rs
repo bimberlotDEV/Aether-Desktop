@@ -17,6 +17,7 @@ pub const MEANINGFUL_EVENT_TYPES: &[&str] = &[
     "memory_deleted",
     "source_scanned",
     "ai_conversation_used",
+    "action_executed",
 ];
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -264,11 +265,13 @@ fn to_item(conn: &Connection, event: ActivityEvent) -> Result<ActivityItem, Stri
         "memory_deleted" => "Deleted a Memory item".to_string(),
         "source_scanned" => format!("Indexed changes from {noun}"),
         "ai_conversation_used" => format!("Used AI conversation {noun}"),
+        "action_executed" => format!("Completed approved action for {noun}"),
         _ => "Updated the workspace".to_string(),
     };
     let detail = match event.event_type.as_str() {
         "source_scanned" => Some("Local file metadata changed".to_string()),
         "task_created_from_ai_proposal" => Some("Created after your confirmation".to_string()),
+        "action_executed" => Some("Previewed and explicitly approved".to_string()),
         _ => None,
     };
     Ok(ActivityItem {

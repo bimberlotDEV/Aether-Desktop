@@ -1,5 +1,6 @@
 #![allow(clippy::too_many_arguments)]
 
+use crate::actions::{self, ActionRuntime, OpenTarget};
 use crate::ai::context;
 use crate::ai::credentials;
 use crate::ai::provider::{self, ChatCompletionRequest, ChatMessage, ProviderConfig};
@@ -55,6 +56,43 @@ pub fn export_workspace_backup(
         .lock()
         .map_err(|error| format!("Lock error: {error}"))?;
     backup::export(&conn, &destination)
+}
+
+// ─── Safe Actions ──────────────────────────────────────
+
+#[tauri::command]
+pub fn preview_action(
+    db: State<Database>,
+    runtime: State<ActionRuntime>,
+    request: actions::ActionRequest,
+) -> Result<actions::ActionPreview, String> {
+    with_conn(&db.conn, |conn| actions::preview(conn, &runtime, request))
+}
+
+#[tauri::command]
+pub fn cancel_action(runtime: State<ActionRuntime>, token: String) -> Result<bool, String> {
+    actions::cancel(&runtime, &token)
+}
+
+#[tauri::command]
+pub fn execute_action(
+    app: AppHandle,
+    db: State<Database>,
+    runtime: State<ActionRuntime>,
+    token: String,
+) -> Result<actions::ActionResult, String> {
+    let mut conn = db
+        .conn
+        .lock()
+        .map_err(|error| format!("Database lock error: {error}"))?;
+    actions::execute(&mut conn, &runtime, &token, |path, target| {
+        app.opener()
+            .open_path(path.to_string_lossy(), None::<&str>)
+            .map_err(|error| match target {
+                OpenTarget::File => format!("Failed to open approved Source file: {error}"),
+                OpenTarget::Folder => format!("Failed to open approved Source folder: {error}"),
+            })
+    })
 }
 
 #[tauri::command]

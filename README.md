@@ -16,6 +16,7 @@ Aether combines Spaces, Markdown Notes, Tasks, Pulse, Vault, explicit Memory, au
 - `Ctrl+K` Universal Search across commands and permitted local workspace domains with deterministic ranking
 - Deterministic per-Space continuity and a curated local Activity timeline for resuming real work
 - Pulse 2.0 with explainable Today, Continue, New, Recent, and user-controlled Ask Aether entry points
+- Safe Actions for previewed, explicitly approved Task/Note creation and bounded single-file operations inside authorized Sources
 - Explicit global or Space Memory that the user may attach to AI
 - DeepSeek chat with cancellable streaming, persisted conversations, response modes, visible context, and confirmed Task proposals
 - Windows tray lifecycle, `Ctrl+Shift+Space`, notifications, and restored window state
@@ -80,6 +81,7 @@ React UI -> hooks/stores -> typed invoke wrappers -> Tauri commands
 - `src-tauri/` contains the trusted Rust boundary, migrations, repositories, native services, and packaging.
 - Universal Search keeps SQL and ranking in Rust, uses existing Notes FTS5, and returns only bounded typed results with local provenance.
 - Continuity is composed locally in Rust from Space-scoped structured records; it never invokes AI or fabricates a summary.
+- Safe Actions store reviewed requests in Rust behind short-lived one-time tokens; execution cannot accept replacement arguments, shell commands, deletion, or overwrite.
 - `docs/decisions/` contains architecture decisions.
 - `.ai/` contains the canonical engineering state and task contracts.
 

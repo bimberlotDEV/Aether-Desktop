@@ -29,6 +29,7 @@ The webview is untrusted relative to native resources. It never executes SQL, re
 | Universal Search   | Rust search repository, Notes FTS5, metadata ranking    | Ctrl+K                                    |
 | Continuity         | Space-scoped Rust read model plus curated Activity      | Space overview, Activity                  |
 | Pulse relevance    | Bounded deterministic Rust read model                   | Pulse                                     |
+| Safe Actions       | Typed Rust proposal runtime plus existing repositories  | Actions                                   |
 
 ## Data and concurrency
 
@@ -44,6 +45,8 @@ Continuity composes bounded active Notes, open Tasks, present Source-file metada
 
 Pulse composes a single read-only snapshot from dated open Tasks, recently worked active Spaces, new present Source metadata, and curated Activity. Relevance and the suggested next step follow a fixed, factual priority; Pulse performs no AI call or mutation. See ADR-019.
 
+Safe Actions uses a closed Rust request enum and keeps each validated proposal in process behind a short-lived opaque token. Approval supplies only that token, which is consumed before revalidation and execution. Database writes and their curated Activity audit are transactional; reversible file writes roll back on audit failure. Filesystem actions canonicalize one explicitly authorized Source, require indexed input files, reject traversal, symlink escape, missing parents, directories, and existing destinations, and never expose absolute roots over IPC. There is no shell, delete, arbitrary executable, cross-Source transfer, or model-owned approval. See ADR-020.
+
 ## Security and privacy
 
 - Tauri CSP restricts scripts to the application and capabilities expose only required native actions.
@@ -54,6 +57,7 @@ Pulse composes a single read-only snapshot from dated open Tasks, recently worke
 - Source roots are explicit and revocable; indexed child APIs expose relative metadata only and are not attached to AI.
 - Continuity is deterministic and Space-bound; it exposes structured facts and presentation-safe Activity without sending data to DeepSeek.
 - Pulse is local and explainable; archived scopes, removed Source files, raw metadata, and absolute Source roots are excluded.
+- Safe Actions require a visible consequence review and explicit user approval; one-time execution remains inside the narrow validated Rust capability boundary.
 - There is no telemetry, account backend, active updater, or embedded signing secret.
 
 ## Quality and delivery

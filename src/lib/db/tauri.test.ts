@@ -42,6 +42,9 @@ import {
   listActivity,
   getSpaceContinuity,
   getPulse,
+  previewAction,
+  executeAction,
+  cancelAction,
 } from '@/lib/db/tauri'
 
 describe('Tauri database boundary', () => {
@@ -78,6 +81,25 @@ describe('Tauri database boundary', () => {
   it('loads Pulse through one read-only command without frontend scope input', async () => {
     await getPulse()
     expect(invoke).toHaveBeenCalledWith('get_pulse')
+  })
+
+  it('keeps Action preview, approval, and cancellation behind opaque tokens', async () => {
+    const request = {
+      type: 'copyFile' as const,
+      sourceId: 'source-1',
+      fromRelativePath: 'in/report.pdf',
+      toRelativePath: 'out/report.pdf',
+    }
+    await previewAction(request)
+    await executeAction('proposal-token')
+    await cancelAction('cancel-token')
+    expect(invoke).toHaveBeenNthCalledWith(1, 'preview_action', { request })
+    expect(invoke).toHaveBeenNthCalledWith(2, 'execute_action', {
+      token: 'proposal-token',
+    })
+    expect(invoke).toHaveBeenNthCalledWith(3, 'cancel_action', {
+      token: 'cancel-token',
+    })
   })
 
   it('passes only the chosen destination to the backup command', async () => {

@@ -71,6 +71,7 @@ export const ActivityEventTypeSchema = z.enum([
   'memory_deleted',
   'source_scanned',
   'ai_conversation_used',
+  'action_executed',
 ])
 
 export const ActivityItemSchema = z.object({
@@ -260,6 +261,82 @@ export const PulseSnapshotSchema = z.object({
   suggestedNextStep: PulseSuggestionSchema,
 })
 export type PulseSnapshot = z.infer<typeof PulseSnapshotSchema>
+
+export const ActionRequestSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('createTask'),
+    title: z.string().trim().min(1).max(200),
+    description: z.string().max(10_000),
+    dueDate: LocalDateSchema.nullable(),
+    spaceId: z.string().nullable(),
+  }),
+  z.object({
+    type: z.literal('createNote'),
+    title: z.string().trim().min(1).max(200),
+    content: z.string().max(20_000),
+    spaceId: z.string().min(1),
+  }),
+  z.object({
+    type: z.literal('createFolder'),
+    sourceId: z.string().min(1),
+    relativePath: z.string().trim().min(1).max(500),
+  }),
+  z.object({
+    type: z.literal('copyFile'),
+    sourceId: z.string().min(1),
+    fromRelativePath: z.string().trim().min(1).max(500),
+    toRelativePath: z.string().trim().min(1).max(500),
+  }),
+  z.object({
+    type: z.literal('moveFile'),
+    sourceId: z.string().min(1),
+    fromRelativePath: z.string().trim().min(1).max(500),
+    toRelativePath: z.string().trim().min(1).max(500),
+  }),
+  z.object({
+    type: z.literal('renameFile'),
+    sourceId: z.string().min(1),
+    fromRelativePath: z.string().trim().min(1).max(500),
+    newName: z.string().trim().min(1).max(255),
+  }),
+  z.object({
+    type: z.literal('openFile'),
+    sourceId: z.string().min(1),
+    relativePath: z.string().trim().min(1).max(500),
+  }),
+  z.object({ type: z.literal('openFolder'), sourceId: z.string().min(1) }),
+])
+export type ActionRequest = z.infer<typeof ActionRequestSchema>
+
+const ActionTypeSchema = z.enum([
+  'createTask',
+  'createNote',
+  'createFolder',
+  'copyFile',
+  'moveFile',
+  'renameFile',
+  'openFile',
+  'openFolder',
+])
+
+export const ActionPreviewSchema = z.object({
+  token: z.string(),
+  actionType: ActionTypeSchema,
+  title: z.string(),
+  summary: z.string(),
+  consequence: z.string(),
+  expiresAt: z.string(),
+})
+export type ActionPreview = z.infer<typeof ActionPreviewSchema>
+
+export const ActionResultSchema = z.object({
+  actionType: ActionTypeSchema,
+  title: z.string(),
+  detail: z.string(),
+  destination: z.string(),
+  executedAt: z.string(),
+})
+export type ActionResult = z.infer<typeof ActionResultSchema>
 
 // ─── Vault Types ─────────────────────────────────────────
 
