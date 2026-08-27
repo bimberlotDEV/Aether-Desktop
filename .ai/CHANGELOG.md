@@ -26,6 +26,17 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-08-27 — `PULSE-002` — Explainable daily Pulse relevance
+
+- **Type:** Feature, privacy, accessibility, test, and docs
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review
+- **Summary:** Rebuilt Pulse around one bounded local snapshot with factual Today, Continue, New, Recent, a deterministic suggested next step, and a prominent user-controlled Ask Aether entry point.
+- **Files:** `src-tauri/src/db/repositories/pulse.rs`, Pulse command and typed bridge, `src/hooks/usePulse.ts`, `src/routes/Pulse.tsx`, tests, ADR-019, architecture/readme, `.ai/*`
+- **Verification:** 72/72 frontend tests, production build, clean dependency audit, Rust format, strict Clippy, 79/79 Rust tests, MSI/NSIS packaging, 1024×640 browser smoke, packaged startup, diff/security review, and GitHub Actions run 33083523023 pass.
+- **Decisions/deviations:** Relevance is local, read-only, bounded, factual, and deterministic; archived scopes, removed files, absolute Source roots, raw Activity metadata, hidden AI calls, and mutations are excluded.
+- **Follow-up:** `ACTION-001` — build narrow typed Safe Actions with explicit review, approval, one-time execution, and auditability.
+
 ## 2026-08-27 — `CONT-001` — Deterministic Space continuity and meaningful Activity
 
 - **Type:** Feature, privacy, accessibility, test, and docs
