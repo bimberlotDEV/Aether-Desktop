@@ -57,6 +57,11 @@ pub fn export_workspace_backup(
     backup::export(&conn, &destination)
 }
 
+#[tauri::command]
+pub fn get_pulse(db: State<Database>) -> Result<repositories::pulse::PulseSnapshot, String> {
+    with_conn(&db.conn, repositories::pulse::get)
+}
+
 // ─── Context Sources ────────────────────────────────────
 
 #[tauri::command]

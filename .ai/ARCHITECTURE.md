@@ -108,6 +108,7 @@ SQLite / native capabilities / external providers
 | `ADR-016` | Require explicit Sources and bounded, metadata-only, non-mutating local directory snapshots before file intelligence.                                                                           | Accepted                | `docs/decisions/016-context-sources-and-indexing.md` |
 | `ADR-017` | Use one local typed search repository with Notes FTS5, bounded metadata matching, and deterministic explainable ranking.                                                                        | Accepted                | `docs/decisions/017-universal-search-ranking.md`     |
 | `ADR-018` | Compose Space continuity from bounded local read models and curate meaningful Activity in backend domain commands.                                                                              | Accepted                | `docs/decisions/018-deterministic-continuity.md`     |
+| `ADR-019` | Compose Pulse from bounded local facts with deterministic, explainable daily relevance.                                                                                                         | Accepted                | `docs/decisions/019-deterministic-pulse.md`          |
 
 ## Architecture change protocol
 

@@ -8,8 +8,8 @@
 | Last updated     | 2026-08-27                    |
 | Updated by       | Codex                         |
 | Repository       | `bimberlotDEV/Aether-Desktop` |
-| Branch           | `codex/continuity`            |
-| Baseline commit  | `36a6a67` (current `master`)  |
+| Branch           | `codex/pulse-2`               |
+| Baseline commit  | `854d5b8` (current `master`)  |
 | Product maturity | Alpha                         |
 
 ## Responsibility of this file
@@ -49,8 +49,9 @@
 | `CTX-001`          | Explicit Sources and metadata indexing             | `complete` | Authorized directories can be safely indexed, inspected, rescanned, associated, and revoked without mutating user files.            |
 | `SEARCH-001`       | Universal Search                                   | `complete` | Ctrl+K searches commands and permitted local domains quickly with deterministic ranking, provenance, and safe navigation.           |
 | `CONT-001`         | Continuity and meaningful Activity                 | `complete` | Every Space has a deterministic resume view and Activity contains only curated, presentation-safe local changes.                    |
+| `PULSE-002`        | Pulse 2.0                                          | `complete` | Pulse makes today’s real local relevance visible without noise, hidden AI, or mutation.                                             |
 
-Milestones A through D are implementation-complete. Milestone D passes all local gates and GitHub Actions run 33071798193 attempt 2 on `codex/continuity`.
+Milestones A through D are merged and verified. Milestone E is implementation-complete with all local gates and GitHub Actions run 33083523023 green.
 
 ## Completed product milestones
 
@@ -128,7 +129,7 @@ Full rationale belongs in `.ai/ARCHITECTURE.md` or a dedicated ADR under `docs/d
 
 ## Next
 
-Milestones A through D are implementation-complete and locally integrated; merge and the final read-only A–D audit remain. Public signing and updater activation remain owner-controlled release operations.
+Milestones A through D are complete. The active roadmap phase is Milestone E — Pulse 2.0. Public signing and updater activation remain owner-controlled release operations.
 
 ## Reusable update template
 

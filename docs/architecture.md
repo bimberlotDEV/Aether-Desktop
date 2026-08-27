@@ -28,6 +28,7 @@ The webview is untrusted relative to native resources. It never executes SQL, re
 | Context Sources    | SQLite metadata plus bounded `context.rs` scanner       | Sources                                   |
 | Universal Search   | Rust search repository, Notes FTS5, metadata ranking    | Ctrl+K                                    |
 | Continuity         | Space-scoped Rust read model plus curated Activity      | Space overview, Activity                  |
+| Pulse relevance    | Bounded deterministic Rust read model                   | Pulse                                     |
 
 ## Data and concurrency
 
@@ -41,6 +42,8 @@ Universal Search uses one typed Rust repository and command. Notes content is re
 
 Continuity composes bounded active Notes, open Tasks, present Source-file metadata, the latest active conversation, and curated Activity for exactly one active Space. Suggested next steps use a fixed local priority rather than generated prose. Domain commands own a closed meaningful event vocabulary with quiet-window deduplication; the webview cannot submit arbitrary events or receive raw metadata JSON. Activity and Space detail are lazy route chunks. See ADR-018.
 
+Pulse composes a single read-only snapshot from dated open Tasks, recently worked active Spaces, new present Source metadata, and curated Activity. Relevance and the suggested next step follow a fixed, factual priority; Pulse performs no AI call or mutation. See ADR-019.
+
 ## Security and privacy
 
 - Tauri CSP restricts scripts to the application and capabilities expose only required native actions.
@@ -50,6 +53,7 @@ Continuity composes bounded active Notes, open Tasks, present Source-file metada
 - Database exports exclude secrets and disclose that Vault file bytes are out of scope.
 - Source roots are explicit and revocable; indexed child APIs expose relative metadata only and are not attached to AI.
 - Continuity is deterministic and Space-bound; it exposes structured facts and presentation-safe Activity without sending data to DeepSeek.
+- Pulse is local and explainable; archived scopes, removed Source files, raw metadata, and absolute Source roots are excluded.
 - There is no telemetry, account backend, active updater, or embedded signing secret.
 
 ## Quality and delivery

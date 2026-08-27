@@ -34,6 +34,7 @@ import type {
   SourceScanResult,
   UniversalSearchResult,
   SpaceContinuity,
+  PulseSnapshot,
 } from './types'
 
 // ─── Native desktop ─────────────────────────────────────
@@ -45,6 +46,9 @@ export async function sendTestNotification(): Promise<void> {
 }
 export async function exportWorkspaceBackup(destination: string): Promise<BackupResult> {
   return invoke('export_workspace_backup', { destination })
+}
+export async function getPulse(): Promise<PulseSnapshot> {
+  return invoke('get_pulse')
 }
 
 // ─── Context Sources ────────────────────────────────────
