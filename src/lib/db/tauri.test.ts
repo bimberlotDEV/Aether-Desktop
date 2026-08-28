@@ -34,6 +34,10 @@ import {
   getNativeStatus,
   sendTestNotification,
   exportWorkspaceBackup,
+  exportWorkspaceArchive,
+  previewWorkspaceRestore,
+  cancelWorkspaceRestore,
+  approveWorkspaceRestore,
   createSource,
   scanSource,
   revokeSource,
@@ -111,6 +115,26 @@ describe('Tauri database boundary', () => {
 
     expect(invoke).toHaveBeenCalledWith('export_workspace_backup', {
       destination: 'C:\\Backups\\workspace.aether-backup.db',
+    })
+  })
+
+  it('keeps complete backup and restore behind paths plus opaque approval tokens', async () => {
+    await exportWorkspaceArchive('C:\\Backups\\workspace.aether-backup')
+    await previewWorkspaceRestore('C:\\Backups\\workspace.aether-backup')
+    await cancelWorkspaceRestore('preview-token')
+    await approveWorkspaceRestore('approval-token')
+
+    expect(invoke).toHaveBeenNthCalledWith(1, 'export_workspace_archive', {
+      destination: 'C:\\Backups\\workspace.aether-backup',
+    })
+    expect(invoke).toHaveBeenNthCalledWith(2, 'preview_workspace_restore', {
+      source: 'C:\\Backups\\workspace.aether-backup',
+    })
+    expect(invoke).toHaveBeenNthCalledWith(3, 'cancel_workspace_restore', {
+      token: 'preview-token',
+    })
+    expect(invoke).toHaveBeenNthCalledWith(4, 'approve_workspace_restore', {
+      token: 'approval-token',
     })
   })
 

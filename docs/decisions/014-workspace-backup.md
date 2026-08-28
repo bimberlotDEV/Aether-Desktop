@@ -2,12 +2,15 @@
 
 - **Status:** Accepted
 - **Date:** 2026-08-10
+- **Extended by:** ADR-022 (portable managed-file archives and safe restore)
 
 ## Decision
 
 The alpha exports a transactionally consistent SQLite snapshot chosen through a native save dialog. The exported database excludes the `secrets` table, keeps local workspace records intact, and is integrity-checked before rollback-safe replacement of the chosen destination.
 
 Managed Vault file bytes and linked external files are not copied in this first foundation. Their metadata remains in the snapshot and the UI states this limitation before export. Restore/import is deliberately not automated until conflict, version, and managed-file semantics have a separate reviewed design.
+
+ADR-022 completes that later design. This database-only command remains available for compatibility, while the primary Settings workflow now creates and restores verified `.aether-backup` archives.
 
 ## Security
 

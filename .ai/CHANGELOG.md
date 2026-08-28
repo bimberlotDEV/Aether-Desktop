@@ -26,6 +26,17 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-08-28 — `BACKUP-RESTORE-001` — Complete portable backup and safe restore
+
+- **Type:** Feature, security, data lifecycle, accessibility, test, and docs
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review
+- **Summary:** Added verified portable workspace archives with managed Vault bytes, strict untrusted-archive preview, one-time explicit restore approval, device-local credential preservation, a complete safety archive, and restart-bound database/Vault replacement with interrupted-swap recovery.
+- **Files:** `src-tauri/src/backup.rs`, native commands/startup, typed TS bridge, `BackupSettings`, ADR-022, backup/database/release docs, `.ai/*`
+- **Verification:** 80 frontend tests; production build/audit; Rust fmt/strict Clippy; 99 Rust tests; release build; MSI/NSIS packaging; 1024×640 and 720×640 light/dark UI smoke; archive/path/secret diff review; exact-head GitHub Actions run `33194814850` — Pass
+- **Decisions/deviations:** Restore replaces rather than merges; linked files and credentials are never archived. Startup semantics are exercised with isolated native temporary app data because Windows known-folder resolution and single-instance enforcement prevent a second packaged executable from using an environment-overridden `%APPDATA%` while preserving the owner's live workspace.
+- **Follow-up:** Public signing and updater activation require owner-controlled trust infrastructure.
+
 ## 2026-08-28 — `RELEASE-040` — Alpha 0.4.0 installed and published
 
 - **Type:** Build, release, data safety, docs, and process

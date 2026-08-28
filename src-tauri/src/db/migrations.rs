@@ -326,6 +326,10 @@ const MIGRATIONS: &[(&str, &str)] = &[
     ),
 ];
 
+pub fn known_names() -> impl Iterator<Item = &'static str> {
+    MIGRATIONS.iter().map(|(name, _)| *name)
+}
+
 fn ensure_migrations_table(conn: &Connection) -> Result<(), String> {
     conn.execute(
         "CREATE TABLE IF NOT EXISTS _migrations (

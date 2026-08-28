@@ -5,7 +5,7 @@
 | Field                   | Value             |
 | ----------------------- | ----------------- |
 | Schema version          | 1                 |
-| Last updated            | 2026-08-26        |
+| Last updated            | 2026-08-28        |
 | Architecture owner      | Codex             |
 | Implementation verifier | Codex self-review |
 
@@ -64,7 +64,7 @@ SQLite / native capabilities / external providers
 8. Design tokens are preferred over scattered raw CSS values.
 9. Architecture changes require a `planned_codex` task contract and accepted ADR before implementation.
 10. AI retries reference an existing persisted user turn; generated Task proposals require strict validation and explicit transactional confirmation.
-11. Workspace exports use SQLite backup semantics, omit credentials, verify integrity, and disclose that Vault file bytes are excluded.
+11. Workspace archives use SQLite backup semantics, omit credentials, verify every payload, include only Aether-managed Vault bytes, and restore only through preview, one-time approval, staging, restart, and rollback-safe replacement.
 
 ## UI and design constraints
 
@@ -111,6 +111,7 @@ SQLite / native capabilities / external providers
 | `ADR-019` | Compose Pulse from bounded local facts with deterministic, explainable daily relevance.                                                                                                         | Accepted                | `docs/decisions/019-deterministic-pulse.md`          |
 | `ADR-020` | Execute only typed, Rust-validated Actions through preview, explicit approval, one-time tokens, and curated audit records.                                                                      | Accepted                | `docs/decisions/020-safe-actions.md`                 |
 | `ADR-021` | Route AI through a closed Rust provider registry with transparent deterministic Auto decisions; AI drafts reuse Safe Actions and never approve or execute.                                     | Accepted                | `docs/decisions/021-ai-provider-routing.md`          |
+| `ADR-022` | Package sanitized SQLite plus managed Vault bytes in a verified portable archive and restore through a one-time, restart-bound, rollback-safe swap.                                         | Accepted                | `docs/decisions/022-portable-backup-and-safe-restore.md` |
 
 ## Architecture change protocol
 
