@@ -53,9 +53,9 @@
 | `ACTION-001`       | Safe Actions                                       | `complete` | Typed preview, approval, one-time execution, containment, rollback, audit, UX, packaging, and exact-head CI pass.                   |
 | `AI-EVOL-001`      | AI Evolution                                       | `complete`  | DeepSeek/OpenAI, transparent Auto routing, response provenance, approved Task/Note drafts, local release gates, and exact-head CI pass. |
 | `RELEASE-040`      | Cut and install integrated Alpha 0.4.0             | `complete`    | Versioning, full gates, protected upgrade, artifacts, data preservation, installed startup, publication, and exact-head CI pass.      |
-| `BACKUP-RESTORE-001` | Complete portable backup and safe restore         | `active`      | Verified sanitized archives include managed Vault bytes and restore only through explicit approval, restart, recovery backup, and rollback. |
+| `BACKUP-RESTORE-001` | Complete portable backup and safe restore         | `complete`    | Verified sanitized archives include managed Vault bytes and restore only through explicit approval, restart, recovery backup, and rollback. |
 
-Milestones A through G and `RELEASE-040` are merged and verified on `master` through PR #44. Milestone H is planned under ADR-022 and its ready data-lifecycle contract.
+Milestones A through G and `RELEASE-040` are merged and verified on `master` through PR #44. Milestone H is complete and published in draft PR #45 with exact-head CI green.
 
 ## Completed product milestones
 
@@ -87,15 +87,15 @@ Milestones A through G and `RELEASE-040` are merged and verified on `master` thr
 
 | Check                                       | Last result | Date       | Notes                                                                                                                 |
 | ------------------------------------------- | ----------- | ---------- | --------------------------------------------------------------------------------------------------------------------- |
-| `pnpm check`                                | Pass        | 2026-08-28 | Alpha 0.4.0: 77/77 tests across 29 files.                                                                              |
+| `pnpm check`                                | Pass        | 2026-08-28 | Milestone H: 80/80 tests across 29 files.                                                                               |
 | `pnpm build`                                | Pass        | 2026-08-28 | Alpha 0.4.0 production frontend build passes.                                                                          |
 | `pnpm audit --audit-level high`             | Pass        | 2026-08-28 | No known vulnerabilities.                                                                                              |
-| `cargo test`                                | Pass        | 2026-08-28 | 95/95 all-target/all-feature tests pass.                                                                               |
+| `cargo test`                                | Pass        | 2026-08-28 | 99/99 all-target/all-feature tests pass.                                                                               |
 | `cargo build --release`                     | Pass        | 2026-08-28 | Optimized Aether 0.4.0 Windows executable builds successfully.                                                         |
 | `cargo fmt --check`                         | Pass        | 2026-08-28 | Repository Rust formatting is clean.                                                                                   |
 | `cargo clippy --all-targets -- -D warnings` | Pass        | 2026-08-28 | All targets and features are warning-free.                                                                             |
 | `pnpm tauri:build`                          | Pass        | 2026-08-28 | Aether 0.4.0 x64 MSI and NSIS bundles build successfully with recorded hashes.                                        |
-| GitHub Actions                              | Pass        | 2026-08-28 | Post-merge run 33186214700 passes frontend quality/build, Rust format, strict lint, and Rust tests on `master`.         |
+| GitHub Actions                              | Pass        | 2026-08-28 | Run 33194814850 passes frontend quality/build, Rust format, strict lint, and Rust tests on exact task head `1cb3b90`.   |
 | Release startup smoke                       | Pass        | 2026-08-28 | Installed Aether 0.4.0 starts from its registered location and remains responsive with preserved workspace data.      |
 
 ## Active blockers
@@ -137,7 +137,7 @@ Full rationale belongs in `.ai/ARCHITECTURE.md` or a dedicated ADR under `docs/d
 
 ## Next
 
-Milestone H — Complete Backup & Restore is planned and ready for implementation. Public signing and updater activation remain owner-controlled later work.
+Milestone H — Complete Backup & Restore is complete in draft PR #45. Public signing and updater activation are the next owner-controlled release milestone.
 
 ## Reusable update template
 

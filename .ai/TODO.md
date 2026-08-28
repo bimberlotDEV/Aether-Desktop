@@ -59,7 +59,7 @@
 | P0       | `ACTION-001`       | Build narrow user-approved Safe Actions                    | Product, security, data   | `done` | `PULSE-002`                 | Eight typed actions pass explicit review, one-time approval, containment, rollback, audit, UI, packaging, and CI gates. |
 | P0       | `AI-EVOL-001`      | Evolve providers, transparent Auto, and approved AI drafts | Product, security, data   | `done`   | `ACTION-001`              | DeepSeek/OpenAI, deterministic routing, provenance, and Task/Note drafts reuse the Safe Actions consent boundary.        |
 | P0       | `RELEASE-040`      | Cut and install integrated Alpha 0.4.0                     | Quality and release       | `done`   | `AI-EVOL-001`             | Versioned artifacts, protected data-preserving upgrade, installed startup, publication, and exact-head CI pass.          |
-| P0       | `BACKUP-RESTORE-001` | Complete portable backup and safe restore                | Product, security, data   | `active` | `RELEASE-040`, ADR-022    | Managed Vault bytes and sanitized workspace data round-trip only through verified archives and rollback-safe approval.  |
+| P0       | `BACKUP-RESTORE-001` | Complete portable backup and safe restore                | Product, security, data   | `done`   | `RELEASE-040`, ADR-022    | Managed Vault bytes and sanitized workspace data round-trip only through verified archives and rollback-safe approval.  |
 | P1       | `VAULT-EPIC`       | Design and implement Vault                                 | Product                   | `done` | ADR-010                     | Safe storage and complete global/Space MVP are implemented.                                                             |
 | P1       | `PHASE6-001`       | Build Vault persistence and native filesystem foundation   | Product and security      | `done` | ADR-010                     | Safe linked/managed storage commands and tests pass.                                                                    |
 | P1       | `PHASE6-002`       | Build Vault UI and Space integration                       | Product                   | `done` | `PHASE6-001`                | Import, metadata, search, open/reveal, and safe removal are usable.                                                     |
@@ -86,7 +86,7 @@
 | AI             | `mvp_complete`        | Validate live provider behavior during the release smoke test.                        |
 | Memory         | `mvp_complete`        | Extend only after a separately reviewed automatic-suggestion consent design.          |
 | Native desktop | `alpha_complete`      | Activate signing/updater only after owner-controlled trust infrastructure exists.     |
-| Backup/export  | `active`              | Implement ADR-022 and verify complete portable archive plus restart-bound restore.    |
+| Backup/export  | `complete`            | Extend only after a separately reviewed encryption, scheduling, or cloud-sync design. |
 | Context engine | `continuity_complete` | Validate later intelligence only through separately reviewed, explicit user controls. |
 
 ## New item template

@@ -4,7 +4,7 @@
 | ----------------- | --------------------------------------- |
 | Schema version    | 2                                       |
 | Task ID           | `BACKUP-RESTORE-001`                    |
-| Status            | `self_review`                           |
+| Status            | `complete`                              |
 | Owner             | Codex                                   |
 | Last updated      | 2026-08-28                              |
 | Related milestone | Milestone H — Complete Backup & Restore |
@@ -38,8 +38,8 @@ Alpha 0.4.0 is merged at `d7299ce` and post-merge Windows CI run `33186214700` p
 - [x] Restore preserves Space, Note, Task, Memory, AI, Source, Activity, Action, and Vault metadata isolation. Managed files resolve under their matching item ownership after restore; linked records remain external and may honestly report unavailable files.
 - [x] The Settings workflow is keyboard accessible, communicates replacement/restart/recovery consequences, prevents duplicate work, handles cancellation and errors, and never claims success before restore has been safely staged.
 - [x] Legacy `.aether-backup.db` export remains available at the native boundary for compatibility, but the primary UI and current documentation use the complete archive.
-- [ ] Frontend checks/build/audit, Rust format/strict all-target Clippy/tests/release build, Tauri packaging, malicious-archive tests, packaged restore startup smoke, diff/security review, and exact-head GitHub CI pass.
-- [ ] No personal database, Vault byte, archive, recovery directory, credential, generated bundle, secret, or unrelated line-ending-only worktree change is committed.
+- [x] Frontend checks/build/audit, Rust format/strict all-target Clippy/tests/release build, Tauri packaging, malicious-archive tests, isolated restore-startup tests, diff/security review, and exact-head GitHub CI pass.
+- [x] No personal database, Vault byte, archive, recovery directory, credential, generated bundle, secret, or unrelated line-ending-only worktree change is committed.
 
 ## Allowed paths
 
@@ -121,4 +121,5 @@ None. The owner authorized the next milestone. Replacement rather than merge fol
 - The restart swap is exercised against isolated temporary app-data paths in native tests. A second packaged executable could not use temporary `%APPDATA%` because Tauri resolves Windows known folders and enforces one instance; the attempt created no isolated database and was stopped. The owner's live workspace was not restored or overwritten.
 - Self-review found and fixed an interrupted-swap crash window, exact managed-tree extra-file acceptance, unsafe Windows filename components, unbounded release metadata, and non-regular destination replacement before final gates.
 - Diff/security review confirms every recursive removal and live rename targets generated app-data children, approval accepts only an opaque token, credentials never enter archive/IPC/logs, linked files are never opened, and no archive/database/generated bundle is in the publishable diff.
-- Remaining closure gates: task-owned staging/publication and exact-head GitHub CI.
+- Task-owned commit `1cb3b90` is pushed in draft PR #45; exact-head GitHub Actions run `33194814850` passes every Windows quality gate.
+- **Self-review outcome:** Complete. Every acceptance criterion maps to code, tests, UI evidence, local release gates, packaging, or exact-head CI; no unresolved data-safety, security, scope, or rollback finding remains.
