@@ -163,4 +163,6 @@ To add a migration:
 
 ## Workspace export
 
-Settings can create a consistent `.aether-backup.db` snapshot through SQLite's online backup API. The export retains workspace tables and Vault metadata, removes the `secrets` table, runs `PRAGMA integrity_check`, and only then replaces the selected destination with rollback protection. Managed Vault file bytes and linked external files are not included. Automated restore is intentionally out of scope for the alpha; see ADR-014.
+Settings creates a versioned `.aether-backup` archive containing a consistent SQLite online-backup snapshot and the exact bytes of every managed Vault item. The snapshot removes `secrets`; linked external files are never read or copied. A strict manifest binds every payload to its size and SHA-256 digest.
+
+Restore first verifies archive paths, limits, hashes, migration compatibility, SQLite integrity, relationships, and managed-file ownership. A separate one-time approval stages and migrates the replacement, preserves only current device-local credential rows, creates a complete pre-restore recovery archive, and restarts Aether. Before SQLite opens, startup swaps the staged database and managed Vault tree together and rolls back or resumes safely after an interrupted swap. Restore replaces the workspace; it does not merge records. The legacy `.aether-backup.db` native export remains for compatibility. See ADR-014 and ADR-022.

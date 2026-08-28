@@ -49,6 +49,10 @@ pub fn run() {
                 .app_data_dir()
                 .expect("Failed to resolve app data directory");
 
+            if backup::apply_pending_restore(&app_data_dir)? {
+                log::info!("Pending workspace restore applied successfully");
+            }
+
             let db_path = app_data_dir.join("aether.db");
 
             // Open database (creates and migrates if needed)
@@ -72,6 +76,7 @@ pub fn run() {
             app.manage(database);
             app.manage(AiRuntime::default());
             app.manage(ActionRuntime::default());
+            app.manage(backup::RestoreRuntime::default());
             app.manage(context::ContextRuntime::default());
             let native_status = native::setup(app)?;
             app.manage(native_status);
@@ -82,6 +87,10 @@ pub fn run() {
             commands::native_get_status,
             commands::native_test_notification,
             commands::export_workspace_backup,
+            commands::export_workspace_archive,
+            commands::preview_workspace_restore,
+            commands::cancel_workspace_restore,
+            commands::approve_workspace_restore,
             commands::preview_action,
             commands::execute_action,
             commands::cancel_action,

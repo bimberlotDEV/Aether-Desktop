@@ -93,7 +93,7 @@ export function Settings() {
                 className="text-sm font-medium text-right max-w-[200px] truncate"
                 style={{ color: 'var(--color-text-tertiary)' }}
               >
-                %APPDATA%/Aether
+                %APPDATA%/com.aether.desktop
               </span>
             </div>
           </Surface>

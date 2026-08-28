@@ -60,6 +60,77 @@ pub fn export_workspace_backup(
     backup::export(&conn, &destination)
 }
 
+#[tauri::command]
+pub async fn export_workspace_archive(
+    app: AppHandle,
+    destination: String,
+) -> Result<backup::ArchiveResult, String> {
+    let app_data = app
+        .path()
+        .app_data_dir()
+        .map_err(|error| format!("Could not resolve Aether data directory: {error}"))?;
+    let database = app_data.join("aether.db");
+    let vault = app_data.join("vault");
+    tauri::async_runtime::spawn_blocking(move || {
+        let conn = rusqlite::Connection::open(database)
+            .map_err(|error| format!("Could not open workspace for backup: {error}"))?;
+        backup::export_archive(&conn, &vault, &app_data, &PathBuf::from(destination))
+    })
+    .await
+    .map_err(|error| format!("Backup worker failed: {error}"))?
+}
+
+#[tauri::command]
+pub async fn preview_workspace_restore(
+    app: AppHandle,
+    runtime: State<'_, backup::RestoreRuntime>,
+    source: String,
+) -> Result<backup::RestorePreview, String> {
+    let app_data = app
+        .path()
+        .app_data_dir()
+        .map_err(|error| format!("Could not resolve Aether data directory: {error}"))?;
+    let runtime = runtime.inner().clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        backup::preview_restore(&PathBuf::from(source), &app_data, &runtime)
+    })
+    .await
+    .map_err(|error| format!("Restore preview worker failed: {error}"))?
+}
+
+#[tauri::command]
+pub fn cancel_workspace_restore(
+    runtime: State<backup::RestoreRuntime>,
+    token: String,
+) -> Result<bool, String> {
+    backup::cancel_restore(&runtime, &token)
+}
+
+#[tauri::command]
+pub async fn approve_workspace_restore(
+    app: AppHandle,
+    runtime: State<'_, backup::RestoreRuntime>,
+    token: String,
+) -> Result<(), String> {
+    let app_data = app
+        .path()
+        .app_data_dir()
+        .map_err(|error| format!("Could not resolve Aether data directory: {error}"))?;
+    let database = app_data.join("aether.db");
+    let vault = app_data.join("vault");
+    let runtime = runtime.inner().clone();
+    let worker_data = app_data.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let conn = rusqlite::Connection::open(database)
+            .map_err(|error| format!("Could not open current workspace for restore: {error}"))?;
+        backup::stage_restore(&conn, &vault, &worker_data, &runtime, &token)
+    })
+    .await
+    .map_err(|error| format!("Restore preparation worker failed: {error}"))??;
+    app.request_restart();
+    Ok(())
+}
+
 // ─── Safe Actions ──────────────────────────────────────
 
 #[tauri::command]

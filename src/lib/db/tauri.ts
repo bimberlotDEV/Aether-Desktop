@@ -30,6 +30,8 @@ import type {
   MemoryItem,
   NativeStatus,
   BackupResult,
+  BackupArchiveResult,
+  RestorePreview,
   Source,
   IndexedFile,
   SourceScanResult,
@@ -51,6 +53,20 @@ export async function sendTestNotification(): Promise<void> {
 }
 export async function exportWorkspaceBackup(destination: string): Promise<BackupResult> {
   return invoke('export_workspace_backup', { destination })
+}
+export async function exportWorkspaceArchive(
+  destination: string,
+): Promise<BackupArchiveResult> {
+  return invoke('export_workspace_archive', { destination })
+}
+export async function previewWorkspaceRestore(source: string): Promise<RestorePreview> {
+  return invoke('preview_workspace_restore', { source })
+}
+export async function cancelWorkspaceRestore(token: string): Promise<boolean> {
+  return invoke('cancel_workspace_restore', { token })
+}
+export async function approveWorkspaceRestore(token: string): Promise<void> {
+  return invoke('approve_workspace_restore', { token })
 }
 export async function getPulse(): Promise<PulseSnapshot> {
   return invoke('get_pulse')

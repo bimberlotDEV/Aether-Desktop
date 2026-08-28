@@ -1,26 +1,21 @@
 # Session Notes
 
-| Field          | Value         |
-| -------------- | ------------- |
-| Schema version | 2             |
-| Session date   | 2026-08-28    |
-| Active task    | `RELEASE-040` |
-| Agent          | Codex         |
-| State          | `complete`    |
+| Field          | Value                |
+| -------------- | -------------------- |
+| Schema version | 2                    |
+| Session date   | 2026-08-28           |
+| Active task    | `BACKUP-RESTORE-001` |
+| Agent          | Codex                |
+| State          | `in_progress`        |
 
 ## Current work
 
-- PR #43 merged Milestone G into `master` at `da4ca98`; exact PR-head CI and post-merge `master` CI both pass.
-- Local `master` and `origin/master` were synchronized with no content diff before branching to `codex/release-040`.
-- Classified the integrated 0.4.0 release as `planned_codex` because it changes installer identity and upgrades the owner's live installation/data.
-- Audited the 0.3.2 release checklist/artifact record, version locations, updater/signing constraints, and guarded publication workflow.
-- Wrote a ready contract requiring full validation, an offline verified pre-install backup, data-preserving silent upgrade, installed startup smoke, traceable hashes, and exact-head CI.
-- Passed the readiness gate and started checkpoint 1 on `codex/release-040`.
-- Reconciled all current release identifiers to 0.4.0 and corrected the runtime app-data documentation to `%APPDATA%/com.aether.desktop`.
-- Passed frozen install, 77 frontend tests, production build/audit, Rust format/strict Clippy, 95 Rust tests, release build, and MSI/NSIS packaging.
-- Preserved and integrity-checked the complete live app-data/install backup, silently upgraded from installed 0.3.2 to 0.4.0 with exact database preservation, and started responsive installed Aether 0.4.0.
-- Published implementation commit `8f97dbc` in draft PR #44; exact-head GitHub Actions run `33122769813` passed every Windows quality gate.
+- PR #44 merged Alpha 0.4.0 into `master` at `d7299ce`; post-merge Windows CI run `33186214700` passes.
+- Local `master` and `origin/master` are synchronized; task branch is `codex/backup-restore`.
+- Classified Milestone H as `planned_codex` because archive parsing, restore, credentials, live SQLite replacement, and Vault ownership can cause data loss or security failures.
+- Audited ADR-014, SQLite/WAL startup, backup command/UI, migrations, managed/linked Vault paths, containment helpers, Tauri restart support, and current dependency surface.
+- Accepted ADR-022 and completed the ready `BACKUP-RESTORE-001` contract before production code changes.
 
 ## Exact resume point
 
-`RELEASE-040` is complete. Leave draft PR #44 unmerged until explicit owner authorization; the next separately planned data-lifecycle milestone should design restore and Vault-byte archive semantics.
+Begin checkpoint 1 in `src-tauri/src/backup.rs`: introduce the strict archive manifest/writer/reader and retain the legacy sanitized DB export for compatibility. Do not touch the installed 0.4.0 personal workspace during development.

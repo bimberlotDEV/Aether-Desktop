@@ -21,7 +21,9 @@ Use this checklist for every Alpha candidate. Record command output or hashes in
 - [ ] Loading, empty, error, cancellation, retry, and destructive confirmation paths are present.
 - [ ] No secrets, `.env` files, databases, logs, private keys, or generated bundles are tracked.
 - [ ] Tauri capabilities and CSP match the operations actually used.
-- [ ] AI privacy boundary and backup exclusions are visible before the action.
+- [ ] AI privacy boundaries and backup exclusions are visible before the action.
+- [ ] A complete archive round-trip preserves managed Vault bytes and workspace counts while omitting credentials and linked-file bytes.
+- [ ] Restore preview, one-time approval, safety archive, restart swap, interrupted-swap recovery, traversal/duplicate/hash/schema rejection, and post-restore Vault ownership pass in isolated app data.
 - [ ] Release executable starts and remains alive long enough to render.
 - [ ] MSI and NSIS bundles exist and SHA-256 hashes are recorded.
 - [ ] Version, license, README, security policy, changelog, and architecture agree.

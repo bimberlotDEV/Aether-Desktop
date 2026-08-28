@@ -26,7 +26,7 @@ Aether combines Spaces, Markdown Notes, Tasks, Pulse, Vault, explicit Memory, au
 
 Workspace data is stored in SQLite at `%APPDATA%/com.aether.desktop/aether.db`. There is no account or telemetry. AI is opt-in: only a prompt and context items explicitly attached to a conversation are sent to the provider shown on each response. DeepSeek and OpenAI API keys are separately encrypted for the current Windows user with DPAPI. Auto selects only a configured provider, explains its route, and never silently retries through another provider.
 
-Database exports contain workspace records and Vault metadata, but omit credentials and all managed or linked Vault file contents. Automated restore is not part of this alpha.
+Complete `.aether-backup` archives contain the sanitized workspace database plus every file managed by Aether Vault. API credentials are never exported, and linked files remain external because Aether does not own them. Settings verifies an archive before showing its contents; restore requires a separate confirmation, creates a complete local safety backup, and restarts into a rollback-safe workspace replacement.
 
 See [SECURITY.md](SECURITY.md) for the security model and reporting guidance.
 

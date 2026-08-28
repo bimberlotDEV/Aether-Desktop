@@ -449,6 +449,33 @@ export const BackupResultSchema = z.object({
 })
 export type BackupResult = z.infer<typeof BackupResultSchema>
 
+export const BackupArchiveResultSchema = z.object({
+  sizeBytes: z.number().nonnegative(),
+  createdAt: z.string(),
+  managedFileCount: z.number().int().nonnegative(),
+  linkedFileCount: z.number().int().nonnegative(),
+})
+export type BackupArchiveResult = z.infer<typeof BackupArchiveResultSchema>
+
+export const RestoreCountsSchema = z.object({
+  spaces: z.number().int().nonnegative(),
+  notes: z.number().int().nonnegative(),
+  tasks: z.number().int().nonnegative(),
+  memories: z.number().int().nonnegative(),
+  conversations: z.number().int().nonnegative(),
+})
+export const RestorePreviewSchema = z.object({
+  token: z.string(),
+  createdAt: z.string(),
+  appVersion: z.string(),
+  archiveSizeBytes: z.number().nonnegative(),
+  managedFileCount: z.number().int().nonnegative(),
+  linkedFileCount: z.number().int().nonnegative(),
+  expiresAt: z.string(),
+  counts: RestoreCountsSchema,
+})
+export type RestorePreview = z.infer<typeof RestorePreviewSchema>
+
 // ─── Context Sources ────────────────────────────────────
 
 export const SourceSchema = z.object({
