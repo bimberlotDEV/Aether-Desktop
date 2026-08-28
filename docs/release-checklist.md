@@ -1,6 +1,6 @@
 # Alpha release checklist
 
-Use this checklist for every 0.3.x alpha candidate. Record command output or hashes in `.ai/PROJECT_STATE.md`.
+Use this checklist for every Alpha candidate. Record command output or hashes in `.ai/PROJECT_STATE.md` and the versioned artifact document.
 
 ## Automated gates
 

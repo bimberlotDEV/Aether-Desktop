@@ -1,119 +1,111 @@
 # Codex Task Contract
 
-| Field             | Value                      |
-| ----------------- | -------------------------- |
-| Schema version    | 2                          |
-| Task ID           | `AI-EVOL-001`              |
-| Status            | `complete`                 |
-| Owner             | Codex                      |
-| Last updated      | 2026-08-27                 |
-| Related milestone | Milestone G — AI Evolution |
-| Classification    | `planned_codex`            |
+| Field             | Value                          |
+| ----------------- | ------------------------------ |
+| Schema version    | 2                              |
+| Task ID           | `RELEASE-040`                  |
+| Status            | `complete`                     |
+| Owner             | Codex                          |
+| Last updated      | 2026-08-28                     |
+| Related milestone | Integrated Alpha 0.4.0 release |
+| Classification    | `planned_codex`                |
 
 ## Objective
 
-Evolve Aether from a DeepSeek-specific chat into a transparent multi-provider intelligence layer with deterministic Auto routing and strictly user-approved AI proposals that reuse the existing Safe Actions boundary.
+Cut, verify, install, and publish Aether Alpha 0.4.0 from merged `master`, preserving the owner's existing local database and installation while producing traceable unsigned Windows MSI and NSIS artifacts.
 
 ## Context
 
-Milestones A–F are merged at `51fd6d9`. AI already has cancellable streaming, persisted Space-isolated conversations, explicit context, response modes, DPAPI-protected DeepSeek credentials, and a provider trait. The implementation still hardcodes DeepSeek in conversation validation, schemas, settings, model selection, provider creation, and error text. Milestone F now supplies a closed preview → approval → one-time execution Action boundary.
-
-Official provider contracts checked on 2026-08-27: DeepSeek and OpenAI both expose SSE Chat Completions; their provider-specific request fields and error semantics differ. Official documentation explicitly requires generated tool arguments to be treated as untrusted and validated before use.
+Milestones A–G are merged through PR #43 at `da4ca98`; pull-request and post-merge Windows CI pass. The merged product remains labeled 0.3.2 in package, Tauri, Rust, and UI metadata, so the new functionality has no honest Windows upgrade boundary or artifact record. The current public trust infrastructure still lacks owner-controlled code-signing and updater keys, which remain explicitly out of scope.
 
 ## Ordered checkpoints
 
-1. **Provider foundation:** capability registry, provider-aware encrypted credentials, OpenAI adapter, dynamic typed model catalog, and unchanged DeepSeek behavior.
-2. **Auto routing:** deterministic Rust route decision from mode, configured providers, model capabilities, and user preference; no silent remote fallback; persisted per-response provenance and visible disclosure.
-3. **Approved proposals:** a strict Rust-parsed Task/Note draft mode that can only enter the existing Safe Actions review; the model never receives an approval token or execution command.
-4. **Product integration:** provider settings, Auto/manual selection, route explanations, accessible proposal card, honest browser/offline/error states, docs, release verification, publication, and merge.
+1. **Release identity:** reconcile project state after PR #43 and update every machine/UI release identifier to numeric SemVer 0.4.0.
+2. **Release gates:** run frozen dependency install, frontend/Rust quality, security audit, production/release builds, package creation, diff/secret review, and artifact hashing.
+3. **Protected upgrade:** stop Aether cleanly, copy the existing install/data to a timestamped local backup outside the repository, verify the backup, silently install 0.4.0, and confirm database preservation plus responsive startup.
+4. **Closure:** record exact artifacts and evidence, self-review every criterion, publish a draft PR, and require exact-head Windows CI.
 
 ## Acceptance criteria
 
-- [x] Rust owns a closed provider registry for `deepseek` and `openai`, fixed official endpoints, curated model capabilities, provider-specific request shaping, uniform cancellation/streaming, and presentation-safe errors.
-- [x] Provider API keys are separately DPAPI-encrypted, never returned/logged/exported, independently testable/removable, and the legacy DeepSeek key continues to work without destructive migration.
-- [x] OpenAI can be manually selected through the same persisted conversation/streaming flow; no custom endpoint, arbitrary URL, SDK secret, or provider credential crosses IPC.
-- [x] `Auto` is a real Rust route preference, not a provider/model alias. It deterministically selects only a configured provider, records the resolved provider/model/reason on each assistant response, and never silently retries through another remote provider.
-- [x] Existing conversations and populated personal-beta databases upgrade append-only and remain readable; fresh creation, upgrade, idempotence, rollback, and repository behavior are tested.
-- [x] The UI exposes connected-provider state, test/save/remove controls, Auto plus explicit model choices, and a calm per-response route disclosure including remote processing and visible context count.
-- [x] AI Action output is parsed strictly in Rust into only `createTask` or `createNote`, is size/count bounded, validated against the current active Space, attributed to its conversation/message, and cannot contain file, shell, delete, network, or approval capabilities.
-- [x] An AI draft cannot execute directly: the user must open the existing Safe Actions preview and separately choose “Approve and execute”; cancellation, expiry, replay protection, and audit behavior remain owned by Milestone F.
-- [x] Existing `create_tasks` behavior remains compatible or is safely converged without introducing a weaker second mutation path.
-- [x] Cross-Space context, prompt-injected tool text, malformed JSON, unknown provider/model, missing credentials, stale route state, stream races, and provider failures have automated coverage.
-- [x] Frontend/Rust gates, migration tests, build/audit, packaging, diff/security review, responsive theme/browser smoke, packaged startup, and exact-head Windows CI pass.
+- [x] `package.json`, Tauri configuration, Rust package/lock metadata, Settings, Sidebar, README, and native release documentation consistently identify Alpha 0.4.0; the pnpm lock has no root-version field and remains frozen-valid.
+- [x] The release remains an unsigned Alpha with updater artifacts disabled; no signing secret, placeholder key, endpoint, or false public-release claim is introduced.
+- [x] Frozen install, frontend typecheck/lint/tests/build, high-severity dependency audit, Rust format/strict Clippy/tests/release build, Tauri packaging, and diff/security checks pass from the merged tree.
+- [x] MSI and NSIS 0.4.0 x64 artifacts exist and their sizes and SHA-256 hashes are recorded in a dedicated release artifact document.
+- [x] Before installation, the active Aether process is stopped and the existing installation plus the runtime-resolved `%APPDATA%/com.aether.desktop` data are copied to a timestamped directory outside the repository with verifiable database size/hash evidence.
+- [x] Installing 0.4.0 succeeds without deleting or corrupting existing workspace data; the post-install database passes SQLite integrity validation and its exact preservation outcome is recorded.
+- [x] The installed executable reports product version 0.4.0, starts from the installed location, remains responsive, and preserves the existing workspace row counts.
+- [x] No database, credential, backup, generated bundle, private key, environment file, or unrelated worktree change is committed.
+- [x] Release documentation, `.ai` state, changelog, backlog, branch/head evidence, and exact-head GitHub Windows CI agree.
 
 ## Allowed paths
 
-- `src-tauri/src/ai/`
-- `src-tauri/src/actions.rs`
-- `src-tauri/src/commands.rs`
-- `src-tauri/src/lib.rs`
-- `src-tauri/src/db/migrations.rs`
-- `src-tauri/src/db/repositories/conversations.rs`
-- `src-tauri/src/db/repositories/activity.rs`
-- `src/lib/db/`
-- `src/hooks/useAi*.ts`
-- `src/components/ai/`
-- `src/routes/AI.tsx`
+- `package.json`
+- `pnpm-lock.yaml`
+- `src-tauri/Cargo.toml`
+- `src-tauri/Cargo.lock`
+- `src-tauri/tauri.conf.json`
+- `src/components/Sidebar.tsx`
 - `src/routes/Settings.tsx`
-- `src/styles/index.css`
 - `README.md`
-- `docs/architecture.md`
-- `docs/decisions/021-ai-provider-routing.md`
+- `AGENTS.md`
+- `docs/database.md`
+- `docs/decisions/010-vault-file-ownership.md`
+- `docs/native-desktop.md`
+- `docs/release-checklist.md`
+- `docs/release-artifacts-0.4.0.md`
 - `.ai/*`
 
 ## Non-goals
 
-- General autonomous computer control, background agents, automation schedules, multi-step plans, browser/shell execution, arbitrary endpoints, plugin/tool execution, destructive actions, or model-owned approval.
-- File Action proposals until a separate design makes Source/file metadata an explicit visible AI attachment; existing manual file Actions remain available.
-- Silent cross-provider fallback, automatic Memory, telemetry, cloud sync, managed billing, subscriptions, Anthropic/Gemini support, or a bundled local-model runtime.
-- Replacing the entire AI API with OpenAI Responses during this milestone; Chat Completions preserves the existing stable streaming abstraction while provider-specific adapters remain separable.
+- Code signing, automatic updates, GitHub Release publication, public store distribution, telemetry, accounts, cloud sync, new product features, provider credentials, or live paid AI calls.
+- Changing schemas, migrations, application behavior, visual design, dependency versions, installer identity, data locations, backup format, or Vault ownership semantics.
+- Deleting the previous installation backup or removing user data during uninstall/reinstall.
 
 ## Risks and safeguards
 
-- **Secret exposure:** namespaced secret keys remain behind the DPAPI Rust boundary; status IPC returns booleans only.
-- **Unexpected data recipient:** Auto considers configured providers but selects one before sending; the UI identifies remote provider/model and there is no automatic fallback after send failure.
-- **Provider drift:** capability/model catalogs are centralized, tested, and rejected when unknown; provider-specific bodies are separate.
-- **Migration damage:** append nullable provenance columns only; legacy rows need no rewrite and upgrade runs transactionally.
-- **Prompt injection/confused deputy:** model output is untrusted data, strict Rust parsing permits only two non-file drafts, and execution still needs an opaque F token plus explicit approval.
-- **Single approval policy:** AI proposal mutation exists only through Safe Actions; the former direct Task batch command is removed.
-- **Rollback:** remove OpenAI/Auto/proposal UI and commands, retain nullable provenance, legacy secret, and readable conversations; no user content is deleted.
+- **Personal data loss:** close the process, resolve exact runtime data/install paths instead of trusting stale documentation, copy rather than move, hash the database before/after, run integrity checks, and retain the backup.
+- **Windows upgrade mismatch:** use 0.4.0 consistently in package/Tauri/Rust metadata and verify installed file metadata after the silent installer.
+- **False trust:** continue to label artifacts unsigned and keep updater creation disabled.
+- **Generated-file leakage:** bundles, databases, backups, and credentials stay ignored/outside Git and are checked before publication.
+- **Rollback:** retain the complete pre-install copy; the previous 0.3.2 installer remains available locally. Restore requires an explicit owner instruction if needed.
 
 ## Required validation
 
 ```text
+pnpm install --frozen-lockfile
 pnpm check
 pnpm build
 pnpm audit --audit-level high
 cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check
 cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --all-features -- -D warnings
 cargo test --manifest-path src-tauri/Cargo.toml --all-targets --all-features
+cargo build --manifest-path src-tauri/Cargo.toml --release
 pnpm tauri:build
 git diff --check
-browser AI/Settings smoke at 1024x640 in dark and light themes
-packaged desktop startup smoke
+artifact SHA-256 and version metadata checks
+offline pre-install backup and SQLite integrity verification
+silent NSIS upgrade and installed startup smoke
 GitHub PR exact-head CI
 ```
 
-Live OpenAI/DeepSeek requests are not required for acceptance because no owner credentials may be requested, extracted, or logged. HTTP request shaping, SSE decoding, routing, credential isolation, and failure behavior require deterministic local tests; the UI must honestly report unconfigured providers.
-
 ## Blocking decisions
 
-None. The owner authorized the next milestone. Adding one fixed-endpoint provider, transparent Auto, and Task/Note-only drafts is reversible and follows the approved roadmap without enabling general autonomy.
-
-## Implementation evidence and self-review
-
-- Provider request-shaping, SSE, routing, secret isolation, strict proposal parsing, migration preservation, Space isolation, one-time approval, and AI-origin audit tests pass locally.
-- The direct `create_tasks_batch` mutation command and its frontend bridge were removed; AI drafts can now reach mutation only through a server-reconstructed Safe Action preview.
-- `pnpm check` passes 77/77 tests across 29 files; production build and high-severity dependency audit pass.
-- strict Rust format and Clippy pass; 95/95 Rust tests pass.
-- MSI and NSIS package successfully; the final release executable starts and remains responsive.
-- AI and Settings smoke at 1024×640 passes in light/dark themes with no browser warnings or errors.
-- Diff/security review found only two fixed official provider URLs, no credential return path, no arbitrary endpoint, no silent fallback, and no model-owned token or execution path.
-- Live provider calls were intentionally not run because owner credentials are neither required nor available; GitHub Actions run `33101730042` passed on implementation head `ca94354`.
+None. The owner explicitly authorized the next milestone after accepting the recommended 0.4.0 release sequence. Unsigned Alpha status and lack of updater trust remain visible constraints, not hidden release claims.
 
 ## Readiness review
 
-- **Status:** Ready. Provider scope, routing semantics, consent boundary, migration, rollback, evidence, and non-goals are explicit.
-- **Architecture gate:** ADR-021 is accepted before production implementation.
-- **Migration gate:** append-only nullable message provenance; no existing row or secret is rewritten.
-- **Security gate:** Rust selects the recipient, resolves explicit context, parses drafts, and delegates approval/execution exclusively to Safe Actions.
+- **Status:** Ready. Version scope, artifacts, data protection, validation, publication, rollback, and excluded trust infrastructure are explicit.
+- **Architecture gate:** No new ADR is required; this applies existing ADR-013/014 release and backup constraints without changing architecture.
+- **Data gate:** Installation may proceed only after a verified, non-destructive backup outside the repository.
+- **Publication gate:** A draft PR and exact-head CI are required; no GitHub Release or merge is implied.
+
+## Implementation evidence and self-review
+
+- Version identifiers and user-visible labels are consistently 0.4.0; historical 0.3.x artifact documents remain intentionally unchanged.
+- The release patch changes metadata and documentation only. Application behavior, database schema, permissions, CSP, dependencies, installer identity, data paths, and updater state are unchanged.
+- Frozen frontend gates pass with 77/77 tests and no known audited vulnerabilities; native gates pass with strict Clippy and 95/95 tests.
+- MSI/NSIS artifacts exist with recorded size/hash evidence and remain unsigned; `createUpdaterArtifacts` is still `false`.
+- A verified external pre-install backup retained the full runtime app-data and installed directories. Source/backup hashes, SQLite integrity, and domain row counts match.
+- Silent installation returned zero, preserved the database byte-for-byte before first launch, registered 0.4.0, and started a responsive installed 0.4.0 process.
+- Review corrected a pre-existing documentation mismatch: Tauri resolves the configured identifier to `%APPDATA%/com.aether.desktop`, which is now used consistently by release and database documentation.
+- No unresolved acceptance finding remains; GitHub Actions run `33122769813` passed on exact implementation head `8f97dbc`.

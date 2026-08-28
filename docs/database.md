@@ -2,7 +2,7 @@
 
 ## Storage
 
-The SQLite database is stored at `%APPDATA%/Aether/aether.db` on Windows. This resolves to `C:\Users\<user>\AppData\Roaming\Aether\aether.db`.
+The SQLite database is stored at `%APPDATA%/com.aether.desktop/aether.db` on Windows. Tauri derives this runtime app-data directory from the configured application identifier, resolving to `C:\Users\<user>\AppData\Roaming\com.aether.desktop\aether.db`.
 
 - **Journal mode:** WAL (Write-Ahead Logging) for concurrent reads
 - **Foreign keys:** Enabled
@@ -132,7 +132,7 @@ Metadata and ownership records for local files. Filesystem behavior is governed 
 
 Indexes: `space_id`, `storage_mode`, `display_title`, `updated_at`. `stored_path` is unique.
 
-Managed files live below `%APPDATA%/Aether/vault/items/<item-id>/`. Linked originals are never mutated or deleted by Vault removal. `stored_path` remains internal to Rust; native open and reveal operations resolve a database item rather than accepting or returning arbitrary frontend paths.
+Managed files live below `%APPDATA%/com.aether.desktop/vault/items/<item-id>/`. Linked originals are never mutated or deleted by Vault removal. `stored_path` remains internal to Rust; native open and reveal operations resolve a database item rather than accepting or returning arbitrary frontend paths.
 
 ### memory_items
 

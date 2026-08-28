@@ -26,6 +26,17 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-08-28 — `RELEASE-040` — Alpha 0.4.0 installed and published
+
+- **Type:** Build, release, data safety, docs, and process
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review
+- **Summary:** Cut merged Milestones A–G as Alpha 0.4.0, produced traceable unsigned Windows artifacts, protected the complete existing installation/data, silently upgraded 0.3.2 with exact database preservation, and started the installed release.
+- **Files:** Version metadata/UI labels, `README.md`, runtime data-path documentation, `docs/release-artifacts-0.4.0.md`, `.ai/*`
+- **Verification:** Frozen install; 77/77 frontend tests; production build/audit; Rust format, strict all-target/all-feature Clippy, 95/95 tests and release build; MSI/NSIS hashes; backup/database integrity and domain counts; silent install; installed 0.4.0 startup; exact-head GitHub Actions run `33122769813` — Pass
+- **Decisions/deviations:** Corrected the runtime data path to `%APPDATA%/com.aether.desktop`; release remains unsigned with updater artifacts disabled because owner-controlled trust infrastructure does not exist.
+- **Follow-up:** Design restore plus Vault-byte archives as a separately reviewed milestone; signing/updater activation remains owner-controlled.
+
 ## 2026-08-27 — `AI-EVOL-001` — Transparent multi-provider AI Evolution
 
 - **Type:** Feature, security, data, migration, accessibility, test, docs

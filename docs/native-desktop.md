@@ -12,7 +12,7 @@
 
 Tauri owns Windows packaging and reads identity/version/icons from `src-tauri/tauri.conf.json` and `src-tauri/Cargo.toml`. Release verification must build and install the generated Windows bundles on a clean-user account, then verify launch, database creation, uninstall, and preservation/removal expectations.
 
-Machine-readable package versions use `0.3.2`; Alpha remains the human-facing product maturity. Textual SemVer prerelease identifiers are intentionally avoided because Windows MSI permits only numeric prerelease/build fields. Patch releases must increment this numeric version so Windows installers have an explicit upgrade boundary.
+Machine-readable package versions use `0.4.0`; Alpha remains the human-facing product maturity. Textual SemVer prerelease identifiers are intentionally avoided because Windows MSI permits only numeric prerelease/build fields. Every shipped candidate must increment this numeric version so Windows installers have an explicit upgrade boundary.
 
 ## Update activation gate
 
