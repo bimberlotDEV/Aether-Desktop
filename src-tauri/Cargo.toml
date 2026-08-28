@@ -33,7 +33,7 @@ base64 = "0.22"
 ring = "0.17"
 sha2 = "0.10.8"
 zip = { version = "2.4.2", default-features = false, features = ["deflate"] }
-windows-sys = { version = "0.59", features = [
+windows-sys = { version = "0.61", features = [
     "Win32_Foundation",
     "Win32_Security_Cryptography",
 ] }
