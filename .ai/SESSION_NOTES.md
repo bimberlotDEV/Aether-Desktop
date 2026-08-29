@@ -1,21 +1,21 @@
 # Session Notes
 
-| Field          | Value      |
-| -------------- | ---------- |
-| Schema version | 2          |
-| Session date   | 2026-08-29 |
-| Active task    | `BETA-001` |
-| Agent          | Codex      |
-| State          | `accepted` |
+| Field          | Value             |
+| -------------- | ----------------- |
+| Schema version | 2                 |
+| Session date   | 2026-08-29        |
+| Active task    | `COMM-LAUNCH-001` |
+| Agent          | Codex             |
+| State          | `in_review`       |
 
 ## Current work
 
-- Milestone H closed on `228a345`; exact-head GitHub Actions run `33255189321` passed and draft PR #47 is open.
-- Created `codex/public-beta-readiness` from the H closure head.
-- Audited current release/security/support state: signing/updater and backup foundations exist, but beta support, issue intake, privacy-safe diagnostics, evidence templates and several public docs are missing or stale.
-- Implemented the closed Rust diagnostic report, strict TS boundary, user-reviewed Settings copy flow, issue forms, beta handbook, test matrix, evidence ledger and current security/release documentation.
-- Local gates pass with 100 frontend and 108 Rust tests, clean build/audit, strict Rust checks, MSI/NSIS packaging, browser responsiveness and packaged startup; exact-head GitHub Actions run `33265317383` passed.
+- Milestone I repository readiness closed on `a94e4dd`; draft PR #48 and exact-head CI run `33265651119` are green.
+- Canonical Public Beta remains externally blocked on owner signing/publication and meaningful real tester evidence.
+- Created `codex/commercial-launch-gates`, classified the bounded J/K readiness work as `planned_codex`, accepted ADR-026 and completed the contract before readiness documents.
+- Added the J/K commercial architecture, managed-AI boundary, truthful website brief, 14-item owner decision register and falsifiable 1.0 gate without changing production code or claims.
+- All documentation links and status claims validate; existing 100 frontend and 108 Rust tests, production build, formatting and strict lint remain green.
 
 ## Exact resume point
 
-Push this closure and require exact-head CI. Then create a separate Commercial/Launch Gates branch that documents J/K architecture and exact owner decisions without implementing premature entitlements, managed AI, payments or 1.0 claims.
+Publish the J/K readiness packet, wait for exact-head CI, record closure as externally blocked, start the verified packaged app, and return the strictly ordered owner action list.

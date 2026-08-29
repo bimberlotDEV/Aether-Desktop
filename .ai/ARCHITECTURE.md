@@ -117,6 +117,7 @@ SQLite / native capabilities / external providers
 | `ADR-023` | Deliver Windows releases through owner-gated Authenticode and Tauri signatures, draft-first publication, and a narrow Rust-owned Stable updater.                                             | Accepted                | `docs/decisions/023-trusted-release-delivery.md`     |
 | `ADR-024` | Gate the shell with upgrade-safe local onboarding initialized in Rust and composed from existing Space, Source, and DPAPI provider boundaries.                                                  | Accepted                | `docs/decisions/024-first-run-onboarding.md`         |
 | `ADR-025` | Prepare external testing with allowlisted local diagnostics, manual privacy-minimal evidence, and an explicit repository-readiness versus real-beta boundary.                                  | Accepted                | `docs/decisions/025-public-beta-operations.md`       |
+| `ADR-026` | Delay production entitlements, managed AI, pricing and 1.0 until explicit owner decisions and beta evidence; protect local data from future license/service outages.                         | Accepted                | `docs/decisions/026-commercial-and-launch-gates.md`  |
 
 ## Architecture change protocol
 

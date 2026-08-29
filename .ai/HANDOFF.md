@@ -1,116 +1,97 @@
 # Codex Task Contract
 
-| Field             | Value                               |
-| ----------------- | ----------------------------------- |
-| Schema version    | 2                                   |
-| Task ID           | `BETA-001`                          |
-| Status            | `accepted`                          |
-| Owner             | Codex                               |
-| Last updated      | 2026-08-29                          |
-| Related milestone | Canonical Milestone I — Public Beta |
-| Classification    | `planned_codex`                     |
+| Field             | Value                                                |
+| ----------------- | ---------------------------------------------------- |
+| Schema version    | 2                                                    |
+| Task ID           | `COMM-LAUNCH-001`                                    |
+| Status            | `in_review`                                          |
+| Owner             | Codex                                                |
+| Last updated      | 2026-08-29                                           |
+| Related milestone | Canonical Milestones J and K — Commercial/1.0 gates |
+| Classification    | `planned_codex`                                      |
 
 ## Objective
 
-Make Aether operationally ready for meaningful external Windows testing: testers can understand the risk and privacy model, exercise the product, capture a strictly sanitized local diagnostic summary, report defects without exposing private content, recover data, and follow a repeatable beta test matrix. Do not claim the beta has happened until signed distribution and real external evidence exist.
+Take Milestones J and K to the furthest responsible repository-owned state while Milestone I awaits real external evidence: define a maintainable entitlement/managed-AI/signing/updater/website architecture, surface every legal/business/operations decision, and establish objective 1.0 retention/reliability gates. Do not ship unused entitlement code, finalize pricing, change legal licenses, create accounts/payments, publish a website, or claim launch readiness.
 
 ## Context
 
-Milestones A–H and the owner-gated signing/updater foundation are implemented. The repository lacks beta-specific support and feedback intake, production-safe diagnostics, a maintained known-limitations/test matrix, and current security documentation. Aether intentionally has no telemetry or account service, so beta evidence must be explicitly user-reported rather than silently collected.
+Signing/updater implementation already exists and repository beta operations are complete, but no signed beta cohort or retention evidence exists. The masterprompt explicitly forbids payments and final pricing before beta retention is validated and permits 1.0 only when retention/reliability justify it. Licensing, managed AI and website publication require owner identity, legal, provider, financial and infrastructure choices that cannot be inferred from code.
 
 ## Ordered checkpoints
 
-1. **Truthful beta surface:** reconcile version/security/support/privacy documentation and distinguish an unsigned candidate from a signed public beta.
-2. **Sanitized diagnostics:** expose a Rust-owned, bounded report containing only app/schema/platform/integrity/native-capability state; never content, paths, identifiers, credentials, logs, counts, prompts, filenames, or provider keys.
-3. **User-controlled sharing:** show the report in Settings with explicit privacy language and a copy action; generation and copying remain local and never submit data automatically.
-4. **External test operations:** add issue forms, beta handbook, test matrix, known limitations, rollback/support/severity guidance, and a manual evidence ledger for activation/retention/core-behavior signals.
-5. **Verification/publication:** test the Rust/IPC/UI privacy boundary, run full gates and package smoke, self-review, publish a draft PR, and record which external gates remain.
+1. Reconcile which J capabilities already exist and which are genuinely blocked.
+2. Define entitlement and managed-AI trust boundaries without production placeholders or feature gating.
+3. Produce a truthful public website/content brief with no fake availability, pricing, testimonials or data claims.
+4. Produce an owner decision register with recommended sequencing, inputs and consequences.
+5. Define measurable K launch gates and rollback rules tied to private beta evidence, then publish the verified readiness packet.
 
 ## Acceptance criteria
 
-- [x] A diagnostic report is constructed in Rust from a closed schema and contains only Aether version, database schema version, SQLite integrity result, Windows platform label, updater configured state, and native capability booleans.
-- [x] Diagnostic generation does not query domain tables, enumerate rows/files, read logs, expose paths, persist identifiers, contact a network, or include user content/secrets.
-- [x] Settings displays the exact report before a user-initiated copy; browser mode is honest, copy success/failure is announced, and no report is automatically transmitted or stored.
-- [x] Frontend and Rust tests reject accidental field expansion and verify the invoke boundary, loading, error, copy and unsupported-browser states.
-- [x] GitHub issue forms request reproducible technical details while warning against credentials, databases, notes, prompts, filenames, personal paths and security disclosures.
-- [x] A beta handbook defines supported Windows versions, candidate trust/signing status, install/upgrade/backup/restore/uninstall checks, severity triage, feedback route, rollback, known limitations and owner-controlled release gates.
-- [x] The beta evidence template records tester consent, anonymous tester code, build/version, scenario outcomes, activation, D2/D7/D14/D30 return signals and qualitative replacement behavior without telemetry or private content.
-- [x] `SECURITY.md`, `README.md`, release checklist and changelog accurately describe 0.5.0, both AI providers, complete backups, signing/updater state, correct app-data path and vulnerability reporting.
-- [x] No payments, accounts, telemetry, cloud backend, hidden analytics, automatic issue submission, crash upload, pricing decision or public-release claim is introduced.
-- [x] Frozen install, frontend check/build/audit, Rust fmt/strict Clippy/check/tests/release build, MSI/NSIS packaging, browser/native smoke, diff/secret/capability/privacy review and exact-head CI pass.
+- [x] Commercial-readiness documentation inventories licensing, managed AI, signing, updater and website status without presenting plans as implemented.
+- [x] Entitlement architecture keeps pricing/catalog data out of feature logic, uses a server-authoritative signed entitlement with bounded offline behavior, defaults safely, and does not lock existing local data on expiry/outage.
+- [x] Managed-AI architecture keeps provider credentials server-side, requires accounts/consent/quotas/abuse controls/cost limits/retention policy/incident response, and preserves BYOK/local-first separation.
+- [x] The signing/updater section points to the implemented protected workflow and enumerates only remaining owner trust and release operations.
+- [x] A website brief contains approved target users/problem/solution/proof/privacy/download states and forbids fake testimonials, final pricing, waitlist collection or unsigned downloads.
+- [x] The owner decision register identifies legal entity, source/product license, terms/privacy, publisher/domain identity, pricing evidence, entitlement authority, account/payment/tax vendors, managed-AI provider/data terms, support/SLA and metrics thresholds.
+- [x] The 1.0 launch gate requires owner-approved numeric retention/reliability thresholds, sufficient eligible cohort/time windows, signed install/update/backup evidence, zero stop-ship issues, support readiness and a rollback plan.
+- [x] Every unavailable capability remains absent from production UI/code; no dead buttons, dormant billing SDK, fake license state, hardcoded price or managed-AI endpoint is added.
+- [ ] Documentation links and terminology validate, `git diff --check` passes, all existing product gates remain green, and exact-head GitHub CI passes.
 
 ## Allowed paths
 
-- `src/components/BetaDiagnostics.tsx`
-- `src/components/BetaDiagnostics.test.tsx`
-- `src/routes/Settings.tsx`
-- `src/routes/Settings.test.tsx`
-- `src/lib/db/types.ts`
-- `src/lib/db/tauri.ts`
-- `src/lib/db/tauri.test.ts`
-- `src-tauri/src/diagnostics.rs`
-- `src-tauri/src/commands.rs`
-- `src-tauri/src/lib.rs`
-- `.github/ISSUE_TEMPLATE/*`
+- `docs/commercial-readiness.md`
+- `docs/managed-ai-architecture.md`
+- `docs/website-brief.md`
+- `docs/owner-decision-register.md`
+- `docs/launch-gate.md`
+- `docs/decisions/026-commercial-and-launch-gates.md`
 - `README.md`
-- `SECURITY.md`
-- `CHANGELOG.md`
-- `docs/beta-program.md`
-- `docs/beta-test-matrix.md`
-- `docs/beta-evidence-template.md`
-- `docs/release-checklist.md`
-- `docs/architecture.md`
-- `docs/decisions/025-public-beta-operations.md`
 - `.ai/*`
 
 ## Non-goals
 
-- Publishing/distributing an installer, enrolling testers, signing binaries, provisioning secrets, accepting legal terms, offering an SLA, collecting actual retention data, or declaring Public Beta complete.
-- Automatic telemetry, crash upload, full log export, database attachment, remote support access, analytics identifiers, accounts, payments, licensing or managed AI.
-- Product feature expansion unrelated to external testing and reliability.
+- License/terms/privacy-policy changes with legal effect; company formation; trademark/domain/certificate purchases; signing/provider/payment/account infrastructure; tax/refund decisions.
+- Pricing finalization, plan limits, paywalls, trial logic, license validation, accounts, payment SDKs/webhooks, managed-AI runtime, telemetry or cloud sync.
+- Website implementation/hosting/publication, mailing-list collection, public download, release publication or a 1.0 version bump.
+- Inventing beta, retention, revenue, reliability, support or conversion evidence.
 
 ## Risks and safeguards
 
-- **Privacy leakage:** diagnostics use an allowlisted serialized struct and a structural test that fails if fields expand; no generic environment/log/database dump is used.
-- **False release claim:** docs call the output a beta candidate until owner signing, runbook and tester evidence pass.
-- **Unsafe support intake:** issue forms prohibit sensitive attachments and route vulnerabilities to private reporting.
-- **Silent analytics drift:** evidence collection is an owner-maintained local template, not application instrumentation.
-- **Data loss during testing:** the matrix requires complete backup validation before upgrade/restore/uninstall scenarios and preserves rollback artifacts.
+- **Premature monetization:** J remains blocked until Milestone I evidence and explicit owner decisions exist; documents specify boundaries only.
+- **Data hostage:** future entitlement loss may disable premium compute/service but never hide or delete local user data or block export.
+- **Managed-AI exposure/cost:** desktop never receives service/provider master keys; quotas, budgets and abuse containment are server-side requirements.
+- **Marketing misrepresentation:** website brief uses candidate/download states and prohibits fake social proof or unsigned releases.
+- **Vanity launch:** K gates require numeric owner-approved evidence and eligible time windows rather than appearance feedback or download counts.
 
 ## Required validation
 
 ```text
-pnpm install --frozen-lockfile
 pnpm check
 pnpm build
-pnpm audit --prod
 cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
 cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --all-features -- -D warnings
-cargo check --manifest-path src-tauri/Cargo.toml --all-targets --all-features
 cargo test --manifest-path src-tauri/Cargo.toml --all-features
-pnpm tauri:build
-browser light/dark/keyboard/copy/error diagnostic smoke
-packaged startup smoke
-git diff --check and secret/capability/privacy review
+git diff --check
+documentation link/status/forbidden-claim review
 GitHub PR exact-head CI
 ```
 
 ## Blocking decisions
 
-Repository implementation has no blocking decision. Actual beta launch remains blocked by owner-provisioned signing trust, protected workflow approval, signed clean-install/update testing, deliberate release publication, tester recruitment/consent and real evidence.
+The readiness packet itself is not blocked. Actual J/K implementation is blocked by the owner decisions and Milestone I evidence enumerated in the decision register. Those are deliberately not inferred.
 
 ## Readiness review
 
-- **Status:** Ready. Repository beta scope, privacy boundary, external evidence gap, recovery expectations and non-goals are explicit.
-- **Architecture gate:** ADR-025 is accepted before production changes.
-- **Data gate:** diagnostics read integrity/schema metadata only; no migration or domain query is required.
-- **Security gate:** no new Tauri capability, network endpoint, file write or secret flow is introduced.
-- **Worktree gate:** branch `codex/public-beta-readiness` starts at CI-green H head `228a345`; unrelated status entries remain content-identical line-ending/index noise and will not be staged.
+- **Status:** Ready. This is a documentation/architecture checkpoint, not premature product implementation.
+- **Architecture gate:** ADR-026 is accepted before readiness documents are written.
+- **Legal/business gate:** no legally operative or commercial choice is made by Codex.
+- **Worktree gate:** branch `codex/commercial-launch-gates` begins at CI-green beta-readiness head `a94e4dd`; content-identical line-ending/index noise remains unstaged.
 
 ## Implementation evidence and self-review
 
-- Rust diagnostics serialize exactly eight primitive allowlisted fields; 108/108 Rust tests include structural privacy, schema/integrity and no-nested-value checks. The module performs only `_migrations` metadata and `PRAGMA quick_check` queries.
-- TypeScript validates the native object with a strict Zod schema and rejects extra fields. Five component tests cover browser honesty, generation, loading, exact preview-before-copy, generation failure and clipboard failure; the complete frontend suite passes 100/100 tests.
-- Settings light/dark browser smoke at 1280×800 and the supported 960×600 minimum shows readable, keyboard-discoverable beta support without generic dashboards or new styling primitives.
-- Issue forms, handbook, test matrix and evidence template enforce privacy-safe support, severity/stop conditions, real tester signals and the distinction between repository readiness and a real beta.
-- Frozen install, production build/audit, Rust fmt/strict Clippy/check/tests, MSI/NSIS packaging, packaged startup, YAML/format/diff/capability/privacy review pass. Exact-head GitHub Actions run `33265317383` passed on published implementation head `a3ecdf2`.
+- `commercial-readiness.md` maps every J capability to implemented repository state versus owner/external gate and defines data-preserving signed-entitlement sequencing.
+- `managed-ai-architecture.md` defines explicit request/consent, server-held credentials, quotas/budgets/abuse/retention/incident boundaries and honest local degradation while preserving BYOK.
+- `website-brief.md` defines the approved audience/message, real proof, release-state actions, security/accessibility and prohibitions against unsigned downloads, final prices, fake proof or unowned data collection.
+- `owner-decision-register.md` enumerates 14 ordered decisions; `launch-gate.md` requires pre-frozen numeric cohort, activation, D2/D7/D14/D30, differentiation, reliability, signing/recovery/legal/support evidence and zero stop-ship issues.
+- No production source, dependency, capability, price, license, endpoint or version changed. All local links resolve, forbidden-claim review and `git diff --check` pass; 100/100 frontend and 108/108 Rust tests, build, fmt and strict Clippy remain green. Exact-head CI remains.
