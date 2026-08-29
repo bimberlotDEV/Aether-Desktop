@@ -4,7 +4,7 @@
 | ----------------- | ---------------------------------------------------- |
 | Schema version    | 2                                                    |
 | Task ID           | `COMM-LAUNCH-001`                                    |
-| Status            | `in_review`                                          |
+| Status            | `accepted`                                           |
 | Owner             | Codex                                                |
 | Last updated      | 2026-08-29                                           |
 | Related milestone | Canonical Milestones J and K — Commercial/1.0 gates |
@@ -36,7 +36,7 @@ Signing/updater implementation already exists and repository beta operations are
 - [x] The owner decision register identifies legal entity, source/product license, terms/privacy, publisher/domain identity, pricing evidence, entitlement authority, account/payment/tax vendors, managed-AI provider/data terms, support/SLA and metrics thresholds.
 - [x] The 1.0 launch gate requires owner-approved numeric retention/reliability thresholds, sufficient eligible cohort/time windows, signed install/update/backup evidence, zero stop-ship issues, support readiness and a rollback plan.
 - [x] Every unavailable capability remains absent from production UI/code; no dead buttons, dormant billing SDK, fake license state, hardcoded price or managed-AI endpoint is added.
-- [ ] Documentation links and terminology validate, `git diff --check` passes, all existing product gates remain green, and exact-head GitHub CI passes.
+- [x] Documentation links and terminology validate, `git diff --check` passes, all existing product gates remain green, and exact-head GitHub CI passes.
 
 ## Allowed paths
 
@@ -94,4 +94,4 @@ The readiness packet itself is not blocked. Actual J/K implementation is blocked
 - `managed-ai-architecture.md` defines explicit request/consent, server-held credentials, quotas/budgets/abuse/retention/incident boundaries and honest local degradation while preserving BYOK.
 - `website-brief.md` defines the approved audience/message, real proof, release-state actions, security/accessibility and prohibitions against unsigned downloads, final prices, fake proof or unowned data collection.
 - `owner-decision-register.md` enumerates 14 ordered decisions; `launch-gate.md` requires pre-frozen numeric cohort, activation, D2/D7/D14/D30, differentiation, reliability, signing/recovery/legal/support evidence and zero stop-ship issues.
-- No production source, dependency, capability, price, license, endpoint or version changed. All local links resolve, forbidden-claim review and `git diff --check` pass; 100/100 frontend and 108/108 Rust tests, build, fmt and strict Clippy remain green. Exact-head CI remains.
+- No production source, dependency, capability, price, license, endpoint or version changed. All local links resolve, forbidden-claim review and `git diff --check` pass; 100/100 frontend and 108/108 Rust tests, build, fmt and strict Clippy remain green. Exact-head GitHub Actions run `33267299453` passes on `d1e9055`.

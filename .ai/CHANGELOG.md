@@ -40,9 +40,9 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 
 - **Type:** Architecture, product, security and release planning
 - **Implemented by:** Codex
-- **Reviewed by:** Codex self-review; exact-head GitHub CI pending
+- **Reviewed by:** Codex self-review; exact-head GitHub Actions run `33267299453` — Pass
 - **Summary:** Defined data-preserving signed entitlements, the managed-AI server/privacy/cost boundary, a truthful public website brief, 14 ordered owner decisions and objective 1.0 activation/retention/reliability/delivery/legal/support gates.
-- **Verification:** Local documentation links resolve; status/forbidden-claim and diff review pass; existing 100/100 frontend tests, production build, Rust fmt/strict Clippy and 108/108 Rust tests remain green. Exact-head CI pending.
+- **Verification:** Local documentation links resolve; status/forbidden-claim and diff review pass; existing 100/100 frontend tests, production build, Rust fmt/strict Clippy and 108/108 Rust tests remain green; exact-head GitHub Actions run `33267299453` passes on `d1e9055`.
 - **Decisions/deviations:** Deliberately added no production entitlement, account, payment, pricing, managed-AI, website or 1.0 placeholder. Actual J/K implementation remains externally blocked by beta evidence and owner legal/business/infrastructure decisions.
 - **Follow-up:** Owner resolves `docs/owner-decision-register.md` after Public Beta evidence and evaluates `docs/launch-gate.md` only with an eligible cohort.
 

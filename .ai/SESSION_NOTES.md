@@ -6,7 +6,7 @@
 | Session date   | 2026-08-29        |
 | Active task    | `COMM-LAUNCH-001` |
 | Agent          | Codex             |
-| State          | `in_review`       |
+| State          | `accepted`        |
 
 ## Current work
 
@@ -15,7 +15,8 @@
 - Created `codex/commercial-launch-gates`, classified the bounded J/K readiness work as `planned_codex`, accepted ADR-026 and completed the contract before readiness documents.
 - Added the J/K commercial architecture, managed-AI boundary, truthful website brief, 14-item owner decision register and falsifiable 1.0 gate without changing production code or claims.
 - All documentation links and status claims validate; existing 100 frontend and 108 Rust tests, production build, formatting and strict lint remain green.
+- Draft PR #49 is published and exact-head GitHub Actions run `33267299453` passes on `d1e9055`.
 
 ## Exact resume point
 
-Publish the J/K readiness packet, wait for exact-head CI, record closure as externally blocked, start the verified packaged app, and return the strictly ordered owner action list.
+Merge PRs #46 through #49 in order, provision release signing, operate the external beta evidence window, then make the owner decisions and open separately approved J/K implementation contracts only if the evidence gates pass.

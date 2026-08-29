@@ -57,8 +57,8 @@
 | `RELEASE-TRUST-001` | Trusted Releases & Updates                         | `complete` | Owner-gated release tooling, Rust-owned Stable updates, local/package/security/UI gates, and exact-head task CI pass. |
 | `ONBOARD-001`       | Canonical Milestone H — Onboarding & UX            | `complete` | Upgrade-safe first-run setup, optional trusted configuration, accessibility, packaging, and exact-head CI pass. |
 | `BETA-001`          | Canonical Milestone I — Public Beta                 | `blocked` | Repository beta operations and exact-head CI pass; owner signing/publication and meaningful external tester evidence remain. |
-| `COMM-001`          | Canonical Milestone J — Commercial Readiness        | `self_review` | Decision-ready architecture passes; actual licensing/managed AI/website remains blocked on beta evidence and owner decisions. |
-| `LAUNCH-001`        | Canonical Milestone K — 1.0 Launch                  | `self_review` | Objective launch gates are defined; passing them requires owner thresholds, eligible retention time and real reliability evidence. |
+| `COMM-001`          | Canonical Milestone J — Commercial Readiness        | `blocked` | Decision-ready architecture and exact-head CI pass; actual licensing/managed AI/website requires beta evidence and owner decisions. |
+| `LAUNCH-001`        | Canonical Milestone K — 1.0 Launch                  | `blocked` | Objective launch gates are defined and verified; passing them requires owner thresholds, eligible retention time and real reliability evidence. |
 
 Canonical Milestones A–H are complete. Milestone I repository readiness is complete under ADR-025, but canonical Public Beta is externally blocked on signed publication and meaningful real tester evidence. J implementation cannot safely gate products or finalize pricing before that evidence.
 
@@ -100,7 +100,7 @@ Canonical Milestones A–H are complete. Milestone I repository readiness is com
 | `cargo fmt --check`                         | Pass        | 2026-08-29 | Repository Rust formatting is clean.                                                                                    |
 | `cargo clippy --all-targets -- -D warnings` | Pass        | 2026-08-29 | All targets and features are warning-free.                                                                              |
 | `pnpm tauri:build`                          | Pass        | 2026-08-29 | Aether 0.5.0 x64 MSI and NSIS bundles build successfully; ordinary packaging emits no updater signature files.         |
-| GitHub Actions                              | Pass        | 2026-08-29 | Run `33265651119` passes frontend quality/build, Rust format, strict lint and Rust tests on beta-readiness head `a94e4dd`. |
+| GitHub Actions                              | Pass        | 2026-08-29 | Run `33267299453` passes frontend quality/build, Rust format, strict lint and Rust tests on commercial-launch-gates head `d1e9055`. |
 | Release startup smoke                       | Pass        | 2026-08-29 | Repository Aether 0.5.0 starts from the optimized executable and exposes a responsive native window.                  |
 
 ## Active blockers
