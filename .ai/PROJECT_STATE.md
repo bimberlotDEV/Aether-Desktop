@@ -54,9 +54,9 @@
 | `AI-EVOL-001`      | AI Evolution                                       | `complete`  | DeepSeek/OpenAI, transparent Auto routing, response provenance, approved Task/Note drafts, local release gates, and exact-head CI pass. |
 | `RELEASE-040`      | Cut and install integrated Alpha 0.4.0             | `complete`    | Versioning, full gates, protected upgrade, artifacts, data preservation, installed startup, publication, and exact-head CI pass.      |
 | `BACKUP-RESTORE-001` | Complete portable backup and safe restore         | `complete`    | Verified sanitized archives include managed Vault bytes and restore only through explicit approval, restart, recovery backup, and rollback. |
-| `RELEASE-TRUST-001` | Trusted Releases & Updates                         | `self_review` | Local trust, updater, package, security, and UI gates pass; exact-head task CI is pending. |
+| `RELEASE-TRUST-001` | Trusted Releases & Updates                         | `complete` | Owner-gated release tooling, Rust-owned Stable updates, local/package/security/UI gates, and exact-head task CI pass. |
 
-Milestones A through H are merged on `master` through PR #45. Milestone I is locally complete on `codex/trusted-release-updates` under ADR-023 and awaits exact-head task CI.
+Milestones A through H are merged on `master` through PR #45. Milestone I is complete on draft PR #46 under ADR-023; production activation remains an owner-controlled external gate.
 
 ## Completed product milestones
 
@@ -96,7 +96,7 @@ Milestones A through H are merged on `master` through PR #45. Milestone I is loc
 | `cargo fmt --check`                         | Pass        | 2026-08-29 | Repository Rust formatting is clean.                                                                                    |
 | `cargo clippy --all-targets -- -D warnings` | Pass        | 2026-08-29 | All targets and features are warning-free.                                                                              |
 | `pnpm tauri:build`                          | Pass        | 2026-08-29 | Aether 0.5.0 x64 MSI and NSIS bundles build successfully; ordinary packaging emits no updater signature files.         |
-| GitHub Actions                              | Pending     | 2026-08-29 | Awaiting the first published exact-head task run for Milestone I.                                                       |
+| GitHub Actions                              | Pass        | 2026-08-29 | Run `33250561501` passes frontend quality/build, Rust format, strict lint, and Rust tests on exact head `7abe27a`.       |
 | Release startup smoke                       | Pass        | 2026-08-29 | Repository Aether 0.5.0 starts from the optimized executable and exposes a responsive native window.                  |
 
 ## Active blockers
@@ -138,7 +138,7 @@ Full rationale belongs in `.ai/ARCHITECTURE.md` or a dedicated ADR under `docs/d
 
 ## Next
 
-Milestone I — Trusted Releases & Updates is in self-review pending exact-head task CI. A live signed release remains gated on owner-provisioned signing identities, updater key, and protected GitHub Environment.
+Milestone I — Trusted Releases & Updates is complete on draft PR #46. The next product milestone should be selected after owner review; a live signed release remains gated on owner-provisioned signing identities, updater key, and protected GitHub Environment.
 
 ## Reusable update template
 

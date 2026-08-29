@@ -4,7 +4,7 @@
 | ----------------- | ---------------------------------------- |
 | Schema version    | 2                                        |
 | Task ID           | `RELEASE-TRUST-001`                      |
-| Status            | `self_review`                            |
+| Status            | `complete`                               |
 | Owner             | Codex                                    |
 | Last updated      | 2026-08-29                               |
 | Related milestone | Milestone I — Trusted Releases & Updates |
@@ -38,7 +38,7 @@ Milestone H is merged on `master` at `76947db`; its exact-head PR CI passed and 
 - [x] Settings clearly shows configured/unconfigured state, current and available versions, Stable channel, release notes/date, download progress, restart consequence, and the 0.4.0-to-0.5.0 manual bootstrap limitation; keyboard/focus/live-region behavior works at supported window sizes and themes.
 - [x] 0.5.0 identity is consistent in package, Tauri, Cargo/lock, Settings, README, native and release documentation; it remains an Alpha release candidate until owner-controlled trust inputs are provisioned and a signed draft is inspected.
 - [x] Ephemeral local test keys prove updater artifact/signature generation and rejection of a modified artifact. No test key, signed bundle, database, backup, generated config, credential, or unrelated line-ending-only change is committed.
-- [ ] Frozen install, frontend typecheck/lint/tests/build/audit, Rust format/strict all-target/all-feature Clippy/tests/release build, Tauri MSI/NSIS/updater packaging, responsive light/dark UI smoke, packaged startup, diff/secret/capability/workflow review, and exact-head GitHub CI pass.
+- [x] Frozen install, frontend typecheck/lint/tests/build/audit, Rust format/strict all-target/all-feature Clippy/tests/release build, Tauri MSI/NSIS/updater packaging, responsive light/dark UI smoke, packaged startup, diff/secret/capability/workflow review, and exact-head GitHub CI pass.
 
 ## Allowed paths
 
@@ -134,4 +134,4 @@ None for implementation and test completion. Production activation remains an ex
 - **Product evidence:** 0.5.0 renders in the repository release window; responsive dark/light browser smokes and 83 frontend tests cover unconfigured, available, confirmation, progress, cancellation, error, and accessibility states. Computer Use could read the native 0.5.0 accessibility tree but its WebView2 click/screenshot geometry failed, so route interaction is covered by component and browser tests.
 - **Quality evidence:** frozen install, typecheck, lint, 83/83 frontend tests, production build, clean pnpm audit, Rust format, strict all-target/all-feature Clippy, 103/103 Rust tests, Cargo check, release build, MSI/NSIS packaging, release-input positive/negative cases, YAML parsing, secret/capability/diff review, and packaged startup pass.
 - **Supply-chain evidence:** `cargo audit` reports no vulnerability failures and 18 allowed pre-existing warnings (16 unmaintained, one unsound transitive GTK crate, one yanked transitive crate); ordinary installer hashes are recorded in session notes.
-- **Review result:** all local acceptance criteria pass. Exact-head GitHub CI remains pending on the published draft PR; production signing remains an explicit owner-controlled activation gate and is not represented as completed.
+- **Review result:** every acceptance criterion passes. Draft PR #46 CI run `33250561501` succeeded on exact implementation head `7abe27a`; production signing remains an explicit owner-controlled activation gate and is not represented as completed.
