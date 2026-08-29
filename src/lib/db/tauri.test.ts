@@ -57,6 +57,7 @@ import {
   testAiProviderConnection,
   parseAiActionProposals,
   previewAiActionProposal,
+  initializeProfile,
 } from '@/lib/db/tauri'
 
 describe('Tauri database boundary', () => {
@@ -88,6 +89,12 @@ describe('Tauri database boundary', () => {
 
     expect(invoke).toHaveBeenNthCalledWith(1, 'native_get_status')
     expect(invoke).toHaveBeenNthCalledWith(2, 'native_test_notification')
+  })
+
+  it('initializes first-run profile state entirely in Rust', async () => {
+    await initializeProfile()
+
+    expect(invoke).toHaveBeenCalledWith('initialize_profile')
   })
 
   it('keeps updater endpoints and installers out of the frontend command contract', async () => {

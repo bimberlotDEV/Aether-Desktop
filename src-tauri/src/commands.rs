@@ -380,6 +380,14 @@ pub fn create_profile(db: State<Database>) -> Result<serde_json::Value, String> 
 }
 
 #[tauri::command]
+pub fn initialize_profile(db: State<Database>) -> Result<serde_json::Value, String> {
+    let id = Uuid::now_v7().to_string();
+    with_conn(&db.conn, |conn| {
+        Ok(json_profile(&repositories::profile::initialize(conn, &id)?))
+    })
+}
+
+#[tauri::command]
 pub fn update_profile(
     db: State<Database>,
     id: String,

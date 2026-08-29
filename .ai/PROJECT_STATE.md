@@ -8,8 +8,8 @@
 | Last updated     | 2026-08-29                    |
 | Updated by       | Codex                         |
 | Repository       | `bimberlotDEV/Aether-Desktop` |
-| Branch           | `codex/trusted-release-updates` |
-| Baseline commit  | `76947db` (current `master`)    |
+| Branch           | `codex/onboarding-ux`           |
+| Baseline commit  | `31b2e3a` (stacked on draft PR #46) |
 | Product maturity | Alpha                         |
 
 ## Responsibility of this file
@@ -55,8 +55,9 @@
 | `RELEASE-040`      | Cut and install integrated Alpha 0.4.0             | `complete`    | Versioning, full gates, protected upgrade, artifacts, data preservation, installed startup, publication, and exact-head CI pass.      |
 | `BACKUP-RESTORE-001` | Complete portable backup and safe restore         | `complete`    | Verified sanitized archives include managed Vault bytes and restore only through explicit approval, restart, recovery backup, and rollback. |
 | `RELEASE-TRUST-001` | Trusted Releases & Updates                         | `complete` | Owner-gated release tooling, Rust-owned Stable updates, local/package/security/UI gates, and exact-head task CI pass. |
+| `ONBOARD-001`       | Canonical Milestone H — Onboarding & UX            | `active` | Upgrade-safe first-run setup, optional trusted configuration, accessibility, packaging, and exact-head CI pass. |
 
-Milestones A through H are merged on `master` through PR #45. Milestone I is complete on draft PR #46 under ADR-023; production activation remains an owner-controlled external gate.
+Canonical Milestones A–G are complete. Release/updater foundation work is complete on draft PR #46 and accelerates canonical I/J, but does not replace them. Canonical Milestone H is active under ADR-024.
 
 ## Completed product milestones
 
@@ -138,7 +139,7 @@ Full rationale belongs in `.ai/ARCHITECTURE.md` or a dedicated ADR under `docs/d
 
 ## Next
 
-Milestone I — Trusted Releases & Updates is complete on draft PR #46. The next product milestone should be selected after owner review; a live signed release remains gated on owner-provisioned signing identities, updater key, and protected GitHub Environment.
+Canonical Milestone H — Onboarding & UX is active. After H, Codex proceeds through repository-owned Public Beta, Commercial Readiness, and 1.0 launch-gate work; external signing, legal/business choices, publication, testers, and retention evidence remain owner gates.
 
 ## Reusable update template
 

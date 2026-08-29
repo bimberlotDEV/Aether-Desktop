@@ -127,6 +127,7 @@ pub fn run() {
             commands::list_settings,
             commands::get_profile,
             commands::create_profile,
+            commands::initialize_profile,
             commands::update_profile,
             commands::create_space,
             commands::create_space_with_modules,

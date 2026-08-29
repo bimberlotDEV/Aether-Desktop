@@ -4,11 +4,12 @@
 
 Aether combines Spaces, Markdown Notes, Tasks, Pulse, Vault, explicit Memory, authorized local Sources, and opt-in AI assistance in a Tauri desktop application.
 
-**Current release candidate:** Alpha 0.5.0. The core roadmap through Phase 10 and product evolution Milestones A–H is implemented. This bootstrap candidate adds the owner-gated signed-release pipeline and explicit Stable updater; it is not a public signed release until the protected trust inputs are provisioned and the generated draft passes the release runbook.
+**Current release candidate:** Alpha 0.5.0. The core roadmap through Phase 10 and canonical product evolution Milestones A–H is implemented. New installations receive concise upgrade-safe onboarding; existing workspaces bypass it. The candidate also contains the owner-gated signed-release pipeline and explicit Stable updater, but is not a public signed release until protected trust inputs are provisioned and the generated draft passes the release runbook.
 
 ## What is included
 
 - Hierarchical Spaces with configurable modules
+- Local-first first-run onboarding with editable Student, Developer, Professional, Personal, and Blank starting points
 - Markdown Notes with autosave, search, pinning, archive, move, and duplication
 - Global and Space Tasks with subtasks, filters, due attention, and Pulse integration
 - Linked or managed Vault items with ownership-aware deletion

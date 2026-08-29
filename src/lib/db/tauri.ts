@@ -164,6 +164,9 @@ export async function getProfile(): Promise<UserProfile | null> {
 export async function createProfile(): Promise<UserProfile> {
   return invoke('create_profile')
 }
+export async function initializeProfile(): Promise<UserProfile> {
+  return invoke('initialize_profile')
+}
 export async function updateProfile(
   id: string,
   displayName?: string,
