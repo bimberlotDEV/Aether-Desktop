@@ -13,6 +13,9 @@ src-tauri/target
 .env.local
 .env.*.local
 
+# Generated release trust configuration
+src-tauri/tauri.release.generated.json
+
 # IDE
 .vscode/*
 !.vscode/extensions.json
