@@ -1,87 +1,81 @@
 # Codex Task Contract
 
-| Field             | Value                                   |
-| ----------------- | --------------------------------------- |
-| Schema version    | 2                                       |
-| Task ID           | `ONBOARD-001`                          |
-| Status            | `accepted`                             |
-| Owner             | Codex                                   |
-| Last updated      | 2026-08-29                              |
-| Related milestone | Canonical Milestone H — Onboarding & UX |
-| Classification    | `planned_codex`                        |
+| Field             | Value                               |
+| ----------------- | ----------------------------------- |
+| Schema version    | 2                                   |
+| Task ID           | `BETA-001`                          |
+| Status            | `in_review`                         |
+| Owner             | Codex                               |
+| Last updated      | 2026-08-29                          |
+| Related milestone | Canonical Milestone I — Public Beta |
+| Classification    | `planned_codex`                     |
 
 ## Objective
 
-Give genuinely new Aether users a calm, short, local-first first-run experience that creates a useful first Space, optionally authorizes one folder and configures AI through existing trusted boundaries, teaches Ctrl+K, and enters Pulse—without interrupting upgraded workspaces or introducing fake setup state.
+Make Aether operationally ready for meaningful external Windows testing: testers can understand the risk and privacy model, exercise the product, capture a strictly sanitized local diagnostic summary, report defects without exposing private content, recover data, and follow a repeatable beta test matrix. Do not claim the beta has happened until signed distribution and real external evidence exist.
 
 ## Context
 
-The schema has supported one local profile and `onboarding_completed` since migration 1, but the application never reads that state and no onboarding UI exists. Existing 0.4.0 workspaces commonly have data but no profile, so naïvely showing onboarding whenever the profile is absent would disrupt upgrades and risk duplicate starter content. Existing Space templates, explicit Source authorization, DPAPI-backed provider settings, and the Aether interface system should be reused rather than duplicated.
+Milestones A–H and the owner-gated signing/updater foundation are implemented. The repository lacks beta-specific support and feedback intake, production-safe diagnostics, a maintained known-limitations/test matrix, and current security documentation. Aether intentionally has no telemetry or account service, so beta evidence must be explicitly user-reported rather than silently collected.
 
 ## Ordered checkpoints
 
-1. **First-run boundary:** add a Rust repository/command operation that creates the singleton profile and decides whether onboarding is required; any pre-existing meaningful workspace automatically bypasses onboarding without changing its domain data.
-2. **Guided setup:** add a full-window, keyboard-accessible onboarding flow for welcome/privacy, usage template, first Space, optional folder authorization, optional existing AI settings, Ctrl+K education, and completion.
-3. **Safe orchestration:** create the first Space through existing transactional repositories, authorize Sources through the existing canonical path boundary, store AI keys only through existing DPAPI commands, and mark completion only after required setup succeeds.
-4. **Recovery and polish:** allow retry after every failure, avoid duplicate Spaces after an interrupted setup, provide honest browser fallback, preserve theme/responsive behavior, and let Settings restart onboarding intentionally without deleting data.
-5. **Verification and publication:** cover backend first-run/upgrade semantics plus frontend success, skip, retry, resume, focus and privacy language; run full quality/package/UI/security gates, self-review, document, and publish a stacked draft PR.
+1. **Truthful beta surface:** reconcile version/security/support/privacy documentation and distinguish an unsigned candidate from a signed public beta.
+2. **Sanitized diagnostics:** expose a Rust-owned, bounded report containing only app/schema/platform/integrity/native-capability state; never content, paths, identifiers, credentials, logs, counts, prompts, filenames, or provider keys.
+3. **User-controlled sharing:** show the report in Settings with explicit privacy language and a copy action; generation and copying remain local and never submit data automatically.
+4. **External test operations:** add issue forms, beta handbook, test matrix, known limitations, rollback/support/severity guidance, and a manual evidence ledger for activation/retention/core-behavior signals.
+5. **Verification/publication:** test the Rust/IPC/UI privacy boundary, run full gates and package smoke, self-review, publish a draft PR, and record which external gates remain.
 
 ## Acceptance criteria
 
-- [x] A fresh desktop database gets exactly one incomplete local profile and sees onboarding; an existing workspace with no profile gets one completed profile and never sees onboarding solely because it upgraded.
-- [x] Existing profile state is authoritative, initialization is idempotent, and no onboarding command deletes, rewrites, exports, scans, or sends existing user content.
-- [x] The flow is concise and covers local-first privacy, Student/Developer/Professional/Personal/Blank usage, first Space naming, editable modules, optional Source access, optional AI setup, Ctrl+K, and entry into Pulse.
-- [x] Templates configure ordinary editable Space modules rather than creating separate applications; no owner-specific, fake, or placeholder content is inserted.
-- [x] Required first-Space creation uses existing transactional Rust repositories; retries/resume cannot create duplicate starter Spaces, and onboarding is not marked complete before the required Space exists.
-- [x] Folder access remains optional, explicit, canonicalized and revocable through the existing Source boundary; onboarding never silently scans the computer or sends Source data to AI.
-- [x] AI setup remains optional and reuses the existing provider/DPAPI boundary; API keys are never persisted in React, logs, profile/settings rows, URL state, or exports.
-- [x] Every step supports keyboard navigation, visible focus, meaningful headings/labels, status or alert announcements, back/skip where safe, and responsive dark/light layouts at supported desktop sizes.
-- [x] Browser development remains usable with an honest preview/bypass path, while packaged desktop startup exercises the real profile gate.
-- [x] Settings can intentionally reopen onboarding as a tour without clearing `onboarding_completed`, creating duplicate Spaces, or changing data unless the user explicitly performs an onboarding action.
-- [x] Documentation and canonical A–K status distinguish Milestone H from the already completed release/updater foundation; no milestone is claimed complete without evidence.
-- [x] Frozen install, frontend typecheck/lint/tests/build/audit, Rust fmt/strict all-target/all-feature Clippy/tests/check/release build, Tauri MSI/NSIS packaging, responsive theme/keyboard/native startup smoke, diff/secret/capability/data-safety review, and exact-head GitHub CI pass.
+- [x] A diagnostic report is constructed in Rust from a closed schema and contains only Aether version, database schema version, SQLite integrity result, Windows platform label, updater configured state, and native capability booleans.
+- [x] Diagnostic generation does not query domain tables, enumerate rows/files, read logs, expose paths, persist identifiers, contact a network, or include user content/secrets.
+- [x] Settings displays the exact report before a user-initiated copy; browser mode is honest, copy success/failure is announced, and no report is automatically transmitted or stored.
+- [x] Frontend and Rust tests reject accidental field expansion and verify the invoke boundary, loading, error, copy and unsupported-browser states.
+- [x] GitHub issue forms request reproducible technical details while warning against credentials, databases, notes, prompts, filenames, personal paths and security disclosures.
+- [x] A beta handbook defines supported Windows versions, candidate trust/signing status, install/upgrade/backup/restore/uninstall checks, severity triage, feedback route, rollback, known limitations and owner-controlled release gates.
+- [x] The beta evidence template records tester consent, anonymous tester code, build/version, scenario outcomes, activation, D2/D7/D14/D30 return signals and qualitative replacement behavior without telemetry or private content.
+- [x] `SECURITY.md`, `README.md`, release checklist and changelog accurately describe 0.5.0, both AI providers, complete backups, signing/updater state, correct app-data path and vulnerability reporting.
+- [x] No payments, accounts, telemetry, cloud backend, hidden analytics, automatic issue submission, crash upload, pricing decision or public-release claim is introduced.
+- [ ] Frozen install, frontend check/build/audit, Rust fmt/strict Clippy/check/tests/release build, MSI/NSIS packaging, browser/native smoke, diff/secret/capability/privacy review and exact-head CI pass.
 
 ## Allowed paths
 
-- `src/App.tsx`
-- `src/App.test.tsx`
-- `src/components/Onboarding.tsx`
-- `src/components/Onboarding.test.tsx`
-- `src/components/ai/AiSettings.tsx`
-- `src/components/spaceOptions.ts`
+- `src/components/BetaDiagnostics.tsx`
+- `src/components/BetaDiagnostics.test.tsx`
 - `src/routes/Settings.tsx`
 - `src/routes/Settings.test.tsx`
-- `src/styles/index.css`
 - `src/lib/db/types.ts`
 - `src/lib/db/tauri.ts`
 - `src/lib/db/tauri.test.ts`
-- `src-tauri/src/db/repositories/profile.rs`
+- `src-tauri/src/diagnostics.rs`
 - `src-tauri/src/commands.rs`
 - `src-tauri/src/lib.rs`
+- `.github/ISSUE_TEMPLATE/*`
 - `README.md`
-- `IDEA.md`
+- `SECURITY.md`
+- `CHANGELOG.md`
+- `docs/beta-program.md`
+- `docs/beta-test-matrix.md`
+- `docs/beta-evidence-template.md`
+- `docs/release-checklist.md`
 - `docs/architecture.md`
-- `docs/database.md`
-- `docs/onboarding.md`
-- `docs/decisions/024-first-run-onboarding.md`
+- `docs/decisions/025-public-beta-operations.md`
 - `.ai/*`
 
 ## Non-goals
 
-- Accounts, cloud profiles, sync, telemetry, remote templates, a template marketplace, automatically reading files, managed AI subscriptions, payments, licensing, public release, or 1.0 claims.
-- Replacing the existing Space creation modal, Source management, provider settings, theme system, shell, or Pulse after onboarding.
-- Collecting legal name, email, school/employer, precise location, demographics, analytics consent, payment data, or other unnecessary personal information.
-- Deleting or resetting data when the tour is reopened.
+- Publishing/distributing an installer, enrolling testers, signing binaries, provisioning secrets, accepting legal terms, offering an SLA, collecting actual retention data, or declaring Public Beta complete.
+- Automatic telemetry, crash upload, full log export, database attachment, remote support access, analytics identifiers, accounts, payments, licensing or managed AI.
+- Product feature expansion unrelated to external testing and reliability.
 
 ## Risks and safeguards
 
-- **Upgrade interruption:** backend initialization checks meaningful persisted rows before creating the profile and marks legacy workspaces complete atomically.
-- **Duplicate setup:** an incomplete profile with an existing active top-level Space resumes against that Space; required creation is never repeated blindly.
-- **Partial optional setup:** the required Space is created first; optional Source/AI failures remain retryable or skippable and completion is explicit.
-- **Secret exposure:** AI uses the existing credential commands only; no new credential storage or transport is introduced.
-- **Filesystem overreach:** the existing picker and Source command remain the only authorization path; no default folders or background full-PC scans are added.
-- **UI lockout:** initialization errors show a retry surface; browser mode bypasses native persistence honestly; reopened tours are non-destructive.
-- **Scope drift:** H prepares external users only; public beta operations, commercial entitlements, website, pricing, and launch evidence remain later contracts.
+- **Privacy leakage:** diagnostics use an allowlisted serialized struct and a structural test that fails if fields expand; no generic environment/log/database dump is used.
+- **False release claim:** docs call the output a beta candidate until owner signing, runbook and tester evidence pass.
+- **Unsafe support intake:** issue forms prohibit sensitive attachments and route vulnerabilities to private reporting.
+- **Silent analytics drift:** evidence collection is an owner-maintained local template, not application instrumentation.
+- **Data loss during testing:** the matrix requires complete backup validation before upgrade/restore/uninstall scenarios and preserves rollback artifacts.
 
 ## Required validation
 
@@ -89,36 +83,34 @@ The schema has supported one local profile and `onboarding_completed` since migr
 pnpm install --frozen-lockfile
 pnpm check
 pnpm build
-pnpm audit --audit-level high
-cargo fmt --manifest-path src-tauri/Cargo.toml --check
+pnpm audit --prod
+cargo fmt --manifest-path src-tauri/Cargo.toml -- --check
 cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --all-features -- -D warnings
-cargo test --manifest-path src-tauri/Cargo.toml --all-targets --all-features
 cargo check --manifest-path src-tauri/Cargo.toml --all-targets --all-features
-cargo build --manifest-path src-tauri/Cargo.toml --release
+cargo test --manifest-path src-tauri/Cargo.toml --all-features
 pnpm tauri:build
-fresh/legacy/interrupted profile initialization tests
-responsive dark/light and keyboard onboarding smoke
-packaged first-start and existing-workspace bypass smoke
-git diff --check and secret/capability/data-safety review
+browser light/dark/keyboard/copy/error diagnostic smoke
+packaged startup smoke
+git diff --check and secret/capability/privacy review
 GitHub PR exact-head CI
 ```
 
 ## Blocking decisions
 
-None. The five usage choices, module presets, optional permissions, no-telemetry default, existing-user bypass, and non-destructive tour behavior follow the owner-approved masterprompt and existing architecture.
+Repository implementation has no blocking decision. Actual beta launch remains blocked by owner-provisioned signing trust, protected workflow approval, signed clean-install/update testing, deliberate release publication, tester recruitment/consent and real evidence.
 
 ## Readiness review
 
-- **Status:** Ready. Required outcomes, legacy behavior, privacy/security boundaries, recovery semantics, test evidence, allowed scope, and non-goals are explicit.
-- **Architecture gate:** ADR-024 is accepted before production implementation.
-- **Data gate:** no migration is required; the existing singleton profile column is used and legacy data is only detected, never rewritten.
-- **Security gate:** Sources and AI credentials reuse existing native boundaries; React gains no raw SQL, broad permission, filesystem scan, or secret persistence.
-- **Worktree gate:** the branch is stacked on the pushed, CI-green release/updater draft; unrelated frontend status entries are line-ending/index noise with no content diff and will not be staged.
+- **Status:** Ready. Repository beta scope, privacy boundary, external evidence gap, recovery expectations and non-goals are explicit.
+- **Architecture gate:** ADR-025 is accepted before production changes.
+- **Data gate:** diagnostics read integrity/schema metadata only; no migration or domain query is required.
+- **Security gate:** no new Tauri capability, network endpoint, file write or secret flow is introduced.
+- **Worktree gate:** branch `codex/public-beta-readiness` starts at CI-green H head `228a345`; unrelated status entries remain content-identical line-ending/index noise and will not be staged.
 
 ## Implementation evidence and self-review
 
-- Rust profile initialization is idempotent and uses existing domain rows only to decide whether a legacy workspace should bypass onboarding; 105/105 Rust tests pass, including fresh and populated database cases.
-- The React gate, six-step setup, interrupted-resume handling, non-destructive tour, optional Source authorization, optional DPAPI-backed AI settings, retry surfaces and focus behavior are covered by 94/94 frontend tests.
-- Browser smoke covered every step plus light/dark and 1280×800/720×640 layouts. The packaged release executable remained running against the existing workspace and MSI/NSIS packaging completed.
-- Frozen install, typecheck, lint, production build, production audit, Rust fmt, strict Clippy, Cargo check/test/release build, Tauri packaging and `git diff --check` pass. No capability expansion, raw SQL in React, secret persistence, background scan, or destructive data operation was introduced.
-- Self-review mapped each acceptance criterion to tests or direct inspection. GitHub Actions run `33254872286` passed on exact published head `2019c27`.
+- Rust diagnostics serialize exactly eight primitive allowlisted fields; 108/108 Rust tests include structural privacy, schema/integrity and no-nested-value checks. The module performs only `_migrations` metadata and `PRAGMA quick_check` queries.
+- TypeScript validates the native object with a strict Zod schema and rejects extra fields. Five component tests cover browser honesty, generation, loading, exact preview-before-copy, generation failure and clipboard failure; the complete frontend suite passes 100/100 tests.
+- Settings light/dark browser smoke at 1280×800 and the supported 960×600 minimum shows readable, keyboard-discoverable beta support without generic dashboards or new styling primitives.
+- Issue forms, handbook, test matrix and evidence template enforce privacy-safe support, severity/stop conditions, real tester signals and the distinction between repository readiness and a real beta.
+- Frozen install, production build/audit, Rust fmt/strict Clippy/check/tests, MSI/NSIS packaging, packaged startup, YAML/format/diff/capability/privacy review pass locally. Exact-head GitHub CI remains.

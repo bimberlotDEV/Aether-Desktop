@@ -11,6 +11,7 @@ use crate::backup;
 use crate::context::{self as local_context, ContextRuntime};
 use crate::db::repositories::{self, with_conn};
 use crate::db::Database;
+use crate::diagnostics::{self, BetaDiagnosticReport};
 use crate::native::NativeStatus;
 use crate::updater::{self, UpdateProgressEvent, UpdateRuntime};
 use crate::vault as vault_storage;
@@ -36,6 +37,18 @@ impl Drop for AiRequestGuard<'_> {
 #[tauri::command]
 pub fn native_get_status(status: State<NativeStatus>) -> NativeStatus {
     status.inner().clone()
+}
+
+#[tauri::command]
+pub fn native_get_beta_diagnostics(
+    db: State<Database>,
+    status: State<NativeStatus>,
+) -> Result<BetaDiagnosticReport, String> {
+    let conn = db
+        .conn
+        .lock()
+        .map_err(|error| format!("Lock error: {error}"))?;
+    diagnostics::generate(&conn, status.inner())
 }
 
 #[tauri::command]

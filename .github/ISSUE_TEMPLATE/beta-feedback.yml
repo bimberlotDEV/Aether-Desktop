@@ -1,0 +1,54 @@
+name: Beta product feedback
+description: Share structured usability or product-value feedback without private content.
+title: '[Beta feedback]: '
+labels: [beta, feedback]
+body:
+  - type: markdown
+    attributes:
+      value: Do not include notes, prompts, files, personal paths, credentials, or identifying information. Describe behavior and outcomes in generic terms.
+  - type: dropdown
+    id: persona
+    attributes:
+      label: Closest use case
+      options: [Student, Developer, Knowledge worker, Personal organization, Other]
+    validations:
+      required: true
+  - type: checkboxes
+    id: used
+    attributes:
+      label: Areas used
+      options:
+        - label: Pulse
+        - label: Spaces
+        - label: Notes
+        - label: Tasks
+        - label: Vault
+        - label: Sources / Search / Continue
+        - label: AI / Memory / Actions
+        - label: Backup / Restore
+  - type: textarea
+    id: outcome
+    attributes:
+      label: What job did Aether help with?
+      description: Describe the workflow, not its private contents.
+    validations:
+      required: true
+  - type: textarea
+    id: friction
+    attributes:
+      label: Where did you hesitate or get blocked?
+    validations:
+      required: true
+  - type: dropdown
+    id: replacement
+    attributes:
+      label: Did Aether reduce use of another tool?
+      options: [ChatGPT, Notion, Obsidian, Todoist, File Explorer, Another tool, No]
+    validations:
+      required: true
+  - type: textarea
+    id: return_reason
+    attributes:
+      label: What would make you open Aether again tomorrow?
+    validations:
+      required: true

@@ -1,20 +1,21 @@
 # Session Notes
 
-| Field          | Value          |
-| -------------- | -------------- |
-| Schema version | 2              |
-| Session date   | 2026-08-29     |
-| Active task    | `ONBOARD-001`  |
-| Agent          | Codex          |
-| State          | `accepted`     |
+| Field          | Value      |
+| -------------- | ---------- |
+| Schema version | 2          |
+| Session date   | 2026-08-29 |
+| Active task    | `BETA-001` |
+| Agent          | Codex      |
+| State          | `in_review` |
 
 ## Current work
 
-- Implemented canonical Milestone H on `codex/onboarding-ux`; commit `db4a25b` is published in draft PR #47 and depends on draft PR #46.
-- Fresh databases receive one incomplete profile; meaningful legacy workspaces receive a completed profile and bypass setup without domain-data mutation.
-- Added the six-step local-first onboarding, resumable Space setup, optional Source/AI setup, non-destructive Settings tour, recovery states, tests and documentation.
-- Local frontend, Rust, browser, production audit, release packaging and packaged startup checks are green; exact-head GitHub Actions run `33254872286` passed.
+- Milestone H closed on `228a345`; exact-head GitHub Actions run `33255189321` passed and draft PR #47 is open.
+- Created `codex/public-beta-readiness` from the H closure head.
+- Audited current release/security/support state: signing/updater and backup foundations exist, but beta support, issue intake, privacy-safe diagnostics, evidence templates and several public docs are missing or stale.
+- Implemented the closed Rust diagnostic report, strict TS boundary, user-reviewed Settings copy flow, issue forms, beta handbook, test matrix, evidence ledger and current security/release documentation.
+- Local gates pass with 100 frontend and 108 Rust tests, clean build/audit, strict Rust checks, MSI/NSIS packaging, browser responsiveness and packaged startup.
 
 ## Exact resume point
 
-Push this H closure, require its exact-head CI to pass, then create the Public Beta branch and `BETA-001` task contract before production changes.
+Publish the Milestone I repository-readiness implementation, wait for exact-head CI, record the external beta gates, then design the bounded repository-owned portion of Milestone J.

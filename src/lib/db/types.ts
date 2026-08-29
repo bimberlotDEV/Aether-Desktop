@@ -443,6 +443,20 @@ export const NativeStatusSchema = z.object({
 })
 export type NativeStatus = z.infer<typeof NativeStatusSchema>
 
+export const BetaDiagnosticReportSchema = z
+  .object({
+    appVersion: z.string(),
+    databaseSchema: z.string(),
+    databaseIntegrity: z.enum(['ok', 'failed']),
+    platform: z.string(),
+    updaterConfigured: z.boolean(),
+    trayAvailable: z.boolean(),
+    shortcutRegistered: z.boolean(),
+    notificationsAvailable: z.boolean(),
+  })
+  .strict()
+export type BetaDiagnosticReport = z.infer<typeof BetaDiagnosticReportSchema>
+
 export const UpdatePhaseSchema = z.enum(['idle', 'checking', 'ready', 'installing'])
 export const UpdateStatusSchema = z.object({
   configured: z.boolean(),

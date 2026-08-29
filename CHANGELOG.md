@@ -2,6 +2,13 @@
 
 All notable product changes are recorded here.
 
+## Unreleased — Public beta readiness
+
+- Added a Rust-owned sanitized diagnostic report that exposes only version, schema, integrity, generic platform and native-capability state; users inspect it before copying and Aether never uploads it.
+- Added privacy-safe beta issue forms, an external Windows test matrix, severity/rollback guidance, known limitations and a manual evidence template for activation and retention signals.
+- Reconciled security and release documentation with the current 0.5.0 backup, AI, signing and updater architecture.
+- Public Beta remains an external milestone gate: signed publication and meaningful real tester evidence are not claimed by repository changes.
+
 ## 0.5.0-alpha - 2026-08-28
 
 - Added complete verified workspace backup and rollback-safe restore, including Aether-managed Vault bytes while excluding credentials and externally linked files.

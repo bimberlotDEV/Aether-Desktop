@@ -8,8 +8,8 @@
 | Last updated     | 2026-08-29                    |
 | Updated by       | Codex                         |
 | Repository       | `bimberlotDEV/Aether-Desktop` |
-| Branch           | `codex/onboarding-ux`           |
-| Baseline commit  | `db4a25b` (draft PR #47; depends on draft PR #46) |
+| Branch           | `codex/public-beta-readiness`   |
+| Baseline commit  | `228a345` (CI-green Milestone H head) |
 | Product maturity | Alpha                         |
 
 ## Responsibility of this file
@@ -56,8 +56,9 @@
 | `BACKUP-RESTORE-001` | Complete portable backup and safe restore         | `complete`    | Verified sanitized archives include managed Vault bytes and restore only through explicit approval, restart, recovery backup, and rollback. |
 | `RELEASE-TRUST-001` | Trusted Releases & Updates                         | `complete` | Owner-gated release tooling, Rust-owned Stable updates, local/package/security/UI gates, and exact-head task CI pass. |
 | `ONBOARD-001`       | Canonical Milestone H — Onboarding & UX            | `complete` | Upgrade-safe first-run setup, optional trusted configuration, accessibility, packaging, and exact-head CI pass. |
+| `BETA-001`          | Canonical Milestone I — Public Beta readiness       | `self_review` | Repository beta operations pass; exact-head CI, signed distribution and meaningful external evidence remain. |
 
-Canonical Milestones A–H are complete. Release/updater foundation work is complete on draft PR #46 and accelerates canonical I/J, but does not replace them. Canonical Milestone I is next; its actual public testing evidence remains external.
+Canonical Milestones A–H are complete. Canonical Milestone I repository readiness is active under ADR-025; actual public testing evidence remains external.
 
 ## Completed product milestones
 
