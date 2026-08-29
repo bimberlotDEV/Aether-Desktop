@@ -5,11 +5,11 @@
 | Field            | Value                         |
 | ---------------- | ----------------------------- |
 | Schema version   | 1                             |
-| Last updated     | 2026-08-28                    |
+| Last updated     | 2026-08-29                    |
 | Updated by       | Codex                         |
 | Repository       | `bimberlotDEV/Aether-Desktop` |
-| Branch           | `codex/backup-restore`        |
-| Baseline commit  | `d7299ce` (current `master`)  |
+| Branch           | `codex/commercial-launch-gates` |
+| Baseline commit  | `a94e4dd` (CI-green beta-readiness head) |
 | Product maturity | Alpha                         |
 
 ## Responsibility of this file
@@ -54,8 +54,13 @@
 | `AI-EVOL-001`      | AI Evolution                                       | `complete`  | DeepSeek/OpenAI, transparent Auto routing, response provenance, approved Task/Note drafts, local release gates, and exact-head CI pass. |
 | `RELEASE-040`      | Cut and install integrated Alpha 0.4.0             | `complete`    | Versioning, full gates, protected upgrade, artifacts, data preservation, installed startup, publication, and exact-head CI pass.      |
 | `BACKUP-RESTORE-001` | Complete portable backup and safe restore         | `complete`    | Verified sanitized archives include managed Vault bytes and restore only through explicit approval, restart, recovery backup, and rollback. |
+| `RELEASE-TRUST-001` | Trusted Releases & Updates                         | `complete` | Owner-gated release tooling, Rust-owned Stable updates, local/package/security/UI gates, and exact-head task CI pass. |
+| `ONBOARD-001`       | Canonical Milestone H — Onboarding & UX            | `complete` | Upgrade-safe first-run setup, optional trusted configuration, accessibility, packaging, and exact-head CI pass. |
+| `BETA-001`          | Canonical Milestone I — Public Beta                 | `blocked` | Repository beta operations and exact-head CI pass; owner signing/publication and meaningful external tester evidence remain. |
+| `COMM-001`          | Canonical Milestone J — Commercial Readiness        | `blocked` | Decision-ready architecture and exact-head CI pass; actual licensing/managed AI/website requires beta evidence and owner decisions. |
+| `LAUNCH-001`        | Canonical Milestone K — 1.0 Launch                  | `blocked` | Objective launch gates are defined and verified; passing them requires owner thresholds, eligible retention time and real reliability evidence. |
 
-Milestones A through G and `RELEASE-040` are merged and verified on `master` through PR #44. Milestone H is complete and published in draft PR #45 with exact-head CI green.
+Canonical Milestones A–H are complete. Milestone I repository readiness is complete under ADR-025, but canonical Public Beta is externally blocked on signed publication and meaningful real tester evidence. J implementation cannot safely gate products or finalize pricing before that evidence.
 
 ## Completed product milestones
 
@@ -87,22 +92,24 @@ Milestones A through G and `RELEASE-040` are merged and verified on `master` thr
 
 | Check                                       | Last result | Date       | Notes                                                                                                                 |
 | ------------------------------------------- | ----------- | ---------- | --------------------------------------------------------------------------------------------------------------------- |
-| `pnpm check`                                | Pass        | 2026-08-28 | Milestone H: 80/80 tests across 29 files.                                                                               |
-| `pnpm build`                                | Pass        | 2026-08-28 | Alpha 0.4.0 production frontend build passes.                                                                          |
-| `pnpm audit --audit-level high`             | Pass        | 2026-08-28 | No known vulnerabilities.                                                                                              |
-| `cargo test`                                | Pass        | 2026-08-28 | 99/99 all-target/all-feature tests pass.                                                                               |
-| `cargo build --release`                     | Pass        | 2026-08-28 | Optimized Aether 0.4.0 Windows executable builds successfully.                                                         |
-| `cargo fmt --check`                         | Pass        | 2026-08-28 | Repository Rust formatting is clean.                                                                                   |
-| `cargo clippy --all-targets -- -D warnings` | Pass        | 2026-08-28 | All targets and features are warning-free.                                                                             |
-| `pnpm tauri:build`                          | Pass        | 2026-08-28 | Aether 0.4.0 x64 MSI and NSIS bundles build successfully with recorded hashes.                                        |
-| GitHub Actions                              | Pass        | 2026-08-28 | Run 33194814850 passes frontend quality/build, Rust format, strict lint, and Rust tests on exact task head `1cb3b90`.   |
-| Release startup smoke                       | Pass        | 2026-08-28 | Installed Aether 0.4.0 starts from its registered location and remains responsive with preserved workspace data.      |
+| `pnpm check`                                | Pass        | 2026-08-29 | 100/100 tests across 33 files; typecheck and lint pass.                                                                  |
+| `pnpm build`                                | Pass        | 2026-08-29 | Alpha 0.5.0 production frontend build passes.                                                                           |
+| `pnpm audit --audit-level high`             | Pass        | 2026-08-29 | No known vulnerabilities.                                                                                               |
+| `cargo test`                                | Pass        | 2026-08-29 | 108/108 all-feature tests pass.                                                                                          |
+| `cargo build --release`                     | Pass        | 2026-08-29 | Optimized Aether 0.5.0 Windows executable builds and starts successfully.                                               |
+| `cargo fmt --check`                         | Pass        | 2026-08-29 | Repository Rust formatting is clean.                                                                                    |
+| `cargo clippy --all-targets -- -D warnings` | Pass        | 2026-08-29 | All targets and features are warning-free.                                                                              |
+| `pnpm tauri:build`                          | Pass        | 2026-08-29 | Aether 0.5.0 x64 MSI and NSIS bundles build successfully; ordinary packaging emits no updater signature files.         |
+| GitHub Actions                              | Pass        | 2026-08-29 | Run `33267299453` passes frontend quality/build, Rust format, strict lint and Rust tests on commercial-launch-gates head `d1e9055`. |
+| Release startup smoke                       | Pass        | 2026-08-29 | Repository Aether 0.5.0 starts from the optimized executable and exposes a responsive native window.                  |
 
 ## Active blockers
 
-| ID                                                                                                                              | Scope | Blocker | Owner | Resolution path |
-| ------------------------------------------------------------------------------------------------------------------------------- | ----- | ------- | ----- | --------------- |
-| None. `BLOCK-001` was resolved by installing Rust 1.97.1 with the stable MSVC toolchain and Visual Studio 2022 C++ build tools. |
+| ID | Scope | Blocker | Owner | Resolution path |
+| --- | --- | --- | --- | --- |
+| `BETA-EXT` | Milestone I | No owner-signed published beta or meaningful external activation/retention/reliability evidence exists. | Product owner | Provision trust, merge the dependency chain, run the protected signed draft/runbook, publish deliberately, enroll testers and complete private evidence ledgers. |
+| `COMM-EXT` | Milestone J | Legal/business/provider/account/payment/domain decisions and beta value/economics evidence are absent. | Product owner with legal/financial/provider input | Resolve `docs/owner-decision-register.md` in order; create separately approved implementation contracts only after evidence. |
+| `LAUNCH-EXT` | Milestone K | Numeric thresholds, eligible D30 cohort time and real reliability/support evidence do not exist. | Product owner | Freeze thresholds before evaluation, complete the observation window and pass every gate in `docs/launch-gate.md`. |
 
 ## Active risks
 
@@ -137,7 +144,7 @@ Full rationale belongs in `.ai/ARCHITECTURE.md` or a dedicated ADR under `docs/d
 
 ## Next
 
-Milestone H — Complete Backup & Restore is complete in draft PR #45. Public signing and updater activation are the next owner-controlled release milestone.
+Repository-owned roadmap work through K is now implemented or decision-ready. Canonical I–K completion is blocked only where real-world owner actions, legal/business/provider choices, signed publication, tester participation, observation time and retention/reliability evidence are inherently required.
 
 ## Reusable update template
 

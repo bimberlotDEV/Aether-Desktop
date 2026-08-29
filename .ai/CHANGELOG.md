@@ -26,6 +26,47 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-08-29 — `BETA-001` — Privacy-safe public beta operations
+
+- **Type:** Feature, privacy, support and release readiness
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review; exact-head GitHub Actions run `33265317383` — Pass
+- **Summary:** Added a Rust-owned content-free diagnostic report with strict frontend validation and preview-before-copy UX, privacy-safe beta issue forms, an external Windows test matrix, severity/rollback guidance, known limitations and a manual activation/retention evidence template.
+- **Verification:** 100/100 frontend tests; production build/audit; Rust fmt/strict Clippy/check; 108/108 Rust tests; MSI/NSIS packaging; 1280×800 dark and 960×600 light Settings smoke; packaged startup; YAML/diff/secret/capability/privacy review; exact-head GitHub Actions run `33265317383` — Pass.
+- **Decisions/deviations:** Kept telemetry, crash upload and automatic issue submission absent. Repository readiness is complete, but canonical Public Beta still requires owner signing/publication and meaningful real tester evidence.
+- **Follow-up:** Owner beta gates, then bounded Commercial Readiness foundations.
+
+## 2026-08-29 — `COMM-LAUNCH-001` — Commercial and 1.0 evidence gates
+
+- **Type:** Architecture, product, security and release planning
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review; exact-head GitHub Actions run `33267299453` — Pass
+- **Summary:** Defined data-preserving signed entitlements, the managed-AI server/privacy/cost boundary, a truthful public website brief, 14 ordered owner decisions and objective 1.0 activation/retention/reliability/delivery/legal/support gates.
+- **Verification:** Local documentation links resolve; status/forbidden-claim and diff review pass; existing 100/100 frontend tests, production build, Rust fmt/strict Clippy and 108/108 Rust tests remain green; exact-head GitHub Actions run `33267299453` passes on `d1e9055`.
+- **Decisions/deviations:** Deliberately added no production entitlement, account, payment, pricing, managed-AI, website or 1.0 placeholder. Actual J/K implementation remains externally blocked by beta evidence and owner legal/business/infrastructure decisions.
+- **Follow-up:** Owner resolves `docs/owner-decision-register.md` after Public Beta evidence and evaluates `docs/launch-gate.md` only with an eligible cohort.
+
+## 2026-08-29 — `ONBOARD-001` — Upgrade-safe first-run onboarding
+
+- **Type:** Feature, privacy, accessibility and release readiness
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review; exact-head GitHub Actions run `33254872286` — Pass
+- **Summary:** Added an idempotent native profile gate that distinguishes a fresh install from a populated legacy workspace, a calm six-step local-first setup, resumable first-Space creation, optional Source and DPAPI-backed AI configuration, and a non-destructive Settings tour.
+- **Verification:** Frozen install; 94/94 frontend tests; production build/audit; Rust fmt/strict Clippy/check; 105/105 Rust tests; release build; MSI/NSIS packaging; all-step 1280×800 and 720×640 light/dark browser smoke; packaged startup; diff/secret/capability/data-safety review; exact-head GitHub Actions run `33254872286` — Pass.
+- **Decisions/deviations:** No schema migration or new capability was needed. Existing meaningful workspace rows are treated as authoritative upgrade evidence, while an incomplete profile remains authoritative for an interrupted genuine first run.
+- **Follow-up:** Publish H and begin canonical Milestone I — Public Beta.
+
+## 2026-08-29 — `RELEASE-TRUST-001` — Trusted Windows release and update delivery
+
+- **Type:** Feature, security, release, accessibility, test, and docs
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review
+- **Summary:** Added an owner-gated signed-draft release path and an explicit Rust-owned Stable updater with generated untracked configuration, fixed feed, one-time install approval, signature verification, and complete Settings UX.
+- **Files:** `.github/workflows/public-release.yml`, release scripts/runbook/ADR, `src-tauri/src/updater.rs`, native commands, typed frontend bridge, `NativeSettings`, version/docs/control files
+- **Verification:** Frozen install; 83/83 frontend tests; production build/audit; Rust fmt/strict Clippy; 103/103 Rust tests; Cargo check/release build; MSI/NSIS packaging; ephemeral updater signing plus tamper rejection; responsive UI and packaged startup smoke; secret/capability/workflow/diff review; exact-head GitHub Actions run `33250561501` — Pass
+- **Decisions/deviations:** Ordinary builds remain updater-disabled and network-silent. Production keys, Azure signing identity, protected Environment approval, a live signed draft, and final publication remain external owner-controlled gates; installed 0.4.0 needs one manual signed 0.5.0 bootstrap installer.
+- **Follow-up:** Owner reviews/merges PR #46, provisions documented trust inputs, and validates a protected signed draft before any public release.
+
 ## 2026-08-28 — `BACKUP-RESTORE-001` — Complete portable backup and safe restore
 
 - **Type:** Feature, security, data lifecycle, accessibility, test, and docs

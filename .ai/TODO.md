@@ -5,7 +5,7 @@
 | Field          | Value                                   |
 | -------------- | --------------------------------------- |
 | Schema version | 1                                       |
-| Last updated   | 2026-08-28                              |
+| Last updated   | 2026-08-29                              |
 | Prioritized by | Codex within the owner-approved roadmap |
 
 ## Responsibility of this file
@@ -60,6 +60,11 @@
 | P0       | `AI-EVOL-001`      | Evolve providers, transparent Auto, and approved AI drafts | Product, security, data   | `done`   | `ACTION-001`              | DeepSeek/OpenAI, deterministic routing, provenance, and Task/Note drafts reuse the Safe Actions consent boundary.        |
 | P0       | `RELEASE-040`      | Cut and install integrated Alpha 0.4.0                     | Quality and release       | `done`   | `AI-EVOL-001`             | Versioned artifacts, protected data-preserving upgrade, installed startup, publication, and exact-head CI pass.          |
 | P0       | `BACKUP-RESTORE-001` | Complete portable backup and safe restore                | Product, security, data   | `done`   | `RELEASE-040`, ADR-022    | Managed Vault bytes and sanitized workspace data round-trip only through verified archives and rollback-safe approval.  |
+| P0       | `RELEASE-TRUST-001` | Build trusted Windows release and update delivery          | Security, release, product | `done` | `BACKUP-RESTORE-001`, ADR-023 | Protected signed draft tooling and explicit Stable updates pass local, package, security, UI, and exact-head CI gates. |
+| P0       | `ONBOARD-001`      | Complete upgrade-safe first-run onboarding                 | Product, privacy, accessibility | `done` | `AI-EVOL-001`, ADR-024 | Draft PR #47; all local gates and exact-head CI run `33254872286` pass. |
+| P0       | `BETA-001`         | Prepare and operate the canonical Public Beta              | Release, reliability, support | `blocked` | `ONBOARD-001`, `RELEASE-TRUST-001`, ADR-025 | Repository readiness and CI pass in PR #48; owner signing/publication and meaningful external tester evidence remain. |
+| P1       | `COMM-001`         | Build commercial-readiness foundations                     | Product, architecture, business | `blocked` | `BETA-001`, ADR-026 | Decision-ready boundaries and exact-head CI pass; implementation requires beta evidence and owner legal/business/infrastructure decisions. |
+| P1       | `LAUNCH-001`       | Establish and pass the Aether 1.0 launch gate              | Reliability, release, product | `blocked` | `COMM-001`, ADR-026, retention evidence | Objective gates are defined and verified; passing them requires real eligible retention/reliability evidence and owner approval. |
 | P1       | `VAULT-EPIC`       | Design and implement Vault                                 | Product                   | `done` | ADR-010                     | Safe storage and complete global/Space MVP are implemented.                                                             |
 | P1       | `PHASE6-001`       | Build Vault persistence and native filesystem foundation   | Product and security      | `done` | ADR-010                     | Safe linked/managed storage commands and tests pass.                                                                    |
 | P1       | `PHASE6-002`       | Build Vault UI and Space integration                       | Product                   | `done` | `PHASE6-001`                | Import, metadata, search, open/reveal, and safe removal are usable.                                                     |
@@ -85,7 +90,7 @@
 | Vault          | `mvp_complete`        | Extend only when a later roadmap phase requires previews or indexing.                 |
 | AI             | `mvp_complete`        | Validate live provider behavior during the release smoke test.                        |
 | Memory         | `mvp_complete`        | Extend only after a separately reviewed automatic-suggestion consent design.          |
-| Native desktop | `alpha_complete`      | Activate signing/updater only after owner-controlled trust infrastructure exists.     |
+| Native desktop | `trusted_delivery_ready` | Owner provisions production trust inputs, runs the protected workflow, and inspects a signed draft before publication. |
 | Backup/export  | `complete`            | Extend only after a separately reviewed encryption, scheduling, or cloud-sync design. |
 | Context engine | `continuity_complete` | Validate later intelligence only through separately reviewed, explicit user controls. |
 

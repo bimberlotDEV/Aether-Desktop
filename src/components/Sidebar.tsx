@@ -123,7 +123,7 @@ export function Sidebar() {
             <StatusDot />
             <span>Local & private</span>
           </div>
-          <span>0.4.0</span>
+          <span>0.5.0</span>
         </div>
       </div>
     </aside>

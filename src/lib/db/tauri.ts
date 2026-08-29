@@ -29,6 +29,10 @@ import type {
   MemoryInput,
   MemoryItem,
   NativeStatus,
+  BetaDiagnosticReport,
+  UpdateStatus,
+  UpdatePreview,
+  UpdateProgressEvent,
   BackupResult,
   BackupArchiveResult,
   RestorePreview,
@@ -43,13 +47,34 @@ import type {
   AiActionDraft,
   ActionResult,
 } from './types'
+import { BetaDiagnosticReportSchema } from './types'
 
 // ─── Native desktop ─────────────────────────────────────
 export async function getNativeStatus(): Promise<NativeStatus> {
   return invoke('native_get_status')
 }
+export async function getBetaDiagnostics(): Promise<BetaDiagnosticReport> {
+  return BetaDiagnosticReportSchema.parse(await invoke('native_get_beta_diagnostics'))
+}
 export async function sendTestNotification(): Promise<void> {
   return invoke('native_test_notification')
+}
+export async function getUpdateStatus(): Promise<UpdateStatus> {
+  return invoke('native_get_update_status')
+}
+export async function checkForUpdate(): Promise<UpdatePreview | null> {
+  return invoke('native_check_for_update')
+}
+export async function cancelUpdate(token: string): Promise<boolean> {
+  return invoke('native_cancel_update', { token })
+}
+export async function installUpdate(
+  token: string,
+  onEvent: (event: UpdateProgressEvent) => void,
+): Promise<void> {
+  const channel = new Channel<UpdateProgressEvent>()
+  channel.onmessage = onEvent
+  return invoke('native_install_update', { token, onEvent: channel })
 }
 export async function exportWorkspaceBackup(destination: string): Promise<BackupResult> {
   return invoke('export_workspace_backup', { destination })
@@ -143,6 +168,9 @@ export async function getProfile(): Promise<UserProfile | null> {
 }
 export async function createProfile(): Promise<UserProfile> {
   return invoke('create_profile')
+}
+export async function initializeProfile(): Promise<UserProfile> {
+  return invoke('initialize_profile')
 }
 export async function updateProfile(
   id: string,

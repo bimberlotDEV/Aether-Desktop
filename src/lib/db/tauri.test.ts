@@ -32,7 +32,12 @@ import {
   updateMemory,
   deleteMemory,
   getNativeStatus,
+  getBetaDiagnostics,
   sendTestNotification,
+  getUpdateStatus,
+  checkForUpdate,
+  cancelUpdate,
+  installUpdate,
   exportWorkspaceBackup,
   exportWorkspaceArchive,
   previewWorkspaceRestore,
@@ -53,6 +58,7 @@ import {
   testAiProviderConnection,
   parseAiActionProposals,
   previewAiActionProposal,
+  initializeProfile,
 } from '@/lib/db/tauri'
 
 describe('Tauri database boundary', () => {
@@ -84,6 +90,58 @@ describe('Tauri database boundary', () => {
 
     expect(invoke).toHaveBeenNthCalledWith(1, 'native_get_status')
     expect(invoke).toHaveBeenNthCalledWith(2, 'native_test_notification')
+  })
+
+  it('validates the closed beta diagnostic report returned by Rust', async () => {
+    invoke.mockResolvedValueOnce({
+      appVersion: '0.5.0',
+      databaseSchema: '010_ai_route_provenance',
+      databaseIntegrity: 'ok',
+      platform: 'Windows x86_64',
+      updaterConfigured: false,
+      trayAvailable: true,
+      shortcutRegistered: true,
+      notificationsAvailable: true,
+    })
+
+    await expect(getBetaDiagnostics()).resolves.toMatchObject({ appVersion: '0.5.0' })
+    expect(invoke).toHaveBeenCalledWith('native_get_beta_diagnostics')
+
+    invoke.mockResolvedValueOnce({
+      appVersion: '0.5.0',
+      databaseSchema: '010_ai_route_provenance',
+      databaseIntegrity: 'ok',
+      platform: 'Windows x86_64',
+      updaterConfigured: false,
+      trayAvailable: true,
+      shortcutRegistered: true,
+      notificationsAvailable: true,
+      localPath: 'C:\\private',
+    })
+    await expect(getBetaDiagnostics()).rejects.toThrow()
+  })
+
+  it('initializes first-run profile state entirely in Rust', async () => {
+    await initializeProfile()
+
+    expect(invoke).toHaveBeenCalledWith('initialize_profile')
+  })
+
+  it('keeps updater endpoints and installers out of the frontend command contract', async () => {
+    await getUpdateStatus()
+    await checkForUpdate()
+    await cancelUpdate('pending-token')
+    await installUpdate('approved-token', vi.fn())
+
+    expect(invoke).toHaveBeenNthCalledWith(1, 'native_get_update_status')
+    expect(invoke).toHaveBeenNthCalledWith(2, 'native_check_for_update')
+    expect(invoke).toHaveBeenNthCalledWith(3, 'native_cancel_update', {
+      token: 'pending-token',
+    })
+    expect(invoke).toHaveBeenNthCalledWith(4, 'native_install_update', {
+      token: 'approved-token',
+      onEvent: expect.any(Object),
+    })
   })
 
   it('loads Pulse through one read-only command without frontend scope input', async () => {

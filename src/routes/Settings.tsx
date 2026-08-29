@@ -1,10 +1,12 @@
-import { Settings as SettingsIcon, Sun, Moon, Monitor } from 'lucide-react'
+import { BookOpen, Settings as SettingsIcon, Sun, Moon, Monitor } from 'lucide-react'
 import { useThemeStore } from '@/stores/themeStore'
 import type { Theme } from '@/stores/themeStore'
 import { AiSettings } from '@/components/ai/AiSettings'
 import { NativeSettings } from '@/components/NativeSettings'
 import { BackupSettings } from '@/components/BackupSettings'
 import { Page, PageHeader, SectionLabel, Surface } from '@/components/ui/AetherUI'
+import { START_ONBOARDING_TOUR_EVENT } from '@/components/Onboarding'
+import { BetaDiagnostics } from '@/components/BetaDiagnostics'
 
 const themeOptions: { value: Theme; label: string; icon: typeof Sun }[] = [
   { value: 'light', label: 'Light', icon: Sun },
@@ -55,7 +57,31 @@ export function Settings() {
 
         <AiSettings />
 
+        <section>
+          <SectionLabel>Getting started</SectionLabel>
+          <Surface className="flex items-center gap-4 p-5">
+            <BookOpen size={19} className="text-[var(--color-text-secondary)]" />
+            <div className="min-w-0 flex-1">
+              <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">
+                Take the workspace tour again
+              </h2>
+              <p className="mt-1 text-xs leading-5 text-[var(--color-text-tertiary)]">
+                Review Spaces, Sources, AI and Ctrl+K without resetting or deleting data.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="aether-button aether-button--secondary focus-ring"
+              onClick={() => window.dispatchEvent(new Event(START_ONBOARDING_TOUR_EVENT))}
+            >
+              Open tour
+            </button>
+          </Surface>
+        </section>
+
         <NativeSettings />
+
+        <BetaDiagnostics />
 
         <BackupSettings />
 
@@ -71,7 +97,7 @@ export function Settings() {
                 className="text-sm font-medium"
                 style={{ color: 'var(--color-text-primary)' }}
               >
-                Alpha 0.4.0
+                Alpha 0.5.0
               </span>
             </div>
             <div className="flex justify-between items-center">
