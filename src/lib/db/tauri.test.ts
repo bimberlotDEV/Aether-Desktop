@@ -33,6 +33,10 @@ import {
   deleteMemory,
   getNativeStatus,
   sendTestNotification,
+  getUpdateStatus,
+  checkForUpdate,
+  cancelUpdate,
+  installUpdate,
   exportWorkspaceBackup,
   exportWorkspaceArchive,
   previewWorkspaceRestore,
@@ -53,6 +57,7 @@ import {
   testAiProviderConnection,
   parseAiActionProposals,
   previewAiActionProposal,
+  initializeProfile,
 } from '@/lib/db/tauri'
 
 describe('Tauri database boundary', () => {
@@ -84,6 +89,29 @@ describe('Tauri database boundary', () => {
 
     expect(invoke).toHaveBeenNthCalledWith(1, 'native_get_status')
     expect(invoke).toHaveBeenNthCalledWith(2, 'native_test_notification')
+  })
+
+  it('initializes first-run profile state entirely in Rust', async () => {
+    await initializeProfile()
+
+    expect(invoke).toHaveBeenCalledWith('initialize_profile')
+  })
+
+  it('keeps updater endpoints and installers out of the frontend command contract', async () => {
+    await getUpdateStatus()
+    await checkForUpdate()
+    await cancelUpdate('pending-token')
+    await installUpdate('approved-token', vi.fn())
+
+    expect(invoke).toHaveBeenNthCalledWith(1, 'native_get_update_status')
+    expect(invoke).toHaveBeenNthCalledWith(2, 'native_check_for_update')
+    expect(invoke).toHaveBeenNthCalledWith(3, 'native_cancel_update', {
+      token: 'pending-token',
+    })
+    expect(invoke).toHaveBeenNthCalledWith(4, 'native_install_update', {
+      token: 'approved-token',
+      onEvent: expect.any(Object),
+    })
   })
 
   it('loads Pulse through one read-only command without frontend scope input', async () => {

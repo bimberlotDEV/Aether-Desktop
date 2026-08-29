@@ -26,7 +26,10 @@ pub fn show_main_window<R: Runtime>(app: &AppHandle<R>) {
     }
 }
 
-pub fn setup(app: &mut App) -> Result<NativeStatus, Box<dyn std::error::Error>> {
+pub fn setup(
+    app: &mut App,
+    updater_configured: bool,
+) -> Result<NativeStatus, Box<dyn std::error::Error>> {
     let open = MenuItem::with_id(app, "open", "Open Aether", true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", "Quit Aether", true, None::<&str>)?;
     let menu = Menu::with_items(app, &[&open, &quit])?;
@@ -75,7 +78,7 @@ pub fn setup(app: &mut App) -> Result<NativeStatus, Box<dyn std::error::Error>> 
         shortcut: SHOW_SHORTCUT_LABEL.to_string(),
         shortcut_registered,
         notifications_available: true,
-        updater_configured: false,
+        updater_configured,
     })
 }
 

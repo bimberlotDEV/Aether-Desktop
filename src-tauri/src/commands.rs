@@ -12,6 +12,7 @@ use crate::context::{self as local_context, ContextRuntime};
 use crate::db::repositories::{self, with_conn};
 use crate::db::Database;
 use crate::native::NativeStatus;
+use crate::updater::{self, UpdateProgressEvent, UpdateRuntime};
 use crate::vault as vault_storage;
 use std::path::PathBuf;
 use tauri::{ipc::Channel, AppHandle, Manager, State};
@@ -45,6 +46,36 @@ pub fn native_test_notification(app: AppHandle) -> Result<(), String> {
         .body("You can close Aether to the tray and reopen it with Ctrl+Shift+Space.")
         .show()
         .map_err(|error| format!("Native notification error: {}", error))
+}
+
+#[tauri::command]
+pub fn native_get_update_status(
+    app: AppHandle,
+    runtime: State<UpdateRuntime>,
+) -> updater::UpdateStatus {
+    updater::status(&app, &runtime)
+}
+
+#[tauri::command]
+pub async fn native_check_for_update(
+    app: AppHandle,
+    runtime: State<'_, UpdateRuntime>,
+) -> Result<Option<updater::UpdatePreview>, String> {
+    updater::check(&app, &runtime).await
+}
+
+#[tauri::command]
+pub fn native_cancel_update(runtime: State<UpdateRuntime>, token: String) -> Result<bool, String> {
+    updater::cancel(&runtime, &token)
+}
+
+#[tauri::command]
+pub async fn native_install_update(
+    runtime: State<'_, UpdateRuntime>,
+    token: String,
+    on_event: Channel<UpdateProgressEvent>,
+) -> Result<(), String> {
+    updater::install(&runtime, &token, on_event).await
 }
 
 #[tauri::command]
@@ -345,6 +376,14 @@ pub fn create_profile(db: State<Database>) -> Result<serde_json::Value, String> 
     let id = Uuid::now_v7().to_string();
     with_conn(&db.conn, |conn| {
         Ok(json_profile(&repositories::profile::create(conn, &id)?))
+    })
+}
+
+#[tauri::command]
+pub fn initialize_profile(db: State<Database>) -> Result<serde_json::Value, String> {
+    let id = Uuid::now_v7().to_string();
+    with_conn(&db.conn, |conn| {
+        Ok(json_profile(&repositories::profile::initialize(conn, &id)?))
     })
 }
 
