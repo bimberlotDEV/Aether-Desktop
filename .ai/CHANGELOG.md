@@ -26,6 +26,17 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-08-29 — `RELEASE-TRUST-001` — Trusted Windows release and update delivery
+
+- **Type:** Feature, security, release, accessibility, test, and docs
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review
+- **Summary:** Added an owner-gated signed-draft release path and an explicit Rust-owned Stable updater with generated untracked configuration, fixed feed, one-time install approval, signature verification, and complete Settings UX.
+- **Files:** `.github/workflows/public-release.yml`, release scripts/runbook/ADR, `src-tauri/src/updater.rs`, native commands, typed frontend bridge, `NativeSettings`, version/docs/control files
+- **Verification:** Frozen install; 83/83 frontend tests; production build/audit; Rust fmt/strict Clippy; 103/103 Rust tests; Cargo check/release build; MSI/NSIS packaging; ephemeral updater signing plus tamper rejection; responsive UI and packaged startup smoke; secret/capability/workflow/diff review; exact-head GitHub Actions run `33250561501` — Pass
+- **Decisions/deviations:** Ordinary builds remain updater-disabled and network-silent. Production keys, Azure signing identity, protected Environment approval, a live signed draft, and final publication remain external owner-controlled gates; installed 0.4.0 needs one manual signed 0.5.0 bootstrap installer.
+- **Follow-up:** Owner reviews/merges PR #46, provisions documented trust inputs, and validates a protected signed draft before any public release.
+
 ## 2026-08-28 — `BACKUP-RESTORE-001` — Complete portable backup and safe restore
 
 - **Type:** Feature, security, data lifecycle, accessibility, test, and docs

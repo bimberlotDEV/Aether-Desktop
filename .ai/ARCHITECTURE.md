@@ -65,6 +65,7 @@ SQLite / native capabilities / external providers
 9. Architecture changes require a `planned_codex` task contract and accepted ADR before implementation.
 10. AI retries reference an existing persisted user turn; generated Task proposals require strict validation and explicit transactional confirmation.
 11. Workspace archives use SQLite backup semantics, omit credentials, verify every payload, include only Aether-managed Vault bytes, and restore only through preview, one-time approval, staging, restart, and rollback-safe replacement.
+12. Public Windows delivery uses separate Authenticode and updater-signature trust roots. Release configuration is generated only in a protected manual workflow; Rust owns fixed-endpoint update checks, pending signed artifacts, explicit installation approval, and restart.
 
 ## UI and design constraints
 
@@ -112,6 +113,7 @@ SQLite / native capabilities / external providers
 | `ADR-020` | Execute only typed, Rust-validated Actions through preview, explicit approval, one-time tokens, and curated audit records.                                                                      | Accepted                | `docs/decisions/020-safe-actions.md`                 |
 | `ADR-021` | Route AI through a closed Rust provider registry with transparent deterministic Auto decisions; AI drafts reuse Safe Actions and never approve or execute.                                     | Accepted                | `docs/decisions/021-ai-provider-routing.md`          |
 | `ADR-022` | Package sanitized SQLite plus managed Vault bytes in a verified portable archive and restore through a one-time, restart-bound, rollback-safe swap.                                         | Accepted                | `docs/decisions/022-portable-backup-and-safe-restore.md` |
+| `ADR-023` | Deliver Windows releases through owner-gated Authenticode and Tauri signatures, draft-first publication, and a narrow Rust-owned Stable updater.                                             | Accepted                | `docs/decisions/023-trusted-release-delivery.md`     |
 
 ## Architecture change protocol
 
