@@ -30,6 +30,7 @@ The webview is untrusted relative to native resources. It never executes SQL, re
 | Continuity         | Space-scoped Rust read model plus curated Activity      | Space overview, Activity                  |
 | Pulse relevance    | Bounded deterministic Rust read model                   | Pulse                                     |
 | Safe Actions       | Typed Rust proposal runtime plus existing repositories  | Actions                                   |
+| First-run profile  | SQLite profile repository and existing trusted domains  | Onboarding gate, Settings tour            |
 
 ## Data and concurrency
 
@@ -49,6 +50,8 @@ Safe Actions uses a closed Rust request enum and keeps each validated proposal i
 
 AI providers are a closed Rust registry with fixed official DeepSeek and OpenAI endpoints. Credentials are separately DPAPI-protected; Auto chooses a configured route deterministically before disclosure and never performs silent cross-provider fallback. Each assistant response stores its resolved provider, model, routing mode, and human-readable reason. AI Action JSON is re-read from the persisted assistant message, strictly parsed into Task/Note drafts, bound to the conversation Space and message origin, and previewed through Safe Actions one item at a time. See ADR-021.
 
+First-run initialization is idempotent and Rust-owned. A missing profile beside any meaningful persisted Space, Note, Task, Vault item, Memory, conversation, or Source is treated as an upgrade and marked complete without changing domain rows. Only an empty workspace receives onboarding. The frontend then composes existing transactional Space creation, explicit Source authorization, DPAPI provider configuration, and the normal Pulse shell; interrupted setup resumes an existing top-level Space rather than duplicating it. See ADR-024.
+
 ## Security and privacy
 
 - Tauri CSP restricts scripts to the application and capabilities expose only required native actions.
@@ -60,10 +63,12 @@ AI providers are a closed Rust registry with fixed official DeepSeek and OpenAI 
 - Continuity is deterministic and Space-bound; it exposes structured facts and presentation-safe Activity without sending data to DeepSeek.
 - Pulse is local and explainable; archived scopes, removed Source files, raw metadata, and absolute Source roots are excluded.
 - Safe Actions require a visible consequence review and explicit user approval; one-time execution remains inside the narrow validated Rust capability boundary.
-- There is no telemetry, account backend, active updater, or embedded signing secret.
+- There is no telemetry, account backend, embedded signing secret, hidden update check, or frontend-controlled installer. Signed public builds may use the fixed Stable GitHub feed through the Rust-owned updater boundary.
+- Beta diagnostics are composed in Rust from a closed metadata-only schema, displayed before copying, and never include domain data, counts, paths, logs, identifiers or secrets. Aether has no diagnostic submission endpoint.
+- Onboarding collects no account, contact, demographic, analytics, or payment data; optional folders and AI providers retain their existing explicit native consent boundaries.
 
 ## Quality and delivery
 
-Pull requests and `master` run Windows frontend typecheck/lint/tests/build plus Rust format, strict Clippy, and tests. Task branches are published with `scripts/publish-task.ps1`. MSI and NSIS packages are built locally for alpha candidates; signing and auto-update activation require owner-controlled infrastructure.
+Pull requests and `master` run Windows frontend typecheck/lint/tests/build plus Rust format, strict Clippy, and tests. Task branches are published with `scripts/publish-task.ps1`. Ordinary MSI/NSIS builds remain unsigned and updater-disabled. Public Windows candidates use a manually dispatched protected Environment, generated untracked configuration, independent Authenticode/updater trust roots, fixed Stable feed, signature verification, and draft-first publication under ADR-023.
 
 Durable rationale is indexed in `.ai/ARCHITECTURE.md` and stored under `docs/decisions/`.

@@ -443,6 +443,57 @@ export const NativeStatusSchema = z.object({
 })
 export type NativeStatus = z.infer<typeof NativeStatusSchema>
 
+export const BetaDiagnosticReportSchema = z
+  .object({
+    appVersion: z.string(),
+    databaseSchema: z.string(),
+    databaseIntegrity: z.enum(['ok', 'failed']),
+    platform: z.string(),
+    updaterConfigured: z.boolean(),
+    trayAvailable: z.boolean(),
+    shortcutRegistered: z.boolean(),
+    notificationsAvailable: z.boolean(),
+  })
+  .strict()
+export type BetaDiagnosticReport = z.infer<typeof BetaDiagnosticReportSchema>
+
+export const UpdatePhaseSchema = z.enum(['idle', 'checking', 'ready', 'installing'])
+export const UpdateStatusSchema = z.object({
+  configured: z.boolean(),
+  channel: z.literal('Stable'),
+  currentVersion: z.string(),
+  phase: UpdatePhaseSchema,
+})
+export type UpdateStatus = z.infer<typeof UpdateStatusSchema>
+
+export const UpdatePreviewSchema = z.object({
+  token: z.string().min(1),
+  currentVersion: z.string(),
+  version: z.string(),
+  notes: z.string().nullable(),
+  publishedAt: z.string().nullable(),
+  expiresAt: z.string(),
+})
+export type UpdatePreview = z.infer<typeof UpdatePreviewSchema>
+
+export const UpdateProgressEventSchema = z.discriminatedUnion('event', [
+  z.object({
+    event: z.literal('started'),
+    data: z.object({ contentLength: z.number().int().nonnegative().nullable() }),
+  }),
+  z.object({
+    event: z.literal('progress'),
+    data: z.object({
+      downloaded: z.number().int().nonnegative(),
+      chunkLength: z.number().int().nonnegative(),
+    }),
+  }),
+  z.object({ event: z.literal('downloaded') }),
+  z.object({ event: z.literal('verified') }),
+  z.object({ event: z.literal('installing') }),
+])
+export type UpdateProgressEvent = z.infer<typeof UpdateProgressEventSchema>
+
 export const BackupResultSchema = z.object({
   sizeBytes: z.number().nonnegative(),
   createdAt: z.string(),
