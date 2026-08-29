@@ -9,7 +9,7 @@
 | Updated by       | Codex                         |
 | Repository       | `bimberlotDEV/Aether-Desktop` |
 | Branch           | `codex/onboarding-ux`           |
-| Baseline commit  | `31b2e3a` (stacked on draft PR #46) |
+| Baseline commit  | `db4a25b` (draft PR #47; depends on draft PR #46) |
 | Product maturity | Alpha                         |
 
 ## Responsibility of this file
