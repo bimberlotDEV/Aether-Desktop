@@ -4,7 +4,7 @@
 | ----------------- | --------------------------------------- |
 | Schema version    | 2                                       |
 | Task ID           | `ONBOARD-001`                          |
-| Status            | `in_review`                            |
+| Status            | `accepted`                             |
 | Owner             | Codex                                   |
 | Last updated      | 2026-08-29                              |
 | Related milestone | Canonical Milestone H — Onboarding & UX |
@@ -39,7 +39,7 @@ The schema has supported one local profile and `onboarding_completed` since migr
 - [x] Browser development remains usable with an honest preview/bypass path, while packaged desktop startup exercises the real profile gate.
 - [x] Settings can intentionally reopen onboarding as a tour without clearing `onboarding_completed`, creating duplicate Spaces, or changing data unless the user explicitly performs an onboarding action.
 - [x] Documentation and canonical A–K status distinguish Milestone H from the already completed release/updater foundation; no milestone is claimed complete without evidence.
-- [ ] Frozen install, frontend typecheck/lint/tests/build/audit, Rust fmt/strict all-target/all-feature Clippy/tests/check/release build, Tauri MSI/NSIS packaging, responsive theme/keyboard/native startup smoke, diff/secret/capability/data-safety review, and exact-head GitHub CI pass.
+- [x] Frozen install, frontend typecheck/lint/tests/build/audit, Rust fmt/strict all-target/all-feature Clippy/tests/check/release build, Tauri MSI/NSIS packaging, responsive theme/keyboard/native startup smoke, diff/secret/capability/data-safety review, and exact-head GitHub CI pass.
 
 ## Allowed paths
 
@@ -121,4 +121,4 @@ None. The five usage choices, module presets, optional permissions, no-telemetry
 - The React gate, six-step setup, interrupted-resume handling, non-destructive tour, optional Source authorization, optional DPAPI-backed AI settings, retry surfaces and focus behavior are covered by 94/94 frontend tests.
 - Browser smoke covered every step plus light/dark and 1280×800/720×640 layouts. The packaged release executable remained running against the existing workspace and MSI/NSIS packaging completed.
 - Frozen install, typecheck, lint, production build, production audit, Rust fmt, strict Clippy, Cargo check/test/release build, Tauri packaging and `git diff --check` pass. No capability expansion, raw SQL in React, secret persistence, background scan, or destructive data operation was introduced.
-- Self-review mapped each acceptance criterion to tests or direct inspection. Exact-head GitHub CI remains the only unchecked publication gate.
+- Self-review mapped each acceptance criterion to tests or direct inspection. GitHub Actions run `33254872286` passed on exact published head `2019c27`.

@@ -30,9 +30,9 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 
 - **Type:** Feature, privacy, accessibility and release readiness
 - **Implemented by:** Codex
-- **Reviewed by:** Codex self-review; exact-head GitHub CI pending
+- **Reviewed by:** Codex self-review; exact-head GitHub Actions run `33254872286` — Pass
 - **Summary:** Added an idempotent native profile gate that distinguishes a fresh install from a populated legacy workspace, a calm six-step local-first setup, resumable first-Space creation, optional Source and DPAPI-backed AI configuration, and a non-destructive Settings tour.
-- **Verification:** Frozen install; 94/94 frontend tests; production build/audit; Rust fmt/strict Clippy/check; 105/105 Rust tests; release build; MSI/NSIS packaging; all-step 1280×800 and 720×640 light/dark browser smoke; packaged startup; diff/secret/capability/data-safety review. Exact-head CI pending.
+- **Verification:** Frozen install; 94/94 frontend tests; production build/audit; Rust fmt/strict Clippy/check; 105/105 Rust tests; release build; MSI/NSIS packaging; all-step 1280×800 and 720×640 light/dark browser smoke; packaged startup; diff/secret/capability/data-safety review; exact-head GitHub Actions run `33254872286` — Pass.
 - **Decisions/deviations:** No schema migration or new capability was needed. Existing meaningful workspace rows are treated as authoritative upgrade evidence, while an incomplete profile remains authoritative for an interrupted genuine first run.
 - **Follow-up:** Publish H and begin canonical Milestone I — Public Beta.
 
