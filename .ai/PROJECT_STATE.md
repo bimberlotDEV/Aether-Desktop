@@ -56,9 +56,9 @@
 | `BACKUP-RESTORE-001` | Complete portable backup and safe restore         | `complete`    | Verified sanitized archives include managed Vault bytes and restore only through explicit approval, restart, recovery backup, and rollback. |
 | `RELEASE-TRUST-001` | Trusted Releases & Updates                         | `complete` | Owner-gated release tooling, Rust-owned Stable updates, local/package/security/UI gates, and exact-head task CI pass. |
 | `ONBOARD-001`       | Canonical Milestone H — Onboarding & UX            | `complete` | Upgrade-safe first-run setup, optional trusted configuration, accessibility, packaging, and exact-head CI pass. |
-| `BETA-001`          | Canonical Milestone I — Public Beta readiness       | `self_review` | Repository beta operations pass; exact-head CI, signed distribution and meaningful external evidence remain. |
+| `BETA-001`          | Canonical Milestone I — Public Beta                 | `blocked` | Repository beta operations and exact-head CI pass; owner signing/publication and meaningful external tester evidence remain. |
 
-Canonical Milestones A–H are complete. Canonical Milestone I repository readiness is active under ADR-025; actual public testing evidence remains external.
+Canonical Milestones A–H are complete. Milestone I repository readiness is complete under ADR-025, but canonical Public Beta is externally blocked on signed publication and meaningful real tester evidence. J implementation cannot safely gate products or finalize pricing before that evidence.
 
 ## Completed product milestones
 

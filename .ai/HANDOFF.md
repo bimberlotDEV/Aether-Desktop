@@ -4,7 +4,7 @@
 | ----------------- | ----------------------------------- |
 | Schema version    | 2                                   |
 | Task ID           | `BETA-001`                          |
-| Status            | `in_review`                         |
+| Status            | `accepted`                          |
 | Owner             | Codex                               |
 | Last updated      | 2026-08-29                          |
 | Related milestone | Canonical Milestone I — Public Beta |
@@ -37,7 +37,7 @@ Milestones A–H and the owner-gated signing/updater foundation are implemented.
 - [x] The beta evidence template records tester consent, anonymous tester code, build/version, scenario outcomes, activation, D2/D7/D14/D30 return signals and qualitative replacement behavior without telemetry or private content.
 - [x] `SECURITY.md`, `README.md`, release checklist and changelog accurately describe 0.5.0, both AI providers, complete backups, signing/updater state, correct app-data path and vulnerability reporting.
 - [x] No payments, accounts, telemetry, cloud backend, hidden analytics, automatic issue submission, crash upload, pricing decision or public-release claim is introduced.
-- [ ] Frozen install, frontend check/build/audit, Rust fmt/strict Clippy/check/tests/release build, MSI/NSIS packaging, browser/native smoke, diff/secret/capability/privacy review and exact-head CI pass.
+- [x] Frozen install, frontend check/build/audit, Rust fmt/strict Clippy/check/tests/release build, MSI/NSIS packaging, browser/native smoke, diff/secret/capability/privacy review and exact-head CI pass.
 
 ## Allowed paths
 
@@ -113,4 +113,4 @@ Repository implementation has no blocking decision. Actual beta launch remains b
 - TypeScript validates the native object with a strict Zod schema and rejects extra fields. Five component tests cover browser honesty, generation, loading, exact preview-before-copy, generation failure and clipboard failure; the complete frontend suite passes 100/100 tests.
 - Settings light/dark browser smoke at 1280×800 and the supported 960×600 minimum shows readable, keyboard-discoverable beta support without generic dashboards or new styling primitives.
 - Issue forms, handbook, test matrix and evidence template enforce privacy-safe support, severity/stop conditions, real tester signals and the distinction between repository readiness and a real beta.
-- Frozen install, production build/audit, Rust fmt/strict Clippy/check/tests, MSI/NSIS packaging, packaged startup, YAML/format/diff/capability/privacy review pass locally. Exact-head GitHub CI remains.
+- Frozen install, production build/audit, Rust fmt/strict Clippy/check/tests, MSI/NSIS packaging, packaged startup, YAML/format/diff/capability/privacy review pass. Exact-head GitHub Actions run `33265317383` passed on published implementation head `a3ecdf2`.

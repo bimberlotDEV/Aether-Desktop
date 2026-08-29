@@ -30,9 +30,9 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 
 - **Type:** Feature, privacy, support and release readiness
 - **Implemented by:** Codex
-- **Reviewed by:** Codex self-review; exact-head GitHub CI pending
+- **Reviewed by:** Codex self-review; exact-head GitHub Actions run `33265317383` — Pass
 - **Summary:** Added a Rust-owned content-free diagnostic report with strict frontend validation and preview-before-copy UX, privacy-safe beta issue forms, an external Windows test matrix, severity/rollback guidance, known limitations and a manual activation/retention evidence template.
-- **Verification:** 100/100 frontend tests; production build/audit; Rust fmt/strict Clippy/check; 108/108 Rust tests; MSI/NSIS packaging; 1280×800 dark and 960×600 light Settings smoke; packaged startup; YAML/diff/secret/capability/privacy review. Exact-head CI pending.
+- **Verification:** 100/100 frontend tests; production build/audit; Rust fmt/strict Clippy/check; 108/108 Rust tests; MSI/NSIS packaging; 1280×800 dark and 960×600 light Settings smoke; packaged startup; YAML/diff/secret/capability/privacy review; exact-head GitHub Actions run `33265317383` — Pass.
 - **Decisions/deviations:** Kept telemetry, crash upload and automatic issue submission absent. Repository readiness is complete, but canonical Public Beta still requires owner signing/publication and meaningful real tester evidence.
 - **Follow-up:** Owner beta gates, then bounded Commercial Readiness foundations.
 
