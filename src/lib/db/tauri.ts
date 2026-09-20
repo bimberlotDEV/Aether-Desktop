@@ -46,8 +46,11 @@ import type {
   ActionRequest,
   AiActionDraft,
   ActionResult,
+  Integration,
+  IntegrationCreateInput,
+  IntegrationUpdateInput,
 } from './types'
-import { BetaDiagnosticReportSchema } from './types'
+import { BetaDiagnosticReportSchema, IntegrationCreateInputSchema, IntegrationSchema, IntegrationUpdateInputSchema } from './types'
 
 // ─── Native desktop ─────────────────────────────────────
 export async function getNativeStatus(): Promise<NativeStatus> {
@@ -598,4 +601,25 @@ export async function listActivity(params?: {
 
 export async function getSpaceContinuity(spaceId: string): Promise<SpaceContinuity> {
   return invoke('get_space_continuity', { spaceId })
+}
+
+// ─── Integrations ────────────────────────────────────────
+export async function createIntegration(input: IntegrationCreateInput): Promise<Integration> {
+  const parsed = IntegrationCreateInputSchema.parse(input)
+  return IntegrationSchema.parse(await invoke('create_integration', { input: parsed }))
+}
+
+export async function getIntegration(id: string): Promise<Integration | null> {
+  const result = await invoke<unknown>('get_integration', { id })
+  return result === null ? null : IntegrationSchema.parse(result)
+}
+
+export async function listIntegrations(): Promise<Integration[]> {
+  return IntegrationSchema.array().parse(await invoke('list_integrations'))
+}
+
+export async function updateIntegration(id: string, input: IntegrationUpdateInput): Promise<Integration | null> {
+  const parsed = IntegrationUpdateInputSchema.parse(input)
+  const result = await invoke<unknown>('update_integration', { id, input: parsed })
+  return result === null ? null : IntegrationSchema.parse(result)
 }

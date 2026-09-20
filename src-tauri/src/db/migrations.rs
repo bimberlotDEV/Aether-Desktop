@@ -324,6 +324,44 @@ const MIGRATIONS: &[(&str, &str)] = &[
         ALTER TABLE ai_messages ADD COLUMN route_reason TEXT;
         ",
     ),
+    // Migration 011: Provider-neutral integration connection and sync metadata.
+    (
+        "011_integrations",
+        "
+        CREATE TABLE IF NOT EXISTS integrations (
+            id                      TEXT PRIMARY KEY NOT NULL,
+            provider_id             TEXT NOT NULL CHECK(length(trim(provider_id)) BETWEEN 1 AND 100),
+            enabled                 INTEGER NOT NULL DEFAULT 1 CHECK(enabled IN (0, 1)),
+            advertised_capabilities_json TEXT NOT NULL DEFAULT '[]',
+            effective_capabilities_json  TEXT NOT NULL DEFAULT '[]',
+            auth_type               TEXT NOT NULL CHECK(auth_type IN ('none', 'api_key', 'api_token', 'oauth', 'ics_feed', 'feed_url', 'oauth_authorization_code')),
+            credential_key          TEXT UNIQUE,
+            sync_modes_json         TEXT NOT NULL DEFAULT '[]',
+            sync_config_json        TEXT NOT NULL DEFAULT '{}',
+            connection_status       TEXT NOT NULL DEFAULT 'disconnected' CHECK(connection_status IN ('connected', 'syncing', 'degraded', 'reauthentication_required', 'permission_denied', 'rate_limited', 'institution_configuration_required', 'unsupported', 'disconnected')),
+            sync_status             TEXT NOT NULL DEFAULT 'idle' CHECK(sync_status IN ('idle', 'pending', 'syncing', 'succeeded', 'failed')),
+            disconnect_reason       TEXT CHECK(disconnect_reason IN ('local', 'remote_revoke')),
+            last_attempted_at       TEXT,
+            last_successful_sync_at TEXT,
+            next_allowed_sync_at    TEXT,
+            last_sync_error_code    TEXT CHECK(last_sync_error_code IS NULL OR length(last_sync_error_code) <= 100),
+            last_sync_error_message TEXT CHECK(last_sync_error_message IS NULL OR length(last_sync_error_message) <= 500),
+            last_sync_etag          TEXT CHECK(last_sync_etag IS NULL OR length(last_sync_etag) <= 512),
+            last_sync_last_modified TEXT CHECK(last_sync_last_modified IS NULL OR length(last_sync_last_modified) <= 128),
+            sync_cursor             TEXT CHECK(sync_cursor IS NULL OR length(sync_cursor) <= 2048),
+            rate_limit_remaining    INTEGER CHECK(rate_limit_remaining IS NULL OR rate_limit_remaining >= 0),
+            retry_after_at          TEXT,
+            credential_expires_at   TEXT,
+            credential_rotated_at   TEXT,
+            sync_execution_scope    TEXT NOT NULL DEFAULT 'desktop_running' CHECK(sync_execution_scope = 'desktop_running'),
+            created_at              TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at              TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE INDEX IF NOT EXISTS idx_integrations_provider ON integrations(provider_id);
+        CREATE INDEX IF NOT EXISTS idx_integrations_enabled ON integrations(enabled);
+        CREATE INDEX IF NOT EXISTS idx_integrations_sync_status ON integrations(sync_status);
+        ",
+    ),
 ];
 
 pub fn known_names() -> impl Iterator<Item = &'static str> {
@@ -1151,5 +1189,27 @@ mod tests {
         ] {
             assert!(cols.contains(&expected.to_string()));
         }
+    }
+
+    #[test]
+    fn integration_migration_upgrades_the_immediately_previous_schema() {
+        let conn = in_memory_db();
+        let tx = conn.unchecked_transaction().unwrap();
+        ensure_migrations_table(&tx).unwrap();
+        for (name, sql) in &MIGRATIONS[..MIGRATIONS.len() - 1] {
+            apply_migration(&tx, name, sql).unwrap();
+        }
+        tx.commit().unwrap();
+
+        run(&conn).unwrap();
+        let columns: Vec<String> = conn
+            .prepare("PRAGMA table_info(integrations)")
+            .unwrap()
+            .query_map([], |row| row.get(1))
+            .unwrap()
+            .collect::<Result<_, _>>()
+            .unwrap();
+        assert!(columns.contains(&"credential_key".to_string()));
+        assert!(columns.contains(&"last_successful_sync_at".to_string()));
     }
 }

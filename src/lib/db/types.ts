@@ -9,6 +9,33 @@ export const AppSettingSchema = z.object({
 })
 export type AppSetting = z.infer<typeof AppSettingSchema>
 
+export const IntegrationAuthTypeSchema = z.enum(['none', 'api_key', 'api_token', 'oauth', 'ics_feed', 'feed_url', 'oauth_authorization_code'])
+export const IntegrationConnectionStatusSchema = z.enum(['connected', 'syncing', 'degraded', 'reauthentication_required', 'permission_denied', 'rate_limited', 'institution_configuration_required', 'unsupported', 'disconnected'])
+export const IntegrationSyncStatusSchema = z.enum(['idle', 'pending', 'syncing', 'succeeded', 'failed'])
+export const IntegrationSyncModeSchema = z.enum(['manual', 'periodic', 'app_start', 'app_resume', 'webhook'])
+export const IntegrationSchema = z.object({
+  id: z.string(), provider_id: z.string(), enabled: z.boolean(), advertised_capabilities: z.array(z.string()), effective_capabilities: z.array(z.string()),
+  auth_type: IntegrationAuthTypeSchema, sync_modes: z.array(IntegrationSyncModeSchema), sync_config: z.record(z.string(), z.unknown()),
+  connection_status: IntegrationConnectionStatusSchema, sync_status: IntegrationSyncStatusSchema,
+  disconnect_reason: z.enum(['local', 'remote_revoke']).nullable(), last_attempted_at: z.string().nullable(), last_successful_sync_at: z.string().nullable(), next_allowed_sync_at: z.string().nullable(),
+  last_sync_error_code: z.string().nullable(), last_sync_error_message: z.string().nullable(), last_sync_etag: z.string().nullable(), last_sync_last_modified: z.string().nullable(), sync_cursor: z.string().nullable(), rate_limit_remaining: z.number().int().nullable(), retry_after_at: z.string().nullable(), credential_expires_at: z.string().nullable(), credential_rotated_at: z.string().nullable(), sync_execution_scope: z.literal('desktop_running'),
+  created_at: z.string(), updated_at: z.string(),
+})
+export type Integration = z.infer<typeof IntegrationSchema>
+export const IntegrationCreateInputSchema = z.object({
+  providerId: z.string().trim().min(1).max(100), enabled: z.boolean().optional(),
+  advertisedCapabilities: z.array(z.string().trim().min(1).max(100)).max(32).default([]), authType: IntegrationAuthTypeSchema,
+  syncModes: z.array(IntegrationSyncModeSchema).max(32).default([]), syncConfig: z.record(z.string(), z.unknown()).default({}),
+})
+export type IntegrationCreateInput = z.input<typeof IntegrationCreateInputSchema>
+export const IntegrationUpdateInputSchema = z.object({
+  enabled: z.boolean(), advertisedCapabilities: z.array(z.string().trim().min(1).max(100)).max(32), effectiveCapabilities: z.array(z.string().trim().min(1).max(100)).max(32), syncModes: z.array(IntegrationSyncModeSchema).max(32),
+  syncConfig: z.record(z.string(), z.unknown()), connectionStatus: IntegrationConnectionStatusSchema, syncStatus: IntegrationSyncStatusSchema,
+  disconnectReason: z.enum(['local', 'remote_revoke']).nullable(), lastAttemptedAt: z.string().max(64).nullable(), lastSuccessfulSyncAt: z.string().max(64).nullable(), nextAllowedSyncAt: z.string().max(64).nullable(),
+  lastSyncErrorCode: z.string().max(100).nullable(), lastSyncErrorMessage: z.string().max(500).nullable(), lastSyncEtag: z.string().max(512).nullable(), lastSyncLastModified: z.string().max(128).nullable(), syncCursor: z.string().max(2048).nullable(), rateLimitRemaining: z.number().int().nonnegative().nullable(), retryAfterAt: z.string().max(64).nullable(), credentialExpiresAt: z.string().max(64).nullable(), credentialRotatedAt: z.string().max(64).nullable(),
+})
+export type IntegrationUpdateInput = z.input<typeof IntegrationUpdateInputSchema>
+
 export const UserProfileSchema = z.object({
   id: z.string(),
   display_name: z.string().nullable(),

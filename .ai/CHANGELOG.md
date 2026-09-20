@@ -26,6 +26,17 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-09-21 — `INT-CORE-001` — Provider-neutral Integration Core
+
+- **Type:** Feature, architecture, and persistence
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review
+- **Summary:** Added local provider-neutral connection records, declarative capability/auth/sync metadata, typed IPC, and native-only opaque credential references. No provider, OAuth flow, feed parser, or sync executor was added.
+- **Files:** `src-tauri/src/db/migrations.rs`, `src-tauri/src/db/repositories/integrations.rs`, typed commands/wrappers, ADR-027, database documentation, and task state.
+- **Verification:** frontend typecheck/lint/test/build pass (101 tests); Rust fmt/strict Clippy/test pass (111 tests); migration upgrade and diff checks pass.
+- **Decisions/deviations:** Supports multiple connections per provider; configuration rejects raw feed URLs and credential-shaped values. Synchronization remains desktop-running-only declarative metadata.
+- **Follow-up:** `INT-CONN-001`
+
 ## 2026-08-29 — `BETA-001` — Privacy-safe public beta operations
 
 - **Type:** Feature, privacy, support and release readiness

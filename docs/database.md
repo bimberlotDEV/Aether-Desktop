@@ -156,6 +156,17 @@ Indexes: `space_id`, `category`, `updated_at`. A cleanup trigger removes polymor
 
 ## Migrations
 
+### integrations
+
+Provider-neutral local connection and synchronization metadata, defined by ADR-027. The table does not store a credential value: credential_key is an internal opaque key used only by Rust to address the DPAPI-protected secrets table, and is never returned over IPC.
+
+| Column group | Notes |
+|---|---|
+| Identity and lifecycle | UUIDv7 id, bounded provider_id, enabled, created_at, updated_at |
+| Provider-neutral capability/auth metadata | JSON string arrays for capabilities and declared sync modes; auth_type is none, api_key, api_token, oauth, or ics_feed |
+| Sync state | generic configuration object, connection and sync statuses, last attempt/success, optional next sync, bounded last error |
+| Credential boundary | nullable native-only credential_key; secrets remain encrypted and excluded from workspace export |
+
 Versioned in `src-tauri/src/db/migrations.rs`. Each migration has a name and SQL. Applied migrations are tracked in `_migrations` table. Migrations run in a transaction — all or nothing.
 
 To add a migration:
