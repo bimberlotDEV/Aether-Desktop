@@ -26,6 +26,17 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-09-21 — `INT-CONN-001` — Provider-neutral Connections UI
+
+- **Type:** Feature and UX
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review
+- **Summary:** Added a Settings Connections surface that renders only persisted Integration Core records, distinguishes all connection states, exposes enabled/disabled state and both capability sets, shows applicable sync timing, and safely redacts error values. It deliberately exposes no provider setup, reconnect, disconnect, credential, or sync simulation.
+- **Files:** `src/components/connections/`, `src/hooks/useConnections.ts`, `src/lib/integrations/`, Settings composition/navigation, and task state.
+- **Verification:** `pnpm typecheck`, `pnpm lint`, `pnpm test` (108 tests), `pnpm build`, and `git diff --check` — Pass.
+- **Decisions/deviations:** Reused only `list_integrations` and generic `update_integration` enabled-state support defined by ADR-027. There is no provider registry yet, so the UI truthfully presents configured records rather than fake available providers.
+- **Follow-up:** `CAL-CORE-001`; provider connectors remain separately scoped.
+
 ## 2026-09-21 — `INT-CORE-001` — Provider-neutral Integration Core
 
 - **Type:** Feature, architecture, and persistence

@@ -146,7 +146,7 @@ This section defines direction, not automatic implementation authorization.
 | Priority | ID                 | Work item                                          | Type                               | Status         | Dependencies                                          | Acceptance summary                                                                                                                                                       |
 | -------- | ------------------ | -------------------------------------------------- | ---------------------------------- | -------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | P0       | `INT-CORE-001`     | Build Integration Core foundation                  | Product / Architecture             | `done`         | Existing Rust/SQLite/IPC architecture                 | Generic provider-neutral integration records, local persistence, typed IPC, and tests are complete; no provider implementation was added. |
-| P0       | `INT-CONN-001`     | Build Connections management UI                    | Product / UX                       | `candidate`    | `INT-CORE-001`                                        | Users can inspect supported connections, connection state, last sync, errors, connect/disconnect actions, and provider capabilities without fake connected states.       |
+| P0       | `INT-CONN-001`     | Build Connections management UI                    | Product / UX                       | `done`         | `INT-CORE-001`                                        | Settings displays only persisted provider-neutral connections, their lifecycle metadata and safe errors, and the existing enabled-state action without simulating provider setup or sync. |
 | P0       | `CAL-CORE-001`     | Build external Calendar domain                     | Product / Data                     | `candidate`    | `INT-CORE-001`                                        | Aether can normalize, persist, query, update, and deduplicate external calendar events independently of provider-specific schemas.                                       |
 | P0       | `SCHOOL-MTT-001`   | Connect MyTimetable schedule data                  | Product / Integration              | `candidate`    | `CAL-CORE-001`                                        | A user-configured MyTimetable calendar feed imports lessons, times, rooms, updates, and source provenance safely and idempotently.                                       |
 | P0       | `SCHOOL-BSP-001`   | Connect Brightspace calendar/deadline data         | Product / Integration              | `needs_design` | `CAL-CORE-001`, provider capability research          | Brightspace deadlines/calendar data can be synchronized without scraping credentials or pretending unsupported API access exists.                                        |
@@ -168,7 +168,7 @@ This section defines direction, not automatic implementation authorization.
 The next planned task should be:
 
 ```text id="da9szx"
-INT-CORE-001 — Build Integration Core foundation
+CAL-CORE-001 — Build external Calendar domain
 ```
 
 Recommended scope:
@@ -318,7 +318,7 @@ Previously resolved items belong in `.ai/CHANGELOG.md`, including:
 | Backup / restore            | `complete`               | Extend only through separately reviewed encryption/scheduling/cloud work.               |
 | Context engine              | `continuity_complete`    | Preserve deterministic local relevance and explicit context boundaries.                 |
 | Integration Core            | `complete`               | Provider-neutral persistence and typed IPC are available; provider work remains separate. |
-| Connections                 | `not_started`            | Build after Integration Core.                                                           |
+| Connections                 | `complete`               | Settings displays persisted provider-neutral status and a generic enabled-state action; provider setup and sync remain separate. |
 | Calendar                    | `not_started`            | Build normalized external-event domain after Integration Core.                          |
 | MyTimetable                 | `not_started`            | Implement after Calendar Core.                                                          |
 | Brightspace                 | `needs_design`           | Determine supported calendar/API path before implementation.                            |

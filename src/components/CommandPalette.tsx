@@ -83,6 +83,13 @@ const defaultCommands: Command[] = [
     ['config'],
     '/settings',
   ),
+  command(
+    'connections',
+    'Open Connections',
+    'View local service connection status',
+    ['integrations', 'sync', 'providers'],
+    '/settings',
+  ),
   {
     id: 'theme-light',
     label: 'Light Theme',
