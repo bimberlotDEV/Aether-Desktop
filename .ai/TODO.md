@@ -1,103 +1,423 @@
 # Prioritized Backlog
 
-> Canonical queue of work that is not the active implementation contract.
+> Canonical queue of Aether work that is not the active implementation contract.
+>
+> This file answers:
+>
+> **What should Aether work on next?**
+>
+> Active `planned_codex` work belongs in `.ai/HANDOFF.md`.
+> Completed history belongs in `.ai/CHANGELOG.md`.
 
-| Field          | Value                                   |
-| -------------- | --------------------------------------- |
-| Schema version | 1                                       |
-| Last updated   | 2026-08-29                              |
-| Prioritized by | Codex within the owner-approved roadmap |
+---
 
-## Responsibility of this file
+## Metadata
 
-- Hold prioritized candidate work and technical debt.
-- Make dependencies and readiness visible.
-- Authorize small `direct_codex` work directly; require a `ready` `.ai/HANDOFF.md` contract for `planned_codex` work.
-- Preserve product backlog items without expanding them into implementation plans.
+| Field                   | Value                                   |
+| ----------------------- | --------------------------------------- |
+| Schema version          | 2                                       |
+| Last updated            | 2026-09-20                              |
+| Prioritized by          | Codex within the owner-approved roadmap |
+| Current product version | `0.5.0`                                 |
+| Product maturity        | Alpha                                   |
 
-## Status values
+---
 
-- `candidate`: captured but not refined.
-- `needs_design`: requires Codex analysis, an ADR, or a human product decision.
-- `planned`: sufficiently understood and queued for a task contract.
-- `active`: represented by the current Codex task contract.
-- `blocked`: cannot progress yet.
-- `done`: completed and recorded in `.ai/CHANGELOG.md`.
-- `deferred`: intentionally postponed.
+# Responsibility of this file
 
-## Priority queue
+This file must:
 
-| Priority | ID                 | Work item                                                  | Type                      | Status | Dependencies                | Acceptance summary                                                                                                      |
-| -------- | ------------------ | ---------------------------------------------------------- | ------------------------- | ------ | --------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| P0       | `AIWF-001`         | Establish Hermes/Codex collaboration system                | Process                   | `done` | None                        | Hermes accepted the complete workflow.                                                                                  |
-| P0       | `PROC-003`         | Adopt Codex-only engineering workflow                      | Process                   | `done` | Project-owner decision      | Codex owns planning through publication with planned-task contracts and self-review.                                    |
-| P0       | `TECH-001`         | Audit and harden AI credential storage and locking         | Security                  | `done` | `ENV-001` done              | Merged via PR #3; Windows DPAPI enabled and 33/33 Rust tests pass.                                                      |
-| P1       | `ENV-001`          | Restore Rust verification capability                       | Tooling                   | `done` | Rust MSVC installation      | Rust tests, formatting checks, and Clippy run locally; code findings are tracked separately.                            |
-| P1       | `DOC-001`          | Reconcile version and milestone documentation              | Documentation             | `done` | `AIWF-001` accepted         | README, app metadata, and project state agree.                                                                          |
-| P1       | `PHASE34-CLOSEOUT` | Close Spaces and Notes MVP gaps                            | Product and testing       | `done` | Rust quality gates restored | Space editing/reordering/state refresh and safe Note autosave/archive flows pass regression tests.                      |
-| P1       | `PHASE5-EPIC`      | Design and implement Tasks                                 | Product                   | `done` | Codex decomposition         | ADR-009, persistence, Space/global UI, and Pulse attention are complete.                                                |
-| P1       | `PHASE5-001`       | Build Task persistence and IPC foundation                  | Product and architecture  | `done` | ADR-009                     | Migration, repository, commands, types, wrappers, and tests pass.                                                       |
-| P1       | `PHASE5-002`       | Build Tasks UI and Pulse integration                       | Product                   | `done` | `PHASE5-001`                | Space Tasks and calm global due views meet Phase 5 acceptance.                                                          |
-| P1       | `AI-UI-EPIC`       | Complete the AI user experience                            | Product                   | `done` | `TECH-001`                  | Provider setup, conversations, streaming, cancellation, explicit context, modes, and Task proposals have reviewed UX.   |
-| P1       | `PHASE7-001`       | Harden AI streaming and explicit context foundation        | Security and architecture | `done` | ADR-011                     | Current provider, cancellation, terminal persistence, and Space isolation pass tests.                                   |
-| P1       | `PHASE7-002`       | Build AI Settings, chat, context, summary, and proposal UI | Product                   | `done` | `PHASE7-001`                | DeepSeek is usable with visible context, retry/cancel, modes, and previewed transactional proposals.                    |
-| P1       | `PHASE8-001`       | Design and implement Memory                                | Product and architecture  | `done` | `PHASE7-002`                | Global and Space Memory is manageable and may be explicitly attached to AI.                                             |
-| P1       | `PHASE9-001`       | Complete native Windows features                           | Product and packaging     | `done` | `PHASE8-001`                | Tray, notifications, shortcut, installer metadata, and native smoke tests pass.                                         |
-| P1       | `PHASE10-001`      | Complete release audit and pipeline                        | Quality and release       | `done` | `PHASE9-001`                | CI, packaging, documentation, security/privacy, backup export, and alpha release gates pass.                            |
-| P0       | `STAB-001`         | Integrated stress test and defect hardening                | Quality and defect        | `done` | `PHASE10-001`               | Full browser/desktop test matrix passes and all reproducible P0/P1 defects are resolved.                                |
-| P0       | `HARD-001`         | Safely upgrade personal-beta databases                     | Defect and data lifecycle | `done` | Milestone A                 | Older databases start on 0.3.1 with valid rows and managed-file safety preserved.                                       |
-| P1       | `AI-CHAT-001`      | Render submitted AI prompts immediately                    | Defect                    | `done` | `PHASE7-002`                | A submitted prompt is visible before backend streaming starts and is reconciled without duplication.                    |
-| P0       | `AI-CHAT-002`      | Prevent AI stream rerender crash                           | Defect                    | `done` | `AI-CHAT-001`               | Streamed message updates rerender without invoking a Promise as a React effect cleanup or showing the error boundary.   |
-| P0       | `AI-CHAT-003`      | Keep new prompts visible across stale message loads        | Defect and release        | `done` | `AI-CHAT-002`               | An older load cannot overwrite a newly started stream; Alpha 0.3.1 installs as an explicit Windows patch upgrade.       |
-| P0       | `AI-CHAT-004`      | Show completed AI responses without reloading              | Defect                    | `done` | `AI-CHAT-003`               | Missed WebView stream events cannot leave a persisted response hidden until Ctrl+R.                                     |
-| P1       | `UI-001`           | Redesign the complete Aether interface system              | Product and accessibility | `done` | Owner direction, ADR-015    | Every core surface feels cohesive, premium, responsive, accessible, and distinctly Aether without behavior regressions. |
-| P0       | `RELEASE-032`      | Consolidate and install Alpha 0.3.2                        | Quality and release       | `done` | PRs #34, #35, #36 merged    | Versioned Windows artifacts are validated, hashed, installed safely, and published through green draft PR #37.          |
-| P0       | `CTX-001`          | Add explicit Sources and safe metadata indexing            | Product, privacy, data    | `done` | Milestone A and ADR-016     | Users authorize, inspect, rescan, associate, and revoke bounded local directory Sources without file mutation.          |
-| P0       | `SEARCH-001`       | Design and implement Universal Search                      | Product, privacy, data    | `done` | `CTX-001`                   | Users search permitted local domains quickly with clear type, scope, provenance, and no implicit AI disclosure.         |
-| P0       | `CONT-001`         | Build Continuity and meaningful Activity                   | Product, privacy, data    | `done` | `SEARCH-001`                | Each Space offers a concise, deterministic resume view and Activity shows only meaningful local changes.                |
-| P0       | `PULSE-002`        | Make daily relevance visible on Pulse                      | Product, privacy, data    | `done` | `CONT-001`                  | Pulse calmly surfaces Today, Continue, New, Recent, and a grounded AI entry point.                                      |
-| P0       | `ACTION-001`       | Build narrow user-approved Safe Actions                    | Product, security, data   | `done` | `PULSE-002`                 | Eight typed actions pass explicit review, one-time approval, containment, rollback, audit, UI, packaging, and CI gates. |
-| P0       | `AI-EVOL-001`      | Evolve providers, transparent Auto, and approved AI drafts | Product, security, data   | `done`   | `ACTION-001`              | DeepSeek/OpenAI, deterministic routing, provenance, and Task/Note drafts reuse the Safe Actions consent boundary.        |
-| P0       | `RELEASE-040`      | Cut and install integrated Alpha 0.4.0                     | Quality and release       | `done`   | `AI-EVOL-001`             | Versioned artifacts, protected data-preserving upgrade, installed startup, publication, and exact-head CI pass.          |
-| P0       | `BACKUP-RESTORE-001` | Complete portable backup and safe restore                | Product, security, data   | `done`   | `RELEASE-040`, ADR-022    | Managed Vault bytes and sanitized workspace data round-trip only through verified archives and rollback-safe approval.  |
-| P0       | `RELEASE-TRUST-001` | Build trusted Windows release and update delivery          | Security, release, product | `done` | `BACKUP-RESTORE-001`, ADR-023 | Protected signed draft tooling and explicit Stable updates pass local, package, security, UI, and exact-head CI gates. |
-| P0       | `ONBOARD-001`      | Complete upgrade-safe first-run onboarding                 | Product, privacy, accessibility | `done` | `AI-EVOL-001`, ADR-024 | Draft PR #47; all local gates and exact-head CI run `33254872286` pass. |
-| P0       | `BETA-001`         | Prepare and operate the canonical Public Beta              | Release, reliability, support | `blocked` | `ONBOARD-001`, `RELEASE-TRUST-001`, ADR-025 | Repository readiness and CI pass in PR #48; owner signing/publication and meaningful external tester evidence remain. |
-| P1       | `COMM-001`         | Build commercial-readiness foundations                     | Product, architecture, business | `needs_design` | `BETA-001` | Entitlements, managed AI boundary, signing, updater and website are ready without hardcoding unvalidated pricing. |
-| P1       | `LAUNCH-001`       | Establish and pass the Aether 1.0 launch gate              | Reliability, release, product | `needs_design` | `COMM-001`, retention evidence | 1.0 is possible only after measured reliability and real retention justify the claim. |
-| P1       | `VAULT-EPIC`       | Design and implement Vault                                 | Product                   | `done` | ADR-010                     | Safe storage and complete global/Space MVP are implemented.                                                             |
-| P1       | `PHASE6-001`       | Build Vault persistence and native filesystem foundation   | Product and security      | `done` | ADR-010                     | Safe linked/managed storage commands and tests pass.                                                                    |
-| P1       | `PHASE6-002`       | Build Vault UI and Space integration                       | Product                   | `done` | `PHASE6-001`                | Import, metadata, search, open/reveal, and safe removal are usable.                                                     |
+* hold prioritized candidate work;
+* hold technical debt;
+* expose dependencies;
+* expose readiness;
+* identify blocked external milestones;
+* authorize bounded `direct_codex` work where appropriate;
+* identify work requiring a `planned_codex` task contract.
 
-## Technical debt
+This file must NOT:
 
-| Priority | ID         | Area              | Description                                                                                                      | Evidence                                                                                                         |
-| -------- | ---------- | ----------------- | ---------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| P1       | `DEBT-001` | Testing           | Frontend coverage now includes Spaces invalidation, Note autosave races/teardown, and Tauri argument boundaries. | Resolved by `PHASE34-CLOSEOUT`: 14/14 tests across five files.                                                   |
-| P2       | `DEBT-002` | Lint              | Four non-failing warnings were in utilities, IconPicker, and SpaceDetail.                                        | ~~`pnpm lint` on 2026-07-30~~ Resolved: 0 warnings after fix (commit `28b82ab`).                                 |
-| P2       | `DEBT-003` | Architecture docs | Existing `docs/architecture.md` contains a duplicated Tauri Bridge layer and predates Notes/AI work.             | Repository inspection                                                                                            |
-| P2       | `DEBT-004` | Packaging         | `Cargo.toml` repository field was empty despite configured Git remote.                                           | ~~Repository inspection~~ Resolved: populated with https://github.com/bimberlotDEV/Aether-Desktop.               |
-| P1       | `DEBT-005` | Rust formatting   | Rust sources now satisfy the repository formatting gate.                                                         | Resolved: `cargo fmt --manifest-path src-tauri/Cargo.toml -- --check` passes on 2026-08-10.                      |
-| P1       | `DEBT-006` | Rust lint         | Strict Clippy is clean across library, binary, and test targets.                                                 | Resolved: `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings` passes on 2026-08-10. |
+* contain the active task implementation plan;
+* duplicate `.ai/HANDOFF.md`;
+* act as a historical changelog;
+* contain detailed architecture rationale;
+* turn speculative roadmap ideas into active tasks;
+* preserve obsolete engineering workflows as active backlog items.
 
-## Feature status index
+---
 
-| Feature        | Status                | Next planning action                                                                  |
-| -------------- | --------------------- | ------------------------------------------------------------------------------------- |
-| Spaces         | `mvp_complete`        | Extend only when a later roadmap phase requires it.                                   |
-| Notes          | `mvp_complete`        | Extend only when a later roadmap phase requires it.                                   |
-| Tasks          | `mvp_complete`        | Extend only when a later roadmap phase requires it.                                   |
-| Vault          | `mvp_complete`        | Extend only when a later roadmap phase requires previews or indexing.                 |
-| AI             | `mvp_complete`        | Validate live provider behavior during the release smoke test.                        |
-| Memory         | `mvp_complete`        | Extend only after a separately reviewed automatic-suggestion consent design.          |
-| Native desktop | `trusted_delivery_ready` | Owner provisions production trust inputs, runs the protected workflow, and inspects a signed draft before publication. |
-| Backup/export  | `complete`            | Extend only after a separately reviewed encryption, scheduling, or cloud-sync design. |
-| Context engine | `continuity_complete` | Validate later intelligence only through separately reviewed, explicit user controls. |
+# Status values
 
-## New item template
+Valid statuses:
 
-```markdown
-| P0-P3 | `AREA-NNN` | <imperative work item> | Product/Defect/Security/Tooling/Docs/Process | `candidate` | <IDs or None> | <observable outcome> |
+```text id="k8s8fv"
+candidate
+needs_design
+planned
+active
+blocked
+done
+deferred
 ```
 
-Codex assigns the ID, priority, dependency chain, and readiness status within the owner-approved roadmap. Material product reprioritization or scope expansion requires the project owner's direction.
+Definitions:
+
+### `candidate`
+
+Captured work that has not yet been sufficiently refined.
+
+### `needs_design`
+
+Requires:
+
+* architecture analysis;
+* ADR;
+* product decision;
+* external research;
+* security analysis;
+* or another prerequisite
+
+before a task contract can be safely written.
+
+### `planned`
+
+Sufficiently understood and prioritized.
+
+A planned item may be promoted into `.ai/HANDOFF.md`.
+
+### `active`
+
+Represented by the current active `.ai/HANDOFF.md` contract.
+
+Only one planned task per worktree may normally be active.
+
+### `blocked`
+
+Cannot responsibly progress until a dependency, external requirement, or owner decision is resolved.
+
+### `done`
+
+Completed and recorded in `.ai/CHANGELOG.md`.
+
+### `deferred`
+
+Intentionally postponed.
+
+---
+
+# Current development direction
+
+The current owner-approved internal product direction is:
+
+```text id="p9s9o8"
+Connected Personal Workspace
+```
+
+The goal is to extend Aether from a strong local-first workspace into a connected personal operating environment while preserving:
+
+* local-first ownership;
+* explicit permissions;
+* Rust/native trust boundaries;
+* provider-agnostic core domains;
+* deterministic product behavior;
+* bounded AI context;
+* Safe Actions for meaningful mutations;
+* offline usefulness.
+
+The first connected domains should focus on real personal utility:
+
+1. Integration Core
+2. Connections
+3. Calendar
+4. MyTimetable
+5. Brightspace
+6. School Space improvements
+7. Pulse calendar/deadline relevance
+8. GitHub
+9. Automation / n8n
+10. additional integrations only after the core pattern is proven
+
+This section defines direction, not automatic implementation authorization.
+
+---
+
+# Priority queue
+
+| Priority | ID                 | Work item                                          | Type                               | Status         | Dependencies                                          | Acceptance summary                                                                                                                                                       |
+| -------- | ------------------ | -------------------------------------------------- | ---------------------------------- | -------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| P0       | `INT-CORE-001`     | Build Integration Core foundation                  | Product / Architecture             | `planned`      | Existing Rust/SQLite/IPC architecture                 | A generic provider-agnostic integration domain exists with local persistence, status, capabilities, sync metadata, typed IPC, tests, and no provider implementation yet. |
+| P0       | `INT-CONN-001`     | Build Connections management UI                    | Product / UX                       | `candidate`    | `INT-CORE-001`                                        | Users can inspect supported connections, connection state, last sync, errors, connect/disconnect actions, and provider capabilities without fake connected states.       |
+| P0       | `CAL-CORE-001`     | Build external Calendar domain                     | Product / Data                     | `candidate`    | `INT-CORE-001`                                        | Aether can normalize, persist, query, update, and deduplicate external calendar events independently of provider-specific schemas.                                       |
+| P0       | `SCHOOL-MTT-001`   | Connect MyTimetable schedule data                  | Product / Integration              | `candidate`    | `CAL-CORE-001`                                        | A user-configured MyTimetable calendar feed imports lessons, times, rooms, updates, and source provenance safely and idempotently.                                       |
+| P0       | `SCHOOL-BSP-001`   | Connect Brightspace calendar/deadline data         | Product / Integration              | `needs_design` | `CAL-CORE-001`, provider capability research          | Brightspace deadlines/calendar data can be synchronized without scraping credentials or pretending unsupported API access exists.                                        |
+| P0       | `SCHOOL-SPACE-001` | Upgrade School Space for connected study data      | Product / UX                       | `candidate`    | `SCHOOL-MTT-001`, `SCHOOL-BSP-001`                    | School Spaces can surface upcoming lessons, deadlines, courses, and relevant Aether Tasks through existing Space architecture.                                           |
+| P0       | `PULSE-003`        | Add connected schedule/deadline relevance to Pulse | Product / UX / Data                | `candidate`    | `CAL-CORE-001`, at least one working school connector | Pulse surfaces today's real schedule and upcoming deadlines through deterministic local read models without provider-specific UI coupling or hidden AI.                  |
+| P1       | `AI-CAL-001`       | Add bounded AI calendar/school read tools          | Product / AI / Security            | `needs_design` | Calendar + school read models                         | Aether can answer bounded questions such as “what do I have tomorrow?” using explicit local tool results instead of sending unrestricted database context.               |
+| P1       | `ACTION-CAL-001`   | Add Safe Actions for approved scheduling mutations | Product / Security / AI            | `needs_design` | `AI-CAL-001`, calendar mutation design                | Aether may propose a study/task scheduling change, show its consequence, require approval, execute once, and audit the result.                                           |
+| P1       | `GITHUB-INT-001`   | Add GitHub development integration                 | Product / Integration              | `candidate`    | `INT-CORE-001`                                        | Users can connect GitHub and surface bounded repository, issue, PR, build, and activity information without making Aether dependent on GitHub.                           |
+| P1       | `AUTO-CORE-001`    | Define Automation integration boundary             | Product / Architecture             | `needs_design` | `INT-CORE-001`, Safe Actions                          | Aether can trigger and receive external workflow events through a generic automation boundary without embedding workflow-engine logic throughout the app.                |
+| P1       | `N8N-001`          | Add optional n8n workflow connector                | Product / Integration / Automation | `candidate`    | `AUTO-CORE-001`                                       | Aether can invoke approved n8n workflows, read bounded execution status, and receive trusted callback events while remaining fully usable without n8n.                   |
+| P2       | `RFWS-001`         | Add RF Webstudio business Space/dashboard          | Product                            | `deferred`     | Integration patterns proven                           | Leads, clients, projects, tasks, and business status can be represented through reusable Aether domains instead of bespoke one-off architecture.                         |
+| P2       | `EMAIL-001`        | Evaluate email integration                         | Product / Integration / Privacy    | `deferred`     | Integration architecture proven                       | A documented safe scope exists for email metadata/action extraction without unrestricted mailbox access or automatic outbound messages.                                  |
+| P2       | `FIN-001`          | Evaluate personal finance module                   | Product / Privacy / Data           | `deferred`     | Owner-approved finance scope                          | Finance information can remain local-first, explicit, and separate from unrelated Aether context.                                                                        |
+
+---
+
+# Next recommended planned task
+
+The next planned task should be:
+
+```text id="da9szx"
+INT-CORE-001 — Build Integration Core foundation
+```
+
+Recommended scope:
+
+* integration domain model;
+* provider identifier;
+* capability model;
+* local connection status;
+* last sync metadata;
+* error state;
+* provider-neutral repository;
+* SQLite migration;
+* Rust repository/service layer;
+* typed Tauri IPC;
+* TypeScript types/wrappers;
+* tests;
+* required architecture documentation.
+
+Explicitly out of scope for this task:
+
+```text id="wbr73c"
+MyTimetable
+Brightspace
+Google Calendar
+GitHub
+n8n
+OAuth
+Pulse changes
+School UI
+AI tools
+Safe Actions expansion
+```
+
+`INT-CORE-001` must receive its own ready `.ai/HANDOFF.md` contract before production implementation.
+
+---
+
+# Completed foundation
+
+The following major product work is already complete and should not remain mixed into the active priority queue.
+
+## Core product
+
+| ID        | Outcome                 | Status |
+| --------- | ----------------------- | ------ |
+| `PHASE0`  | Foundation              | `done` |
+| `PHASE1`  | Shell and design system | `done` |
+| `PHASE2`  | Local persistence       | `done` |
+| `PHASE3`  | Spaces                  | `done` |
+| `PHASE4`  | Notes                   | `done` |
+| `PHASE5`  | Tasks                   | `done` |
+| `PHASE6`  | Vault MVP               | `done` |
+| `PHASE7`  | AI integration MVP      | `done` |
+| `PHASE8`  | Memory MVP              | `done` |
+| `PHASE9`  | Native desktop          | `done` |
+| `PHASE10` | Release quality         | `done` |
+
+---
+
+## Product evolution
+
+| ID                   | Outcome                                     | Status |
+| -------------------- | ------------------------------------------- | ------ |
+| `CTX-001`            | Explicit Sources and safe metadata indexing | `done` |
+| `SEARCH-001`         | Universal Search                            | `done` |
+| `CONT-001`           | Continuity and meaningful Activity          | `done` |
+| `PULSE-002`          | Pulse 2.0                                   | `done` |
+| `ACTION-001`         | Safe Actions                                | `done` |
+| `AI-EVOL-001`        | AI provider evolution and approved drafts   | `done` |
+| `BACKUP-RESTORE-001` | Portable backup and safe restore            | `done` |
+| `RELEASE-TRUST-001`  | Trusted Windows release/update architecture | `done` |
+| `ONBOARD-001`        | Upgrade-safe onboarding                     | `done` |
+
+Detailed historical completion evidence belongs in `.ai/CHANGELOG.md`.
+
+---
+
+# External / commercial milestones
+
+These milestones remain valid but must not dominate normal internal feature development.
+
+| Priority | ID           | Work item                     | Status    | Dependencies / blocker                                                                       |
+| -------- | ------------ | ----------------------------- | --------- | -------------------------------------------------------------------------------------------- |
+| P2       | `BETA-001`   | Operate canonical Public Beta | `blocked` | Requires owner signing/publication and meaningful real tester evidence.                      |
+| P3       | `COMM-001`   | Commercial readiness          | `blocked` | Requires beta evidence plus legal/business/provider/infrastructure owner decisions.          |
+| P3       | `LAUNCH-001` | Aether 1.0 launch gate        | `blocked` | Requires real eligible retention/reliability/support evidence and owner-approved thresholds. |
+
+These are external progression gates.
+
+They do not block unrelated local product development.
+
+Do not repeatedly select these as the next implementation task unless their external prerequisites become available.
+
+---
+
+# Historical process decisions
+
+Historical process work should not appear as active engineering backlog.
+
+The following are complete historical records:
+
+```text id="3v5mbv"
+PROC-003
+M-CODEX-ONLY
+```
+
+Any superseded multi-agent or historical collaboration workflow belongs in:
+
+* `.ai/CHANGELOG.md`;
+* relevant historical ADRs.
+
+It must not be treated as current backlog or active architecture.
+
+---
+
+# Technical debt
+
+Only unresolved technical debt belongs in this section.
+
+| Priority | ID         | Area              | Status      | Description                                                                                                                                          | Evidence / next action                              |
+| -------- | ---------- | ----------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| P2       | `DEBT-003` | Architecture docs | `candidate` | Verify whether `docs/architecture.md` still contains obsolete duplicated bridge descriptions or other stale structure after later architecture work. | Perform focused documentation audit before editing. |
+
+Resolved debt should not remain in the active debt queue.
+
+Previously resolved items belong in `.ai/CHANGELOG.md`, including:
+
+* frontend regression coverage gaps;
+* lint warnings;
+* Cargo repository metadata;
+* Rust formatting;
+* strict Clippy cleanup.
+
+---
+
+# Feature status index
+
+| Feature                     | Status                   | Next planning action                                                                    |
+| --------------------------- | ------------------------ | --------------------------------------------------------------------------------------- |
+| Spaces                      | `mvp_complete`           | Extend only when a connected/product domain requires additional Space behavior.         |
+| Notes                       | `mvp_complete`           | Extend only when a later feature requires additional Note capabilities.                 |
+| Tasks                       | `mvp_complete`           | Reuse for deadlines, planning, and approved external-to-local task creation.            |
+| Vault                       | `mvp_complete`           | Extend only through separately reviewed preview/indexing/security work.                 |
+| AI                          | `mvp_complete`           | Extend through bounded tools and Safe Actions rather than unrestricted database access. |
+| Memory                      | `mvp_complete`           | Preserve explicit user control; automatic suggestion requires separate consent design.  |
+| Native desktop              | `trusted_delivery_ready` | Continue using existing trusted release/update architecture.                            |
+| Backup / restore            | `complete`               | Extend only through separately reviewed encryption/scheduling/cloud work.               |
+| Context engine              | `continuity_complete`    | Preserve deterministic local relevance and explicit context boundaries.                 |
+| Integration Core            | `planned`                | Build provider-neutral foundation first.                                                |
+| Connections                 | `not_started`            | Build after Integration Core.                                                           |
+| Calendar                    | `not_started`            | Build normalized external-event domain after Integration Core.                          |
+| MyTimetable                 | `not_started`            | Implement after Calendar Core.                                                          |
+| Brightspace                 | `needs_design`           | Determine supported calendar/API path before implementation.                            |
+| School connected experience | `not_started`            | Build after schedule/deadline sources exist.                                            |
+| GitHub                      | `not_started`            | Build after generic Integration Core is proven.                                         |
+| Automation / n8n            | `needs_design`           | Define generic automation boundary before provider implementation.                      |
+
+---
+
+# Prioritization rules
+
+Codex may prioritize work inside the owner-approved roadmap.
+
+Use these rules:
+
+1. Prefer prerequisites over dependent UI.
+2. Prefer reusable core domains over one-off provider logic.
+3. Prefer read-only integrations before mutation-capable integrations.
+4. Prefer deterministic local data models before AI features.
+5. Prefer one working provider before adding many providers.
+6. Preserve existing architecture rather than introducing a second parallel system.
+7. Do not prioritize blocked commercial/launch milestones over usable internal product progress unless their external blockers are resolved.
+8. Do not automatically implement deferred roadmap ideas.
+9. Material product reprioritization still belongs to the owner.
+
+---
+
+# Backlog promotion rules
+
+A backlog item may move:
+
+```text id="967q3q"
+candidate
+→ needs_design
+→ planned
+→ active
+→ done
+```
+
+Not every task requires every state.
+
+Example:
+
+```text id="u9ifm5"
+INT-CORE-001
+planned
+→ HANDOFF ready
+→ active
+→ done
+```
+
+For `planned_codex` work:
+
+```text id="wb6np4"
+TODO item
+→ bounded HANDOFF contract
+→ readiness gate
+→ implementation
+→ verification
+→ review
+→ CHANGELOG
+→ TODO done
+```
+
+---
+
+# New item template
+
+Use:
+
+```markdown id="n1lvnm"
+| P0-P3 | `AREA-NNN` | <imperative work item> | Product / Defect / Security / Tooling / Docs / Process | `candidate` | <IDs or None> | <observable outcome> |
+```
+
+New items require:
+
+* stable ID;
+* realistic priority;
+* dependency chain;
+* status;
+* observable acceptance summary.
+
+Do not add speculative low-value backlog entries merely because an idea is possible.
+
+---
+
+# Backlog hygiene
+
+Maintain this file as a queue, not a museum.
+
+When an item is completed:
+
+1. record durable completion evidence in `.ai/CHANGELOG.md`;
+2. update `.ai/PROJECT_STATE.md` if current product state changed;
+3. mark/remove the completed backlog entry as appropriate;
+4. keep only enough completion state here to understand major dependencies.
+
+Avoid hundreds of historical `done` rows.
+
+Historical details belong in the changelog.
+
+Keep the top of this file focused on what Aether should actually work on next.

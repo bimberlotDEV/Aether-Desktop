@@ -92,6 +92,8 @@ See [docs/architecture.md](docs/architecture.md), [docs/database.md](docs/databa
 
 External testing is governed by [the beta handbook](docs/beta-program.md), [test matrix](docs/beta-test-matrix.md), and [privacy-minimal evidence template](docs/beta-evidence-template.md).
 
+Future commercial and 1.0 work is intentionally gated by [commercial readiness](docs/commercial-readiness.md), [owner decisions](docs/owner-decision-register.md), and [the launch gate](docs/launch-gate.md). No pricing, license, managed-AI, website-publication or 1.0 claim is implemented before those evidence gates pass.
+
 ## License
 
 [MIT](LICENSE) - Copyright 2026 bimberlotDEV.
