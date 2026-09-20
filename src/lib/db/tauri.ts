@@ -29,6 +29,7 @@ import type {
   MemoryInput,
   MemoryItem,
   NativeStatus,
+  BetaDiagnosticReport,
   UpdateStatus,
   UpdatePreview,
   UpdateProgressEvent,
@@ -46,10 +47,14 @@ import type {
   AiActionDraft,
   ActionResult,
 } from './types'
+import { BetaDiagnosticReportSchema } from './types'
 
 // ─── Native desktop ─────────────────────────────────────
 export async function getNativeStatus(): Promise<NativeStatus> {
   return invoke('native_get_status')
+}
+export async function getBetaDiagnostics(): Promise<BetaDiagnosticReport> {
+  return BetaDiagnosticReportSchema.parse(await invoke('native_get_beta_diagnostics'))
 }
 export async function sendTestNotification(): Promise<void> {
   return invoke('native_test_notification')

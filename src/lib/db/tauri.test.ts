@@ -32,6 +32,7 @@ import {
   updateMemory,
   deleteMemory,
   getNativeStatus,
+  getBetaDiagnostics,
   sendTestNotification,
   getUpdateStatus,
   checkForUpdate,
@@ -89,6 +90,35 @@ describe('Tauri database boundary', () => {
 
     expect(invoke).toHaveBeenNthCalledWith(1, 'native_get_status')
     expect(invoke).toHaveBeenNthCalledWith(2, 'native_test_notification')
+  })
+
+  it('validates the closed beta diagnostic report returned by Rust', async () => {
+    invoke.mockResolvedValueOnce({
+      appVersion: '0.5.0',
+      databaseSchema: '010_ai_route_provenance',
+      databaseIntegrity: 'ok',
+      platform: 'Windows x86_64',
+      updaterConfigured: false,
+      trayAvailable: true,
+      shortcutRegistered: true,
+      notificationsAvailable: true,
+    })
+
+    await expect(getBetaDiagnostics()).resolves.toMatchObject({ appVersion: '0.5.0' })
+    expect(invoke).toHaveBeenCalledWith('native_get_beta_diagnostics')
+
+    invoke.mockResolvedValueOnce({
+      appVersion: '0.5.0',
+      databaseSchema: '010_ai_route_provenance',
+      databaseIntegrity: 'ok',
+      platform: 'Windows x86_64',
+      updaterConfigured: false,
+      trayAvailable: true,
+      shortcutRegistered: true,
+      notificationsAvailable: true,
+      localPath: 'C:\\private',
+    })
+    await expect(getBetaDiagnostics()).rejects.toThrow()
   })
 
   it('initializes first-run profile state entirely in Rust', async () => {

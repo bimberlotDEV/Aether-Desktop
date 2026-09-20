@@ -4,7 +4,7 @@
 
 Aether combines Spaces, Markdown Notes, Tasks, Pulse, Vault, explicit Memory, authorized local Sources, and opt-in AI assistance in a Tauri desktop application.
 
-**Current release candidate:** Alpha 0.5.0. The core roadmap through Phase 10 and canonical product evolution Milestones A–H is implemented. New installations receive concise upgrade-safe onboarding; existing workspaces bypass it. The candidate also contains the owner-gated signed-release pipeline and explicit Stable updater, but is not a public signed release until protected trust inputs are provisioned and the generated draft passes the release runbook.
+**Current release candidate:** Alpha 0.5.0. The core roadmap through Phase 10 and canonical product evolution Milestones A–H is implemented. Milestone I repository readiness adds privacy-safe beta diagnostics, feedback intake and an external test protocol; it is not a completed Public Beta until signed distribution and meaningful real tester evidence exist. The candidate contains an owner-gated signed-release pipeline and explicit Stable updater, but is not a public signed release until protected trust inputs are provisioned and the generated draft passes the release runbook.
 
 ## What is included
 
@@ -22,6 +22,7 @@ Aether combines Spaces, Markdown Notes, Tasks, Pulse, Vault, explicit Memory, au
 - DeepSeek and OpenAI chat with cancellable streaming, persisted conversations, explicit model choice, transparent Auto routing, visible context, and separately approved Task/Note proposals
 - Windows tray lifecycle, `Ctrl+Shift+Space`, notifications, and restored window state
 - Sanitized workspace database export from Settings
+- User-reviewed, content-free beta diagnostics with no automatic submission
 
 ## Privacy and data
 
@@ -88,6 +89,8 @@ React UI -> hooks/stores -> typed invoke wrappers -> Tauri commands
 - `.ai/` contains the canonical engineering state and task contracts.
 
 See [docs/architecture.md](docs/architecture.md), [docs/database.md](docs/database.md), and [WORKFLOW.md](WORKFLOW.md).
+
+External testing is governed by [the beta handbook](docs/beta-program.md), [test matrix](docs/beta-test-matrix.md), and [privacy-minimal evidence template](docs/beta-evidence-template.md).
 
 ## License
 

@@ -64,6 +64,7 @@ First-run initialization is idempotent and Rust-owned. A missing profile beside 
 - Pulse is local and explainable; archived scopes, removed Source files, raw metadata, and absolute Source roots are excluded.
 - Safe Actions require a visible consequence review and explicit user approval; one-time execution remains inside the narrow validated Rust capability boundary.
 - There is no telemetry, account backend, embedded signing secret, hidden update check, or frontend-controlled installer. Signed public builds may use the fixed Stable GitHub feed through the Rust-owned updater boundary.
+- Beta diagnostics are composed in Rust from a closed metadata-only schema, displayed before copying, and never include domain data, counts, paths, logs, identifiers or secrets. Aether has no diagnostic submission endpoint.
 - Onboarding collects no account, contact, demographic, analytics, or payment data; optional folders and AI providers retain their existing explicit native consent boundaries.
 
 ## Quality and delivery

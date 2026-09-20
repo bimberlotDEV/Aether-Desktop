@@ -4,6 +4,7 @@ mod backup;
 mod commands;
 mod context;
 mod db;
+mod diagnostics;
 mod native;
 mod updater;
 mod vault;
@@ -100,6 +101,7 @@ pub fn run() {
         })
         .invoke_handler(tauri::generate_handler![
             commands::native_get_status,
+            commands::native_get_beta_diagnostics,
             commands::native_test_notification,
             commands::native_get_update_status,
             commands::native_check_for_update,
