@@ -30,4 +30,11 @@ Use this checklist for every Alpha candidate. Record command output or hashes in
 
 ## Owner-controlled release gates
 
-Public signing and automatic updates stay disabled until the repository owner provisions a protected Windows code-signing identity, Tauri updater private key, HTTPS release endpoint, and recovery procedure. Enabling either without those controls is a release blocker, not an optional shortcut.
+The repository contains the protected draft-release and Rust-owned updater implementation, but live activation remains blocked until the owner provisions the trust inputs below. Enabling or bypassing them is a release blocker, not an optional shortcut.
+
+- [ ] The GitHub `public-release` Environment exists, requires an owner reviewer, restricts deployment to `master`, and contains the documented secrets/variables.
+- [ ] The Tauri updater private key has two protected recovery copies; only its matching public key is supplied to release configuration.
+- [ ] The Azure Artifact Signing identity is active, least-privilege credentials are current, and its publisher identity matches the expected Aether owner.
+- [ ] The **Public Windows release** workflow is manually dispatched from `master` with the exact committed version and completes without a failed verification step.
+- [ ] The generated GitHub Release remains a draft until every clean-install, previous-Stable upgrade, in-app update, data-preservation, signature, hash, and rollback check in `docs/release-runbook.md` passes.
+- [ ] Publishing is a deliberate owner action. Ordinary pushes, tags, pull requests, and CI never publish a release.

@@ -5,6 +5,7 @@ mod commands;
 mod context;
 mod db;
 mod native;
+mod updater;
 mod vault;
 
 use db::Database;
@@ -17,7 +18,14 @@ use crate::ai::runtime::AiRuntime;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let context = tauri::generate_context!();
+    let updater_configured = context
+        .config()
+        .plugins
+        .0
+        .get("updater")
+        .is_some_and(serde_json::Value::is_object);
+    let builder = tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
             native::show_main_window(app);
         }))
@@ -33,8 +41,14 @@ pub fn run() {
                     }
                 })
                 .build(),
-        )
-        .setup(|app| {
+        );
+    let builder = if updater_configured {
+        builder.plugin(tauri_plugin_updater::Builder::new().build())
+    } else {
+        builder
+    };
+    builder
+        .setup(move |app| {
             if cfg!(debug_assertions) {
                 app.handle().plugin(
                     tauri_plugin_log::Builder::default()
@@ -77,8 +91,9 @@ pub fn run() {
             app.manage(AiRuntime::default());
             app.manage(ActionRuntime::default());
             app.manage(backup::RestoreRuntime::default());
+            app.manage(updater::UpdateRuntime::new(updater_configured));
             app.manage(context::ContextRuntime::default());
-            let native_status = native::setup(app)?;
+            let native_status = native::setup(app, updater_configured)?;
             app.manage(native_status);
 
             Ok(())
@@ -86,6 +101,10 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::native_get_status,
             commands::native_test_notification,
+            commands::native_get_update_status,
+            commands::native_check_for_update,
+            commands::native_cancel_update,
+            commands::native_install_update,
             commands::export_workspace_backup,
             commands::export_workspace_archive,
             commands::preview_workspace_restore,
@@ -192,6 +211,6 @@ pub fn run() {
                 }
             }
         })
-        .run(tauri::generate_context!())
+        .run(context)
         .expect("error while running tauri application");
 }

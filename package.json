@@ -1,7 +1,7 @@
 {
   "name": "aether",
   "private": true,
-  "version": "0.4.0",
+  "version": "0.5.0",
   "packageManager": "pnpm@11.18.0",
   "description": "Aether — Your personal operating system.",
   "type": "module",
@@ -23,6 +23,7 @@
     "@tailwindcss/vite": "^4.3.3",
     "@tauri-apps/api": "^2.11.1",
     "@tauri-apps/plugin-dialog": "^2.7.2",
+    "@tauri-apps/plugin-updater": "2.10.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.25.0",
     "react": "^19.2.7",

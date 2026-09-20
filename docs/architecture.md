@@ -60,10 +60,10 @@ AI providers are a closed Rust registry with fixed official DeepSeek and OpenAI 
 - Continuity is deterministic and Space-bound; it exposes structured facts and presentation-safe Activity without sending data to DeepSeek.
 - Pulse is local and explainable; archived scopes, removed Source files, raw metadata, and absolute Source roots are excluded.
 - Safe Actions require a visible consequence review and explicit user approval; one-time execution remains inside the narrow validated Rust capability boundary.
-- There is no telemetry, account backend, active updater, or embedded signing secret.
+- There is no telemetry, account backend, embedded signing secret, hidden update check, or frontend-controlled installer. Signed public builds may use the fixed Stable GitHub feed through the Rust-owned updater boundary.
 
 ## Quality and delivery
 
-Pull requests and `master` run Windows frontend typecheck/lint/tests/build plus Rust format, strict Clippy, and tests. Task branches are published with `scripts/publish-task.ps1`. MSI and NSIS packages are built locally for alpha candidates; signing and auto-update activation require owner-controlled infrastructure.
+Pull requests and `master` run Windows frontend typecheck/lint/tests/build plus Rust format, strict Clippy, and tests. Task branches are published with `scripts/publish-task.ps1`. Ordinary MSI/NSIS builds remain unsigned and updater-disabled. Public Windows candidates use a manually dispatched protected Environment, generated untracked configuration, independent Authenticode/updater trust roots, fixed Stable feed, signature verification, and draft-first publication under ADR-023.
 
 Durable rationale is indexed in `.ai/ARCHITECTURE.md` and stored under `docs/decisions/`.

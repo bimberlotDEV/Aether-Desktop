@@ -1,85 +1,97 @@
 # Codex Task Contract
 
-| Field             | Value                                   |
-| ----------------- | --------------------------------------- |
-| Schema version    | 2                                       |
-| Task ID           | `BACKUP-RESTORE-001`                    |
-| Status            | `complete`                              |
-| Owner             | Codex                                   |
-| Last updated      | 2026-08-28                              |
-| Related milestone | Milestone H — Complete Backup & Restore |
-| Classification    | `planned_codex`                         |
+| Field             | Value                                    |
+| ----------------- | ---------------------------------------- |
+| Schema version    | 2                                        |
+| Task ID           | `RELEASE-TRUST-001`                      |
+| Status            | `complete`                               |
+| Owner             | Codex                                    |
+| Last updated      | 2026-08-29                               |
+| Related milestone | Milestone I — Trusted Releases & Updates |
+| Classification    | `planned_codex`                          |
 
 ## Objective
 
-Make Aether's local workspace genuinely recoverable and portable by exporting a verified archive containing the sanitized SQLite workspace and all Aether-managed Vault bytes, then restoring that archive only through an explicit, rollback-safe, restart-bound workflow.
+Give Aether a production-grade, owner-gated Windows release path and an explicit in-app update experience without weakening its local-first defaults or placing signing material, release authority, update URLs, or installer execution under frontend control.
 
 ## Context
 
-Alpha 0.4.0 is merged at `d7299ce` and post-merge Windows CI run `33186214700` passes. ADR-014's `.aether-backup.db` export is consistent and omits credentials, but it excludes managed Vault bytes and has no restore path. Managed Vault records store constrained paths below `vault/items/<item-id>/`; linked records point outside Aether ownership. SQLite is open in WAL mode for the process lifetime, so safe replacement must occur before startup opens the database.
+Milestone H is merged on `master` at `76947db`; its exact-head PR CI passed and post-merge CI is expected to run. Aether 0.4.0 currently builds MSI/NSIS installers but deliberately emits no updater artifacts, contains no updater plugin/configuration, and cannot be Authenticode-signed without an owner-controlled identity. Tauri requires updater signatures and a public verification key; Windows public distribution separately requires a trusted code-signing identity. Those trust roots must remain external to Git.
 
 ## Ordered checkpoints
 
-1. **Archive foundation:** add a versioned manifest and streaming archive writer/reader with strict entry allowlists, limits, SHA-256 verification, sanitized SQLite backup, managed Vault ownership checks, and no linked-file or credential bytes.
-2. **Restore boundary:** add canonical archive preview, compatibility/integrity validation, short-lived one-time approval tokens, exact-file revalidation, staged migration, current-credential preservation, and a complete pre-restore recovery archive.
-3. **Restart recovery:** apply the generated pending restore before database open using contained filesystem swaps with rollback, then restart into the replacement workspace without accepting frontend paths for live destinations.
-4. **Product integration:** expose typed wrappers and an accessible Settings flow that clearly distinguishes replacement from merge, summarizes content/exclusions, requires explicit confirmation, reports errors, and disables unsupported browser behavior.
-5. **Closure:** verify malicious archives, missing/corrupt bytes, old/current/newer schemas, failure rollback, UI behavior, full frontend/native gates, package/startup smoke, self-review, documentation, and exact-head GitHub CI.
+1. **Trust architecture:** document the two independent trust layers, fixed Stable GitHub Release feed, manual protected release environment, generated untracked release configuration, bootstrap limitation, recovery/rotation rules, and explicit owner activation gate.
+2. **Release tooling:** add strict preflight/config-generation/signing scripts and a manually dispatched Windows workflow that validates the exact version/ref, runs all gates, requires owner secrets/variables, builds signed MSI/NSIS updater artifacts, verifies signatures and Authenticode, and creates only a draft GitHub Release.
+3. **Native updater boundary:** integrate the maintained Tauri updater in Rust, keep development builds disabled/network-silent, expose narrow check/install/cancel commands, retain update objects in native state, serialize operations, stream bounded progress, verify before install, and restart only after successful installation.
+4. **Product experience:** add typed IPC schemas/wrappers plus an accessible Settings surface for Stable-channel status, manual check, release notes, explicit install confirmation, progress, cancellation/error handling, and honest unconfigured/bootstrap messaging.
+5. **Release candidate:** reconcile version metadata for 0.5.0, validate ephemeral updater signing and rejection without committing keys, run full frontend/native/security/package/UI gates, self-review, document the external activation steps, and publish a draft task PR with exact-head CI.
 
 ## Acceptance criteria
 
-- [x] A `.aether-backup` archive contains a format-versioned manifest, integrity-checked SQLite snapshot, and exactly the managed Vault files referenced by that snapshot; every payload records size and SHA-256.
-- [x] `secrets` and API-key material never enter the archive, linked file bytes are never read/copied, absolute source paths are absent from the manifest, and the UI discloses linked-file portability limits.
-- [x] Export uses a native save choice, runs blocking work outside the WebView thread, never targets live Aether storage, and replaces an existing destination with rollback-safe partial/previous files.
-- [x] Preview treats archives as untrusted: it canonicalizes the selected file, rejects traversal, absolute paths, symlinks, duplicates, unknown entries, excessive count/size, digest mismatches, malformed manifests, missing/extra managed files, corrupt databases, secrets tables, and unsupported/newer schemas.
-- [x] Restore is workspace replacement, never row merging. It requires a visible preview plus a separate explicit approval backed by a short-lived one-time Rust token bound to the exact archive fingerprint.
-- [x] Approval revalidates the archive, migrates and integrity-checks the staged database, preserves current device-local credential rows without exporting them, and refuses to restart until a complete verified recovery archive of the current database and managed Vault bytes exists.
-- [x] Startup applies only a generated pending restore inside the app-data boundary before SQLite opens; database/WAL files and managed Vault items swap together, failures restore previous live paths, and arbitrary frontend destination paths cannot reach the swap implementation.
-- [x] Restore preserves Space, Note, Task, Memory, AI, Source, Activity, Action, and Vault metadata isolation. Managed files resolve under their matching item ownership after restore; linked records remain external and may honestly report unavailable files.
-- [x] The Settings workflow is keyboard accessible, communicates replacement/restart/recovery consequences, prevents duplicate work, handles cancellation and errors, and never claims success before restore has been safely staged.
-- [x] Legacy `.aether-backup.db` export remains available at the native boundary for compatibility, but the primary UI and current documentation use the complete archive.
-- [x] Frontend checks/build/audit, Rust format/strict all-target Clippy/tests/release build, Tauri packaging, malicious-archive tests, isolated restore-startup tests, diff/security review, and exact-head GitHub CI pass.
-- [x] No personal database, Vault byte, archive, recovery directory, credential, generated bundle, secret, or unrelated line-ending-only worktree change is committed.
+- [x] Development and ordinary CI builds remain updater-disabled and make no release-network request; production updater configuration is generated into an ignored file only after strict owner-input validation.
+- [x] The Stable feed is fixed to the repository's HTTPS GitHub `latest.json`; no arbitrary endpoint, insecure transport, downgrade, prerelease channel, frontend URL, or unsigned metadata path is accepted.
+- [x] Tauri's updater private key and Windows code-signing credentials remain protected environment secrets; only the updater public key may enter generated bundle configuration, and neither private material nor generated release config is tracked or logged.
+- [x] A manually dispatched, protected `public-release` workflow checks out an exact `master` commit, proves package/Tauri/Cargo/UI/tag versions agree, runs the full quality/security suite, requires every trust input, signs Windows binaries/installers, creates v2 updater artifacts, verifies updater signatures plus Authenticode, and uploads a draft GitHub Release.
+- [x] Release publication is never triggered by an ordinary push/tag/PR, uses least-privilege GitHub permissions and concurrency, does not silently overwrite a published release, and leaves final publication as an owner action.
+- [x] Rust owns update checking, pending-update state, download/install, progress, errors, and restart. React receives metadata and an opaque pending token only; it cannot supply endpoints, artifact URLs, signatures, installer paths, or relaunch commands.
+- [x] Update operations are serialized, pending tokens are one-time/expiring, a changed or missing pending update is rejected, cancellation never installs, signature/download/install failures are actionable, and no update installs without a separate explicit user confirmation.
+- [x] Settings clearly shows configured/unconfigured state, current and available versions, Stable channel, release notes/date, download progress, restart consequence, and the 0.4.0-to-0.5.0 manual bootstrap limitation; keyboard/focus/live-region behavior works at supported window sizes and themes.
+- [x] 0.5.0 identity is consistent in package, Tauri, Cargo/lock, Settings, README, native and release documentation; it remains an Alpha release candidate until owner-controlled trust inputs are provisioned and a signed draft is inspected.
+- [x] Ephemeral local test keys prove updater artifact/signature generation and rejection of a modified artifact. No test key, signed bundle, database, backup, generated config, credential, or unrelated line-ending-only change is committed.
+- [x] Frozen install, frontend typecheck/lint/tests/build/audit, Rust format/strict all-target/all-feature Clippy/tests/release build, Tauri MSI/NSIS/updater packaging, responsive light/dark UI smoke, packaged startup, diff/secret/capability/workflow review, and exact-head GitHub CI pass.
 
 ## Allowed paths
 
+- `package.json`
+- `pnpm-lock.yaml`
 - `src-tauri/Cargo.toml`
 - `src-tauri/Cargo.lock`
-- `src-tauri/src/backup.rs`
-- `src-tauri/src/commands.rs`
+- `src-tauri/tauri.conf.json`
+- `src-tauri/capabilities/default.json`
 - `src-tauri/src/lib.rs`
-- `src-tauri/src/db/mod.rs`
-- `src-tauri/src/db/migrations.rs`
-- `src-tauri/src/vault.rs`
+- `src-tauri/src/commands.rs`
+- `src-tauri/src/native.rs`
+- `src-tauri/src/updater.rs`
 - `src/lib/db/types.ts`
 - `src/lib/db/tauri.ts`
 - `src/lib/db/tauri.test.ts`
-- `src/components/BackupSettings.tsx`
-- `src/components/BackupSettings.test.tsx`
+- `src/components/NativeSettings.tsx`
+- `src/components/NativeSettings.test.tsx`
+- `src/components/Sidebar.tsx`
 - `src/routes/Settings.tsx`
+- `.github/workflows/public-release.yml`
+- `.gitignore`
+- `scripts/prepare-release-config.ps1`
+- `scripts/sign-windows-artifact.ps1`
+- `scripts/verify-updater-signature.ps1`
+- `scripts/verify-release-inputs.ps1`
 - `README.md`
-- `docs/database.md`
+- `CHANGELOG.md`
+- `docs/architecture.md`
+- `docs/native-desktop.md`
 - `docs/release-checklist.md`
-- `docs/decisions/014-workspace-backup.md`
-- `docs/decisions/022-portable-backup-and-safe-restore.md`
+- `docs/release-runbook.md`
+- `docs/decisions/013-native-windows-lifecycle.md`
+- `docs/decisions/023-trusted-release-delivery.md`
 - `.ai/*`
 
 ## Non-goals
 
-- Cloud backup, sync, schedules, encryption/password protection, credential portability, linked-file copying, partial-domain restore, merge/import conflict resolution, archive browsing, automatic retention cleanup, or public updater/signing activation.
-- Changing domain schemas, Space/Memory/AI isolation semantics, Vault ownership rules, user-selected live data locations, installer identity, or current release version.
-- Applying a restore to the owner's live installed workspace during development; packaged restore smoke uses isolated temporary app data.
+- Purchasing/provisioning a certificate, Azure account, domain, CDN, GitHub Environment approver, or production updater key; publishing a live GitHub Release; rotating a real trust root; or spending owner funds.
+- Background/automatic installation, forced updates, hidden startup network checks, beta/nightly channels, downgrade support, delta updates, portable binaries, Microsoft Store submission, macOS/Linux distribution, telemetry, accounts, or cloud delivery.
+- Updating an installed 0.4.0 automatically: it has no updater client and must be manually upgraded once to the 0.5.0 bootstrap installer.
+- Changing workspace data, migrations, backup semantics, AI behavior, Windows installation scope, or unrelated product features.
 
 ## Risks and safeguards
 
-- **Data loss:** no live replacement occurs until staging, migration, integrity checks, and a complete recovery archive pass; startup swaps generated contained paths and rolls back partial moves.
-- **Archive attacks:** fixed entry grammar, duplicate/extra rejection, symlink rejection, bounded streaming, size/count ceilings, exact hashes, and no generic extraction.
-- **TOCTOU:** token binds canonical path, file identity metadata, and SHA-256; approval fully revalidates before staging.
-- **Credential exposure/loss:** archive snapshots drop `secrets`; approval copies current rows directly into the local staged DB and never serializes them into archive/IPC/logs.
-- **Ownership escape:** managed entries must equal the database's `items/<id>/<filename>` path; linked targets are never opened by backup.
-- **Schema mismatch:** unknown/newer migrations are rejected; known older archives migrate while staged, never after the live swap.
-- **Concurrency:** export/restore preparation runs on blocking workers and uses a single native restore runtime to prevent overlapping previews/executions.
-- **Rollback:** generated recovery archive and contained swap rollback preserve the pre-restore workspace; legacy DB-only export remains callable.
+- **Supply-chain compromise:** release runs only by manual dispatch in a protected environment, with exact ref/version checks, least privilege, pinned actions, draft output, signature verification, and owner publication.
+- **Private-key exposure:** scripts accept secrets only from environment variables, never echo values, generate config outside tracked state, and fail if sensitive/generated paths are staged.
+- **Endpoint/artifact substitution:** endpoint is a fixed HTTPS repository URL; Rust retains the signed update object and accepts only an opaque one-time token for installation.
+- **Arbitrary installer execution:** only the updater plugin's signature-verified artifact can install; no frontend path/URL/signature reaches native installation.
+- **Concurrent or stale approval:** a mutex-owned pending update plus expiring one-time token serializes check/install and rejects reuse.
+- **Interrupted upgrade:** Tauri's passive Windows installer owns replacement; Aether preserves workspace data in the app-data directory, while release notes/runbook require backup and rollback installers before publication.
+- **Trust loss/rotation:** updater private key loss blocks updates to installed clients. Runbook requires protected redundant retention; public-key rotation must ship in a normally signed intermediate release before old-key retirement.
+- **False public claim:** UI/docs retain Alpha candidate language until a real code-signed draft passes owner inspection; unconfigured builds say updates are unavailable.
 
 ## Required validation
 
@@ -92,34 +104,34 @@ cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check
 cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --all-features -- -D warnings
 cargo test --manifest-path src-tauri/Cargo.toml --all-targets --all-features
 cargo build --manifest-path src-tauri/Cargo.toml --release
+PowerShell release-input negative/positive tests
+ephemeral Tauri updater key generation, updater artifact build, valid signature verification, and tamper rejection
 pnpm tauri:build
-isolated packaged backup/restore/restart smoke
+responsive light/dark Settings smoke and keyboard review
+packaged startup smoke
 git diff --check
-archive/path/secret/security diff review
+secret/generated-file/capability/workflow/security diff review
 GitHub PR exact-head CI
 ```
 
 ## Blocking decisions
 
-None. The owner authorized the next milestone. Replacement rather than merge follows the existing deferred restore boundary, managed-only bytes follow Vault ownership, and restart-bound application is the reversible safe option for a process-lifetime SQLite connection.
+None for implementation and test completion. Production activation remains an explicit external owner gate: a real Tauri updater key, modern Windows code-signing identity, protected `public-release` GitHub Environment, and repository secrets/variables must be provisioned before a signed draft release can exist.
 
 ## Readiness review
 
-- **Status:** Ready. Archive format, exclusions, compatibility, consent, staging, restart, rollback, limits, tests, UI, and non-goals are explicit.
-- **Architecture gate:** ADR-022 is accepted before production implementation.
-- **Migration gate:** no new schema is introduced; restored older known schemas migrate only while staged.
-- **Security gate:** Rust owns archive parsing, path containment, credential handling, approval tokens, staging, and live replacement.
-- **Worktree gate:** apparent frontend modifications are existing Windows line-ending/index noise with no content diff; task-owned paths will be staged explicitly.
+- **Status:** Ready. Trust boundaries, version/bootstrap behavior, workflow authority, updater UX, security invariants, test strategy, non-goals, and external activation gate are explicit.
+- **Architecture gate:** ADR-023 is accepted before production implementation.
+- **Data gate:** no database or workspace-data change is required.
+- **Security gate:** Rust owns update state and installation; release secrets stay outside Git; ordinary builds remain updater-disabled.
+- **Worktree gate:** listed frontend modifications are pre-existing Windows line-ending/index noise with no content diff; only explicit task paths will be staged.
 
 ## Implementation evidence and self-review
 
-- Archive writer/reader tests round-trip a current SQLite workspace plus managed bytes while proving the snapshot has no `secrets` table and linked bytes are absent.
-- Restore tests cover one-time tokens, exact archive revalidation, current credential preservation, managed ownership, traversal, duplicate names, corrupt bytes, unsafe destinations, newer schemas, normal restart application, and a simulated process crash between database and Vault activation.
-- `pnpm install --frozen-lockfile`, `pnpm check` (80/80), production build, and high-severity audit pass.
-- Rust format, strict all-target/all-feature Clippy, 99/99 tests, release build, and MSI/NSIS packaging pass. RustSec reports no vulnerabilities; 18 allowed pre-existing cross-platform/unmaintained/yanked warnings remain, none introduced by `zip` or `sha2`.
-- Settings browser smoke passes at 1024×640 and 720×640 in light/dark themes with no console warnings/errors. The browser fallback is honest and disabled; component tests exercise the native preview, cancel, and approval UI states.
-- The restart swap is exercised against isolated temporary app-data paths in native tests. A second packaged executable could not use temporary `%APPDATA%` because Tauri resolves Windows known folders and enforces one instance; the attempt created no isolated database and was stopped. The owner's live workspace was not restored or overwritten.
-- Self-review found and fixed an interrupted-swap crash window, exact managed-tree extra-file acceptance, unsafe Windows filename components, unbounded release metadata, and non-regular destination replacement before final gates.
-- Diff/security review confirms every recursive removal and live rename targets generated app-data children, approval accepts only an opaque token, credentials never enter archive/IPC/logs, linked files are never opened, and no archive/database/generated bundle is in the publishable diff.
-- Task-owned commit `1cb3b90` is pushed in draft PR #45; exact-head GitHub Actions run `33194814850` passes every Windows quality gate.
-- **Self-review outcome:** Complete. Every acceptance criterion maps to code, tests, UI evidence, local release gates, packaging, or exact-head CI; no unresolved data-safety, security, scope, or rollback finding remains.
+- **Ordinary-build boundary:** base `tauri.conf.json` contains no updater plugin configuration, ordinary `pnpm tauri:build` emits MSI/NSIS only and zero `.sig` files, and packaged startup no longer initializes the updater plugin when configuration is absent.
+- **Trust boundary:** ADR-023, generated ignored release configuration, a fixed HTTPS Stable feed, a manual protected draft-only workflow, step-scoped secrets, pinned actions, Authenticode verification, and cryptographic updater/tamper verification are implemented.
+- **Native boundary:** Rust retains the signed update object behind a mutex and exposes only check/cancel/install commands with one-time expiring approval; React supplies no endpoint, URL, path, signature, or relaunch instruction.
+- **Product evidence:** 0.5.0 renders in the repository release window; responsive dark/light browser smokes and 83 frontend tests cover unconfigured, available, confirmation, progress, cancellation, error, and accessibility states. Computer Use could read the native 0.5.0 accessibility tree but its WebView2 click/screenshot geometry failed, so route interaction is covered by component and browser tests.
+- **Quality evidence:** frozen install, typecheck, lint, 83/83 frontend tests, production build, clean pnpm audit, Rust format, strict all-target/all-feature Clippy, 103/103 Rust tests, Cargo check, release build, MSI/NSIS packaging, release-input positive/negative cases, YAML parsing, secret/capability/diff review, and packaged startup pass.
+- **Supply-chain evidence:** `cargo audit` reports no vulnerability failures and 18 allowed pre-existing warnings (16 unmaintained, one unsound transitive GTK crate, one yanked transitive crate); ordinary installer hashes are recorded in session notes.
+- **Review result:** every acceptance criterion passes. Draft PR #46 CI run `33250561501` succeeded on exact implementation head `7abe27a`; production signing remains an explicit owner-controlled activation gate and is not represented as completed.

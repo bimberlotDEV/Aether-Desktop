@@ -4,7 +4,7 @@
 
 Aether combines Spaces, Markdown Notes, Tasks, Pulse, Vault, explicit Memory, authorized local Sources, and opt-in AI assistance in a Tauri desktop application.
 
-**Current release:** Alpha 0.4.0. The core roadmap through Phase 10 and product evolution Milestones A–G is implemented and release-gated. Installers are currently unsigned and intended for alpha testing.
+**Current release candidate:** Alpha 0.5.0. The core roadmap through Phase 10 and product evolution Milestones A–H is implemented. This bootstrap candidate adds the owner-gated signed-release pipeline and explicit Stable updater; it is not a public signed release until the protected trust inputs are provisioned and the generated draft passes the release runbook.
 
 ## What is included
 
@@ -68,7 +68,7 @@ cargo test --manifest-path src-tauri/Cargo.toml
 pnpm tauri:build
 ```
 
-This produces x64 MSI and NSIS installers below `src-tauri/target/release/bundle/`. Follow [docs/release-checklist.md](docs/release-checklist.md) before publishing a candidate. Code signing and automatic updates remain disabled until owner-controlled keys and a trusted endpoint are configured.
+This produces unsigned development x64 MSI and NSIS installers below `src-tauri/target/release/bundle/`; those builds make no updater request. Public candidates are created only by the protected manual workflow in `.github/workflows/public-release.yml`, which requires independent Windows and updater signing trust, emits a draft GitHub Release, and must pass [the release runbook](docs/release-runbook.md) before an owner publishes it. Existing 0.4.0 installations need the signed 0.5.0 installer once to bootstrap in-app Stable updates.
 
 ## Architecture
 

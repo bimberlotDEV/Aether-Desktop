@@ -1,6 +1,6 @@
 [package]
 name = "aether"
-version = "0.4.0"
+version = "0.5.0"
 description = "Aether — Your personal operating system."
 authors = ["Aether"]
 license = "MIT"
@@ -43,6 +43,7 @@ tauri-plugin-notification = "2"
 tauri-plugin-global-shortcut = "2"
 tauri-plugin-window-state = "2"
 tauri-plugin-single-instance = "2"
+tauri-plugin-updater = "2.10.1"
 
 [dev-dependencies]
 tempfile = "3"
