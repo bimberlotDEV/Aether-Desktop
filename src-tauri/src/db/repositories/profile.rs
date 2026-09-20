@@ -44,6 +44,41 @@ pub fn create(conn: &Connection, id: &str) -> Result<UserProfile, String> {
     get(conn)?.ok_or_else(|| "Profile not found after create".to_string())
 }
 
+/// Initialize the singleton profile without mistaking an upgraded workspace for a
+/// brand-new installation. Earlier Aether versions shipped the profile table but never
+/// created a row, so persisted domain data is the authoritative legacy signal.
+pub fn initialize(conn: &Connection, id: &str) -> Result<UserProfile, String> {
+    if let Some(profile) = get(conn)? {
+        return Ok(profile);
+    }
+
+    let has_workspace_data = has_meaningful_workspace_data(conn)?;
+    conn.execute(
+        "INSERT INTO user_profile (id, onboarding_completed) VALUES (?1, ?2)",
+        params![id, has_workspace_data as i64],
+    )
+    .map_err(|e| format!("Profile initialization error: {e}"))?;
+
+    get(conn)?.ok_or_else(|| "Profile not found after initialization".to_string())
+}
+
+fn has_meaningful_workspace_data(conn: &Connection) -> Result<bool, String> {
+    conn.query_row(
+        "SELECT
+            EXISTS(SELECT 1 FROM spaces LIMIT 1)
+            OR EXISTS(SELECT 1 FROM notes LIMIT 1)
+            OR EXISTS(SELECT 1 FROM tasks LIMIT 1)
+            OR EXISTS(SELECT 1 FROM vault_items LIMIT 1)
+            OR EXISTS(SELECT 1 FROM memory_items LIMIT 1)
+            OR EXISTS(SELECT 1 FROM ai_conversations LIMIT 1)
+            OR EXISTS(SELECT 1 FROM sources LIMIT 1)",
+        [],
+        |row| row.get::<_, i64>(0),
+    )
+    .map(|value| value != 0)
+    .map_err(|e| format!("Profile workspace detection error: {e}"))
+}
+
 pub fn update(
     conn: &Connection,
     id: &str,
@@ -122,5 +157,36 @@ mod tests {
 
         // Only one profile exists
         assert!(create(&conn, "test-uuid-2").is_err());
+    }
+
+    #[test]
+    fn initialization_requires_onboarding_only_for_an_empty_workspace() {
+        let conn = setup();
+
+        let profile = initialize(&conn, "fresh-profile").unwrap();
+        assert!(!profile.onboarding_completed);
+
+        let repeated = initialize(&conn, "ignored-id").unwrap();
+        assert_eq!(repeated.id, "fresh-profile");
+        assert!(!repeated.onboarding_completed);
+    }
+
+    #[test]
+    fn initialization_bypasses_onboarding_for_legacy_workspace_data() {
+        let conn = setup();
+        conn.execute(
+            "INSERT INTO spaces (id, name, sort_order) VALUES ('legacy-space', 'Existing work', 0)",
+            [],
+        )
+        .unwrap();
+
+        let profile = initialize(&conn, "legacy-profile").unwrap();
+        assert!(profile.onboarding_completed);
+        assert_eq!(
+            conn.query_row("SELECT COUNT(*) FROM spaces", [], |row| row
+                .get::<_, i64>(0))
+                .unwrap(),
+            1
+        );
     }
 }

@@ -30,7 +30,9 @@ Local user profile (single row). Not a cloud account.
 |---|---|---|
 | `id` | TEXT PK | UUIDv7 |
 | `display_name` | TEXT | User's name |
-| `onboarding_completed` | INTEGER | 0 or 1 |
+| `onboarding_completed` | INTEGER | 0 or 1; authoritative local first-run state |
+
+Profile initialization is idempotent. If no profile exists in an otherwise empty database, Aether inserts one with `onboarding_completed = 0`. If meaningful domain rows already exist, the missing profile is treated as an upgrade from a release that did not create profiles and is inserted completed. Existing domain rows are only detected and are never rewritten by initialization.
 | `created_at` | TEXT | ISO 8601 |
 | `updated_at` | TEXT | ISO 8601 |
 
@@ -45,7 +47,7 @@ User-created workspaces.
 | `description` | TEXT | Optional |
 | `icon` | TEXT | Lucide icon name |
 | `accent` | TEXT | Hex color |
-| `template_type` | TEXT | blank, school, personal, project |
+| `template_type` | TEXT | blank, school, developer, professional, personal, project, or subject |
 | `favourite` | INTEGER | 0 or 1 |
 | `archived_at` | TEXT | NULL if active |
 | `sort_order` | INTEGER | Manual ordering |
