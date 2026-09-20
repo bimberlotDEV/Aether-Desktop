@@ -984,6 +984,46 @@ pub fn get_space_continuity(
     })
 }
 
+// ─── Integrations ───────────────────────────────────────
+
+#[tauri::command]
+pub fn create_integration(
+    db: State<Database>,
+    input: repositories::integrations::IntegrationCreateInput,
+) -> Result<repositories::integrations::Integration, String> {
+    with_conn(&db.conn, |conn| {
+        repositories::integrations::create(conn, &input)
+    })
+}
+
+#[tauri::command]
+pub fn get_integration(
+    db: State<Database>,
+    id: String,
+) -> Result<Option<repositories::integrations::Integration>, String> {
+    with_conn(&db.conn, |conn| {
+        repositories::integrations::get_by_id(conn, &id)
+    })
+}
+
+#[tauri::command]
+pub fn list_integrations(
+    db: State<Database>,
+) -> Result<Vec<repositories::integrations::Integration>, String> {
+    with_conn(&db.conn, repositories::integrations::list)
+}
+
+#[tauri::command]
+pub fn update_integration(
+    db: State<Database>,
+    id: String,
+    input: repositories::integrations::IntegrationUpdateInput,
+) -> Result<Option<repositories::integrations::Integration>, String> {
+    with_conn(&db.conn, |conn| {
+        repositories::integrations::update(conn, &id, &input)
+    })
+}
+
 // ─── Tasks ──────────────────────────────────────────────
 
 #[tauri::command]

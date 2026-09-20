@@ -388,7 +388,7 @@ Connected Personal Workspace
 
 Potential slices include:
 
-1. Integration Core
+1. Integration Core (INT-CORE-001 complete)
 2. Connections settings
 3. external calendar event model
 4. MyTimetable integration

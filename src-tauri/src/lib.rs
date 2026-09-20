@@ -183,6 +183,10 @@ pub fn run() {
             commands::reveal_vault_item,
             commands::list_activity,
             commands::get_space_continuity,
+            commands::create_integration,
+            commands::get_integration,
+            commands::list_integrations,
+            commands::update_integration,
             // AI
             commands::ai_list_models,
             commands::ai_parse_action_proposals,
