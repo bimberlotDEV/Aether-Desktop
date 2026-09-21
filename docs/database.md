@@ -187,6 +187,10 @@ Normalized provider-owned calendar occurrences defined by ADR-028. Identity is `
 
 Removed records are tombstones, not deletions. Only a complete authoritative native reconciliation window can mark a previously seen occurrence removed. Raw provider payloads, feed URLs, credentials, tokens, and secret metadata are not columns in this table.
 
+### subscribed_calendars
+
+Provider-neutral renewable iCalendar feed metadata defined by ADR-029. Each row links one existing `ics_feed` Integration and contains only a local UUID and optional display name. The actual HTTPS feed URL is stored solely in the Integration's opaque DPAPI-protected secret entry and never appears in this table or normal IPC.
+
 ## Workspace export
 
 Settings creates a versioned `.aether-backup` archive containing a consistent SQLite online-backup snapshot and the exact bytes of every managed Vault item. The snapshot removes `secrets`; linked external files are never read or copied. A strict manifest binds every payload to its size and SHA-256 digest.

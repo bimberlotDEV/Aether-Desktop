@@ -8,6 +8,7 @@ use crate::ai::provider::{self, ChatCompletionRequest, ChatMessage, ProviderConf
 use crate::ai::routing;
 use crate::ai::runtime::AiRuntime;
 use crate::backup;
+use crate::calendar_ics::{self, FetchResult, IcsValidation};
 use crate::context::{self as local_context, ContextRuntime};
 use crate::db::repositories::{self, with_conn};
 use crate::db::Database;
@@ -1033,6 +1034,40 @@ pub fn update_integration(
     with_conn(&db.conn, |conn| {
         repositories::integrations::update(conn, &id, &input)
     })
+}
+
+// Feed URLs are accepted only by this explicit configuration boundary and are never returned.
+#[tauri::command]
+pub fn configure_subscribed_calendar(
+    db: State<Database>,
+    input: repositories::subscribed_calendars::SubscribedCalendarInput,
+) -> Result<repositories::subscribed_calendars::SubscribedCalendar, String> {
+    let subscription = with_conn(&db.conn, |conn| {
+        repositories::subscribed_calendars::create(conn, &input)
+    })?;
+    let key = with_conn(&db.conn, |conn| {
+        repositories::subscribed_calendars::credential_key(conn, &subscription.connection_id)
+    })?;
+    credentials::store(&db, &key, &input.feed_url)
+        .map_err(|_| "Calendar subscription secret could not be stored".to_string())?;
+    Ok(subscription)
+}
+
+#[tauri::command]
+pub async fn validate_subscribed_calendar_url(feed_url: String) -> Result<IcsValidation, String> {
+    match calendar_ics::fetch(&feed_url, None, None).await? {
+        FetchResult::NotModified => {
+            Err("Calendar feed validation needs a complete response".into())
+        }
+        FetchResult::Complete {
+            bytes,
+            etag,
+            last_modified,
+        } => {
+            let _conditional_metadata = (etag.as_deref(), last_modified.as_deref());
+            Ok(calendar_ics::validate(&bytes))
+        }
+    }
 }
 
 // ─── Tasks ──────────────────────────────────────────────

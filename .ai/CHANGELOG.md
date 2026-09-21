@@ -26,6 +26,17 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-09-21 — `CAL-ICS-001` — Shared subscribed-calendar ingestion engine
+
+- **Type:** Feature, architecture, persistence, and test
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review
+- **Summary:** Added native-only HTTPS iCalendar subscription configuration, DPAPI URL storage, bounded conditional fetching, RFC 5545 parsing/recurrence normalization, and Calendar Core-compatible occurrence preparation. Scheduling, retries, lifecycle state, and runtime orchestration remain owned by `INT-SYNC-001`.
+- **Files:** `src-tauri/src/calendar_ics.rs`, subscribed-calendar migration/repository/commands, typed IPC wrappers, ADR-029, database/architecture documentation, and task state.
+- **Verification:** `pnpm typecheck`, `pnpm lint`, `pnpm test` (111), `pnpm build`, `cargo fmt --check`, strict Clippy, `cargo test` (116), and `git diff --check` — Pass.
+- **Decisions/deviations:** Feed URLs remain native DPAPI secrets and never appear in subscription or Integration read models. No provider-specific connector, scheduler, retry/backoff, single-flight guard, cancellation registry, or direct Integration sync lifecycle was introduced.
+- **Follow-up:** `INT-SYNC-001` may orchestrate the prepared engine through its own task contract.
+
 ## 2026-09-21 — `INT-CONN-001` — Truthful provider-neutral Connections UI
 
 - **Type:** Feature, UX, accessibility and test

@@ -51,8 +51,11 @@ import type {
   IntegrationUpdateInput,
   ExternalEvent,
   ExternalEventRange,
+  SubscribedCalendar,
+  SubscribedCalendarInput,
+  IcsValidation,
 } from './types'
-import { BetaDiagnosticReportSchema, ExternalEventRangeSchema, ExternalEventSchema, IntegrationCreateInputSchema, IntegrationSchema, IntegrationUpdateInputSchema } from './types'
+import { BetaDiagnosticReportSchema, ExternalEventRangeSchema, ExternalEventSchema, IntegrationCreateInputSchema, IntegrationSchema, IntegrationUpdateInputSchema, SubscribedCalendarSchema, SubscribedCalendarInputSchema, IcsValidationSchema } from './types'
 
 // ─── Native desktop ─────────────────────────────────────
 export async function getNativeStatus(): Promise<NativeStatus> {
@@ -629,4 +632,13 @@ export async function updateIntegration(id: string, input: IntegrationUpdateInpu
   const parsed = IntegrationUpdateInputSchema.parse(input)
   const result = await invoke<unknown>('update_integration', { id, input: parsed })
   return result === null ? null : IntegrationSchema.parse(result)
+}
+
+export async function configureSubscribedCalendar(input: SubscribedCalendarInput): Promise<SubscribedCalendar> {
+  const parsed = SubscribedCalendarInputSchema.parse(input)
+  return SubscribedCalendarSchema.parse(await invoke('configure_subscribed_calendar', { input: parsed }))
+}
+
+export async function validateSubscribedCalendarUrl(feedUrl: string): Promise<IcsValidation> {
+  return IcsValidationSchema.parse(await invoke('validate_subscribed_calendar_url', { feedUrl }))
 }

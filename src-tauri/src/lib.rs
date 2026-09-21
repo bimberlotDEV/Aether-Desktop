@@ -2,6 +2,7 @@ mod actions;
 mod ai;
 mod backup;
 mod calendar;
+mod calendar_ics;
 mod commands;
 mod context;
 mod db;
@@ -189,6 +190,8 @@ pub fn run() {
             commands::get_integration,
             commands::list_integrations,
             commands::update_integration,
+            commands::configure_subscribed_calendar,
+            commands::validate_subscribed_calendar_url,
             // AI
             commands::ai_list_models,
             commands::ai_parse_action_proposals,
