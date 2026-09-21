@@ -5,81 +5,90 @@
 | Field | Value |
 | --- | --- |
 | Schema version | 3 |
-| Task ID | `CAL-CORE-001` |
+| Task ID | `INT-CORE-001` |
 | Status | `in_progress` |
 | Owner | Codex |
 | Last updated | 2026-09-21 |
 | Related milestone | Connected Personal Workspace |
 | Classification | `planned_codex` |
-| Branch / worktree | `agent/calendar-core` / `a27c` |
+| Branch / worktree | `agent/integration-core` / `667b` |
 
 ## Objective
 
-Add the minimum provider-neutral, local-first Calendar Core that normalizes, persists, reconciles, and boundedly reads external calendar occurrences without implementing a provider or calendar UI.
+Deliver a provider-neutral, local-first Integration Core that persists connection and synchronization metadata behind Aether's existing typed Rust IPC boundary, without implementing a provider or exposing credentials to React.
 
 ## Context
 
-- `INT-CORE-001` is merged at `origin/master` and owns provider-neutral connection records in migration `011_integrations`.
-- Calendar occurrences reference `integrations.id`; provider payloads, credentials, raw feed URLs, and secret metadata remain outside this domain and IPC.
-- ADR-028 records the approved calendar normalization, identity, time, and reconciliation semantics.
+- `INT-CORE-001` is the approved first prerequisite in `.ai/TODO.md`.
+- SQLite repositories and typed Tauri commands are established; DPAPI-protected values live in Rust's `secrets` table.
+- No generic integration model currently exists. Future providers must normalize their data before presentation domains consume it.
 
 ## Success criteria
 
-- [ ] Normalized external events persist with the required identity, lifecycle, provenance, content, and time fields.
-- [ ] Identity is exactly `(connection_id, external_id, occurrence_id)`; repeated snapshots are idempotent and occurrence identity is independent of title/time.
-- [ ] Native reconciliation only tombstones missing occurrences from a complete authoritative window; reappearance reactivates and cancellation remains distinct.
-- [ ] Timed and all-day semantics are validated, including UTC instants, timezone context, exclusive all-day end dates, and half-open bounded range reads.
-- [ ] React can only make strict, typed, bounded read IPC calls; no provider-owned write command or secret/provider payload leaks exist.
-- [ ] Migration, repository/service behavior, IPC schemas, documentation, and required quality gates are verified.
+- [ ] A local integration record persists a provider ID, enabled state, supported capabilities, authentication method, sync configuration, lifecycle timestamps, connection state, sync state, and a bounded error state.
+- [ ] Credential material is never stored in an integration row or returned through IPC; the record exposes only a Rust-managed opaque credential reference and whether it is present.
+- [ ] Rust repository operations and typed Tauri commands create, read, list, and update the generic records with validation.
+- [ ] TypeScript exports strict provider-neutral schemas and invokes only typed integration commands.
+- [ ] Fresh and upgrade migrations, repository behavior, and credential-boundary behavior have focused tests.
+- [ ] The ADR, database documentation, and project state accurately describe the implemented boundary.
 
 ## In scope
 
-- ExternalEvent Rust domain, repository, reconciliation service, tests, and append-only migration.
-- Bounded read-only Tauri commands and strict TypeScript/Zod read models/wrappers/tests.
-- ADR-028, database/architecture documentation, and relevant `.ai` state records.
+- Integration domain model and validation
+- append-only SQLite migration and repository
+- minimal native credential-reference service
+- typed Tauri commands and registration
+- TypeScript schemas and invoke wrappers
+- focused Rust and frontend wrapper tests
+- ADR, database documentation, and `.ai` state
 
 ## Allowed paths
 
 - `src-tauri/src/db/migrations.rs`
-- `src-tauri/src/db/repositories/external_events.rs`
+- `src-tauri/src/db/repositories/integrations.rs`
 - `src-tauri/src/db/repositories/mod.rs`
-- `src-tauri/src/calendar.rs`
-- `src-tauri/src/diagnostics.rs`
+- `src-tauri/src/integrations.rs`
 - `src-tauri/src/commands.rs`
 - `src-tauri/src/lib.rs`
 - `src/lib/db/types.ts`
 - `src/lib/db/tauri.ts`
 - `src/lib/db/tauri.test.ts`
-- `docs/decisions/028-calendar-core.md`
 - `docs/database.md`
+- `docs/decisions/027-integration-core.md`
 - `.ai/ARCHITECTURE.md`, `.ai/PROJECT_STATE.md`, `.ai/TODO.md`, `.ai/CHANGELOG.md`, `.ai/SESSION_NOTES.md`, `.ai/HANDOFF.md`
 
 ## Out of scope
 
-- ICS/RFC5545 parsing, MyTimetable, Brightspace, OAuth, credentials, sync scheduling/polling/webhooks, provider connectors, Calendar/School/Pulse UI, course/assignment/deadline persistence, user-created events, and cross-provider deduplication.
+- All provider implementations, including MyTimetable, Brightspace, GitHub, calendar providers, and n8n
+- OAuth, API-token entry flows, ICS parsing, polling execution, webhooks, or automation execution
+- Connections, Calendar, School, Pulse, or Settings UI work
+- Safe Actions and AI tool changes
+- cloud infrastructure and unrelated refactors
 
 ## Architecture constraints
 
-- Preserve React → typed invoke wrapper → Tauri command → Rust service/repository → SQLite.
-- Persist only normalized provider-neutral data; no provider payloads, raw feed URLs, tokens, credentials, or secret metadata.
-- Migrations are append-only; no frontend provider-owned event mutation APIs.
-- Read IPC must be bounded; all time validation and reconciliation mutation remains native-only.
+- Preserve React → hooks/stores → typed invoke wrappers → commands → Rust services/repositories → SQLite/native services.
+- SQLite remains local source of truth; no frontend SQL or provider-specific payload in generic types.
+- Credentials remain DPAPI-encrypted native secrets and must never cross IPC, logs, backup exports, or integration rows.
+- Migrations are append-only; new rows must be safely ignored by existing product paths.
 
 ## Dependencies
 
-- `INT-CORE-001` / migration `011_integrations` (merged at `origin/master`).
-- Accepted ADR-028 for the Calendar Core boundary.
+- Existing Rust/SQLite/IPC architecture and ADR-006 credential storage.
+- ADR-027 accepted before production implementation.
+- No external account, credential, provider API, or owner decision is required.
 
 ## Risks and safeguards
 
-- **False removals from incomplete provider results** — only `Authoritative` snapshots may tombstone, in one native transaction.
-- **Duplicate or moved recurring events** — unique identity uses connection/external/occurrence IDs only; upsert tests cover idempotency and moved occurrences.
-- **Time corruption around all-day/DST values** — strict native validation distinguishes UTC instants from date-only values and rejects unresolved floating values.
-- **Privacy leakage** — database/read model contain bounded normalized fields only; no credentials, feed URLs, or raw provider payload columns.
+- **Credential leakage:** use an opaque namespaced secret reference; return only presence status through IPC and test that no secret field exists in DTOs.
+- **Provider lock-in:** restrict the core to stable provider IDs, capabilities, authentication and sync modes; retain opaque bounded JSON only for provider-neutral configuration.
+- **Migration regression:** append one transactional migration and test fresh schema plus immediately preceding-schema upgrade.
+- **Unbounded error/config storage:** validate JSON/config and cap retained sync error text.
 
 ## Rollback considerations
 
-- Code is reversible on the task branch. Migration `012_external_events` is append-only after release; earlier product paths safely ignore its data. Tombstones preserve history and do not hard-delete user-local records.
+- Code can be reverted on this branch. The append-only schema migration must remain after release; older UI paths do not read the new table, and new records have no side effects or external writes.
+- The credential reference is metadata only; deleting an integration is intentionally not part of this task, so no secret deletion lifecycle is introduced.
 
 ## Required validation
 
@@ -99,12 +108,12 @@ git diff --check
 | Field | Value |
 | --- | --- |
 | Required | `No` |
-| Reason | Bounded additive domain with formal self-review and complete validation. |
-| Reviewer scope | None |
+| Reason | The task uses established DPAPI and migration patterns; a formal self-review covers the new durable boundary. |
+| Reviewer scope | N/A |
 
 ## Human decisions required
 
-None — the user supplied the approved Calendar Core design.
+None.
 
 ## Blocking decisions
 
@@ -114,27 +123,22 @@ None.
 
 | Check | State |
 | --- | --- |
-| Correct branch/worktree confirmed | `agent/calendar-core` fast-forwarded to `origin/master` (`3bd9d58`) |
-| `git status` inspected | Clean |
-| User-owned changes identified | None |
-| Parallel task overlap checked | None; Calendar Core owns its new migration/repository/service/read IPC paths |
-| Serialization points identified | Migration `012`, repository module registry, command registry, `lib.rs`, TypeScript DB contracts, ADR registry |
+| Correct branch/worktree confirmed | `Pass` — rebased on `origin/master` at `3b37d43` |
+| `git status` inspected | `Pass` — clean before task edits |
+| User-owned changes identified | `Pass` — none |
+| Parallel task overlap checked | `Pass` — no parallel work declared; integration migration and IPC are exclusively owned by this task |
+| Serialization points identified | `Pass` — migrations, central IPC registration, credential namespace, architecture registry |
 
 ## Readiness review
 
-Status: `ready`
-
-- [x] Stable task ID, observable objective, measurable success criteria, bounded scope and paths.
-- [x] Dependencies, risks, rollback, validation, and explicit non-goals recorded.
-- [x] Worktree is current and clean; migration/shared IPC ownership is clear.
-- [x] ADR-028 is approved by the supplied task design and will be committed with implementation.
+All readiness requirements pass: the task ID, bounded scope, measurable criteria, allowed paths, constraints, risks, rollback, validation, ADR, and ownership boundary are documented. No unresolved human decision exists.
 
 ## Implementation log
 
-2026-09-21
+2026-09-20
 
-- Worktree fast-forwarded from `3b37d43` to current `origin/master` `3bd9d58` before production edits.
-- Readiness gate passed; implementation started.
+- Rebasing confirmed this worktree is based on current `origin/master` (`3b37d43`).
+- ADR-027 records the provider-neutral persisted record and native-only credential-reference boundary.
 
 ## Verification evidence
 
@@ -142,9 +146,17 @@ Pending implementation.
 
 ## Acceptance evidence
 
-Pending self-review.
+Pending implementation.
 
 ## Self-review
+
+Pending implementation.
+
+## Independent review findings
+
+Not required.
+
+## Completion evidence
 
 Pending implementation.
 
@@ -152,11 +164,11 @@ Pending implementation.
 
 | Field | Value |
 | --- | --- |
-| Commit | `None` |
-| Remote branch | `None` |
-| Draft PR | `None` |
-| Exact-head CI | `None` |
+| Commit | Pending |
+| Remote branch | Pending |
+| Draft PR | Pending |
+| Exact-head CI | Pending |
 
 ## Next task
 
-None — stop after CAL-CORE-001.
+`INT-CONN-001` may be planned only after this task is completed and published.
