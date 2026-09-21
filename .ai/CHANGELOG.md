@@ -26,6 +26,17 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-09-21 — `INT-CONN-001` — Truthful provider-neutral Connections UI
+
+- **Type:** Feature, UX, accessibility and test
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review
+- **Summary:** Added a Settings-based Connections experience backed only by persisted Integration records: clear lifecycle and sync states, advertised versus effective capabilities, safe error display, a non-interactive unavailable-provider catalog, and command-palette navigation with keyboard focus.
+- **Files:** `src/components/connections/`, `src/hooks/useConnections.ts`, `src/lib/integrations/`, `src/routes/Settings.tsx`, `src/components/CommandPalette.tsx`, `.ai/*`
+- **Verification:** `pnpm typecheck`, `pnpm lint`, `pnpm test` (110/110), `pnpm build`, and `git diff --check` — Pass
+- **Decisions/deviations:** No provider connector, credential, OAuth, setup, reconnect, disconnect, feed, sync, IPC, migration, or Calendar Core change was added. Catalog entries are explicitly unavailable for setup and cannot be mistaken for connected services.
+- **Follow-up:** `CAL-CORE-001`; individual provider tasks remain separately scoped.
+
 ## 2026-09-21 — `INT-CORE-001` — Provider-neutral Integration Core
 
 - **Type:** Feature, architecture, and persistence

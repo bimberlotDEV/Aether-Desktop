@@ -8,6 +8,9 @@ vi.mock('@/components/ai/AiSettings', () => ({ AiSettings: () => null }))
 vi.mock('@/components/NativeSettings', () => ({ NativeSettings: () => null }))
 vi.mock('@/components/BackupSettings', () => ({ BackupSettings: () => null }))
 vi.mock('@/components/BetaDiagnostics', () => ({ BetaDiagnostics: () => null }))
+vi.mock('@/components/connections/ConnectionsSettings', () => ({
+  ConnectionsSettings: () => null,
+}))
 vi.mock('@/components/Onboarding', () => ({
   START_ONBOARDING_TOUR_EVENT: 'aether:start-onboarding-tour',
 }))
