@@ -9,6 +9,16 @@ export const AppSettingSchema = z.object({
 })
 export type AppSetting = z.infer<typeof AppSettingSchema>
 
+export const ExternalEventSchema = z.object({
+  id: z.string(), connection_id: z.string(), external_id: z.string(), occurrence_id: z.string().nullable(), title: z.string(), description: z.string().nullable(),
+  time_kind: z.enum(['timed', 'all_day']), start_at_utc: z.string().nullable(), end_at_utc: z.string().nullable(), start_date: z.string().nullable(), end_date: z.string().nullable(), timezone: z.string(),
+  location: z.string().nullable(), course_reference: z.string().nullable(), event_kind: z.string(), status: z.enum(['active', 'cancelled', 'removed']), source_url: z.string().url().nullable(),
+  ingestion_provenance: z.string(), source_version: z.string(), content_hash: z.string(), first_seen_at: z.string(), last_seen_at: z.string(), synchronized_at: z.string(), created_at: z.string(), updated_at: z.string(),
+})
+export type ExternalEvent = z.infer<typeof ExternalEventSchema>
+export const ExternalEventRangeSchema = z.object({ connectionId: z.string().min(1).max(64).optional(), start: z.string().datetime({ offset: true }), end: z.string().datetime({ offset: true }), includeRemoved: z.boolean().optional(), limit: z.number().int().min(1).max(500).optional() }).refine((range) => range.start < range.end, { message: 'Range end must be after start' })
+export type ExternalEventRange = z.input<typeof ExternalEventRangeSchema>
+
 export const IntegrationAuthTypeSchema = z.enum(['none', 'api_key', 'api_token', 'oauth', 'ics_feed', 'feed_url', 'oauth_authorization_code'])
 export const IntegrationConnectionStatusSchema = z.enum(['connected', 'syncing', 'degraded', 'reauthentication_required', 'permission_denied', 'rate_limited', 'institution_configuration_required', 'unsupported', 'disconnected'])
 export const IntegrationSyncStatusSchema = z.enum(['idle', 'pending', 'syncing', 'succeeded', 'failed'])
