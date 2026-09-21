@@ -7,7 +7,7 @@
 | Field                   | Value                              |
 | ----------------------- | ---------------------------------- |
 | Schema version          | 2                                  |
-| Last updated            | 2026-09-20                         |
+| Last updated            | 2026-09-21                         |
 | Updated by              | Codex                              |
 | Repository              | `bimberlotDEV/Aether-Desktop`      |
 | Product maturity        | Alpha                              |
@@ -93,6 +93,7 @@ The current verified product foundation includes:
 * release tooling;
 * update-ready trusted-release infrastructure;
 * onboarding;
+* native subscribed-calendar ingestion primitives (publication pending);
 * automated quality gates.
 
 Aether remains local-first.

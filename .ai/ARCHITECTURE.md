@@ -120,6 +120,7 @@ SQLite / native capabilities / external providers
 | `ADR-026` | Delay production entitlements, managed AI, pricing and 1.0 until explicit owner decisions and beta evidence; protect local data from future license/service outages.                         | Accepted                | `docs/decisions/026-commercial-and-launch-gates.md`  |
 | `ADR-027` | Persist provider-neutral Integration Core connection metadata behind native credential and typed IPC boundaries.                                                                                 | Accepted                | `docs/decisions/027-integration-core.md`             |
 | `ADR-028` | Normalize provider-owned external calendar occurrences with stable provider identity, native authoritative reconciliation, and read-only bounded IPC.                                         | Accepted                | `docs/decisions/028-calendar-core.md`                |
+| `ADR-029` | Ingest renewable iCalendar subscriptions through a native, bounded HTTPS/parser/recurrence engine while retaining URLs only in DPAPI secrets and leaving sync runtime ownership separate. | Accepted | `docs/decisions/029-ics-subscription-ingestion.md` |
 | `ADR-027` | Persist provider-neutral integration lifecycle metadata locally and retain only opaque native credential references; connectors, transport, and provider payloads remain outside the generic core. | Accepted | `docs/decisions/027-integration-core.md` |
 
 ## Architecture change protocol

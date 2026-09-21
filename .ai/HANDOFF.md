@@ -1,7 +1,6 @@
 # Codex Task Contract
 
-> Active implementation contract for the current planned Codex task.
-> Completed task history belongs in `.ai/CHANGELOG.md`.
+> Active implementation contract for the current planned Codex task. Completed task history belongs in `.ai/CHANGELOG.md`.
 
 ## Contract metadata
 
@@ -125,4 +124,4 @@ None.
 
 ## Next task
 
-`CAL-CORE-001` may be planned only through its own bounded contract.
+None.

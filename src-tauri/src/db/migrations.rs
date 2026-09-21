@@ -399,6 +399,20 @@ const MIGRATIONS: &[(&str, &str)] = &[
         CREATE INDEX IF NOT EXISTS idx_external_events_status ON external_events(status);
         ",
     ),
+    // Migration 013: native-only subscribed calendar feed metadata. The feed URL is stored in
+    // the DPAPI-protected secrets table addressed by the linked integration credential key.
+    (
+        "013_subscribed_calendars",
+        "
+        CREATE TABLE IF NOT EXISTS subscribed_calendars (
+            id TEXT PRIMARY KEY NOT NULL,
+            connection_id TEXT NOT NULL UNIQUE REFERENCES integrations(id) ON DELETE CASCADE,
+            display_name TEXT,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        ",
+    ),
 ];
 
 pub fn known_names() -> impl Iterator<Item = &'static str> {

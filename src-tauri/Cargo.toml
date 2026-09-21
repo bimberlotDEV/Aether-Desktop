@@ -27,7 +27,7 @@ chrono = { version = "0.4", features = ["serde"] }
 async-trait = "0.1"
 futures-util = "0.3"
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls", "stream"] }
-tokio = { version = "1", features = ["macros", "sync"] }
+tokio = { version = "1", features = ["macros", "sync", "time"] }
 tokio-util = "0.7"
 base64 = "0.22"
 ring = "0.17"
@@ -44,6 +44,9 @@ tauri-plugin-global-shortcut = "2"
 tauri-plugin-window-state = "2"
 tauri-plugin-single-instance = "2"
 tauri-plugin-updater = "2.10.1"
+ical = "0.11"
+rrule = "0.14"
+chrono-tz = "0.10"
 
 [dev-dependencies]
 tempfile = "3"
