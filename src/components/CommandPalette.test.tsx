@@ -43,6 +43,16 @@ describe('Universal Search palette', () => {
     expect(useCommandStore.getState().isOpen).toBe(false)
   })
 
+  it('opens Connections at its keyboard-focusable Settings anchor', async () => {
+    const user = userEvent.setup()
+    useCommandStore.setState({ query: 'Open Connections' })
+    render(<CommandPalette />)
+
+    await user.click(screen.getByRole('option', { name: /Open Connections/ }))
+    expect(window.location.pathname).toBe('/settings')
+    expect(window.location.hash).toBe('#connections')
+  })
+
   it('is honest in browser mode and never fabricates workspace results', () => {
     useCommandStore.setState({ query: 'gradient' })
     render(<CommandPalette />)

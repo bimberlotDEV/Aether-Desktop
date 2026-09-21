@@ -7,6 +7,7 @@ import { BackupSettings } from '@/components/BackupSettings'
 import { Page, PageHeader, SectionLabel, Surface } from '@/components/ui/AetherUI'
 import { START_ONBOARDING_TOUR_EVENT } from '@/components/Onboarding'
 import { BetaDiagnostics } from '@/components/BetaDiagnostics'
+import { ConnectionsSettings } from '@/components/connections/ConnectionsSettings'
 
 const themeOptions: { value: Theme; label: string; icon: typeof Sun }[] = [
   { value: 'light', label: 'Light', icon: Sun },
@@ -56,6 +57,8 @@ export function Settings() {
         </section>
 
         <AiSettings />
+
+        <ConnectionsSettings />
 
         <section>
           <SectionLabel>Getting started</SectionLabel>
