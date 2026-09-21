@@ -1,6 +1,7 @@
 mod actions;
 mod ai;
 mod backup;
+mod calendar;
 mod commands;
 mod context;
 mod db;
@@ -183,6 +184,7 @@ pub fn run() {
             commands::reveal_vault_item,
             commands::list_activity,
             commands::get_space_continuity,
+            commands::list_external_events,
             commands::create_integration,
             commands::get_integration,
             commands::list_integrations,

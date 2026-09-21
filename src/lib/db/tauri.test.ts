@@ -61,6 +61,7 @@ import {
   initializeProfile,
   createIntegration,
   listIntegrations,
+  listExternalEvents,
 } from '@/lib/db/tauri'
 
 describe('Tauri database boundary', () => {
@@ -149,6 +150,20 @@ describe('Tauri database boundary', () => {
     })
     expect(invoke).toHaveBeenNthCalledWith(2, 'list_integrations')
     expect(JSON.stringify(invoke.mock.calls[0])).not.toContain('credential')
+  })
+
+  it('exposes external calendar records through a bounded read-only command', async () => {
+    invoke.mockResolvedValueOnce([])
+    await listExternalEvents({
+      connectionId: 'integration-1',
+      start: '2026-09-21T00:00:00Z',
+      end: '2026-09-22T00:00:00Z',
+      limit: 50,
+    })
+
+    expect(invoke).toHaveBeenCalledWith('list_external_events', {
+      range: expect.objectContaining({ connectionId: 'integration-1', limit: 50 }),
+    })
   })
 
   it('keeps updater endpoints and installers out of the frontend command contract', async () => {

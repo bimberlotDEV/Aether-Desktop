@@ -362,6 +362,43 @@ const MIGRATIONS: &[(&str, &str)] = &[
         CREATE INDEX IF NOT EXISTS idx_integrations_sync_status ON integrations(sync_status);
         ",
     ),
+    // Migration 012: normalized provider-neutral external calendar occurrences.
+    (
+        "012_external_events",
+        "
+        CREATE TABLE IF NOT EXISTS external_events (
+            id TEXT PRIMARY KEY NOT NULL,
+            connection_id TEXT NOT NULL REFERENCES integrations(id) ON DELETE CASCADE,
+            external_id TEXT NOT NULL,
+            occurrence_id TEXT NOT NULL DEFAULT '',
+            title TEXT NOT NULL,
+            description TEXT,
+            time_kind TEXT NOT NULL CHECK(time_kind IN ('timed', 'all_day')),
+            start_at_utc TEXT,
+            end_at_utc TEXT,
+            start_date TEXT,
+            end_date TEXT,
+            timezone TEXT NOT NULL,
+            location TEXT,
+            course_reference TEXT,
+            event_kind TEXT NOT NULL,
+            status TEXT NOT NULL CHECK(status IN ('active', 'cancelled', 'removed')),
+            source_url TEXT,
+            ingestion_provenance TEXT NOT NULL,
+            source_version TEXT NOT NULL,
+            content_hash TEXT NOT NULL,
+            first_seen_at TEXT NOT NULL,
+            last_seen_at TEXT NOT NULL,
+            synchronized_at TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+            UNIQUE(connection_id, external_id, occurrence_id),
+            CHECK((time_kind = 'timed' AND start_at_utc IS NOT NULL AND end_at_utc IS NOT NULL AND start_date IS NULL AND end_date IS NULL) OR (time_kind = 'all_day' AND start_at_utc IS NULL AND end_at_utc IS NULL AND start_date IS NOT NULL AND end_date IS NOT NULL))
+        );
+        CREATE INDEX IF NOT EXISTS idx_external_events_connection_range ON external_events(connection_id, start_at_utc, start_date);
+        CREATE INDEX IF NOT EXISTS idx_external_events_status ON external_events(status);
+        ",
+    ),
 ];
 
 pub fn known_names() -> impl Iterator<Item = &'static str> {

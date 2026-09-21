@@ -986,6 +986,17 @@ pub fn get_space_continuity(
 
 // ─── Integrations ───────────────────────────────────────
 
+// Provider-owned calendar records cross IPC only through bounded reads.
+#[tauri::command]
+pub fn list_external_events(
+    db: State<Database>,
+    range: repositories::external_events::ExternalEventRange,
+) -> Result<Vec<repositories::external_events::ExternalEvent>, String> {
+    with_conn(&db.conn, |conn| {
+        repositories::external_events::list_range(conn, &range)
+    })
+}
+
 #[tauri::command]
 pub fn create_integration(
     db: State<Database>,

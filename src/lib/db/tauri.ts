@@ -49,8 +49,10 @@ import type {
   Integration,
   IntegrationCreateInput,
   IntegrationUpdateInput,
+  ExternalEvent,
+  ExternalEventRange,
 } from './types'
-import { BetaDiagnosticReportSchema, IntegrationCreateInputSchema, IntegrationSchema, IntegrationUpdateInputSchema } from './types'
+import { BetaDiagnosticReportSchema, ExternalEventRangeSchema, ExternalEventSchema, IntegrationCreateInputSchema, IntegrationSchema, IntegrationUpdateInputSchema } from './types'
 
 // ─── Native desktop ─────────────────────────────────────
 export async function getNativeStatus(): Promise<NativeStatus> {
@@ -604,6 +606,11 @@ export async function getSpaceContinuity(spaceId: string): Promise<SpaceContinui
 }
 
 // ─── Integrations ────────────────────────────────────────
+export async function listExternalEvents(range: ExternalEventRange): Promise<ExternalEvent[]> {
+  const parsed = ExternalEventRangeSchema.parse(range)
+  return ExternalEventSchema.array().parse(await invoke('list_external_events', { range: parsed }))
+}
+
 export async function createIntegration(input: IntegrationCreateInput): Promise<Integration> {
   const parsed = IntegrationCreateInputSchema.parse(input)
   return IntegrationSchema.parse(await invoke('create_integration', { input: parsed }))
