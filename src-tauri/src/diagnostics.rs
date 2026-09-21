@@ -83,7 +83,7 @@ mod tests {
                 "updaterConfigured",
             ]
         );
-        assert_eq!(value["databaseSchema"], "011_integrations");
+        assert_eq!(value["databaseSchema"], "012_external_events");
         assert_eq!(value["databaseIntegrity"], "ok");
         assert_eq!(
             value["platform"],

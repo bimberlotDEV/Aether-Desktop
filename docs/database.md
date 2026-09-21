@@ -174,6 +174,19 @@ To add a migration:
 2. Write the SQL
 3. No migration may modify a previously-applied migration
 
+### external_events
+
+Normalized provider-owned calendar occurrences defined by ADR-028. Identity is `connection_id`, `external_id`, and `occurrence_id`; the stored empty occurrence ID represents a non-recurring occurrence. This avoids title/time deduplication and keeps moved recurring instances stable.
+
+| Column group | Notes |
+|---|---|
+| Identity and lifecycle | Connection foreign key, stable external/occurrence IDs, active/cancelled/removed state, first/last seen, sync and audit timestamps |
+| Content and provenance | Normalized title, optional description/location/course reference, event kind, ingestion provenance, source version, content hash, optional HTTPS deep link |
+| Timed semantics | UTC RFC3339 start/end plus timezone context; end is exclusive for range overlap |
+| All-day semantics | Date-only start/end with exclusive end date; UTC fields are absent |
+
+Removed records are tombstones, not deletions. Only a complete authoritative native reconciliation window can mark a previously seen occurrence removed. Raw provider payloads, feed URLs, credentials, tokens, and secret metadata are not columns in this table.
+
 ## Workspace export
 
 Settings creates a versioned `.aether-backup` archive containing a consistent SQLite online-backup snapshot and the exact bytes of every managed Vault item. The snapshot removes `secrets`; linked external files are never read or copied. A strict manifest binds every payload to its size and SHA-256 digest.
