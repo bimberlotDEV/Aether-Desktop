@@ -273,13 +273,36 @@ pub fn reconcile(
     window: Option<(&str, &str)>,
     synchronized_at: &str,
 ) -> Result<(), String> {
+    let transaction = conn
+        .unchecked_transaction()
+        .map_err(|error| format!("External event transaction error: {error}"))?;
+    reconcile_in_transaction(
+        &transaction,
+        connection_id,
+        snapshot,
+        mode,
+        window,
+        synchronized_at,
+    )?;
+    transaction
+        .commit()
+        .map_err(|error| format!("External event reconciliation error: {error}"))
+}
+
+/// Reconciles an already normalized provider snapshot in a caller-owned transaction.
+/// Sync runtimes use this to keep domain data and their Integration completion metadata atomic.
+pub fn reconcile_in_transaction(
+    transaction: &rusqlite::Transaction<'_>,
+    connection_id: &str,
+    snapshot: &[ExternalEventInput],
+    mode: ReconciliationMode,
+    window: Option<(&str, &str)>,
+    synchronized_at: &str,
+) -> Result<(), String> {
     let synchronized_at = utc(synchronized_at, "synchronized at")?;
     if mode == ReconciliationMode::Authoritative && window.is_none() {
         return Err("Authoritative reconciliation requires a complete window".to_string());
     }
-    let transaction = conn
-        .unchecked_transaction()
-        .map_err(|error| format!("External event transaction error: {error}"))?;
     for input in snapshot {
         if input.connection_id.trim() != connection_id.trim() {
             return Err(
@@ -301,9 +324,7 @@ pub fn reconcile(
         }
         transaction.execute("UPDATE external_events SET status='removed', updated_at=datetime('now') WHERE connection_id=?1 AND status!='removed' AND last_seen_at<?4 AND ((time_kind='timed' AND start_at_utc>=?2 AND start_at_utc<?3) OR (time_kind='all_day' AND start_date>=substr(?2,1,10) AND start_date<substr(?3,1,10)))", params![connection_id.trim(),start,end,synchronized_at]).map_err(|error| format!("External event tombstone error: {error}"))?;
     }
-    transaction
-        .commit()
-        .map_err(|error| format!("External event reconciliation error: {error}"))
+    Ok(())
 }
 
 pub fn list_range(

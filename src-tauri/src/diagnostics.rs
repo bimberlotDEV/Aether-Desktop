@@ -83,7 +83,7 @@ mod tests {
                 "updaterConfigured",
             ]
         );
-        assert_eq!(value["databaseSchema"], "013_subscribed_calendars");
+        assert_eq!(value["databaseSchema"], "014_integration_sync_runtime");
         assert_eq!(value["databaseIntegrity"], "ok");
         assert_eq!(
             value["platform"],

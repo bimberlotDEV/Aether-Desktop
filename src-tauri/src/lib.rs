@@ -7,6 +7,7 @@ mod commands;
 mod context;
 mod db;
 mod diagnostics;
+mod integration_sync;
 mod native;
 mod updater;
 mod vault;
@@ -96,8 +97,14 @@ pub fn run() {
             app.manage(backup::RestoreRuntime::default());
             app.manage(updater::UpdateRuntime::new(updater_configured));
             app.manage(context::ContextRuntime::default());
+            let sync_host = std::sync::Arc::new(integration_sync::TauriRuntimeHost::new(
+                app.handle().clone(),
+            ));
+            app.manage(integration_sync::IntegrationSyncRuntime::new(sync_host));
             let native_status = native::setup(app, updater_configured)?;
             app.manage(native_status);
+            app.state::<integration_sync::IntegrationSyncRuntime>()
+                .start();
 
             Ok(())
         })
@@ -189,7 +196,9 @@ pub fn run() {
             commands::create_integration,
             commands::get_integration,
             commands::list_integrations,
-            commands::update_integration,
+            commands::set_integration_enabled,
+            commands::request_integration_sync,
+            commands::get_integration_sync_runtime_status,
             commands::configure_subscribed_calendar,
             commands::validate_subscribed_calendar_url,
             // AI
@@ -217,12 +226,30 @@ pub fn run() {
         ])
         .on_window_event(|window, event| {
             if window.label() == "main" {
+                if matches!(event, tauri::WindowEvent::Focused(true)) {
+                    let runtime = window.state::<integration_sync::IntegrationSyncRuntime>();
+                    runtime.on_resume();
+                }
                 if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                    integration_sync::RuntimeLifecycle::new(
+                        &window.state::<integration_sync::IntegrationSyncRuntime>(),
+                    )
+                    .on_close_requested();
                     api.prevent_close();
                     let _ = window.hide();
                 }
             }
         })
-        .run(context)
-        .expect("error while running tauri application");
+        .build(context)
+        .expect("error while building Tauri application")
+        .run(|app, event| {
+            if matches!(event, tauri::RunEvent::ExitRequested { .. }) {
+                tauri::async_runtime::block_on(
+                    integration_sync::RuntimeLifecycle::new(
+                        &app.state::<integration_sync::IntegrationSyncRuntime>(),
+                    )
+                    .on_exit_requested(),
+                );
+            }
+        });
 }

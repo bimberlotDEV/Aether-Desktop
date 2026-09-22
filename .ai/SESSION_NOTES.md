@@ -1,19 +1,21 @@
 # Session Notes
 
-| Field          | Value             |
-| -------------- | ----------------- |
-| Schema version | 2                 |
-| Session date   | 2026-09-21        |
-| Active task    | `INT-CONN-001`    |
-| Agent          | Codex             |
-| State          | `complete_pending_publication` |
+| Field | Value |
+| --- | --- |
+| Schema version | 2 |
+| Session date | 2026-09-22 |
+| Active task | None |
+| Agent | Codex |
+| State | idle |
 
 ## Current work
 
-- `INT-CONN-001` adds a provider-neutral Connections view over the merged Integration Core, with no provider implementation or backend changes.
-- Full frontend validation passes: 110 tests, strict typecheck, lint, production build, and diff check.
-- Publication is the remaining step; draft PR and exact-head CI details will be recorded after push.
+INT-SYNC-001 is complete locally: one native host-driven runtime path, lifecycle dispatch seam, retry gates, recovery, atomic completion, and deterministic SQLite-backed runtime tests.
+
+Full validation passes: 111 frontend tests and 123 Rust tests, with strict typecheck, lint, build, format, Clippy, and diff checks.
+
+Real desktop smoke is environment-blocked: no targetable Aether window or configured safe ICS connection was available in this Codex session.
 
 ## Exact resume point
 
-Publish `agent/connections-polish`, then continue separately owned `CAL-CORE-001` or a provider implementation only through its own approved task contract.
+No active implementation task. Run the documented safe desktop smoke matrix before relying on its environment-specific behavior.

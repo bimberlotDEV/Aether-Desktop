@@ -94,9 +94,14 @@ The current verified product foundation includes:
 * update-ready trusted-release infrastructure;
 * onboarding;
 * native subscribed-calendar ingestion primitives (publication pending);
+* native Integration Sync runtime with deterministic lifecycle, retry-gating, recovery, and atomic Calendar/Integration completion coverage;
 * automated quality gates.
 
 Aether remains local-first.
+
+Integration Sync desktop smoke remains environment-blocked in the current Codex
+session: no targetable Aether window or configured safe ICS connection is
+available. This does not replace the required real desktop verification.
 
 There is no requirement for a cloud account to use the core product.
 

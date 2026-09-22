@@ -187,6 +187,10 @@ Normalized provider-owned calendar occurrences defined by ADR-028. Identity is `
 
 Removed records are tombstones, not deletions. Only a complete authoritative native reconciliation window can mark a previously seen occurrence removed. Raw provider payloads, feed URLs, credentials, tokens, and secret metadata are not columns in this table.
 
+### integration sync runtime
+
+Migration `014_integration_sync_runtime` adds native-only lifecycle bookkeeping to `integrations`: consecutive failure count, last finished time, and last trigger. `next_allowed_sync_at` remains the earliest permitted time for every new request, including a manual request. These fields are maintained only by the native runtime; frontend IPC can only toggle `enabled` and must refetch the normal Integration read model for details.
+
 ### subscribed_calendars
 
 Provider-neutral renewable iCalendar feed metadata defined by ADR-029. Each row links one existing `ics_feed` Integration and contains only a local UUID and optional display name. The actual HTTPS feed URL is stored solely in the Integration's opaque DPAPI-protected secret entry and never appears in this table or normal IPC.

@@ -48,14 +48,13 @@ import type {
   ActionResult,
   Integration,
   IntegrationCreateInput,
-  IntegrationUpdateInput,
   ExternalEvent,
   ExternalEventRange,
   SubscribedCalendar,
   SubscribedCalendarInput,
   IcsValidation,
 } from './types'
-import { BetaDiagnosticReportSchema, ExternalEventRangeSchema, ExternalEventSchema, IntegrationCreateInputSchema, IntegrationSchema, IntegrationUpdateInputSchema, SubscribedCalendarSchema, SubscribedCalendarInputSchema, IcsValidationSchema } from './types'
+import { BetaDiagnosticReportSchema, ExternalEventRangeSchema, ExternalEventSchema, IntegrationCreateInputSchema, IntegrationSchema, IntegrationSyncRequestResultSchema, IntegrationSyncRuntimeStatusSchema, SubscribedCalendarSchema, SubscribedCalendarInputSchema, IcsValidationSchema } from './types'
 
 // ─── Native desktop ─────────────────────────────────────
 export async function getNativeStatus(): Promise<NativeStatus> {
@@ -628,10 +627,17 @@ export async function listIntegrations(): Promise<Integration[]> {
   return IntegrationSchema.array().parse(await invoke('list_integrations'))
 }
 
-export async function updateIntegration(id: string, input: IntegrationUpdateInput): Promise<Integration | null> {
-  const parsed = IntegrationUpdateInputSchema.parse(input)
-  const result = await invoke<unknown>('update_integration', { id, input: parsed })
+export async function setIntegrationEnabled(id: string, enabled: boolean): Promise<Integration | null> {
+  const result = await invoke<unknown>('set_integration_enabled', { id, enabled })
   return result === null ? null : IntegrationSchema.parse(result)
+}
+
+export async function requestIntegrationSync(connectionId: string) {
+  return IntegrationSyncRequestResultSchema.parse(await invoke('request_integration_sync', { connectionId }))
+}
+
+export async function getIntegrationSyncRuntimeStatus() {
+  return IntegrationSyncRuntimeStatusSchema.parse(await invoke('get_integration_sync_runtime_status'))
 }
 
 export async function configureSubscribedCalendar(input: SubscribedCalendarInput): Promise<SubscribedCalendar> {
