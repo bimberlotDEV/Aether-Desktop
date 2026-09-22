@@ -38,13 +38,13 @@ export const IntegrationCreateInputSchema = z.object({
   syncModes: z.array(IntegrationSyncModeSchema).max(32).default([]), syncConfig: z.record(z.string(), z.unknown()).default({}),
 })
 export type IntegrationCreateInput = z.input<typeof IntegrationCreateInputSchema>
-export const IntegrationUpdateInputSchema = z.object({
-  enabled: z.boolean(), advertisedCapabilities: z.array(z.string().trim().min(1).max(100)).max(32), effectiveCapabilities: z.array(z.string().trim().min(1).max(100)).max(32), syncModes: z.array(IntegrationSyncModeSchema).max(32),
-  syncConfig: z.record(z.string(), z.unknown()), connectionStatus: IntegrationConnectionStatusSchema, syncStatus: IntegrationSyncStatusSchema,
-  disconnectReason: z.enum(['local', 'remote_revoke']).nullable(), lastAttemptedAt: z.string().max(64).nullable(), lastSuccessfulSyncAt: z.string().max(64).nullable(), nextAllowedSyncAt: z.string().max(64).nullable(),
-  lastSyncErrorCode: z.string().max(100).nullable(), lastSyncErrorMessage: z.string().max(500).nullable(), lastSyncEtag: z.string().max(512).nullable(), lastSyncLastModified: z.string().max(128).nullable(), syncCursor: z.string().max(2048).nullable(), rateLimitRemaining: z.number().int().nonnegative().nullable(), retryAfterAt: z.string().max(64).nullable(), credentialExpiresAt: z.string().max(64).nullable(), credentialRotatedAt: z.string().max(64).nullable(),
-})
-export type IntegrationUpdateInput = z.input<typeof IntegrationUpdateInputSchema>
+export const IntegrationSyncRequestResultSchema = z.discriminatedUnion('status', [
+  z.object({ status: z.literal('accepted') }), z.object({ status: z.literal('coalesced') }),
+  z.object({ status: z.literal('deferred'), eligible_at: z.string() }), z.object({ status: z.literal('rejected'), reason: z.string() }),
+])
+export type IntegrationSyncRequestResult = z.infer<typeof IntegrationSyncRequestResultSchema>
+export const IntegrationSyncRuntimeStatusSchema = z.object({ runningCount: z.number().int().nonnegative(), queuedCount: z.number().int().nonnegative(), shuttingDown: z.boolean() })
+export type IntegrationSyncRuntimeStatus = z.infer<typeof IntegrationSyncRuntimeStatusSchema>
 export const SubscribedCalendarSchema = z.object({ id: z.string(), connection_id: z.string(), display_name: z.string().nullable(), created_at: z.string(), updated_at: z.string() })
 export type SubscribedCalendar = z.infer<typeof SubscribedCalendarSchema>
 export const SubscribedCalendarInputSchema = z.object({ connectionId: z.string().min(1).max(64), feedUrl: z.string().url().max(2048), displayName: z.string().max(200).nullable().optional() })

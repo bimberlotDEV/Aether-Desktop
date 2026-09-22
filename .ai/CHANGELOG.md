@@ -26,6 +26,14 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-09-22 — INT-SYNC-001 — Native Integration synchronization runtime
+
+Implemented native Integration sync scheduling, eligibility gates, recovery, atomic Calendar/Integration completion, cancellation-aware bounded shutdown, and a minimal Tauri-host lifecycle seam.
+
+Verification passed: pnpm typecheck, pnpm lint, pnpm test (111/111), pnpm build, cargo fmt --check, strict Clippy, cargo test (123/123), and git diff --check.
+
+CAL-ICS retains configuration, credential access, transport, parsing, and normalized preparation. Real desktop smoke remains environment-blocked because this session has no targetable Aether window or configured safe ICS connection.
+
 ## 2026-09-21 — `CAL-ICS-001` — Shared subscribed-calendar ingestion engine
 
 - **Type:** Feature, architecture, persistence, and test

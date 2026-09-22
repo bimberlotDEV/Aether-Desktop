@@ -413,6 +413,17 @@ const MIGRATIONS: &[(&str, &str)] = &[
         );
         ",
     ),
+    // Migration 014: native Integration synchronization runtime state.
+    (
+        "014_integration_sync_runtime",
+        "
+        ALTER TABLE integrations ADD COLUMN consecutive_sync_failures INTEGER NOT NULL DEFAULT 0;
+        ALTER TABLE integrations ADD COLUMN last_sync_finished_at TEXT;
+        ALTER TABLE integrations ADD COLUMN last_sync_trigger TEXT;
+        CREATE INDEX IF NOT EXISTS idx_integrations_sync_due
+            ON integrations(enabled, next_allowed_sync_at);
+        ",
+    ),
 ];
 
 pub fn known_names() -> impl Iterator<Item = &'static str> {

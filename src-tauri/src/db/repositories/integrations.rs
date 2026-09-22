@@ -1,4 +1,5 @@
-use rusqlite::{params, Connection};
+use chrono::Utc;
+use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use uuid::Uuid;
@@ -12,18 +13,6 @@ const AUTH_TYPES: &[&str] = &[
     "feed_url",
     "oauth_authorization_code",
 ];
-const CONNECTION_STATUSES: &[&str] = &[
-    "connected",
-    "syncing",
-    "degraded",
-    "reauthentication_required",
-    "permission_denied",
-    "rate_limited",
-    "institution_configuration_required",
-    "unsupported",
-    "disconnected",
-];
-const SYNC_STATUSES: &[&str] = &["idle", "pending", "syncing", "succeeded", "failed"];
 const SYNC_MODES: &[&str] = &["manual", "periodic", "app_start", "app_resume", "webhook"];
 const INTEGRATION_COLS: &str = "id, provider_id, enabled, advertised_capabilities_json, effective_capabilities_json, auth_type, sync_modes_json, sync_config_json, connection_status, sync_status, disconnect_reason, last_attempted_at, last_successful_sync_at, next_allowed_sync_at, last_sync_error_code, last_sync_error_message, last_sync_etag, last_sync_last_modified, sync_cursor, rate_limit_remaining, retry_after_at, credential_expires_at, credential_rotated_at, sync_execution_scope, created_at, updated_at";
 
@@ -70,31 +59,6 @@ pub struct IntegrationCreateInput {
     pub sync_modes: Vec<String>,
     #[serde(default = "default_sync_config")]
     pub sync_config: Value,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct IntegrationUpdateInput {
-    pub enabled: bool,
-    pub advertised_capabilities: Vec<String>,
-    pub effective_capabilities: Vec<String>,
-    pub sync_modes: Vec<String>,
-    pub sync_config: Value,
-    pub connection_status: String,
-    pub sync_status: String,
-    pub disconnect_reason: Option<String>,
-    pub last_attempted_at: Option<String>,
-    pub last_successful_sync_at: Option<String>,
-    pub next_allowed_sync_at: Option<String>,
-    pub last_sync_error_code: Option<String>,
-    pub last_sync_error_message: Option<String>,
-    pub last_sync_etag: Option<String>,
-    pub last_sync_last_modified: Option<String>,
-    pub sync_cursor: Option<String>,
-    pub rate_limit_remaining: Option<u32>,
-    pub retry_after_at: Option<String>,
-    pub credential_expires_at: Option<String>,
-    pub credential_rotated_at: Option<String>,
 }
 
 fn default_enabled() -> bool {
@@ -220,32 +184,6 @@ fn validate_config(config: &Value) -> Result<String, String> {
     Ok(encoded)
 }
 
-fn validate_timestamp(value: &Option<String>, field: &str) -> Result<Option<String>, String> {
-    match value
-        .as_deref()
-        .map(str::trim)
-        .filter(|value| !value.is_empty())
-    {
-        Some(value) if value.len() <= 64 => Ok(Some(value.to_string())),
-        Some(_) => Err(format!("Integration {field} must not exceed 64 characters")),
-        None => Ok(None),
-    }
-}
-
-fn bounded(value: &Option<String>, limit: usize, field: &str) -> Result<Option<String>, String> {
-    match value
-        .as_deref()
-        .map(str::trim)
-        .filter(|value| !value.is_empty())
-    {
-        Some(value) if value.chars().count() <= limit => Ok(Some(value.to_string())),
-        Some(_) => Err(format!(
-            "Integration {field} must not exceed {limit} characters"
-        )),
-        None => Ok(None),
-    }
-}
-
 fn secret_key(id: &str, auth_type: &str) -> Option<String> {
     (auth_type != "none").then(|| format!("integration:{id}:credential"))
 }
@@ -295,51 +233,100 @@ pub fn list(conn: &Connection) -> Result<Vec<Integration>, String> {
         .map_err(|error| format!("Integration row error: {error}"))
 }
 
-pub fn update(
+#[derive(Debug, Clone)]
+pub struct SyncRuntimeRecord {
+    pub integration: Integration,
+    pub credential_key: Option<String>,
+    pub consecutive_failures: u32,
+}
+
+pub fn sync_runtime_record(
     conn: &Connection,
     id: &str,
-    input: &IntegrationUpdateInput,
+) -> Result<Option<SyncRuntimeRecord>, String> {
+    let sql = format!("SELECT {INTEGRATION_COLS}, credential_key, consecutive_sync_failures FROM integrations WHERE id=?1");
+    conn.query_row(&sql, [id], |row| {
+        Ok(SyncRuntimeRecord {
+            integration: row_to_integration(row)?,
+            credential_key: row.get(26)?,
+            consecutive_failures: row.get::<_, i64>(27)?.max(0) as u32,
+        })
+    })
+    .optional()
+    .map_err(|error| format!("Integration runtime lookup error: {error}"))
+}
+
+pub fn list_sync_candidates(conn: &Connection) -> Result<Vec<Integration>, String> {
+    list(conn)
+}
+
+/// Marks work left pending by a terminated desktop process as safely retryable.
+pub fn recover_interrupted_runs(conn: &Connection, next_allowed: &str) -> Result<usize, String> {
+    conn.execute(
+        "UPDATE integrations SET sync_status='failed', connection_status=CASE WHEN connection_status='syncing' THEN 'degraded' ELSE connection_status END, last_sync_error_code='interrupted', last_sync_error_message='Sync was interrupted when Aether closed', last_sync_finished_at=datetime('now'), next_allowed_sync_at=?1, consecutive_sync_failures=consecutive_sync_failures+1, updated_at=datetime('now') WHERE sync_status IN ('pending','syncing')",
+        params![next_allowed],
+    ).map_err(|error| format!("Integration interrupted recovery error: {error}"))
+}
+
+pub fn runtime_mark_running(
+    conn: &Connection,
+    id: &str,
+    trigger: &str,
+    now: &str,
+) -> Result<bool, String> {
+    let changed = conn.execute(
+        "UPDATE integrations SET sync_status='syncing', connection_status='syncing', last_attempted_at=?1, last_sync_trigger=?2, updated_at=datetime('now') WHERE id=?3 AND enabled=1 AND connection_status NOT IN ('disconnected','unsupported','reauthentication_required','permission_denied','institution_configuration_required')",
+        params![now, trigger, id],
+    ).map_err(|error| format!("Integration runtime start error: {error}"))?;
+    Ok(changed == 1)
+}
+
+pub fn runtime_finish_success(
+    tx: &rusqlite::Transaction<'_>,
+    id: &str,
+    now: &str,
+    etag: Option<&str>,
+    last_modified: Option<&str>,
+    next_allowed: &str,
+) -> Result<(), String> {
+    let changed = tx.execute(
+        "UPDATE integrations SET sync_status='succeeded', connection_status='connected', last_successful_sync_at=?1, last_sync_finished_at=?1, next_allowed_sync_at=?2, last_sync_error_code=NULL, last_sync_error_message=NULL, last_sync_etag=COALESCE(?3,last_sync_etag), last_sync_last_modified=COALESCE(?4,last_sync_last_modified), rate_limit_remaining=NULL, retry_after_at=NULL, consecutive_sync_failures=0, updated_at=datetime('now') WHERE id=?5 AND enabled=1",
+        params![now, next_allowed, etag, last_modified, id],
+    ).map_err(|error| format!("Integration runtime success error: {error}"))?;
+    if changed != 1 {
+        return Err("Integration was disabled before sync completion".to_string());
+    }
+    Ok(())
+}
+
+pub fn runtime_finish_failure(
+    conn: &Connection,
+    id: &str,
+    code: &str,
+    message: &str,
+    next_allowed: &str,
+    connection_status: &str,
+    retry_after: Option<&str>,
+) -> Result<(), String> {
+    conn.execute(
+        "UPDATE integrations SET sync_status='failed', connection_status=?1, last_sync_finished_at=?2, next_allowed_sync_at=?3, retry_after_at=?4, last_sync_error_code=?5, last_sync_error_message=?6, consecutive_sync_failures=consecutive_sync_failures+1, updated_at=datetime('now') WHERE id=?7",
+        params![connection_status, Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true), next_allowed, retry_after, code, message, id],
+    ).map_err(|error| format!("Integration runtime failure error: {error}"))?;
+    Ok(())
+}
+
+pub fn set_enabled(
+    conn: &Connection,
+    id: &str,
+    enabled: bool,
 ) -> Result<Option<Integration>, String> {
-    if get_by_id(conn, id)?.is_none() {
+    let changed = conn.execute(
+        "UPDATE integrations SET enabled=?1, sync_status=CASE WHEN ?1=0 THEN 'idle' ELSE sync_status END, updated_at=datetime('now') WHERE id=?2",
+        params![enabled, id],
+    ).map_err(|error| format!("Integration enabled update error: {error}"))?;
+    if changed == 0 {
         return Ok(None);
     }
-    let advertised_capabilities = validate_tokens(
-        &input.advertised_capabilities,
-        None,
-        "advertised capabilities",
-    )?;
-    let effective_capabilities = validate_tokens(
-        &input.effective_capabilities,
-        None,
-        "effective capabilities",
-    )?;
-    let sync_modes = validate_tokens(&input.sync_modes, Some(SYNC_MODES), "sync modes")?;
-    let sync_config = validate_config(&input.sync_config)?;
-    if !CONNECTION_STATUSES.contains(&input.connection_status.as_str())
-        || !SYNC_STATUSES.contains(&input.sync_status.as_str())
-    {
-        return Err("Invalid Integration status".to_string());
-    }
-    let error_code = bounded(&input.last_sync_error_code, 100, "last sync error code")?;
-    let error_message = bounded(
-        &input.last_sync_error_message,
-        500,
-        "last sync error message",
-    )?;
-    let etag = bounded(&input.last_sync_etag, 512, "ETag")?;
-    let last_modified = bounded(&input.last_sync_last_modified, 128, "Last-Modified")?;
-    let cursor = bounded(&input.sync_cursor, 2048, "sync cursor")?;
-    if input
-        .disconnect_reason
-        .as_deref()
-        .is_some_and(|reason| !["local", "remote_revoke"].contains(&reason))
-    {
-        return Err("Invalid Integration disconnect reason".to_string());
-    }
-    conn.execute(
-        "UPDATE integrations SET enabled=?1, advertised_capabilities_json=?2, effective_capabilities_json=?3, sync_modes_json=?4, sync_config_json=?5, connection_status=?6, sync_status=?7, disconnect_reason=?8, last_attempted_at=?9, last_successful_sync_at=?10, next_allowed_sync_at=?11, last_sync_error_code=?12, last_sync_error_message=?13, last_sync_etag=?14, last_sync_last_modified=?15, sync_cursor=?16, rate_limit_remaining=?17, retry_after_at=?18, credential_expires_at=?19, credential_rotated_at=?20, updated_at=datetime('now') WHERE id=?21",
-        params![input.enabled, serde_json::to_string(&advertised_capabilities).unwrap(), serde_json::to_string(&effective_capabilities).unwrap(), serde_json::to_string(&sync_modes).unwrap(), sync_config, input.connection_status, input.sync_status, input.disconnect_reason, validate_timestamp(&input.last_attempted_at, "last attempted timestamp")?, validate_timestamp(&input.last_successful_sync_at, "last successful sync timestamp")?, validate_timestamp(&input.next_allowed_sync_at, "next allowed sync timestamp")?, error_code, error_message, etag, last_modified, cursor, input.rate_limit_remaining, validate_timestamp(&input.retry_after_at, "retry-after timestamp")?, validate_timestamp(&input.credential_expires_at, "credential expiry timestamp")?, validate_timestamp(&input.credential_rotated_at, "credential rotation timestamp")?, id],
-    ).map_err(|error| format!("Integration update error: {error}"))?;
     get_by_id(conn, id)
 }
 
@@ -383,44 +370,41 @@ mod tests {
     }
 
     #[test]
-    fn updates_sync_lifecycle_and_rejects_unbounded_errors() {
+    fn only_exposes_narrow_enabled_mutation_and_rejects_secret_config() {
         let conn = setup();
         let created = create(&conn, &input()).unwrap();
-        let updated = update(
-            &conn,
-            &created.id,
-            &IntegrationUpdateInput {
-                enabled: false,
-                advertised_capabilities: vec!["events_read".into()],
-                effective_capabilities: vec!["events_read".into()],
-                sync_modes: vec!["manual".into()],
-                sync_config: serde_json::json!({}),
-                connection_status: "connected".into(),
-                sync_status: "succeeded".into(),
-                disconnect_reason: None,
-                last_attempted_at: Some("2026-09-21T12:00:00Z".into()),
-                last_successful_sync_at: Some("2026-09-21T12:00:00Z".into()),
-                next_allowed_sync_at: Some("2026-09-21T13:00:00Z".into()),
-                last_sync_error_code: None,
-                last_sync_error_message: None,
-                last_sync_etag: Some("abc".into()),
-                last_sync_last_modified: None,
-                sync_cursor: Some("cursor".into()),
-                rate_limit_remaining: Some(20),
-                retry_after_at: None,
-                credential_expires_at: Some("2026-10-01T00:00:00Z".into()),
-                credential_rotated_at: None,
-            },
-        )
-        .unwrap()
-        .unwrap();
+        let updated = set_enabled(&conn, &created.id, false).unwrap().unwrap();
         assert!(!updated.enabled);
-        assert_eq!(updated.sync_status, "succeeded");
+        assert_eq!(updated.sync_status, "idle");
         let mut invalid = input();
         invalid.sync_modes = vec!["unknown".into()];
         assert!(create(&conn, &invalid).is_err());
         invalid.sync_modes = vec!["manual".into()];
         invalid.sync_config = serde_json::json!({"feedUrl": "https://secret.example/feed"});
         assert!(create(&conn, &invalid).is_err());
+    }
+    #[test]
+    fn recovers_interrupted_pending_and_syncing_without_touching_data() {
+        let conn = setup();
+        let first = create(&conn, &input()).unwrap();
+        let second = create(&conn, &input()).unwrap();
+        conn.execute(
+            "UPDATE integrations SET sync_status='pending' WHERE id=?1",
+            [&first.id],
+        )
+        .unwrap();
+        conn.execute("UPDATE integrations SET sync_status='syncing', connection_status='syncing' WHERE id=?1", [&second.id]).unwrap();
+        assert_eq!(
+            recover_interrupted_runs(&conn, "2026-01-01T00:01:00Z").unwrap(),
+            2
+        );
+        for id in [&first.id, &second.id] {
+            let item = get_by_id(&conn, id).unwrap().unwrap();
+            assert_eq!(item.sync_status, "failed");
+            assert_eq!(
+                item.next_allowed_sync_at.as_deref(),
+                Some("2026-01-01T00:01:00Z")
+            );
+        }
     }
 }

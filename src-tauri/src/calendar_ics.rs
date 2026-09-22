@@ -378,7 +378,35 @@ pub enum FetchResult {
         bytes: Vec<u8>,
         etag: Option<String>,
         last_modified: Option<String>,
+        retry_after_at: Option<String>,
+        rate_limit_reset_at: Option<String>,
     },
+    RateLimited {
+        retry_after_at: Option<String>,
+        rate_limit_reset_at: Option<String>,
+    },
+}
+pub fn retry_after_at(value: Option<&str>, now: DateTime<Utc>) -> Option<String> {
+    let value = value?.trim();
+    let at = value
+        .parse::<i64>()
+        .ok()
+        .and_then(|seconds| {
+            seconds
+                .checked_abs()
+                .map(|_| now + Duration::seconds(seconds.max(0)))
+        })
+        .or_else(|| {
+            DateTime::parse_from_rfc2822(value)
+                .ok()
+                .map(|time| time.with_timezone(&Utc))
+        })?;
+    Some(at.to_rfc3339_opts(chrono::SecondsFormat::Secs, true))
+}
+pub fn rate_limit_reset_at(value: Option<&str>) -> Option<String> {
+    let seconds = value?.trim().parse::<i64>().ok()?;
+    DateTime::from_timestamp(seconds, 0)
+        .map(|at| at.to_rfc3339_opts(chrono::SecondsFormat::Secs, true))
 }
 pub async fn fetch(
     url: &str,
@@ -410,6 +438,25 @@ pub async fn fetch(
     if response.status() == reqwest::StatusCode::NOT_MODIFIED {
         return Ok(FetchResult::NotModified);
     };
+    let retry_after_at = retry_after_at(
+        response
+            .headers()
+            .get(reqwest::header::RETRY_AFTER)
+            .and_then(|v| v.to_str().ok()),
+        Utc::now(),
+    );
+    let rate_limit_reset_at = rate_limit_reset_at(
+        response
+            .headers()
+            .get("x-ratelimit-reset")
+            .and_then(|v| v.to_str().ok()),
+    );
+    if response.status() == reqwest::StatusCode::TOO_MANY_REQUESTS {
+        return Ok(FetchResult::RateLimited {
+            retry_after_at,
+            rate_limit_reset_at,
+        });
+    }
     if !response.status().is_success() {
         return Err("feed_http_error".into());
     };
@@ -442,6 +489,8 @@ pub async fn fetch(
         bytes,
         etag,
         last_modified,
+        retry_after_at,
+        rate_limit_reset_at,
     })
 }
 
@@ -487,5 +536,21 @@ mod tests {
             .is_err()
         );
         assert!(normalize(&vec![b'x'; MAX_FEED_BYTES + 1], "c", Utc::now()).is_err());
+    }
+    #[test]
+    fn parses_retry_after_delta_http_date_and_reset() {
+        let now = Utc.with_ymd_and_hms(2026, 1, 1, 0, 0, 0).unwrap();
+        assert_eq!(
+            retry_after_at(Some("30"), now).as_deref(),
+            Some("2026-01-01T00:00:30Z")
+        );
+        assert_eq!(
+            retry_after_at(Some("Thu, 01 Jan 2026 00:01:00 GMT"), now).as_deref(),
+            Some("2026-01-01T00:01:00Z")
+        );
+        assert_eq!(
+            rate_limit_reset_at(Some("1767225660")).as_deref(),
+            Some("2026-01-01T00:01:00Z")
+        );
     }
 }

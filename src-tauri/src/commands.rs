@@ -1026,14 +1026,34 @@ pub fn list_integrations(
 }
 
 #[tauri::command]
-pub fn update_integration(
+pub fn set_integration_enabled(
     db: State<Database>,
+    runtime: State<crate::integration_sync::IntegrationSyncRuntime>,
     id: String,
-    input: repositories::integrations::IntegrationUpdateInput,
+    enabled: bool,
 ) -> Result<Option<repositories::integrations::Integration>, String> {
-    with_conn(&db.conn, |conn| {
-        repositories::integrations::update(conn, &id, &input)
-    })
+    let integration = with_conn(&db.conn, |conn| {
+        repositories::integrations::set_enabled(conn, &id, enabled)
+    })?;
+    if !enabled {
+        runtime.cancel_connection(&id);
+    }
+    Ok(integration)
+}
+
+#[tauri::command]
+pub fn request_integration_sync(
+    runtime: State<crate::integration_sync::IntegrationSyncRuntime>,
+    connection_id: String,
+) -> crate::integration_sync::SyncRequestResult {
+    runtime.request(connection_id, crate::integration_sync::SyncTrigger::Manual)
+}
+
+#[tauri::command]
+pub fn get_integration_sync_runtime_status(
+    runtime: State<crate::integration_sync::IntegrationSyncRuntime>,
+) -> crate::integration_sync::RuntimeStatus {
+    runtime.status()
 }
 
 // Feed URLs are accepted only by this explicit configuration boundary and are never returned.
@@ -1059,10 +1079,14 @@ pub async fn validate_subscribed_calendar_url(feed_url: String) -> Result<IcsVal
         FetchResult::NotModified => {
             Err("Calendar feed validation needs a complete response".into())
         }
+        FetchResult::RateLimited { .. } => {
+            Err("Calendar provider temporarily limited validation".into())
+        }
         FetchResult::Complete {
             bytes,
             etag,
             last_modified,
+            ..
         } => {
             let _conditional_metadata = (etag.as_deref(), last_modified.as_deref());
             Ok(calendar_ics::validate(&bytes))

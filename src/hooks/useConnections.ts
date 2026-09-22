@@ -1,9 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import * as db from '@/lib/db/tauri'
-import {
-  integrationUpdateWithEnabled,
-  safeErrorSummary,
-} from '@/lib/integrations/presentation'
+import { safeErrorSummary } from '@/lib/integrations/presentation'
 import type { Integration } from '@/lib/db/types'
 
 const isTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window
@@ -47,10 +44,7 @@ export function useConnections() {
     setUpdatingId(integration.id)
     setError(null)
     try {
-      const updated = await db.updateIntegration(
-        integration.id,
-        integrationUpdateWithEnabled(integration, enabled),
-      )
+      const updated = await db.setIntegrationEnabled(integration.id, enabled)
       if (!updated) throw new Error('This connection is no longer available.')
       setConnections((current) =>
         current.map((item) => (item.id === updated.id ? updated : item)),

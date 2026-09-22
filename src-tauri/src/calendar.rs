@@ -2,5 +2,5 @@
 //! into `ExternalEventInput` and call the repository reconciliation API.
 #[allow(unused_imports)]
 pub use crate::db::repositories::external_events::{
-    reconcile, ExternalEventInput, ReconciliationMode,
+    reconcile, reconcile_in_transaction, ExternalEventInput, ReconciliationMode,
 };

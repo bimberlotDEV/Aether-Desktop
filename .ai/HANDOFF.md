@@ -7,121 +7,17 @@
 | Field | Value |
 | --- | --- |
 | Schema version | 3 |
-| Task ID | `None` |
-| Status | `idle` |
-| Owner | `None` |
-| Last updated | 2026-09-21 |
-| Related milestone | `None` |
-| Classification | `None` |
-| Branch / worktree | `None` |
+| Task ID | None |
+| Status | idle |
+| Owner | Codex |
+| Last updated | 2026-09-22 |
 
-## Objective
+## Idle state
 
-None — no active planned task.
+INT-SYNC-001 is complete and its implementation evidence is recorded in `.ai/CHANGELOG.md`.
 
-## Context
+Automated validation is green: frontend tests 111/111 and Rust tests 123/123, including deterministic SQLite-backed runtime host/lifecycle coverage.
 
-None.
+Desktop smoke remains environment-blocked, not passed: this session had no targetable Aether window or configured safe ICS connection. The pending manual matrix is startup sync, tray hide, refocus/resume, manual request, disable during active sync, and explicit quit/shutdown.
 
-## Success criteria
-
-None.
-
-## In scope
-
-None.
-
-## Allowed paths
-
-None.
-
-## Out of scope
-
-None.
-
-## Architecture constraints
-
-None.
-
-## Dependencies
-
-None.
-
-## Risks and safeguards
-
-None.
-
-## Rollback considerations
-
-None.
-
-## Required validation
-
-None.
-
-## Independent review requirement
-
-| Field | Value |
-| --- | --- |
-| Required | `No` |
-| Reason | `None` |
-| Reviewer scope | `None` |
-
-## Human decisions required
-
-None.
-
-## Blocking decisions
-
-None.
-
-## Worktree / ownership gate
-
-| Check | State |
-| --- | --- |
-| Correct branch/worktree confirmed | `N/A` |
-| `git status` inspected | `N/A` |
-| User-owned changes identified | `N/A` |
-| Parallel task overlap checked | `N/A` |
-| Serialization points identified | `N/A` |
-
-## Readiness review
-
-Idle — no active planned task.
-
-## Implementation log
-
-None.
-
-## Verification evidence
-
-None.
-
-## Acceptance evidence
-
-None.
-
-## Self-review
-
-Not applicable — idle.
-
-## Independent review findings
-
-None.
-
-## Completion evidence
-
-None.
-
-## Publication state
-
-| Field | Value |
-| --- | --- |
-| Commit | `None` |
-| Remote branch | `None` |
-| Draft PR | `None` |
-| Exact-head CI | `None` |
-
-## Next task
-
-None.
+No planned implementation task is active.

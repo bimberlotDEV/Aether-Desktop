@@ -1,4 +1,3 @@
-import type { Integration, IntegrationUpdateInput } from '@/lib/db/types'
 
 export const connectionStatusDetails = {
   connected: {
@@ -101,32 +100,4 @@ export function formatConnectionTime(value: string | null) {
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(date)
-}
-
-export function integrationUpdateWithEnabled(
-  integration: Integration,
-  enabled: boolean,
-): IntegrationUpdateInput {
-  return {
-    enabled,
-    advertisedCapabilities: integration.advertised_capabilities,
-    effectiveCapabilities: integration.effective_capabilities,
-    syncModes: integration.sync_modes,
-    syncConfig: integration.sync_config,
-    connectionStatus: integration.connection_status,
-    syncStatus: integration.sync_status,
-    disconnectReason: integration.disconnect_reason,
-    lastAttemptedAt: integration.last_attempted_at,
-    lastSuccessfulSyncAt: integration.last_successful_sync_at,
-    nextAllowedSyncAt: integration.next_allowed_sync_at,
-    lastSyncErrorCode: integration.last_sync_error_code,
-    lastSyncErrorMessage: integration.last_sync_error_message,
-    lastSyncEtag: integration.last_sync_etag,
-    lastSyncLastModified: integration.last_sync_last_modified,
-    syncCursor: integration.sync_cursor,
-    rateLimitRemaining: integration.rate_limit_remaining,
-    retryAfterAt: integration.retry_after_at,
-    credentialExpiresAt: integration.credential_expires_at,
-    credentialRotatedAt: integration.credential_rotated_at,
-  }
 }
