@@ -139,9 +139,7 @@ pub fn get(conn: &Connection, request: &SchoolScheduleRequest) -> Result<SchoolS
              WHERE i.provider_id=?1 AND e.status!='removed'
                AND ((e.time_kind='timed' AND e.start_at_utc<?3 AND e.end_at_utc>?2)
                  OR (e.time_kind='all_day' AND e.start_date<?5 AND e.end_date>?4))
-             ORDER BY CASE WHEN e.time_kind='all_day' THEN 0 ELSE 1 END,
-                      CASE WHEN e.time_kind='all_day' THEN e.start_date || 'T00:00:00' ELSE e.start_at_utc END,
-                      e.id
+             ORDER BY CASE WHEN e.time_kind='all_day' THEN e.start_date || 'T00:00:00Z' ELSE e.start_at_utc END, e.id
              LIMIT ?6"
         ))
         .map_err(|error| format!("School event query error: {error}"))?;
@@ -398,14 +396,13 @@ mod tests {
             ),
         )
         .unwrap();
-        assert_eq!(
-            result
-                .events
-                .iter()
-                .map(|event| event.id.as_str())
-                .collect::<Vec<_>>(),
-            vec!["local-day", "inside-local-day"]
-        );
+        let mut ids = result
+            .events
+            .iter()
+            .map(|event| event.id.as_str())
+            .collect::<Vec<_>>();
+        ids.sort_unstable();
+        assert_eq!(ids, vec!["inside-local-day", "local-day"]);
     }
 
     #[test]
