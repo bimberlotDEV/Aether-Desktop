@@ -95,6 +95,7 @@ The current verified product foundation includes:
 * onboarding;
 * native subscribed-calendar ingestion and a read-only MyTimetable connector;
 * native Integration Sync runtime with deterministic lifecycle, retry-gating, recovery, and atomic Calendar/Integration completion coverage;
+* ICS-first Today, Week, and Upcoming timetable views in the existing parent School Space, scoped to a persisted user-selected group from bounded local normalized data;
 * automated quality gates.
 
 Aether remains local-first.
@@ -171,6 +172,7 @@ There is no requirement for a cloud account to use the core product.
 | `RELEASE-TRUST-001`  | Trusted Releases & Updates            | `complete` | Owner-gated release tooling and Rust-owned stable-update architecture are implemented.                                                                      |
 | `ONBOARD-001`        | Onboarding & UX                       | `complete` | First-run onboarding and upgrade-safe configuration are implemented and verified.                                                                           |
 | `SCHOOL-MTT-001`     | MyTimetable connector                 | `complete` | Read-only ICS setup, secret handling, CAL-ICS safety, shared synchronization, reconciliation, and Connections management are covered by automated evidence. |
+| `SCHOOL-SPACE-001`   | ICS-first School timetable            | `complete` | Parent School Spaces expose group-scoped local Today, Week, and Upcoming views with truthful conflicts, cancellations, all-day timing, and sync freshness. |
 
 ---
 
@@ -398,9 +400,9 @@ Potential slices include:
 
 1. Integration Core (INT-CORE-001 complete)
 2. Connections settings (INT-CONN-001 complete)
-3. external calendar event model
-4. MyTimetable integration
-5. School Calendar
+3. external calendar event model (CAL-CORE-001 complete)
+4. MyTimetable integration (SCHOOL-MTT-001 complete)
+5. School Calendar (SCHOOL-SPACE-001 ICS-first timetable complete)
 6. Brightspace integration
 7. Pulse calendar/deadline integration
 8. GitHub integration

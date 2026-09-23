@@ -251,11 +251,11 @@ impl RuntimeHost for TauriRuntimeHost {
                 let _safe_provider_gate = latest_allowed(retry_after_at, rate_limit_reset_at);
                 let now = Utc::now();
                 let events = if record.integration.provider_id == PROVIDER_MY_TIMETABLE {
-                    calendar_ics::normalize_with_classifier(
+                    calendar_ics::normalize_with_metadata(
                         &bytes,
                         &record.integration.id,
                         now,
-                        crate::my_timetable::classify,
+                        crate::my_timetable::metadata,
                     )
                 } else {
                     calendar_ics::normalize(&bytes, &record.integration.id, now)

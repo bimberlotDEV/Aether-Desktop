@@ -424,6 +424,22 @@ const MIGRATIONS: &[(&str, &str)] = &[
             ON integrations(enabled, next_allowed_sync_at);
         ",
     ),
+    // Migration 015: provider-neutral multi-group membership for normalized events.
+    // Cached rows are preserved. MyTimetable validators are cleared so the next eligible
+    // synchronization receives a complete feed and can populate structured group metadata.
+    (
+        "015_external_event_groups",
+        "
+        ALTER TABLE external_events ADD COLUMN group_references_json TEXT NOT NULL DEFAULT '[]'
+            CHECK(json_valid(group_references_json) AND json_type(group_references_json) = 'array');
+        UPDATE integrations
+        SET last_sync_etag=NULL,
+            last_sync_last_modified=NULL,
+            next_allowed_sync_at=NULL,
+            updated_at=datetime('now')
+        WHERE provider_id='my_timetable';
+        ",
+    ),
 ];
 
 pub fn known_names() -> impl Iterator<Item = &'static str> {
@@ -1273,5 +1289,36 @@ mod tests {
             .unwrap();
         assert!(columns.contains(&"credential_key".to_string()));
         assert!(columns.contains(&"last_successful_sync_at".to_string()));
+    }
+
+    #[test]
+    fn external_event_group_upgrade_preserves_cache_and_forces_full_mytimetable_resync() {
+        let conn = in_memory_db();
+        let tx = conn.unchecked_transaction().unwrap();
+        ensure_migrations_table(&tx).unwrap();
+        for (name, sql) in &MIGRATIONS[..MIGRATIONS.len() - 1] {
+            apply_migration(&tx, name, sql).unwrap();
+        }
+        tx.execute(
+            "INSERT INTO integrations(id,provider_id,auth_type,last_sync_etag,last_sync_last_modified,next_allowed_sync_at) VALUES ('mtt','my_timetable','ics_feed','etag','modified','2026-10-01T00:00:00Z')",
+            [],
+        )
+        .unwrap();
+        tx.execute(
+            "INSERT INTO external_events(id,connection_id,external_id,title,time_kind,start_at_utc,end_at_utc,timezone,event_kind,status,ingestion_provenance,source_version,content_hash,first_seen_at,last_seen_at,synchronized_at) VALUES ('cached','mtt','cached','Cached lesson','timed','2026-09-23T09:00:00Z','2026-09-23T10:00:00Z','Europe/Berlin','lesson','active','ics','1','hash','2026-09-23T00:00:00Z','2026-09-23T00:00:00Z','2026-09-23T00:00:00Z')",
+            [],
+        )
+        .unwrap();
+        tx.commit().unwrap();
+
+        run(&conn).unwrap();
+        let row: (i64, String, Option<String>, Option<String>, Option<String>) = conn
+            .query_row(
+                "SELECT count(*), min(group_references_json), min(i.last_sync_etag), min(i.last_sync_last_modified), min(i.next_allowed_sync_at) FROM external_events e JOIN integrations i ON i.id=e.connection_id WHERE e.id='cached'",
+                [],
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?, row.get(4)?)),
+            )
+            .unwrap();
+        assert_eq!(row, (1, "[]".into(), None, None, None));
     }
 }

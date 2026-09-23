@@ -50,6 +50,8 @@ import type {
   IntegrationCreateInput,
   ExternalEvent,
   ExternalEventRange,
+  SchoolSchedule,
+  SchoolScheduleRequest,
   SubscribedCalendar,
   SubscribedCalendarInput,
   IcsValidation,
@@ -58,6 +60,8 @@ import {
   BetaDiagnosticReportSchema,
   ExternalEventRangeSchema,
   ExternalEventSchema,
+  SchoolScheduleRequestSchema,
+  SchoolScheduleSchema,
   IntegrationCreateInputSchema,
   IntegrationSchema,
   IntegrationSyncRequestResultSchema,
@@ -626,6 +630,22 @@ export async function listExternalEvents(
   return ExternalEventSchema.array().parse(
     await invoke('list_external_events', { range: parsed }),
   )
+}
+
+export async function getSchoolSchedule(
+  request: SchoolScheduleRequest,
+): Promise<SchoolSchedule> {
+  const parsed = SchoolScheduleRequestSchema.parse(request)
+  return SchoolScheduleSchema.parse(
+    await invoke('get_school_schedule', { request: parsed }),
+  )
+}
+
+export async function setSchoolGroup(
+  spaceId: string,
+  selectedGroup: string | null,
+): Promise<void> {
+  await invoke('set_school_group', { spaceId, selectedGroup })
 }
 
 export async function createIntegration(

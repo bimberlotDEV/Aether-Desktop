@@ -24,6 +24,7 @@ export const ExternalEventSchema = z.object({
   timezone: z.string(),
   location: z.string().nullable(),
   course_reference: z.string().nullable(),
+  group_references: z.array(z.string()),
   event_kind: z.string(),
   status: z.enum(['active', 'cancelled', 'removed']),
   source_url: z.string().url().nullable(),
@@ -113,6 +114,37 @@ export const IntegrationSchema = z.object({
   updated_at: z.string(),
 })
 export type Integration = z.infer<typeof IntegrationSchema>
+export const SchoolScheduleRequestSchema = z
+  .object({
+    spaceId: z.string().min(1).max(64),
+    startUtc: z.string().datetime(),
+    endUtc: z.string().datetime(),
+    startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    limit: z.number().int().min(1).max(500).optional(),
+  })
+  .refine(
+    (request) => request.startUtc < request.endUtc && request.startDate < request.endDate,
+    { message: 'Schedule range end must be after start' },
+  )
+export type SchoolScheduleRequest = z.input<typeof SchoolScheduleRequestSchema>
+export const SchoolCalendarSourceSchema = z.object({
+  connection_id: z.string(),
+  enabled: z.boolean(),
+  connection_status: IntegrationConnectionStatusSchema,
+  sync_status: IntegrationSyncStatusSchema,
+  last_successful_sync_at: z.string().nullable(),
+  last_sync_error_code: z.string().nullable(),
+  last_sync_error_message: z.string().nullable(),
+})
+export type SchoolCalendarSource = z.infer<typeof SchoolCalendarSourceSchema>
+export const SchoolScheduleSchema = z.object({
+  events: z.array(ExternalEventSchema),
+  sources: z.array(SchoolCalendarSourceSchema),
+  group_options: z.array(z.string()),
+  selected_group: z.string().nullable(),
+})
+export type SchoolSchedule = z.infer<typeof SchoolScheduleSchema>
 export const IntegrationCreateInputSchema = z.object({
   providerId: z.string().trim().min(1).max(100),
   enabled: z.boolean().optional(),

@@ -7,6 +7,7 @@ pub mod memory;
 pub mod notes;
 pub mod profile;
 pub mod pulse;
+pub mod school_schedule;
 pub mod search;
 pub mod settings;
 pub mod sources;

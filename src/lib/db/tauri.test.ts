@@ -62,6 +62,8 @@ import {
   createIntegration,
   listIntegrations,
   listExternalEvents,
+  getSchoolSchedule,
+  setSchoolGroup,
 } from '@/lib/db/tauri'
 
 describe('Tauri database boundary', () => {
@@ -163,6 +165,40 @@ describe('Tauri database boundary', () => {
 
     expect(invoke).toHaveBeenCalledWith('list_external_events', {
       range: expect.objectContaining({ connectionId: 'integration-1', limit: 50 }),
+    })
+  })
+
+  it('loads the School schedule through one bounded local read command', async () => {
+    invoke.mockResolvedValueOnce({
+      events: [],
+      sources: [],
+      group_options: [],
+      selected_group: null,
+    })
+    await getSchoolSchedule({
+      spaceId: 'school-space',
+      startUtc: '2026-09-20T22:00:00Z',
+      endUtc: '2026-12-22T23:00:00Z',
+      startDate: '2026-09-21',
+      endDate: '2026-12-23',
+      limit: 250,
+    })
+
+    expect(invoke).toHaveBeenCalledWith('get_school_schedule', {
+      request: {
+        spaceId: 'school-space',
+        startUtc: '2026-09-20T22:00:00Z',
+        endUtc: '2026-12-22T23:00:00Z',
+        startDate: '2026-09-21',
+        endDate: '2026-12-23',
+        limit: 250,
+      },
+    })
+
+    await setSchoolGroup('school-space', 'ADSAI-ZM-1.a')
+    expect(invoke).toHaveBeenLastCalledWith('set_school_group', {
+      spaceId: 'school-space',
+      selectedGroup: 'ADSAI-ZM-1.a',
     })
   })
 
