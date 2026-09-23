@@ -26,6 +26,17 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-09-23 — `SCHOOL-MTT-001` — Secure MyTimetable subscribed-calendar connector
+
+- **Type:** Feature, security, integration, and test
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review
+- **Summary:** Added a read-only MyTimetable ICS connector with native-only bearer-URL storage, truthful Connections setup/replace/refresh/disconnect UI, structured-category classification, and shared Calendar/Integration lifecycle composition.
+- **Files:** `src-tauri/src/my_timetable.rs`, shared CAL-ICS and Integration Sync seams, typed Connections IPC/UI, and `.ai/*` control records.
+- **Verification:** `pnpm typecheck`, `pnpm lint`, `pnpm test` (35 files / 118 tests), `pnpm build`, `cargo fmt --check`, strict Clippy, `cargo test` (143 tests), and `git diff --check` — Pass.
+- **Decisions/deviations:** The subscription URL is a DPAPI-protected bearer secret and never crosses public IPC/status/UI. DNS-resolved destinations and every manual HTTPS redirect hop are validated by shared CAL-ICS; provider code adds no fetcher, parser, scheduler, reconciliation, or destructive cleanup. Real desktop/Tauri smoke passed: a MyTimetable connection reached Connected and a successful sync imported 205 local external events, including Programmeren 1, Datalab, Machine Learning, and Wiskunde 1. Manual refresh created no duplicate occurrences, and a full desktop restart preserved the connection and imported data.
+- **Follow-up:** `SCHOOL-BSP-001` remains separately scoped and requires design.
+
 ## 2026-09-22 — INT-SYNC-001 — Native Integration synchronization runtime
 
 Implemented native Integration sync scheduling, eligibility gates, recovery, atomic Calendar/Integration completion, cancellation-aware bounded shutdown, and a minimal Tauri-host lifecycle seam.

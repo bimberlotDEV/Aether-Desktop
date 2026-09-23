@@ -1,5 +1,6 @@
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
+use std::net::IpAddr;
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
@@ -38,6 +39,36 @@ pub fn validate_feed_url(url: &str) -> Result<(), String> {
         || parsed.password().is_some()
     {
         return Err("Calendar feed URL must be HTTPS without embedded credentials".to_string());
+    }
+    let host = parsed
+        .host_str()
+        .unwrap_or_default()
+        .trim_end_matches('.')
+        .to_ascii_lowercase();
+    if host == "localhost" || host.ends_with(".localhost") || host.ends_with(".local") {
+        return Err("Calendar feed URL must use a public HTTPS destination".to_string());
+    }
+    if let Ok(ip) = host.trim_matches(['[', ']']).parse::<IpAddr>() {
+        let unsafe_ip = match ip {
+            IpAddr::V4(ip) => {
+                ip.is_private()
+                    || ip.is_loopback()
+                    || ip.is_link_local()
+                    || ip.is_unspecified()
+                    || ip.is_multicast()
+            }
+            IpAddr::V6(ip) => {
+                let first = ip.octets()[0];
+                ip.is_loopback()
+                    || ip.is_unspecified()
+                    || ip.is_multicast()
+                    || (first == 0xfe && (ip.octets()[1] & 0xc0) == 0x80)
+                    || (first & 0xfe) == 0xfc
+            }
+        };
+        if unsafe_ip {
+            return Err("Calendar feed URL must use a public HTTPS destination".to_string());
+        }
     }
     if url.len() > 2048 {
         return Err("Calendar feed URL is too long".to_string());
@@ -97,4 +128,24 @@ pub fn credential_key(conn: &Connection, connection_id: &str) -> Result<String, 
     .map_err(|_| "Calendar subscription credential lookup failed".to_string())?
     .flatten()
     .ok_or_else(|| "Calendar subscription is not configured".to_string())
+}
+
+#[cfg(test)]
+mod url_tests {
+    use super::*;
+
+    #[test]
+    fn rejects_non_public_or_credential_bearing_urls() {
+        for value in [
+            "http://example.com/feed.ics",
+            "https://user:pass@example.com/feed.ics",
+            "https://localhost/feed.ics",
+            "https://127.0.0.1/feed.ics",
+            "https://169.254.1.2/feed.ics",
+            "https://[::1]/feed.ics",
+        ] {
+            assert!(validate_feed_url(value).is_err(), "{value}");
+        }
+        assert!(validate_feed_url("https://calendar.example.edu/feed.ics").is_ok());
+    }
 }

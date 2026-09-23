@@ -7,7 +7,7 @@
 | Field                   | Value                              |
 | ----------------------- | ---------------------------------- |
 | Schema version          | 2                                  |
-| Last updated            | 2026-09-21                         |
+| Last updated            | 2026-09-23                         |
 | Updated by              | Codex                              |
 | Repository              | `bimberlotDEV/Aether-Desktop`      |
 | Product maturity        | Alpha                              |
@@ -93,15 +93,16 @@ The current verified product foundation includes:
 * release tooling;
 * update-ready trusted-release infrastructure;
 * onboarding;
-* native subscribed-calendar ingestion primitives (publication pending);
+* native subscribed-calendar ingestion and a read-only MyTimetable connector;
 * native Integration Sync runtime with deterministic lifecycle, retry-gating, recovery, and atomic Calendar/Integration completion coverage;
 * automated quality gates.
 
 Aether remains local-first.
 
-Integration Sync desktop smoke remains environment-blocked in the current Codex
-session: no targetable Aether window or configured safe ICS connection is
-available. This does not replace the required real desktop verification.
+MyTimetable desktop/Tauri smoke passed: a configured connection reached
+Connected, synchronized 205 local external events, completed manual refresh
+without duplicate occurrences, and persisted both connection and imported data
+across a full desktop restart.
 
 There is no requirement for a cloud account to use the core product.
 
@@ -169,6 +170,7 @@ There is no requirement for a cloud account to use the core product.
 | `BACKUP-RESTORE-001` | Portable backup and safe restore      | `complete` | Portable archives include managed Vault bytes and use verified, approval-gated, rollback-safe restore.                                                      |
 | `RELEASE-TRUST-001`  | Trusted Releases & Updates            | `complete` | Owner-gated release tooling and Rust-owned stable-update architecture are implemented.                                                                      |
 | `ONBOARD-001`        | Onboarding & UX                       | `complete` | First-run onboarding and upgrade-safe configuration are implemented and verified.                                                                           |
+| `SCHOOL-MTT-001`     | MyTimetable connector                 | `complete` | Read-only ICS setup, secret handling, CAL-ICS safety, shared synchronization, reconciliation, and Connections management are covered by automated evidence. |
 
 ---
 
