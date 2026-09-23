@@ -99,9 +99,10 @@ The current verified product foundation includes:
 
 Aether remains local-first.
 
-MyTimetable desktop/Tauri smoke remains unperformed in the current Codex session:
-no targetable Aether window or configured safe MyTimetable subscription is
-available. This does not replace the required real desktop verification.
+MyTimetable desktop/Tauri smoke passed: a configured connection reached
+Connected, synchronized 205 local external events, completed manual refresh
+without duplicate occurrences, and persisted both connection and imported data
+across a full desktop restart.
 
 There is no requirement for a cloud account to use the core product.
 
