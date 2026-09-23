@@ -16,4 +16,4 @@ The shared provider lifecycle removes MyTimetable/Brightspace duplication; runti
 
 ## Exact resume point
 
-Publish the verified task through `scripts/publish-task.ps1`, attach the draft PR, and report the exact manual desktop smoke matrix. No live Brightspace bearer URL was available for a real-provider smoke in this session.
+Implementation commit `a9347c8` is pushed to `origin/agent/brightspace`; draft PR `#59` is open and its Windows quality gate has started. No live Brightspace bearer URL was available for a real-provider smoke in this session.

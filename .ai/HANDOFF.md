@@ -166,7 +166,7 @@ Pass. Final diff is limited to the approved native provider/runtime/Integration 
 
 | Field | Value |
 | --- | --- |
-| Commit | `None` |
-| Remote branch | `Pending publication` |
-| Draft PR | `Pending publication` |
-| Exact-head CI | `Pending` |
+| Commit | `a9347c80db5b1584ad785fd6a552e8826614b81e` |
+| Remote branch | `origin/agent/brightspace` |
+| Draft PR | `#59` — https://github.com/bimberlotDEV/Aether-Desktop/pull/59 |
+| Exact-head CI | Windows quality gate started; completion not required to open the draft PR. |
