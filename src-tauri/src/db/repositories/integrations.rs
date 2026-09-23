@@ -330,6 +330,21 @@ pub fn set_enabled(
     get_by_id(conn, id)
 }
 
+/// Records that a connection has completed its native configuration flow.
+/// Configuration is distinct from a successful synchronization, so this does
+/// not change sync status or successful-sync metadata.
+pub fn mark_configured(conn: &Connection, id: &str) -> Result<Option<Integration>, String> {
+    let changed = conn.execute(
+        "UPDATE integrations SET connection_status='connected', disconnect_reason=NULL, updated_at=datetime('now') WHERE id=?1",
+        [id],
+    )
+    .map_err(|error| format!("Integration configuration update error: {error}"))?;
+    if changed == 0 {
+        return Ok(None);
+    }
+    get_by_id(conn, id)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -382,6 +397,16 @@ mod tests {
         invalid.sync_modes = vec!["manual".into()];
         invalid.sync_config = serde_json::json!({"feedUrl": "https://secret.example/feed"});
         assert!(create(&conn, &invalid).is_err());
+    }
+
+    #[test]
+    fn marks_persisted_configuration_connected_without_claiming_sync_success() {
+        let conn = setup();
+        let created = create(&conn, &input()).unwrap();
+        let configured = mark_configured(&conn, &created.id).unwrap().unwrap();
+        assert_eq!(configured.connection_status, "connected");
+        assert_eq!(configured.sync_status, "idle");
+        assert!(configured.last_successful_sync_at.is_none());
     }
     #[test]
     fn recovers_interrupted_pending_and_syncing_without_touching_data() {

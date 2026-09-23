@@ -76,8 +76,21 @@ pub async fn connect(
     runtime: &IntegrationSyncRuntime,
     url: String,
 ) -> Result<integrations::Integration, String> {
+    connect_with_validation(db, runtime, url, |url| async move { validate(&url).await }).await
+}
+
+async fn connect_with_validation<F, Fut>(
+    db: &Database,
+    runtime: &IntegrationSyncRuntime,
+    url: String,
+    validate_feed: F,
+) -> Result<integrations::Integration, String>
+where
+    F: FnOnce(String) -> Fut,
+    Fut: Future<Output = Result<IcsValidation, String>>,
+{
     candidate(&url)?;
-    let inspected = validate(&url).await?;
+    let inspected = validate_feed(url.clone()).await?;
     if !inspected.usable {
         return Err("The subscription did not contain usable calendar data.".into());
     }
@@ -124,6 +137,14 @@ pub async fn connect(
         }
         return Err("Calendar subscription secret could not be stored".into());
     }
+    let integration = {
+        let conn = db
+            .conn
+            .lock()
+            .map_err(|_| "Local connection state is unavailable".to_string())?;
+        integrations::mark_configured(&conn, &integration.id)?
+            .ok_or_else(|| "MyTimetable connection was not found".to_string())?
+    };
     let _ = runtime.request(
         integration.id.clone(),
         crate::integration_sync::SyncTrigger::Manual,
@@ -162,10 +183,21 @@ where
         return Err("The subscription did not contain usable calendar data.".into());
     }
     replace_validated_secret(db, connection_id, &url)?;
+    mark_configured(db, connection_id)?;
     let _ = runtime.request(
         connection_id.to_string(),
         crate::integration_sync::SyncTrigger::Manual,
     );
+    Ok(())
+}
+
+fn mark_configured(db: &Database, connection_id: &str) -> Result<(), String> {
+    let conn = db
+        .conn
+        .lock()
+        .map_err(|_| "Local connection state is unavailable".to_string())?;
+    integrations::mark_configured(&conn, connection_id)?
+        .ok_or_else(|| "MyTimetable connection was not found".to_string())?;
     Ok(())
 }
 
@@ -508,6 +540,19 @@ mod tests {
             .unwrap()
     }
 
+    fn usable_validation() -> IcsValidation {
+        IcsValidation {
+            usable: true,
+            event_count: 1,
+            error_code: None,
+            display_name: None,
+            covered_start: None,
+            covered_end: None,
+            public_host: None,
+            warnings: vec![],
+        }
+    }
+
     #[test]
     fn profile_is_read_only_and_manual_only() {
         let value = profile();
@@ -534,35 +579,97 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn successful_connect_marks_configuration_connected_before_runtime_starts() {
+        let (db, _) = test_db();
+        let db = Arc::new(db);
+        let host = SqliteRuntimeHost::new(db.clone());
+        let runtime = IntegrationSyncRuntime::new(host.clone());
+
+        let integration = connect_with_validation(
+            &db,
+            &runtime,
+            "https://calendar.example/feed?token=new-secret".into(),
+            |_| async { Ok(usable_validation()) },
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(integration.connection_status, "connected");
+        assert_eq!(integration.sync_status, "idle");
+        {
+            let observed = host.observed.lock().unwrap();
+            assert_eq!(
+                observed[0].record.integration.connection_status,
+                "connected"
+            );
+        }
+        tokio::time::timeout(
+            std::time::Duration::from_secs(1),
+            host.entered_prepare.notified(),
+        )
+        .await
+        .expect("runtime did not proceed beyond mark_running");
+        assert_eq!(host.prepare_count.load(Ordering::SeqCst), 1);
+    }
+
+    #[tokio::test]
+    async fn failed_connect_validation_never_creates_a_connected_integration() {
+        let (db, _) = test_db();
+        let db = Arc::new(db);
+        let host = SqliteRuntimeHost::new(db.clone());
+        let runtime = IntegrationSyncRuntime::new(host);
+
+        assert!(connect_with_validation(
+            &db,
+            &runtime,
+            "https://calendar.example/feed?token=invalid".into(),
+            |_| async { Err("validation failed".into()) },
+        )
+        .await
+        .is_err());
+        assert!(integrations::list(&db.conn.lock().unwrap())
+            .unwrap()
+            .is_empty());
+    }
+
+    #[tokio::test]
     async fn replacement_persists_new_secret_before_runtime_observes_a_failed_refresh() {
         let (db, _) = test_db();
         let db = Arc::new(db);
         let (connection_id, key) = connected_calendar(&db);
+        db.conn
+            .lock()
+            .unwrap()
+            .execute(
+                "UPDATE integrations SET connection_status='disconnected' WHERE id=?1",
+                [&connection_id],
+            )
+            .unwrap();
         cache_event(&db, &connection_id);
         let host = SqliteRuntimeHost::new(db.clone());
         host.fail_prepare.store(true, Ordering::SeqCst);
         let runtime = IntegrationSyncRuntime::new(host.clone());
         let new = "https://calendar.example/new?token=new-secret";
         replace_with_validation(&db, &runtime, &connection_id, new.into(), |_| async {
-            Ok(IcsValidation {
-                usable: true,
-                event_count: 1,
-                error_code: None,
-                display_name: None,
-                covered_start: None,
-                covered_end: None,
-                public_host: None,
-                warnings: vec![],
-            })
+            Ok(usable_validation())
         })
         .await
         .unwrap();
-        tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+        tokio::time::timeout(
+            std::time::Duration::from_secs(1),
+            host.entered_prepare.notified(),
+        )
+        .await
+        .expect("runtime did not proceed beyond mark_running after replacement");
         assert_eq!(credentials::get(&db, &key).unwrap().as_deref(), Some(new));
         assert_eq!(cached_event_count(&db, &connection_id), 1);
         let observed = host.observed.lock().unwrap();
         assert_eq!(observed[0].credential.as_deref(), Some(new));
         assert_eq!(observed[0].connection_id, connection_id);
+        assert_eq!(
+            observed[0].record.integration.connection_status,
+            "connected"
+        );
     }
 
     #[test]
@@ -851,6 +958,14 @@ mod tests {
     ) {
         let (db, fail_writes) = test_db();
         let (connection_id, key) = connected_calendar(&db);
+        db.conn
+            .lock()
+            .unwrap()
+            .execute(
+                "UPDATE integrations SET connection_status='disconnected' WHERE id=?1",
+                [&connection_id],
+            )
+            .unwrap();
         cache_event(&db, &connection_id);
         let old = "https://calendar.example/old?token=old-secret";
         let new = "https://calendar.example/new?token=new-secret";
@@ -858,11 +973,25 @@ mod tests {
         assert!(candidate("http://calendar.example/new?token=new-secret").is_err());
         assert_eq!(credentials::get(&db, &key).unwrap().as_deref(), Some(old));
         assert_eq!(cached_event_count(&db, &connection_id), 1);
+        assert_eq!(
+            integrations::get_by_id(&db.conn.lock().unwrap(), &connection_id)
+                .unwrap()
+                .unwrap()
+                .connection_status,
+            "disconnected"
+        );
 
         fail_writes.store(true, Ordering::SeqCst);
         assert!(replace_validated_secret(&db, &connection_id, new).is_err());
         assert_eq!(credentials::get(&db, &key).unwrap().as_deref(), Some(old));
         assert_eq!(cached_event_count(&db, &connection_id), 1);
+        assert_eq!(
+            integrations::get_by_id(&db.conn.lock().unwrap(), &connection_id)
+                .unwrap()
+                .unwrap()
+                .connection_status,
+            "disconnected"
+        );
 
         fail_writes.store(false, Ordering::SeqCst);
         replace_validated_secret(&db, &connection_id, new).unwrap();
