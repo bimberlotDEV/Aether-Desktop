@@ -26,6 +26,17 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-09-23 — `SCHOOL-BSP-001` — Calendar-only Brightspace renewable-ICS connector
+
+- **Type:** Feature, security, integration, UX, refactor, and test
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review
+- **Summary:** Added a zero-admin Brightspace calendar connector with native-only renewable URL storage, shared subscribed-calendar lifecycle, closed provider/auth runtime dispatch, general ExternalEvent normalization, safe validation metadata, and truthful Connections management.
+- **Files:** `src-tauri/src/brightspace.rs`, `src-tauri/src/subscribed_calendar_provider.rs`, MyTimetable/Integration/runtime seams, typed Connections IPC/UI/tests, and `.ai/*` control records.
+- **Verification:** focused frontend tests (2 files / 16 tests), focused Brightspace/MyTimetable/runtime/Integration Rust tests, `pnpm typecheck`, `pnpm lint`, `pnpm test` (37 files / 131 tests), `pnpm build`, `cargo fmt --check`, strict Clippy, `cargo test` (163 tests), and `git diff --check` — Pass.
+- **Decisions/deviations:** No migration, dependency, or new ADR was required. Brightspace reuses ADR-027 through ADR-030, advertises only `calendar_read` and `manual_refresh`, gains effective capabilities after validated credential persistence, and never infers Course, Assignment, Deadline, or material semantics. A real-provider desktop smoke was not run because no Brightspace bearer URL was available.
+- **Follow-up:** OAuth, richer LMS domains, Pulse, AI tools, and materials remain separately scoped.
+
 ## 2026-09-23 — `SCHOOL-SPACE-001` — Group-scoped ICS-first School Space timetable
 
 - **Type:** Feature, fix, migration, UX, and test

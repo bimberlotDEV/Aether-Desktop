@@ -1,6 +1,7 @@
 mod actions;
 mod ai;
 mod backup;
+mod brightspace;
 mod calendar;
 mod calendar_ics;
 mod commands;
@@ -10,6 +11,7 @@ mod diagnostics;
 mod integration_sync;
 mod my_timetable;
 mod native;
+mod subscribed_calendar_provider;
 mod updater;
 mod vault;
 
@@ -209,6 +211,11 @@ pub fn run() {
             my_timetable::my_timetable_connect,
             my_timetable::my_timetable_replace,
             my_timetable::my_timetable_disconnect,
+            brightspace::brightspace_profile,
+            brightspace::brightspace_validate,
+            brightspace::brightspace_connect,
+            brightspace::brightspace_replace,
+            brightspace::brightspace_disconnect,
             // AI
             commands::ai_list_models,
             commands::ai_parse_action_proposals,

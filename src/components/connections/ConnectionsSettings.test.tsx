@@ -1,23 +1,29 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Integration } from '@/lib/db/types'
+import type { IcsValidation, Integration } from '@/lib/db/types'
 
 const mocks = vi.hoisted(() => ({
   useConnections: vi.fn(),
   setEnabled: vi.fn(),
   load: vi.fn(),
   refresh: vi.fn(),
-  disconnectMyTimetable: vi.fn(),
+  disconnectCalendar: vi.fn(),
   validateMyTimetable: vi.fn(),
   connectMyTimetable: vi.fn(),
   replaceMyTimetableLink: vi.fn(),
+  validateBrightspace: vi.fn(),
+  connectBrightspace: vi.fn(),
+  replaceBrightspaceLink: vi.fn(),
 }))
 vi.mock('@/hooks/useConnections', () => ({ useConnections: mocks.useConnections }))
 vi.mock('@/lib/db/tauri', () => ({
   validateMyTimetable: mocks.validateMyTimetable,
   connectMyTimetable: mocks.connectMyTimetable,
   replaceMyTimetableLink: mocks.replaceMyTimetableLink,
+  validateBrightspace: mocks.validateBrightspace,
+  connectBrightspace: mocks.connectBrightspace,
+  replaceBrightspaceLink: mocks.replaceBrightspaceLink,
 }))
 
 import { ConnectionsSettings } from '@/components/connections/ConnectionsSettings'
@@ -61,7 +67,7 @@ function renderWith(overrides = {}) {
     load: mocks.load,
     setEnabled: mocks.setEnabled,
     refresh: mocks.refresh,
-    disconnectMyTimetable: mocks.disconnectMyTimetable,
+    disconnectCalendar: mocks.disconnectCalendar,
     ...overrides,
   })
   return render(<ConnectionsSettings />)
@@ -72,10 +78,23 @@ describe('Connections settings', () => {
     mocks.setEnabled.mockReset().mockResolvedValue(undefined)
     mocks.load.mockReset()
     mocks.refresh.mockReset()
-    mocks.disconnectMyTimetable.mockReset()
-    mocks.validateMyTimetable.mockReset().mockResolvedValue({ usable: true })
+    mocks.disconnectCalendar.mockReset()
+    const validation = {
+      usable: true,
+      event_count: 1,
+      error_code: null,
+      display_name: null,
+      covered_start: null,
+      covered_end: null,
+      public_host: 'calendar.example',
+      warnings: [],
+    }
+    mocks.validateMyTimetable.mockReset().mockResolvedValue(validation)
     mocks.connectMyTimetable.mockReset().mockResolvedValue(undefined)
     mocks.replaceMyTimetableLink.mockReset().mockResolvedValue(undefined)
+    mocks.validateBrightspace.mockReset().mockResolvedValue(validation)
+    mocks.connectBrightspace.mockReset().mockResolvedValue(undefined)
+    mocks.replaceBrightspaceLink.mockReset().mockResolvedValue(undefined)
   })
 
   it('presents only persisted metadata, with safe errors and capability distinction', () => {
@@ -90,12 +109,12 @@ describe('Connections settings', () => {
     expect(screen.queryByText(/private\.example|token-example/)).not.toBeInTheDocument()
   })
 
-  it('uses the persisted enabled-state action and offers setup only for MyTimetable', async () => {
+  it('uses persisted enabled state and offers the MyTimetable calendar setup', async () => {
     const user = userEvent.setup()
     renderWith()
     await user.click(screen.getByRole('checkbox', { name: 'Enabled' }))
     expect(mocks.setEnabled).toHaveBeenCalledWith(connection, false)
-    await user.click(screen.getByRole('button', { name: 'Connect calendar' }))
+    await user.click(screen.getAllByRole('button', { name: 'Connect calendar' })[0])
     expect(
       screen.getByRole('dialog', { name: 'Connect MyTimetable' }),
     ).toBeInTheDocument()
@@ -106,8 +125,8 @@ describe('Connections settings', () => {
     renderWith({ connections: [], error: 'Local storage is unavailable.' })
     expect(screen.getByRole('alert')).toHaveTextContent('Connections are unavailable')
     expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument()
-    expect(screen.getByText('Not available to set up yet')).toBeInTheDocument()
-    expect(screen.getAllByText('Setup unavailable')).toHaveLength(3)
+    expect(screen.getByText('Available connections')).toBeInTheDocument()
+    expect(screen.getAllByText('Setup unavailable')).toHaveLength(2)
   })
 
   it('receives focus when opened from the Connections command', () => {
@@ -118,11 +137,20 @@ describe('Connections settings', () => {
   })
 
   it('shows a truthful disabled MyTimetable state with management controls but never a saved link', () => {
-    const timetable = { ...connection, provider_id: 'my_timetable', enabled: false, connection_status: 'degraded' as const, sync_status: 'failed' as const, last_sync_error_message: 'https://calendar.example/private?bearer=secret' }
+    const timetable = {
+      ...connection,
+      provider_id: 'my_timetable',
+      enabled: false,
+      connection_status: 'degraded' as const,
+      sync_status: 'failed' as const,
+      last_sync_error_message: 'https://calendar.example/private?bearer=secret',
+    }
     renderWith({ connections: [timetable] })
     expect(screen.getByText('Disabled')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Refresh now' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Replace subscription link' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Replace subscription link' }),
+    ).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Disconnect' })).toBeInTheDocument()
     expect(screen.queryByText(/calendar\.example|bearer=secret/)).not.toBeInTheDocument()
   })
@@ -130,13 +158,15 @@ describe('Connections settings', () => {
   it('clears the subscription input when setup is cancelled', async () => {
     const user = userEvent.setup()
     renderWith({ connections: [] })
-    await user.click(screen.getByRole('button', { name: 'Connect calendar' }))
+    await user.click(screen.getAllByRole('button', { name: 'Connect calendar' })[0])
     const input = screen.getByRole('textbox', { name: 'Calendar subscription link' })
     await user.type(input, 'https://calendar.example/private')
     await user.click(screen.getByRole('button', { name: 'Cancel' }))
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Connect calendar' }))
-    expect(screen.getByRole('textbox', { name: 'Calendar subscription link' })).toHaveValue('')
+    await user.click(screen.getAllByRole('button', { name: 'Connect calendar' })[0])
+    expect(
+      screen.getByRole('textbox', { name: 'Calendar subscription link' }),
+    ).toHaveValue('')
   })
 
   it('validates and replaces without retaining the link after success or failure', async () => {
@@ -146,9 +176,14 @@ describe('Connections settings', () => {
     await user.click(screen.getByRole('button', { name: 'Replace subscription link' }))
     const input = screen.getByRole('textbox', { name: 'Calendar subscription link' })
     await user.type(input, 'https://calendar.example/new?token=private')
-    await user.click(screen.getByRole('button', { name: 'Validate and replace' }))
+    await user.click(screen.getByRole('button', { name: 'Validate calendar link' }))
     expect(mocks.validateMyTimetable).toHaveBeenCalledWith(
       'https://calendar.example/new?token=private',
+    )
+    await user.click(
+      within(screen.getByRole('dialog')).getByRole('button', {
+        name: 'Replace subscription link',
+      }),
     )
     expect(mocks.replaceMyTimetableLink).toHaveBeenCalledWith(
       timetable.id,
@@ -160,7 +195,7 @@ describe('Connections settings', () => {
     mocks.validateMyTimetable.mockRejectedValueOnce(new Error('bad link'))
     const retry = screen.getByRole('textbox', { name: 'Calendar subscription link' })
     await user.type(retry, 'https://calendar.example/bad?token=private')
-    await user.click(screen.getByRole('button', { name: 'Validate and replace' }))
+    await user.click(screen.getByRole('button', { name: 'Validate calendar link' }))
     expect(screen.getByRole('alert')).toHaveTextContent('not saved')
     expect(retry).toHaveValue('')
     expect(screen.queryByText(/calendar\.example|token=private/)).not.toBeInTheDocument()
@@ -175,7 +210,7 @@ describe('Connections settings', () => {
     expect(mocks.refresh).toHaveBeenCalledWith(timetable)
     await user.click(screen.getByRole('button', { name: 'Disconnect' }))
     expect(confirm).toHaveBeenCalled()
-    expect(mocks.disconnectMyTimetable).toHaveBeenCalledWith(timetable)
+    expect(mocks.disconnectCalendar).toHaveBeenCalledWith(timetable)
     confirm.mockRestore()
   })
 
@@ -186,27 +221,38 @@ describe('Connections settings', () => {
     await user.tab()
     await user.click(screen.getByRole('button', { name: 'Replace subscription link' }))
     expect(screen.getByRole('dialog')).toBeInTheDocument()
-    expect(screen.getByRole('textbox', { name: 'Calendar subscription link' })).toHaveFocus()
+    expect(
+      screen.getByRole('textbox', { name: 'Calendar subscription link' }),
+    ).toHaveFocus()
   })
 
   it('shows the validating transition while the private link check is in flight', async () => {
     const user = userEvent.setup()
-    let resolveValidation: (value: { usable: boolean }) => void = () => undefined
+    let resolveValidation: (value: IcsValidation) => void = () => undefined
     mocks.validateMyTimetable.mockReturnValueOnce(
       new Promise((resolve) => {
         resolveValidation = resolve
       }),
     )
     renderWith({ connections: [] })
-    await user.click(screen.getByRole('button', { name: 'Connect calendar' }))
+    await user.click(screen.getAllByRole('button', { name: 'Connect calendar' })[0])
     await user.type(
       screen.getByRole('textbox', { name: 'Calendar subscription link' }),
       'https://calendar.example/feed.ics',
     )
-    await user.click(screen.getByRole('button', { name: 'Validate and connect' }))
+    await user.click(screen.getByRole('button', { name: 'Validate calendar link' }))
     expect(screen.getByRole('button', { name: 'Validating…' })).toBeDisabled()
-    resolveValidation({ usable: true })
-    await screen.findByText('No connections configured')
+    resolveValidation({
+      usable: true,
+      event_count: 0,
+      error_code: null,
+      display_name: null,
+      covered_start: null,
+      covered_end: null,
+      public_host: null,
+      warnings: ['Calendar contains no events'],
+    })
+    expect(await screen.findByText('Calendar link validated')).toBeInTheDocument()
   })
 
   it('shows a distinct syncing state while a manual refresh is active', () => {
@@ -219,5 +265,40 @@ describe('Connections settings', () => {
     renderWith({ connections: [timetable], updatingId: timetable.id })
     expect(screen.getByText('Syncing')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Refresh now' })).toBeDisabled()
+  })
+
+  it('presents Brightspace as calendar-only and connects only after safe validation details', async () => {
+    const user = userEvent.setup()
+    mocks.validateBrightspace.mockResolvedValueOnce({
+      usable: true,
+      event_count: 12,
+      error_code: null,
+      display_name: 'My Brightspace calendar',
+      covered_start: '2026-09-01',
+      covered_end: '2026-12-31',
+      public_host: 'learn.example.edu',
+      warnings: [],
+    })
+    renderWith({ connections: [] })
+
+    await user.click(screen.getAllByRole('button', { name: 'Connect calendar' })[1])
+    expect(
+      screen.getByRole('dialog', { name: 'Connect Brightspace' }),
+    ).toBeInTheDocument()
+    expect(screen.getByText(/imports calendar events only/i)).toBeInTheDocument()
+    const input = screen.getByRole('textbox', { name: 'Calendar subscription link' })
+    await user.type(input, 'https://learn.example.edu/calendar.ics?token=private')
+    await user.click(screen.getByRole('button', { name: 'Validate calendar link' }))
+
+    expect(await screen.findByText('My Brightspace calendar')).toBeInTheDocument()
+    expect(screen.getByText('learn.example.edu')).toBeInTheDocument()
+    expect(screen.getByText('12')).toBeInTheDocument()
+    expect(mocks.connectBrightspace).not.toHaveBeenCalled()
+
+    await user.click(screen.getByRole('button', { name: 'Connect Brightspace' }))
+    expect(mocks.connectBrightspace).toHaveBeenCalledWith(
+      'https://learn.example.edu/calendar.ics?token=private',
+    )
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 })
