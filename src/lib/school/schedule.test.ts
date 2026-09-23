@@ -31,6 +31,7 @@ function event(
     timezone: 'Europe/Berlin',
     location: null,
     course_reference: null,
+    group_references: ['ADSAI-ZM-1.a'],
     event_kind: 'lesson',
     status: 'active',
     source_url: null,

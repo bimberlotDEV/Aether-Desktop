@@ -51,6 +51,12 @@ struct Parsed {
     exdates: Vec<String>,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct EventMetadata {
+    pub event_kind: String,
+    pub group_references: Vec<String>,
+}
+
 fn value<'a>(props: &'a [Property], name: &str) -> Option<&'a Property> {
     props.iter().find(|p| p.name == name)
 }
@@ -149,7 +155,7 @@ fn input(
     occurrence: Option<String>,
     start: &str,
     end: Option<&str>,
-    event_kind: String,
+    metadata: EventMetadata,
 ) -> Result<ExternalEventInput, String> {
     let hash = format!(
         "{:x}",
@@ -191,7 +197,8 @@ fn input(
             timezone: "date".into(),
             location: e.location.clone(),
             course_reference: None,
-            event_kind,
+            group_references: metadata.group_references,
+            event_kind: metadata.event_kind,
             status,
             source_url: e.url.clone(),
             ingestion_provenance: "ics_feed".into(),
@@ -221,7 +228,8 @@ fn input(
         timezone: e.tz.clone(),
         location: e.location.clone(),
         course_reference: None,
-        event_kind,
+        group_references: metadata.group_references,
+        event_kind: metadata.event_kind,
         status,
         source_url: e.url.clone(),
         ingestion_provenance: "ics_feed".into(),
@@ -246,6 +254,21 @@ pub fn normalize_with_classifier<F>(
 ) -> Result<Vec<ExternalEventInput>, String>
 where
     F: Fn(&[String]) -> String,
+{
+    normalize_with_metadata(bytes, connection_id, now, |categories, _| EventMetadata {
+        event_kind: classify(categories),
+        group_references: Vec::new(),
+    })
+}
+
+pub fn normalize_with_metadata<F>(
+    bytes: &[u8],
+    connection_id: &str,
+    now: DateTime<Utc>,
+    metadata: F,
+) -> Result<Vec<ExternalEventInput>, String>
+where
+    F: Fn(&[String], Option<&str>) -> EventMetadata,
 {
     if bytes.len() > MAX_FEED_BYTES {
         return Err("feed_too_large".into());
@@ -273,14 +296,20 @@ where
                 e.recurrence.clone(),
                 &e.start,
                 e.end.as_deref(),
-                classify(&e.categories),
+                metadata(&e.categories, e.description.as_deref()),
             )?;
             x.connection_id = connection_id.into();
             output.push(x);
             continue;
         }
         if e.rrule.is_none() && e.rdates.is_empty() {
-            let mut x = input(e, None, &e.start, e.end.as_deref(), classify(&e.categories))?;
+            let mut x = input(
+                e,
+                None,
+                &e.start,
+                e.end.as_deref(),
+                metadata(&e.categories, e.description.as_deref()),
+            )?;
             x.connection_id = connection_id.into();
             output.push(x);
             continue;
@@ -337,7 +366,7 @@ where
                     Some(original.clone()),
                     &original,
                     Some(&end),
-                    classify(&e.categories),
+                    metadata(&e.categories, e.description.as_deref()),
                 )?;
                 x.connection_id = connection_id.into();
                 output.push(x);
@@ -388,7 +417,7 @@ where
                 Some(original),
                 &d.with_timezone(&Utc).format("%Y%m%dT%H%M%SZ").to_string(),
                 Some(&end),
-                classify(&e.categories),
+                metadata(&e.categories, e.description.as_deref()),
             )?;
             x.connection_id = connection_id.into();
             output.push(x);

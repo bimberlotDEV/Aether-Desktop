@@ -24,6 +24,7 @@ export const ExternalEventSchema = z.object({
   timezone: z.string(),
   location: z.string().nullable(),
   course_reference: z.string().nullable(),
+  group_references: z.array(z.string()),
   event_kind: z.string(),
   status: z.enum(['active', 'cancelled', 'removed']),
   source_url: z.string().url().nullable(),
@@ -140,6 +141,8 @@ export type SchoolCalendarSource = z.infer<typeof SchoolCalendarSourceSchema>
 export const SchoolScheduleSchema = z.object({
   events: z.array(ExternalEventSchema),
   sources: z.array(SchoolCalendarSourceSchema),
+  group_options: z.array(z.string()),
+  selected_group: z.string().nullable(),
 })
 export type SchoolSchedule = z.infer<typeof SchoolScheduleSchema>
 export const IntegrationCreateInputSchema = z.object({

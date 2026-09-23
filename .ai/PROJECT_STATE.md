@@ -95,7 +95,7 @@ The current verified product foundation includes:
 * onboarding;
 * native subscribed-calendar ingestion and a read-only MyTimetable connector;
 * native Integration Sync runtime with deterministic lifecycle, retry-gating, recovery, and atomic Calendar/Integration completion coverage;
-* ICS-first Today, Week, and Upcoming timetable views in the existing parent School Space, backed only by bounded local normalized data;
+* ICS-first Today, Week, and Upcoming timetable views in the existing parent School Space, scoped to a persisted user-selected group from bounded local normalized data;
 * automated quality gates.
 
 Aether remains local-first.
@@ -172,7 +172,7 @@ There is no requirement for a cloud account to use the core product.
 | `RELEASE-TRUST-001`  | Trusted Releases & Updates            | `complete` | Owner-gated release tooling and Rust-owned stable-update architecture are implemented.                                                                      |
 | `ONBOARD-001`        | Onboarding & UX                       | `complete` | First-run onboarding and upgrade-safe configuration are implemented and verified.                                                                           |
 | `SCHOOL-MTT-001`     | MyTimetable connector                 | `complete` | Read-only ICS setup, secret handling, CAL-ICS safety, shared synchronization, reconciliation, and Connections management are covered by automated evidence. |
-| `SCHOOL-SPACE-001`   | ICS-first School timetable            | `complete` | Parent School Spaces expose local Today, Week, and Upcoming views with truthful conflicts, cancellations, all-day timing, and sync freshness states.        |
+| `SCHOOL-SPACE-001`   | ICS-first School timetable            | `complete` | Parent School Spaces expose group-scoped local Today, Week, and Upcoming views with truthful conflicts, cancellations, all-day timing, and sync freshness. |
 
 ---
 

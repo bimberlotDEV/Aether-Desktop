@@ -5,7 +5,7 @@ use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-const EVENT_COLUMNS: &str = "id, connection_id, external_id, occurrence_id, title, description, time_kind, start_at_utc, end_at_utc, start_date, end_date, timezone, location, course_reference, event_kind, status, source_url, ingestion_provenance, source_version, content_hash, first_seen_at, last_seen_at, synchronized_at, created_at, updated_at";
+const EVENT_COLUMNS: &str = "id, connection_id, external_id, occurrence_id, title, description, time_kind, start_at_utc, end_at_utc, start_date, end_date, timezone, location, course_reference, group_references_json, event_kind, status, source_url, ingestion_provenance, source_version, content_hash, first_seen_at, last_seen_at, synchronized_at, created_at, updated_at";
 type NormalizedEvent = (
     String,
     String,
@@ -20,6 +20,7 @@ type NormalizedEvent = (
     String,
     Option<String>,
     Option<String>,
+    String,
     String,
     String,
     Option<String>,
@@ -44,6 +45,7 @@ pub struct ExternalEvent {
     pub timezone: String,
     pub location: Option<String>,
     pub course_reference: Option<String>,
+    pub group_references: Vec<String>,
     pub event_kind: String,
     pub status: String,
     pub source_url: Option<String>,
@@ -73,6 +75,8 @@ pub struct ExternalEventInput {
     pub timezone: String,
     pub location: Option<String>,
     pub course_reference: Option<String>,
+    #[serde(default)]
+    pub group_references: Vec<String>,
     pub event_kind: String,
     pub status: String,
     pub source_url: Option<String>,
@@ -144,6 +148,10 @@ fn url(value: &Option<String>) -> Result<Option<String>, String> {
 }
 fn row(row: &rusqlite::Row) -> rusqlite::Result<ExternalEvent> {
     let occurrence: String = row.get(3)?;
+    let groups_json: String = row.get(14)?;
+    let group_references = serde_json::from_str(&groups_json).map_err(|error| {
+        rusqlite::Error::FromSqlConversionFailure(14, rusqlite::types::Type::Text, Box::new(error))
+    })?;
     Ok(ExternalEvent {
         id: row.get(0)?,
         connection_id: row.get(1)?,
@@ -159,17 +167,18 @@ fn row(row: &rusqlite::Row) -> rusqlite::Result<ExternalEvent> {
         timezone: row.get(11)?,
         location: row.get(12)?,
         course_reference: row.get(13)?,
-        event_kind: row.get(14)?,
-        status: row.get(15)?,
-        source_url: row.get(16)?,
-        ingestion_provenance: row.get(17)?,
-        source_version: row.get(18)?,
-        content_hash: row.get(19)?,
-        first_seen_at: row.get(20)?,
-        last_seen_at: row.get(21)?,
-        synchronized_at: row.get(22)?,
-        created_at: row.get(23)?,
-        updated_at: row.get(24)?,
+        group_references,
+        event_kind: row.get(15)?,
+        status: row.get(16)?,
+        source_url: row.get(17)?,
+        ingestion_provenance: row.get(18)?,
+        source_version: row.get(19)?,
+        content_hash: row.get(20)?,
+        first_seen_at: row.get(21)?,
+        last_seen_at: row.get(22)?,
+        synchronized_at: row.get(23)?,
+        created_at: row.get(24)?,
+        updated_at: row.get(25)?,
     })
 }
 fn normalized(input: &ExternalEventInput) -> Result<NormalizedEvent, String> {
@@ -188,6 +197,18 @@ fn normalized(input: &ExternalEventInput) -> Result<NormalizedEvent, String> {
     let description = optional(&input.description, "description", 20_000)?;
     let timezone = bounded(&input.timezone, "timezone", 128)?;
     let event_kind = bounded(&input.event_kind, "kind", 64)?;
+    let mut group_references = input
+        .group_references
+        .iter()
+        .map(|value| bounded(value, "group reference", 200))
+        .collect::<Result<Vec<_>, _>>()?;
+    group_references.sort_unstable();
+    group_references.dedup();
+    if group_references.len() > 64 {
+        return Err("External event group references must not exceed 64 entries".to_string());
+    }
+    let group_references_json = serde_json::to_string(&group_references)
+        .map_err(|error| format!("External event group serialization error: {error}"))?;
     if !["active", "cancelled"].contains(&input.status.as_str()) {
         return Err("External snapshots may be active or cancelled, not removed".to_string());
     }
@@ -256,6 +277,7 @@ fn normalized(input: &ExternalEventInput) -> Result<NormalizedEvent, String> {
         timezone,
         optional(&input.location, "location", 500)?,
         optional(&input.course_reference, "course reference", 200)?,
+        group_references_json,
         event_kind,
         input.status.clone(),
         url(&input.source_url)?,
@@ -311,8 +333,8 @@ pub fn reconcile_in_transaction(
         }
         let value = normalized(input)?;
         transaction.execute(
-            "INSERT INTO external_events (id,connection_id,external_id,occurrence_id,title,description,time_kind,start_at_utc,end_at_utc,start_date,end_date,timezone,location,course_reference,event_kind,status,source_url,ingestion_provenance,source_version,content_hash,first_seen_at,last_seen_at,synchronized_at) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20,?21,?21,?21) ON CONFLICT(connection_id,external_id,occurrence_id) DO UPDATE SET title=excluded.title,description=excluded.description,time_kind=excluded.time_kind,start_at_utc=excluded.start_at_utc,end_at_utc=excluded.end_at_utc,start_date=excluded.start_date,end_date=excluded.end_date,timezone=excluded.timezone,location=excluded.location,course_reference=excluded.course_reference,event_kind=excluded.event_kind,status=excluded.status,source_url=excluded.source_url,ingestion_provenance=excluded.ingestion_provenance,source_version=excluded.source_version,content_hash=excluded.content_hash,last_seen_at=excluded.last_seen_at,synchronized_at=excluded.synchronized_at,updated_at=datetime('now')",
-            params![Uuid::now_v7().to_string(), value.0,value.1,value.2,value.3,value.4,value.5,value.6,value.7,value.8,value.9,value.10,value.11,value.12,value.13,value.14,value.15,value.16,value.17,value.18,synchronized_at],
+            "INSERT INTO external_events (id,connection_id,external_id,occurrence_id,title,description,time_kind,start_at_utc,end_at_utc,start_date,end_date,timezone,location,course_reference,group_references_json,event_kind,status,source_url,ingestion_provenance,source_version,content_hash,first_seen_at,last_seen_at,synchronized_at) VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?10,?11,?12,?13,?14,?15,?16,?17,?18,?19,?20,?21,?22,?22,?22) ON CONFLICT(connection_id,external_id,occurrence_id) DO UPDATE SET title=excluded.title,description=excluded.description,time_kind=excluded.time_kind,start_at_utc=excluded.start_at_utc,end_at_utc=excluded.end_at_utc,start_date=excluded.start_date,end_date=excluded.end_date,timezone=excluded.timezone,location=excluded.location,course_reference=excluded.course_reference,group_references_json=excluded.group_references_json,event_kind=excluded.event_kind,status=excluded.status,source_url=excluded.source_url,ingestion_provenance=excluded.ingestion_provenance,source_version=excluded.source_version,content_hash=excluded.content_hash,last_seen_at=excluded.last_seen_at,synchronized_at=excluded.synchronized_at,updated_at=datetime('now')",
+            params![Uuid::now_v7().to_string(), value.0,value.1,value.2,value.3,value.4,value.5,value.6,value.7,value.8,value.9,value.10,value.11,value.12,value.13,value.14,value.15,value.16,value.17,value.18,value.19,synchronized_at],
         ).map_err(|error| format!("External event upsert error: {error}"))?;
     }
     if mode == ReconciliationMode::Authoritative {
@@ -384,6 +406,7 @@ mod tests {
             timezone: "Europe/Berlin".into(),
             location: None,
             course_reference: None,
+            group_references: vec!["ADSAI-ZM-1.a".into()],
             event_kind: "lesson".into(),
             status: "active".into(),
             source_url: None,
@@ -422,6 +445,18 @@ mod tests {
                 .unwrap(),
             1
         );
+        let values = list_range(
+            &c,
+            &ExternalEventRange {
+                connection_id: Some("c".into()),
+                start: "2026-10-25T00:00:00Z".into(),
+                end: "2026-10-26T00:00:00Z".into(),
+                include_removed: None,
+                limit: Some(10),
+            },
+        )
+        .unwrap();
+        assert_eq!(values[0].group_references, vec!["ADSAI-ZM-1.a"]);
     }
     #[test]
     fn authoritative_only_tombstones_and_reappearance_reactivates() {

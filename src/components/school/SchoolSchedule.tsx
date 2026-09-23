@@ -203,7 +203,7 @@ function UpcomingView({ events, now }: { events: ExternalEvent[]; now: Date }) {
 export function SchoolSchedule({ spaceId, now }: { spaceId: string; now?: Date }) {
   const [referenceNow] = useState(() => now ?? new Date())
   const [view, setView] = useState<SchoolView>('today')
-  const { data, loading, error, isTauri, reload } = useSchoolSchedule(
+  const { data, loading, error, isTauri, reload, selectGroup } = useSchoolSchedule(
     spaceId,
     referenceNow,
   )
@@ -237,29 +237,31 @@ export function SchoolSchedule({ spaceId, now }: { spaceId: string; now?: Date }
             Your schedule
           </h2>
         </div>
-        <div
-          role="tablist"
-          aria-label="School schedule view"
-          className="inline-flex rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-0.5"
-        >
-          {TABS.map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              role="tab"
-              aria-selected={view === tab.id}
-              onClick={() => setView(tab.id)}
-              className={cn(
-                'focus-ring rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
-                view === tab.id
-                  ? 'bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] shadow-sm'
-                  : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)]',
-              )}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        {data?.selected_group ? (
+          <div
+            role="tablist"
+            aria-label="School schedule view"
+            className="inline-flex rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-0.5"
+          >
+            {TABS.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={view === tab.id}
+                onClick={() => setView(tab.id)}
+                className={cn(
+                  'focus-ring rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
+                  view === tab.id
+                    ? 'bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] shadow-sm'
+                    : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)]',
+                )}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        ) : null}
       </div>
 
       {!isTauri ? (
@@ -283,6 +285,36 @@ export function SchoolSchedule({ spaceId, now }: { spaceId: string; now?: Date }
         </div>
       ) : data ? (
         <>
+          <div className="flex flex-wrap items-end justify-between gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-secondary)] px-3 py-3">
+            <div>
+              <label
+                htmlFor="school-group"
+                className="text-xs font-medium text-[var(--color-text-primary)]"
+              >
+                School group
+              </label>
+              <p className="mt-0.5 text-xs text-[var(--color-text-tertiary)]">
+                Show events assigned to your group, including shared events and exams.
+              </p>
+            </div>
+            <select
+              id="school-group"
+              aria-label="School group"
+              value={data.selected_group ?? ''}
+              disabled={data.group_options.length === 0}
+              onChange={(event) => {
+                if (event.target.value) void selectGroup(event.target.value)
+              }}
+              className="focus-ring min-w-48 rounded-md border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-2.5 py-1.5 text-sm text-[var(--color-text-primary)]"
+            >
+              <option value="">Select your group</option>
+              {data.group_options.map((group) => (
+                <option key={group} value={group}>
+                  {group}
+                </option>
+              ))}
+            </select>
+          </div>
           <div
             className={cn(
               'flex flex-wrap items-center justify-between gap-2 rounded-lg border px-3 py-2 text-xs',
@@ -304,7 +336,30 @@ export function SchoolSchedule({ spaceId, now }: { spaceId: string; now?: Date }
               </Link>
             )}
           </div>
-          {view === 'today' ? (
+          {!data.selected_group ? (
+            <div className="rounded-xl border border-dashed border-[var(--color-border)] px-5 py-8 text-center">
+              <CalendarDays
+                size={22}
+                className="mx-auto text-[var(--color-text-tertiary)]"
+                aria-hidden="true"
+              />
+              <p className="mt-2 text-sm font-medium text-[var(--color-text-primary)]">
+                Select your school group
+              </p>
+              <p className="mx-auto mt-1 max-w-md text-xs text-[var(--color-text-tertiary)]">
+                Your timetable stays empty until you choose a group from locally synced
+                school events.
+              </p>
+              {data.group_options.length === 0 ? (
+                <Link
+                  to="/settings"
+                  className="mt-3 inline-block text-xs text-[var(--color-accent)] hover:underline"
+                >
+                  Sync MyTimetable in Connections
+                </Link>
+              ) : null}
+            </div>
+          ) : view === 'today' ? (
             <TodayView events={data.events} now={referenceNow} />
           ) : view === 'week' ? (
             <WeekView events={data.events} now={referenceNow} />

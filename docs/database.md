@@ -181,11 +181,13 @@ Normalized provider-owned calendar occurrences defined by ADR-028. Identity is `
 | Column group | Notes |
 |---|---|
 | Identity and lifecycle | Connection foreign key, stable external/occurrence IDs, active/cancelled/removed state, first/last seen, sync and audit timestamps |
-| Content and provenance | Normalized title, optional description/location/course reference, event kind, ingestion provenance, source version, content hash, optional HTTPS deep link |
+| Content and provenance | Normalized title, optional description/location/course reference, provider-neutral group-reference array, event kind, ingestion provenance, source version, content hash, optional HTTPS deep link |
 | Timed semantics | UTC RFC3339 start/end plus timezone context; end is exclusive for range overlap |
 | All-day semantics | Date-only start/end with exclusive end date; UTC fields are absent |
 
 Removed records are tombstones, not deletions. Only a complete authoritative native reconciliation window can mark a previously seen occurrence removed. Raw provider payloads, feed URLs, credentials, tokens, and secret metadata are not columns in this table.
+
+Migration `015_external_event_groups` adds `group_references_json` as a validated JSON array so one occurrence can belong to multiple cohorts without encoding provider rules in Calendar or School UI. Existing cached rows are retained with an empty array. The migration clears only MyTimetable HTTP validators and sync eligibility, causing its next enabled synchronization to retrieve a complete feed and populate structured group metadata without deleting the cache.
 
 ### integration sync runtime
 

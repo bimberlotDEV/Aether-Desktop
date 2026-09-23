@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { getSchoolSchedule } from '@/lib/db/tauri'
+import { getSchoolSchedule, setSchoolGroup } from '@/lib/db/tauri'
 import type { SchoolSchedule } from '@/lib/db/types'
 import { schoolScheduleRequest } from '@/lib/school/schedule'
 
@@ -33,5 +33,26 @@ export function useSchoolSchedule(spaceId: string, now: Date) {
 
   useEffect(() => void reload(), [reload])
 
-  return { data, loading, error, isTauri, reload }
+  const selectGroup = useCallback(
+    async (selectedGroup: string) => {
+      if (!isTauri) return
+      setLoading(true)
+      setError(null)
+      try {
+        await setSchoolGroup(spaceId, selectedGroup)
+        setData(await getSchoolSchedule(request))
+      } catch (cause) {
+        setError(
+          cause instanceof Error && cause.message
+            ? cause.message
+            : 'The School group could not be saved.',
+        )
+      } finally {
+        setLoading(false)
+      }
+    },
+    [request, spaceId],
+  )
+
+  return { data, loading, error, isTauri, reload, selectGroup }
 }

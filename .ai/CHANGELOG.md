@@ -26,15 +26,15 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Follow-up:** None | `TASK-ID`
 ```
 
-## 2026-09-23 — `SCHOOL-SPACE-001` — ICS-first School Space timetable
+## 2026-09-23 — `SCHOOL-SPACE-001` — Group-scoped ICS-first School Space timetable
 
-- **Type:** Feature, UX, and test
+- **Type:** Feature, fix, migration, UX, and test
 - **Implemented by:** Codex
 - **Reviewed by:** Codex self-review
-- **Summary:** Extended the existing parent School Space with local-only Today, Week, and Upcoming timetable views, truthful cancellation/overlap/all-day rendering, and persisted connection freshness states.
-- **Files:** `src-tauri/src/db/repositories/school_schedule.rs`, typed School schedule IPC, `src/lib/school/`, `src/hooks/useSchoolSchedule.ts`, `src/components/school/`, `src/routes/SpaceDetail.tsx`, and `.ai/*` control records.
-- **Verification:** focused frontend tests (4 files / 35 tests), focused Rust tests (5 tests), `pnpm typecheck`, `pnpm lint`, `pnpm test` (37 files / 129 tests), `pnpm build`, `cargo fmt --check`, strict Clippy, `cargo test` (151 tests), and `git diff --check` — Pass.
-- **Decisions/deviations:** No migration or ADR was needed. The read model validates an active parent School Space and joins `external_events` only through configured `subscribed_calendars` whose Integration provider is `my_timetable`; rendering never fetches or synchronizes. UTC instant bounds and local date-only bounds remain distinct. No Course or moved-state inference is made from ICS text or update timestamps.
+- **Summary:** Extended the existing parent School Space with local-only Today, Week, and Upcoming timetable views, then fixed shared-feed leakage by requiring a persisted user-selected group derived from structured locally normalized MyTimetable metadata. No-selection now shows setup rather than every cohort.
+- **Files:** `src-tauri/src/db/migrations.rs`, Calendar/MyTimetable normalization and repositories, typed School schedule IPC, `src/lib/school/`, `src/hooks/useSchoolSchedule.ts`, `src/components/school/`, `src/routes/SpaceDetail.tsx`, `docs/database.md`, and `.ai/*` control records.
+- **Verification:** focused frontend tests (3 files / 33 tests), focused Rust migration/normalization/repository tests, `pnpm typecheck`, `pnpm lint`, `pnpm test` (37 files / 130 tests), `pnpm build`, `cargo fmt --check`, strict Clippy, `cargo test` (158 tests), and `git diff --check` — Pass.
+- **Decisions/deviations:** Migration `015_external_event_groups` adds a validated provider-neutral group-reference array. It retains cached rows with an empty array and clears only MyTimetable HTTP validators/eligibility so the next enabled sync fully populates metadata. The selected group is merged into the existing parent Space `settings_json`; the bounded School query uses JSON membership and never parses descriptions or provider-fetches. No ADR was required because this extends the existing Calendar normalization and School read-model decisions without changing their trust boundaries.
 - **Follow-up:** `SCHOOL-BSP-001` and `PULSE-003` remain separately scoped and were not started.
 
 ## 2026-09-23 — `SCHOOL-MTT-001` — Secure MyTimetable subscribed-calendar connector

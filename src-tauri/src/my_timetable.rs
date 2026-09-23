@@ -53,6 +53,24 @@ pub fn classify(categories: &[String]) -> String {
     }
 }
 
+pub fn metadata(categories: &[String], description: Option<&str>) -> calendar_ics::EventMetadata {
+    let mut group_references = description
+        .into_iter()
+        .flat_map(str::lines)
+        .filter_map(|line| line.trim().strip_prefix("Groep(en):"))
+        .flat_map(|value| value.split([',', ';']))
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(str::to_string)
+        .collect::<Vec<_>>();
+    group_references.sort_unstable();
+    group_references.dedup();
+    calendar_ics::EventMetadata {
+        event_kind: classify(categories),
+        group_references,
+    }
+}
+
 pub async fn validate(url: &str) -> Result<IcsValidation, String> {
     let host = reqwest::Url::parse(url)
         .ok()
@@ -938,6 +956,34 @@ mod tests {
         assert_eq!(classify(&["Teaching activity".into()]), "lesson");
         assert_eq!(classify(&["Institutional test".into()]), "general");
         assert_eq!(classify(&[]), "general");
+    }
+
+    #[test]
+    fn metadata_extracts_only_explicit_group_lines_and_supports_multiple_groups() {
+        let value = metadata(
+            &["Exam".into()],
+            Some(
+                "Vak: Machine Learning\nGroep(en): ADSAI-ZM-1.a, ADSAI-DH-1.a; ADSAI-ZM-1.a\nLocatie: ADSAI-ZM-9.a",
+            ),
+        );
+        assert_eq!(value.event_kind, "exam");
+        assert_eq!(value.group_references, vec!["ADSAI-DH-1.a", "ADSAI-ZM-1.a"]);
+        assert!(metadata(&[], Some("ADSAI-ZM-1.a in free text"))
+            .group_references
+            .is_empty());
+    }
+
+    #[test]
+    fn provider_normalization_persists_structured_groups_without_title_or_location_inference() {
+        let feed = b"BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:grouped\r\nDTSTART:20260923T090000Z\r\nDTEND:20260923T100000Z\r\nSUMMARY:ADSAI-ZM-9.a title\r\nLOCATION:ADSAI-ZM-8.a\r\nDESCRIPTION:Groep(en): ADSAI-ZM-1.a\\, ADSAI-ZM-2.a\r\nCATEGORIES:EXAM\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n";
+        let events =
+            calendar_ics::normalize_with_metadata(feed, "connection", chrono::Utc::now(), metadata)
+                .unwrap();
+        assert_eq!(events[0].event_kind, "exam");
+        assert_eq!(
+            events[0].group_references,
+            vec!["ADSAI-ZM-1.a", "ADSAI-ZM-2.a"]
+        );
     }
 
     #[test]

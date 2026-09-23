@@ -641,6 +641,13 @@ export async function getSchoolSchedule(
   )
 }
 
+export async function setSchoolGroup(
+  spaceId: string,
+  selectedGroup: string | null,
+): Promise<void> {
+  await invoke('set_school_group', { spaceId, selectedGroup })
+}
+
 export async function createIntegration(
   input: IntegrationCreateInput,
 ): Promise<Integration> {

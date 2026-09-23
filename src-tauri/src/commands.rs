@@ -1009,6 +1009,21 @@ pub fn get_school_schedule(
 }
 
 #[tauri::command]
+pub fn set_school_group(
+    db: State<Database>,
+    space_id: String,
+    selected_group: Option<String>,
+) -> Result<(), String> {
+    with_conn(&db.conn, |conn| {
+        repositories::school_schedule::set_selected_group(
+            conn,
+            &space_id,
+            selected_group.as_deref(),
+        )
+    })
+}
+
+#[tauri::command]
 pub fn create_integration(
     db: State<Database>,
     input: repositories::integrations::IntegrationCreateInput,

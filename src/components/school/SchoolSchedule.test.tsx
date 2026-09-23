@@ -6,6 +6,7 @@ import type { ExternalEvent, SchoolSchedule as SchoolScheduleData } from '@/lib/
 
 const state = vi.hoisted(() => ({
   data: null as SchoolScheduleData | null,
+  selectGroup: vi.fn(),
 }))
 
 vi.mock('@/hooks/useSchoolSchedule', () => ({
@@ -15,6 +16,7 @@ vi.mock('@/hooks/useSchoolSchedule', () => ({
     error: null,
     isTauri: true,
     reload: vi.fn(),
+    selectGroup: state.selectGroup,
   }),
 }))
 
@@ -42,6 +44,7 @@ function event(
     timezone: 'Europe/Berlin',
     location: 'Room 2.14',
     course_reference: null,
+    group_references: ['ADSAI-ZM-1.a'],
     event_kind: 'lesson',
     status: 'active',
     source_url: null,
@@ -70,6 +73,8 @@ function renderSchedule() {
 describe('School schedule', () => {
   it('defaults to Today and switches locally between representative views', async () => {
     state.data = {
+      group_options: ['ADSAI-ZM-1.a', 'ADSAI-ZM-2.a'],
+      selected_group: 'ADSAI-ZM-1.a',
       sources: [
         {
           connection_id: 'school-source',
@@ -120,6 +125,8 @@ describe('School schedule', () => {
 
   it('shows every active overlap and an honest stale empty state', async () => {
     state.data = {
+      group_options: ['ADSAI-ZM-1.a'],
+      selected_group: 'ADSAI-ZM-1.a',
       sources: [
         {
           connection_id: 'school-source',
@@ -160,7 +167,12 @@ describe('School schedule', () => {
   })
 
   it('shows disconnected and unavailable connection states without pretending data is current', () => {
-    state.data = { events: [], sources: [] }
+    state.data = {
+      events: [],
+      sources: [],
+      group_options: [],
+      selected_group: 'ADSAI-ZM-1.a',
+    }
     const view = renderSchedule()
     expect(screen.getByText('No School calendar is connected.')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: 'Open Connections' })).toHaveAttribute(
@@ -169,6 +181,8 @@ describe('School schedule', () => {
     )
 
     state.data = {
+      group_options: [],
+      selected_group: 'ADSAI-ZM-1.a',
       events: [],
       sources: [
         {
@@ -192,6 +206,8 @@ describe('School schedule', () => {
 
   it('keeps cached events visible when the latest synchronization failed', () => {
     state.data = {
+      group_options: ['ADSAI-ZM-1.a'],
+      selected_group: 'ADSAI-ZM-1.a',
       events: [
         event(
           'cached',
@@ -215,5 +231,25 @@ describe('School schedule', () => {
     renderSchedule()
     expect(screen.getByText(/latest calendar sync failed/)).toBeInTheDocument()
     expect(screen.getByText('Cached lesson')).toBeInTheDocument()
+  })
+
+  it('shows setup without events and persists a locally discovered group selection', async () => {
+    state.selectGroup.mockClear()
+    state.data = {
+      events: [],
+      sources: [],
+      group_options: ['ADSAI-DH-1.a', 'ADSAI-ZM-1.a'],
+      selected_group: null,
+    }
+    renderSchedule()
+
+    expect(screen.getByText('Select your school group')).toBeInTheDocument()
+    expect(screen.queryByRole('tab', { name: 'Today' })).not.toBeInTheDocument()
+    expect(screen.queryByText('No school events today.')).not.toBeInTheDocument()
+    const selector = screen.getByRole('combobox', { name: 'School group' })
+    expect(selector).toHaveTextContent('ADSAI-ZM-1.a')
+
+    await userEvent.selectOptions(selector, 'ADSAI-ZM-1.a')
+    expect(state.selectGroup).toHaveBeenCalledWith('ADSAI-ZM-1.a')
   })
 })
