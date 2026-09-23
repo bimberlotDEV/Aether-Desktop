@@ -56,5 +56,47 @@ export function useConnections() {
     }
   }, [])
 
-  return { connections, loading, error, updatingId, isTauri, load, setEnabled }
+  const refresh = useCallback(
+    async (integration: Integration) => {
+      setUpdatingId(integration.id)
+      setError(null)
+      try {
+        await db.requestIntegrationSync(integration.id)
+        await load()
+      } catch (cause) {
+        setError(errorMessage(cause))
+      } finally {
+        setUpdatingId(null)
+      }
+    },
+    [load],
+  )
+
+  const disconnectMyTimetable = useCallback(
+    async (integration: Integration) => {
+      setUpdatingId(integration.id)
+      setError(null)
+      try {
+        await db.disconnectMyTimetable(integration.id)
+        await load()
+      } catch (cause) {
+        setError(errorMessage(cause))
+      } finally {
+        setUpdatingId(null)
+      }
+    },
+    [load],
+  )
+
+  return {
+    connections,
+    loading,
+    error,
+    updatingId,
+    isTauri,
+    load,
+    setEnabled,
+    refresh,
+    disconnectMyTimetable,
+  }
 }

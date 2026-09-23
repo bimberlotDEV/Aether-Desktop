@@ -10,47 +10,161 @@ export const AppSettingSchema = z.object({
 export type AppSetting = z.infer<typeof AppSettingSchema>
 
 export const ExternalEventSchema = z.object({
-  id: z.string(), connection_id: z.string(), external_id: z.string(), occurrence_id: z.string().nullable(), title: z.string(), description: z.string().nullable(),
-  time_kind: z.enum(['timed', 'all_day']), start_at_utc: z.string().nullable(), end_at_utc: z.string().nullable(), start_date: z.string().nullable(), end_date: z.string().nullable(), timezone: z.string(),
-  location: z.string().nullable(), course_reference: z.string().nullable(), event_kind: z.string(), status: z.enum(['active', 'cancelled', 'removed']), source_url: z.string().url().nullable(),
-  ingestion_provenance: z.string(), source_version: z.string(), content_hash: z.string(), first_seen_at: z.string(), last_seen_at: z.string(), synchronized_at: z.string(), created_at: z.string(), updated_at: z.string(),
+  id: z.string(),
+  connection_id: z.string(),
+  external_id: z.string(),
+  occurrence_id: z.string().nullable(),
+  title: z.string(),
+  description: z.string().nullable(),
+  time_kind: z.enum(['timed', 'all_day']),
+  start_at_utc: z.string().nullable(),
+  end_at_utc: z.string().nullable(),
+  start_date: z.string().nullable(),
+  end_date: z.string().nullable(),
+  timezone: z.string(),
+  location: z.string().nullable(),
+  course_reference: z.string().nullable(),
+  event_kind: z.string(),
+  status: z.enum(['active', 'cancelled', 'removed']),
+  source_url: z.string().url().nullable(),
+  ingestion_provenance: z.string(),
+  source_version: z.string(),
+  content_hash: z.string(),
+  first_seen_at: z.string(),
+  last_seen_at: z.string(),
+  synchronized_at: z.string(),
+  created_at: z.string(),
+  updated_at: z.string(),
 })
 export type ExternalEvent = z.infer<typeof ExternalEventSchema>
-export const ExternalEventRangeSchema = z.object({ connectionId: z.string().min(1).max(64).optional(), start: z.string().datetime({ offset: true }), end: z.string().datetime({ offset: true }), includeRemoved: z.boolean().optional(), limit: z.number().int().min(1).max(500).optional() }).refine((range) => range.start < range.end, { message: 'Range end must be after start' })
+export const ExternalEventRangeSchema = z
+  .object({
+    connectionId: z.string().min(1).max(64).optional(),
+    start: z.string().datetime({ offset: true }),
+    end: z.string().datetime({ offset: true }),
+    includeRemoved: z.boolean().optional(),
+    limit: z.number().int().min(1).max(500).optional(),
+  })
+  .refine((range) => range.start < range.end, {
+    message: 'Range end must be after start',
+  })
 export type ExternalEventRange = z.input<typeof ExternalEventRangeSchema>
 
-export const IntegrationAuthTypeSchema = z.enum(['none', 'api_key', 'api_token', 'oauth', 'ics_feed', 'feed_url', 'oauth_authorization_code'])
-export const IntegrationConnectionStatusSchema = z.enum(['connected', 'syncing', 'degraded', 'reauthentication_required', 'permission_denied', 'rate_limited', 'institution_configuration_required', 'unsupported', 'disconnected'])
-export const IntegrationSyncStatusSchema = z.enum(['idle', 'pending', 'syncing', 'succeeded', 'failed'])
-export const IntegrationSyncModeSchema = z.enum(['manual', 'periodic', 'app_start', 'app_resume', 'webhook'])
+export const IntegrationAuthTypeSchema = z.enum([
+  'none',
+  'api_key',
+  'api_token',
+  'oauth',
+  'ics_feed',
+  'feed_url',
+  'oauth_authorization_code',
+])
+export const IntegrationConnectionStatusSchema = z.enum([
+  'connected',
+  'syncing',
+  'degraded',
+  'reauthentication_required',
+  'permission_denied',
+  'rate_limited',
+  'institution_configuration_required',
+  'unsupported',
+  'disconnected',
+])
+export const IntegrationSyncStatusSchema = z.enum([
+  'idle',
+  'pending',
+  'syncing',
+  'succeeded',
+  'failed',
+])
+export const IntegrationSyncModeSchema = z.enum([
+  'manual',
+  'periodic',
+  'app_start',
+  'app_resume',
+  'webhook',
+])
 export const IntegrationSchema = z.object({
-  id: z.string(), provider_id: z.string(), enabled: z.boolean(), advertised_capabilities: z.array(z.string()), effective_capabilities: z.array(z.string()),
-  auth_type: IntegrationAuthTypeSchema, sync_modes: z.array(IntegrationSyncModeSchema), sync_config: z.record(z.string(), z.unknown()),
-  connection_status: IntegrationConnectionStatusSchema, sync_status: IntegrationSyncStatusSchema,
-  disconnect_reason: z.enum(['local', 'remote_revoke']).nullable(), last_attempted_at: z.string().nullable(), last_successful_sync_at: z.string().nullable(), next_allowed_sync_at: z.string().nullable(),
-  last_sync_error_code: z.string().nullable(), last_sync_error_message: z.string().nullable(), last_sync_etag: z.string().nullable(), last_sync_last_modified: z.string().nullable(), sync_cursor: z.string().nullable(), rate_limit_remaining: z.number().int().nullable(), retry_after_at: z.string().nullable(), credential_expires_at: z.string().nullable(), credential_rotated_at: z.string().nullable(), sync_execution_scope: z.literal('desktop_running'),
-  created_at: z.string(), updated_at: z.string(),
+  id: z.string(),
+  provider_id: z.string(),
+  enabled: z.boolean(),
+  advertised_capabilities: z.array(z.string()),
+  effective_capabilities: z.array(z.string()),
+  auth_type: IntegrationAuthTypeSchema,
+  sync_modes: z.array(IntegrationSyncModeSchema),
+  sync_config: z.record(z.string(), z.unknown()),
+  connection_status: IntegrationConnectionStatusSchema,
+  sync_status: IntegrationSyncStatusSchema,
+  disconnect_reason: z.enum(['local', 'remote_revoke']).nullable(),
+  last_attempted_at: z.string().nullable(),
+  last_successful_sync_at: z.string().nullable(),
+  next_allowed_sync_at: z.string().nullable(),
+  last_sync_error_code: z.string().nullable(),
+  last_sync_error_message: z.string().nullable(),
+  last_sync_etag: z.string().nullable(),
+  last_sync_last_modified: z.string().nullable(),
+  sync_cursor: z.string().nullable(),
+  rate_limit_remaining: z.number().int().nullable(),
+  retry_after_at: z.string().nullable(),
+  credential_expires_at: z.string().nullable(),
+  credential_rotated_at: z.string().nullable(),
+  sync_execution_scope: z.literal('desktop_running'),
+  created_at: z.string(),
+  updated_at: z.string(),
 })
 export type Integration = z.infer<typeof IntegrationSchema>
 export const IntegrationCreateInputSchema = z.object({
-  providerId: z.string().trim().min(1).max(100), enabled: z.boolean().optional(),
-  advertisedCapabilities: z.array(z.string().trim().min(1).max(100)).max(32).default([]), authType: IntegrationAuthTypeSchema,
-  syncModes: z.array(IntegrationSyncModeSchema).max(32).default([]), syncConfig: z.record(z.string(), z.unknown()).default({}),
+  providerId: z.string().trim().min(1).max(100),
+  enabled: z.boolean().optional(),
+  advertisedCapabilities: z.array(z.string().trim().min(1).max(100)).max(32).default([]),
+  authType: IntegrationAuthTypeSchema,
+  syncModes: z.array(IntegrationSyncModeSchema).max(32).default([]),
+  syncConfig: z.record(z.string(), z.unknown()).default({}),
 })
 export type IntegrationCreateInput = z.input<typeof IntegrationCreateInputSchema>
 export const IntegrationSyncRequestResultSchema = z.discriminatedUnion('status', [
-  z.object({ status: z.literal('accepted') }), z.object({ status: z.literal('coalesced') }),
-  z.object({ status: z.literal('deferred'), eligible_at: z.string() }), z.object({ status: z.literal('rejected'), reason: z.string() }),
+  z.object({ status: z.literal('accepted') }),
+  z.object({ status: z.literal('coalesced') }),
+  z.object({ status: z.literal('deferred'), eligible_at: z.string() }),
+  z.object({ status: z.literal('rejected'), reason: z.string() }),
 ])
-export type IntegrationSyncRequestResult = z.infer<typeof IntegrationSyncRequestResultSchema>
-export const IntegrationSyncRuntimeStatusSchema = z.object({ runningCount: z.number().int().nonnegative(), queuedCount: z.number().int().nonnegative(), shuttingDown: z.boolean() })
-export type IntegrationSyncRuntimeStatus = z.infer<typeof IntegrationSyncRuntimeStatusSchema>
-export const SubscribedCalendarSchema = z.object({ id: z.string(), connection_id: z.string(), display_name: z.string().nullable(), created_at: z.string(), updated_at: z.string() })
+export type IntegrationSyncRequestResult = z.infer<
+  typeof IntegrationSyncRequestResultSchema
+>
+export const IntegrationSyncRuntimeStatusSchema = z.object({
+  runningCount: z.number().int().nonnegative(),
+  queuedCount: z.number().int().nonnegative(),
+  shuttingDown: z.boolean(),
+})
+export type IntegrationSyncRuntimeStatus = z.infer<
+  typeof IntegrationSyncRuntimeStatusSchema
+>
+export const SubscribedCalendarSchema = z.object({
+  id: z.string(),
+  connection_id: z.string(),
+  display_name: z.string().nullable(),
+  created_at: z.string(),
+  updated_at: z.string(),
+})
 export type SubscribedCalendar = z.infer<typeof SubscribedCalendarSchema>
-export const SubscribedCalendarInputSchema = z.object({ connectionId: z.string().min(1).max(64), feedUrl: z.string().url().max(2048), displayName: z.string().max(200).nullable().optional() })
+export const SubscribedCalendarInputSchema = z.object({
+  connectionId: z.string().min(1).max(64),
+  feedUrl: z.string().url().max(2048),
+  displayName: z.string().max(200).nullable().optional(),
+})
 export type SubscribedCalendarInput = z.input<typeof SubscribedCalendarInputSchema>
-export const IcsValidationSchema = z.object({ usable: z.boolean(), event_count: z.number().int().nonnegative(), error_code: z.string().nullable() })
+export const IcsValidationSchema = z.object({
+  usable: z.boolean(),
+  event_count: z.number().int().nonnegative(),
+  error_code: z.string().nullable(),
+  display_name: z.string().nullable(),
+  covered_start: z.string().nullable(),
+  covered_end: z.string().nullable(),
+  public_host: z.string().nullable(),
+  warnings: z.array(z.string()),
+})
 export type IcsValidation = z.infer<typeof IcsValidationSchema>
+export const MyTimetableConnectInputSchema = z.object({ url: z.string().url().max(2048) })
 
 export const UserProfileSchema = z.object({
   id: z.string(),

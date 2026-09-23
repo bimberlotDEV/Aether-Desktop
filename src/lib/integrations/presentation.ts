@@ -1,4 +1,3 @@
-
 export const connectionStatusDetails = {
   connected: {
     label: 'Connected',
@@ -52,10 +51,10 @@ export type ConnectionStatusTone =
 
 export const providerCatalog = [
   {
-    id: 'mytimetable',
+    id: 'my_timetable',
     name: 'MyTimetable',
     category: 'School schedule',
-    setupSupported: false,
+    setupSupported: true,
   },
   {
     id: 'brightspace',

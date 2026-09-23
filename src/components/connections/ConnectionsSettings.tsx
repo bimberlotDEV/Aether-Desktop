@@ -5,7 +5,9 @@ import {
   RefreshCw,
   SlidersHorizontal,
 } from 'lucide-react'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import type { FormEvent } from 'react'
+import * as db from '@/lib/db/tauri'
 import { useConnections } from '@/hooks/useConnections'
 import {
   connectionStatusDetails,
@@ -21,6 +23,8 @@ import { EmptyState, SectionLabel, Surface } from '@/components/ui/AetherUI'
 
 export function ConnectionsSettings() {
   const connections = useConnections()
+  const [setupOpen, setSetupOpen] = useState(false)
+  const [replacementId, setReplacementId] = useState<string | null>(null)
   const sectionRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
@@ -84,12 +88,44 @@ export function ConnectionsSettings() {
               onEnabledChange={(enabled) =>
                 void connections.setEnabled(connection, enabled)
               }
+              onRefresh={() => void connections.refresh(connection)}
+              onDisconnect={() => {
+                if (
+                  window.confirm(
+                    'Disconnect MyTimetable? Cached calendar items follow the standard connection removal policy.',
+                  )
+                )
+                  void connections.disconnectMyTimetable(connection)
+              }}
+              onReplace={() => {
+                setReplacementId(connection.id)
+                setSetupOpen(true)
+              }}
             />
           ))}
         </div>
       )}
 
-      <ProviderCatalog />
+      <ProviderCatalog
+        onSetup={() => {
+          setReplacementId(null)
+          setSetupOpen(true)
+        }}
+      />
+      {setupOpen && (
+        <MyTimetableSetup
+          connectionId={replacementId}
+          onClose={() => {
+            setSetupOpen(false)
+            setReplacementId(null)
+          }}
+          onConnected={() => {
+            setSetupOpen(false)
+            setReplacementId(null)
+            void connections.load()
+          }}
+        />
+      )}
     </section>
   )
 }
@@ -148,10 +184,16 @@ function ConnectionCard({
   connection,
   updating,
   onEnabledChange,
+  onRefresh,
+  onDisconnect,
+  onReplace,
 }: {
   connection: Integration
   updating: boolean
   onEnabledChange: (enabled: boolean) => void
+  onRefresh: () => void
+  onDisconnect: () => void
+  onReplace: () => void
 }) {
   const status = connectionStatusDetails[connection.connection_status]
   const error = safeErrorSummary(connection.last_sync_error_message)
@@ -245,6 +287,34 @@ function ConnectionCard({
           <p className="mt-1 text-sm text-[var(--color-text-primary)]">{error}</p>
         </div>
       )}
+      {connection.provider_id === 'my_timetable' && (
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            type="button"
+            className="aether-button aether-button--secondary focus-ring"
+            disabled={updating}
+            onClick={onRefresh}
+          >
+            <RefreshCw size={14} aria-hidden="true" /> Refresh now
+          </button>
+          <button
+            type="button"
+            className="aether-button aether-button--secondary focus-ring"
+            disabled={updating}
+            onClick={onReplace}
+          >
+            Replace subscription link
+          </button>
+          <button
+            type="button"
+            className="aether-button aether-button--secondary focus-ring"
+            disabled={updating}
+            onClick={onDisconnect}
+          >
+            Disconnect
+          </button>
+        </div>
+      )}
     </Surface>
   )
 }
@@ -301,7 +371,7 @@ function StatusBadge({ label, tone }: { label: string; tone: ConnectionStatusTon
   )
 }
 
-function ProviderCatalog() {
+function ProviderCatalog({ onSetup }: { onSetup: () => void }) {
   return (
     <section className="mt-7" aria-labelledby="provider-catalog-heading">
       <p className="text-xs font-medium text-[var(--color-text-secondary)]">
@@ -326,12 +396,121 @@ function ProviderCatalog() {
             <p className="mt-1 text-xs text-[var(--color-text-tertiary)]">
               {provider.category}
             </p>
-            <p className="mt-3 text-xs font-medium text-[var(--color-text-tertiary)]">
-              Setup unavailable
-            </p>
+            {provider.setupSupported ? (
+              <button
+                type="button"
+                className="aether-button aether-button--secondary focus-ring mt-3"
+                onClick={onSetup}
+              >
+                Connect calendar
+              </button>
+            ) : (
+              <p className="mt-3 text-xs font-medium text-[var(--color-text-tertiary)]">
+                Setup unavailable
+              </p>
+            )}
           </Surface>
         ))}
       </div>
     </section>
+  )
+}
+
+function MyTimetableSetup({
+  connectionId,
+  onClose,
+  onConnected,
+}: {
+  connectionId: string | null
+  onClose: () => void
+  onConnected: () => void
+}) {
+  const [url, setUrl] = useState('')
+  const [message, setMessage] = useState<string | null>(null)
+  const [working, setWorking] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    inputRef.current?.focus()
+  }, [])
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault()
+    setWorking(true)
+    setMessage(null)
+    try {
+      const validation = await db.validateMyTimetable(url)
+      if (!validation.usable)
+        throw new Error('This link did not contain a usable calendar.')
+      if (connectionId) await db.replaceMyTimetableLink(connectionId, url)
+      else await db.connectMyTimetable(url)
+      setUrl('')
+      onConnected()
+    } catch {
+      setMessage(
+        'Aether could not validate or connect this calendar link. Your link was not saved.',
+      )
+    } finally {
+      setWorking(false)
+      setUrl('')
+    }
+  }
+  return (
+    <Surface
+      className="mt-4 p-5"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="mytimetable-setup-heading"
+    >
+      <h3
+        id="mytimetable-setup-heading"
+        className="text-sm font-semibold text-[var(--color-text-primary)]"
+      >
+        {connectionId ? 'Replace MyTimetable subscription link' : 'Connect MyTimetable'}
+      </h3>
+      <p className="mt-1 text-xs leading-5 text-[var(--color-text-tertiary)]">
+        Paste the HTTPS calendar subscription link from MyTimetable. It is stored as a
+        private bearer credential and is never shown again. If MyTimetable resets it,
+        replace the link here; Aether cannot renew it automatically.
+      </p>
+      <form className="mt-4 space-y-3" onSubmit={submit}>
+        <label className="block text-sm font-medium text-[var(--color-text-primary)]">
+          Calendar subscription link
+          <input
+            ref={inputRef}
+            required
+            type="url"
+            autoComplete="off"
+            value={url}
+            onChange={(event) => setUrl(event.target.value)}
+            className="focus-ring mt-1 block w-full rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2"
+          />
+        </label>
+        {message && (
+          <p role="alert" className="text-sm text-[var(--color-danger)]">
+            {message}
+          </p>
+        )}
+        <div className="flex gap-2">
+          <button type="submit" className="aether-button focus-ring" disabled={working}>
+            {working
+              ? 'Validating…'
+              : connectionId
+                ? 'Validate and replace'
+                : 'Validate and connect'}
+          </button>
+          <button
+            type="button"
+            className="aether-button aether-button--secondary focus-ring"
+            onClick={() => {
+              setUrl('')
+              onClose()
+            }}
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
+    </Surface>
   )
 }

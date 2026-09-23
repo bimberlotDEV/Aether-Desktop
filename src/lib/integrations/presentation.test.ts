@@ -37,8 +37,15 @@ describe('integration presentation helpers', () => {
     ).toBe('Request to [redacted] failed with [redacted].')
   })
 
-  it('marks every catalog provider as unavailable for setup', () => {
+  it('marks only MyTimetable as available for supported calendar setup', () => {
     expect(providerCatalog).toHaveLength(4)
-    expect(providerCatalog.every((provider) => !provider.setupSupported)).toBe(true)
+    expect(
+      providerCatalog.find((provider) => provider.id === 'my_timetable')?.setupSupported,
+    ).toBe(true)
+    expect(
+      providerCatalog
+        .filter((provider) => provider.id !== 'my_timetable')
+        .every((provider) => !provider.setupSupported),
+    ).toBe(true)
   })
 })

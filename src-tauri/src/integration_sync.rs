@@ -23,6 +23,11 @@ use tokio::{
 use tokio_util::sync::CancellationToken;
 
 const PROVIDER_ICS: &str = "calendar_ics";
+const PROVIDER_MY_TIMETABLE: &str = "my_timetable";
+
+fn is_ics_provider(provider: &str) -> bool {
+    matches!(provider, PROVIDER_ICS | PROVIDER_MY_TIMETABLE)
+}
 const PERIODIC_SECONDS: u64 = 15 * 60;
 const TIMEOUT_SECONDS: u64 = 30;
 const SUCCESS_INTERVAL_MINUTES: i64 = 30;
@@ -173,7 +178,7 @@ impl RuntimeHost for TauriRuntimeHost {
         record: &integrations::SyncRuntimeRecord,
         cancel: CancellationToken,
     ) -> Result<(PreparedSync, SyncPolicy), SyncFailure> {
-        if record.integration.provider_id != PROVIDER_ICS {
+        if !is_ics_provider(&record.integration.provider_id) {
             return Err(SyncFailure {
                 code: "unsupported",
                 message: "Provider is unsupported",
@@ -226,43 +231,51 @@ impl RuntimeHost for TauriRuntimeHost {
                 connection_status: "connected",
             });
         }
-        let prepared =
-            match fetched {
-                calendar_ics::FetchResult::NotModified => PreparedSync::NotModified,
-                calendar_ics::FetchResult::RateLimited {
-                    retry_after_at,
-                    rate_limit_reset_at,
-                } => PreparedSync::RateLimited {
-                    eligible_at: latest_allowed(retry_after_at, rate_limit_reset_at),
-                },
-                calendar_ics::FetchResult::Complete {
-                    bytes,
+        let prepared = match fetched {
+            calendar_ics::FetchResult::NotModified => PreparedSync::NotModified,
+            calendar_ics::FetchResult::RateLimited {
+                retry_after_at,
+                rate_limit_reset_at,
+            } => PreparedSync::RateLimited {
+                eligible_at: latest_allowed(retry_after_at, rate_limit_reset_at),
+            },
+            calendar_ics::FetchResult::Complete {
+                bytes,
+                etag,
+                last_modified,
+                retry_after_at,
+                rate_limit_reset_at,
+            } => {
+                // Successful payloads do not impose a failure gate, but consume only
+                // the safe timing metadata here so the fetch contract remains closed.
+                let _safe_provider_gate = latest_allowed(retry_after_at, rate_limit_reset_at);
+                let now = Utc::now();
+                let events = if record.integration.provider_id == PROVIDER_MY_TIMETABLE {
+                    calendar_ics::normalize_with_classifier(
+                        &bytes,
+                        &record.integration.id,
+                        now,
+                        crate::my_timetable::classify,
+                    )
+                } else {
+                    calendar_ics::normalize(&bytes, &record.integration.id, now)
+                }
+                .map_err(|_| SyncFailure {
+                    code: "provider_data",
+                    message: "Calendar feed data could not be safely processed",
+                    connection_status: "degraded",
+                })?;
+                PreparedSync::Ics {
+                    events,
                     etag,
                     last_modified,
-                    retry_after_at,
-                    rate_limit_reset_at,
-                } => {
-                    // Successful payloads do not impose a failure gate, but consume only
-                    // the safe timing metadata here so the fetch contract remains closed.
-                    let _safe_provider_gate = latest_allowed(retry_after_at, rate_limit_reset_at);
-                    let now = Utc::now();
-                    let events = calendar_ics::normalize(&bytes, &record.integration.id, now)
-                        .map_err(|_| SyncFailure {
-                            code: "provider_data",
-                            message: "Calendar feed data could not be safely processed",
-                            connection_status: "degraded",
-                        })?;
-                    PreparedSync::Ics {
-                        events,
-                        etag,
-                        last_modified,
-                        window_start: (now - Duration::days(366))
-                            .to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
-                        window_end: (now + Duration::days(366))
-                            .to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
-                    }
+                    window_start: (now - Duration::days(366))
+                        .to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
+                    window_end: (now + Duration::days(366))
+                        .to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
                 }
-            };
+            }
+        };
         Ok((
             prepared,
             SyncPolicy {
@@ -466,7 +479,7 @@ fn request(
             reason: "Connection is disabled".into(),
         };
     }
-    if record.integration.provider_id != PROVIDER_ICS {
+    if !is_ics_provider(&record.integration.provider_id) {
         return SyncRequestResult::Rejected {
             reason: "Provider is unsupported".into(),
         };

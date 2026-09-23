@@ -8,6 +8,7 @@ mod context;
 mod db;
 mod diagnostics;
 mod integration_sync;
+mod my_timetable;
 mod native;
 mod updater;
 mod vault;
@@ -201,6 +202,11 @@ pub fn run() {
             commands::get_integration_sync_runtime_status,
             commands::configure_subscribed_calendar,
             commands::validate_subscribed_calendar_url,
+            my_timetable::my_timetable_profile,
+            my_timetable::my_timetable_validate,
+            my_timetable::my_timetable_connect,
+            my_timetable::my_timetable_replace,
+            my_timetable::my_timetable_disconnect,
             // AI
             commands::ai_list_models,
             commands::ai_parse_action_proposals,

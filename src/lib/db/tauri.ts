@@ -54,7 +54,18 @@ import type {
   SubscribedCalendarInput,
   IcsValidation,
 } from './types'
-import { BetaDiagnosticReportSchema, ExternalEventRangeSchema, ExternalEventSchema, IntegrationCreateInputSchema, IntegrationSchema, IntegrationSyncRequestResultSchema, IntegrationSyncRuntimeStatusSchema, SubscribedCalendarSchema, SubscribedCalendarInputSchema, IcsValidationSchema } from './types'
+import {
+  BetaDiagnosticReportSchema,
+  ExternalEventRangeSchema,
+  ExternalEventSchema,
+  IntegrationCreateInputSchema,
+  IntegrationSchema,
+  IntegrationSyncRequestResultSchema,
+  IntegrationSyncRuntimeStatusSchema,
+  SubscribedCalendarSchema,
+  SubscribedCalendarInputSchema,
+  IcsValidationSchema,
+} from './types'
 
 // ─── Native desktop ─────────────────────────────────────
 export async function getNativeStatus(): Promise<NativeStatus> {
@@ -608,12 +619,18 @@ export async function getSpaceContinuity(spaceId: string): Promise<SpaceContinui
 }
 
 // ─── Integrations ────────────────────────────────────────
-export async function listExternalEvents(range: ExternalEventRange): Promise<ExternalEvent[]> {
+export async function listExternalEvents(
+  range: ExternalEventRange,
+): Promise<ExternalEvent[]> {
   const parsed = ExternalEventRangeSchema.parse(range)
-  return ExternalEventSchema.array().parse(await invoke('list_external_events', { range: parsed }))
+  return ExternalEventSchema.array().parse(
+    await invoke('list_external_events', { range: parsed }),
+  )
 }
 
-export async function createIntegration(input: IntegrationCreateInput): Promise<Integration> {
+export async function createIntegration(
+  input: IntegrationCreateInput,
+): Promise<Integration> {
   const parsed = IntegrationCreateInputSchema.parse(input)
   return IntegrationSchema.parse(await invoke('create_integration', { input: parsed }))
 }
@@ -627,24 +644,54 @@ export async function listIntegrations(): Promise<Integration[]> {
   return IntegrationSchema.array().parse(await invoke('list_integrations'))
 }
 
-export async function setIntegrationEnabled(id: string, enabled: boolean): Promise<Integration | null> {
+export async function setIntegrationEnabled(
+  id: string,
+  enabled: boolean,
+): Promise<Integration | null> {
   const result = await invoke<unknown>('set_integration_enabled', { id, enabled })
   return result === null ? null : IntegrationSchema.parse(result)
 }
 
 export async function requestIntegrationSync(connectionId: string) {
-  return IntegrationSyncRequestResultSchema.parse(await invoke('request_integration_sync', { connectionId }))
+  return IntegrationSyncRequestResultSchema.parse(
+    await invoke('request_integration_sync', { connectionId }),
+  )
 }
 
 export async function getIntegrationSyncRuntimeStatus() {
-  return IntegrationSyncRuntimeStatusSchema.parse(await invoke('get_integration_sync_runtime_status'))
+  return IntegrationSyncRuntimeStatusSchema.parse(
+    await invoke('get_integration_sync_runtime_status'),
+  )
 }
 
-export async function configureSubscribedCalendar(input: SubscribedCalendarInput): Promise<SubscribedCalendar> {
+export async function configureSubscribedCalendar(
+  input: SubscribedCalendarInput,
+): Promise<SubscribedCalendar> {
   const parsed = SubscribedCalendarInputSchema.parse(input)
-  return SubscribedCalendarSchema.parse(await invoke('configure_subscribed_calendar', { input: parsed }))
+  return SubscribedCalendarSchema.parse(
+    await invoke('configure_subscribed_calendar', { input: parsed }),
+  )
 }
 
-export async function validateSubscribedCalendarUrl(feedUrl: string): Promise<IcsValidation> {
-  return IcsValidationSchema.parse(await invoke('validate_subscribed_calendar_url', { feedUrl }))
+export async function validateSubscribedCalendarUrl(
+  feedUrl: string,
+): Promise<IcsValidation> {
+  return IcsValidationSchema.parse(
+    await invoke('validate_subscribed_calendar_url', { feedUrl }),
+  )
+}
+export async function validateMyTimetable(url: string): Promise<IcsValidation> {
+  return IcsValidationSchema.parse(await invoke('my_timetable_validate', { url }))
+}
+export async function connectMyTimetable(url: string): Promise<Integration> {
+  return IntegrationSchema.parse(await invoke('my_timetable_connect', { url }))
+}
+export async function replaceMyTimetableLink(
+  connectionId: string,
+  url: string,
+): Promise<void> {
+  return invoke('my_timetable_replace', { connectionId, url })
+}
+export async function disconnectMyTimetable(connectionId: string): Promise<boolean> {
+  return invoke('my_timetable_disconnect', { connectionId })
 }
