@@ -999,6 +999,16 @@ pub fn list_external_events(
 }
 
 #[tauri::command]
+pub fn get_school_schedule(
+    db: State<Database>,
+    request: repositories::school_schedule::SchoolScheduleRequest,
+) -> Result<repositories::school_schedule::SchoolSchedule, String> {
+    with_conn(&db.conn, |conn| {
+        repositories::school_schedule::get(conn, &request)
+    })
+}
+
+#[tauri::command]
 pub fn create_integration(
     db: State<Database>,
     input: repositories::integrations::IntegrationCreateInput,

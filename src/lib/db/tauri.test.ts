@@ -62,6 +62,7 @@ import {
   createIntegration,
   listIntegrations,
   listExternalEvents,
+  getSchoolSchedule,
 } from '@/lib/db/tauri'
 
 describe('Tauri database boundary', () => {
@@ -163,6 +164,29 @@ describe('Tauri database boundary', () => {
 
     expect(invoke).toHaveBeenCalledWith('list_external_events', {
       range: expect.objectContaining({ connectionId: 'integration-1', limit: 50 }),
+    })
+  })
+
+  it('loads the School schedule through one bounded local read command', async () => {
+    invoke.mockResolvedValueOnce({ events: [], sources: [] })
+    await getSchoolSchedule({
+      spaceId: 'school-space',
+      startUtc: '2026-09-20T22:00:00Z',
+      endUtc: '2026-12-22T23:00:00Z',
+      startDate: '2026-09-21',
+      endDate: '2026-12-23',
+      limit: 250,
+    })
+
+    expect(invoke).toHaveBeenCalledWith('get_school_schedule', {
+      request: {
+        spaceId: 'school-space',
+        startUtc: '2026-09-20T22:00:00Z',
+        endUtc: '2026-12-22T23:00:00Z',
+        startDate: '2026-09-21',
+        endDate: '2026-12-23',
+        limit: 250,
+      },
     })
   })
 

@@ -31,6 +31,7 @@ import { AiView } from '@/components/ai/AiView'
 import { MemoryView } from '@/components/memory/MemoryView'
 import { useSpaceContinuity } from '@/hooks/useContinuity'
 import type { ContinuityItem } from '@/lib/db/types'
+import { SchoolSchedule } from '@/components/school/SchoolSchedule'
 
 const MODULE_ICONS: Record<
   string,
@@ -358,6 +359,10 @@ export function OverviewTab({
           )}
         </div>
       </div>
+
+      {space.template_type === 'school' && !space.parent_space_id && (
+        <SchoolSchedule spaceId={space.id} />
+      )}
 
       <section aria-labelledby="continue-heading">
         <div className="aether-continuity-heading">

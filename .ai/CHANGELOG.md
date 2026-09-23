@@ -26,6 +26,17 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-09-23 — `SCHOOL-SPACE-001` — ICS-first School Space timetable
+
+- **Type:** Feature, UX, and test
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review
+- **Summary:** Extended the existing parent School Space with local-only Today, Week, and Upcoming timetable views, truthful cancellation/overlap/all-day rendering, and persisted connection freshness states.
+- **Files:** `src-tauri/src/db/repositories/school_schedule.rs`, typed School schedule IPC, `src/lib/school/`, `src/hooks/useSchoolSchedule.ts`, `src/components/school/`, `src/routes/SpaceDetail.tsx`, and `.ai/*` control records.
+- **Verification:** focused frontend tests (4 files / 35 tests), focused Rust tests (5 tests), `pnpm typecheck`, `pnpm lint`, `pnpm test` (37 files / 129 tests), `pnpm build`, `cargo fmt --check`, strict Clippy, `cargo test` (151 tests), and `git diff --check` — Pass.
+- **Decisions/deviations:** No migration or ADR was needed. The read model validates an active parent School Space and joins `external_events` only through configured `subscribed_calendars` whose Integration provider is `my_timetable`; rendering never fetches or synchronizes. UTC instant bounds and local date-only bounds remain distinct. No Course or moved-state inference is made from ICS text or update timestamps.
+- **Follow-up:** `SCHOOL-BSP-001` and `PULSE-003` remain separately scoped and were not started.
+
 ## 2026-09-23 — `SCHOOL-MTT-001` — Secure MyTimetable subscribed-calendar connector
 
 - **Type:** Feature, security, integration, and test

@@ -194,6 +194,7 @@ pub fn run() {
             commands::list_activity,
             commands::get_space_continuity,
             commands::list_external_events,
+            commands::get_school_schedule,
             commands::create_integration,
             commands::get_integration,
             commands::list_integrations,

@@ -65,6 +65,12 @@ vi.mock('@/hooks/useContinuity', () => ({
   }),
 }))
 
+vi.mock('@/components/school/SchoolSchedule', () => ({
+  SchoolSchedule: ({ spaceId }: { spaceId: string }) => (
+    <div>School schedule for {spaceId}</div>
+  ),
+}))
+
 import { OverviewTab } from '@/routes/SpaceDetail'
 
 const space: Space = {
@@ -127,5 +133,19 @@ describe('Space continuity overview', () => {
     expect(
       screen.queryByText('Continue task: Finish Milestone D'),
     ).not.toBeInTheDocument()
+  })
+
+  it('extends only the active parent School Space with its schedule', () => {
+    render(
+      <MemoryRouter>
+        <OverviewTab
+          space={{ ...space, template_type: 'school', name: 'School' }}
+          modules={[]}
+        >
+          {[]}
+        </OverviewTab>
+      </MemoryRouter>,
+    )
+    expect(screen.getByText('School schedule for space-1')).toBeInTheDocument()
   })
 })
