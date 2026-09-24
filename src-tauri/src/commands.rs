@@ -1100,7 +1100,7 @@ pub fn configure_subscribed_calendar(
 
 #[tauri::command]
 pub async fn validate_subscribed_calendar_url(feed_url: String) -> Result<IcsValidation, String> {
-    match calendar_ics::fetch(&feed_url, None, None).await? {
+    match calendar_ics::fetch(&feed_url, None).await? {
         FetchResult::NotModified => {
             Err("Calendar feed validation needs a complete response".into())
         }

@@ -8,55 +8,53 @@
 | Field | Value |
 | --- | --- |
 | Schema version | 3 |
-| Task ID | `SCHOOL-BSP-001` |
+| Task ID | `CAL-ICS-SEC-001` + `CAL-ICS-REDIRECT-001` |
 | Status | `complete` |
-| Owner | `Codex` |
-| Last updated | 2026-09-23 |
-| Related milestone | Connected Personal Workspace — Brightspace |
+| Owner | Codex |
+| Last updated | 2026-09-24 |
+| Related milestone | Aether 24 — shared Calendar ICS security hardening |
 | Classification | `planned_codex` |
-| Branch / worktree | `agent/brightspace` / current isolated worktree |
+| Branch / worktree | `agent/cal-ics-security` |
 
 ## Objective
 
-Deliver a zero-admin, calendar-only Brightspace connector that validates and stores a renewable HTTPS iCalendar URL exclusively behind Aether's native encrypted credential boundary, reuses CAL-ICS and the Integration Sync Runtime, normalizes only `ExternalEvent` records, and exposes truthful setup and lifecycle controls in Settings → Connections.
+Bound aggregate iCalendar parsing/recurrence work before excessive occurrence allocation and ensure HTTP conditional validators never cross request origins during redirects.
 
 ## Context
 
-`SCHOOL-BSP-CAP-001` established renewable Brightspace iCalendar subscriptions as the safe V1 capability. Integration Core, `subscribed_calendars`, CAL-ICS, Calendar Core, DPAPI storage, the closed native sync runtime, and the MyTimetable connection pattern already exist. Brightspace V1 is not an LMS API integration and must not infer richer school entities from calendar text.
+The Aether 22 security review found that CAL-ICS limits each recurrence but checks the feed-wide result only after expansion, and that ETag/Last-Modified values are currently sent on every validated redirect hop. MyTimetable and the draft Brightspace connector both reuse this shared native layer, so the correction belongs in CAL-ICS rather than provider code.
 
 ## Success criteria
 
-- Brightspace is configured with `provider_id = "brightspace"`, `auth_type = "ics_feed"`, advertised capabilities `calendar_read` and `manual_refresh`, and desktop-running manual/periodic/start/resume sync modes.
-- Validation, connect, replacement, refresh, and disconnect preserve native-only bearer-secret handling and existing CAL-ICS transport protections.
-- Failed validation creates no connection; secret write failure rolls back; failed replacement preserves the old credential, state, and cache; successful replacement is runtime-visible before refresh; disconnect removes the credential and cascades cached provider data.
-- The closed runtime dispatch accepts only the approved Brightspace ICS tuple and normalizes Brightspace events as provider-neutral `ExternalEvent` records with `event_kind = general` unless future deterministic structured metadata is separately approved.
-- Settings → Connections labels Brightspace as calendar-only, explains the renewable subscription URL, shows safe validation metadata, and supports refresh, replacement, and disconnect without displaying the URL.
-- Focused and full requested validation pass, followed by self-review and a pushed draft PR.
+- A centralized feed budget rejects before appending occurrence 2,001 and bounds recurrence expansion using the remaining aggregate allowance.
+- Ordinary events, RRULE/RDATE occurrences, and recurrence overrides all consume the same aggregate budget while the existing ±366-day horizon and per-series ceiling remain intact.
+- RDATE, EXDATE, repeated recurrence properties, per-component property count, and copied untrusted field lengths have explicit deterministic limits with sanitized error codes.
+- Parse/budget failure produces no authoritative reconciliation, preserves cached events, and records a sanitized failed sync.
+- Conditional validators have a persisted private origin association; legacy unassociated validators are cleared on upgrade.
+- Same-origin redirects may retain validators; after an origin change the chain sends neither conditional header, including if a later hop returns to the original origin.
+- Redirect DNS/SSRF, HTTPS, pinned-IP, userinfo, and hop-limit protections remain intact.
+- Same-origin/direct 304 behavior remains successful; an unconditioned cross-origin 304 cannot be mistaken for a valid no-change response.
+- Final-response validators replace prior validators together with the normalized final response origin.
+- Focused adversarial and regression tests plus the required repository validation pass.
 
 ## In scope
 
-- Thin Brightspace ICS provider profile and native commands.
-- Shared subscribed-calendar provider lifecycle extraction where it removes MyTimetable/Brightspace duplication.
-- Narrow closed runtime dispatch keyed by provider plus authentication type.
-- Truthful Connections setup/management UI and safe validation metadata.
-- Deterministic Rust and frontend regression tests.
-- Required `.ai/` completion records and draft PR publication.
+- Shared CAL-ICS parsing, recurrence expansion, transport, and tests.
+- Native Integration Sync plumbing needed to supply and persist validator origin.
+- Append-only SQLite migration and repository behavior for private validator-origin metadata.
+- Existing database and ADR-029 documentation.
+- Current task state, verification, and completion records.
 
 ## Allowed paths
 
-- `src-tauri/src/brightspace.rs`
-- `src-tauri/src/subscribed_calendar_provider.rs`
-- `src-tauri/src/my_timetable.rs`
+- `src-tauri/src/calendar_ics.rs`
 - `src-tauri/src/integration_sync.rs`
+- `src-tauri/src/db/migrations.rs`
 - `src-tauri/src/db/repositories/integrations.rs`
-- `src-tauri/src/lib.rs`
-- `src/lib/db/tauri.ts`
-- `src/lib/db/types.ts`
-- `src/hooks/useConnections.ts`
-- `src/lib/integrations/presentation.ts`
-- `src/lib/integrations/presentation.test.ts`
-- `src/components/connections/ConnectionsSettings.tsx`
-- `src/components/connections/ConnectionsSettings.test.tsx`
+- `src-tauri/src/diagnostics.rs` only for the latest-schema test expectation
+- `src-tauri/src/my_timetable.rs` only if shared signature/regression tests require mechanical updates
+- `docs/database.md`
+- `docs/decisions/029-ics-subscription-ingestion.md`
 - `.ai/HANDOFF.md`
 - `.ai/TODO.md`
 - `.ai/PROJECT_STATE.md`
@@ -65,64 +63,66 @@ Deliver a zero-admin, calendar-only Brightspace connector that validates and sto
 
 ## Out of scope
 
-- Brightspace OAuth, username/password scraping, LMS APIs, Course, Assignment, Deadline, content, or material entities.
-- Title/description/URL/name heuristics that infer richer school semantics.
-- Pulse, AI tools, Safe Actions, School Space redesign, or unrelated provider work.
-- An unrestricted plugin runtime, global sync semantic changes, or a new background service.
+- Generation-safe feed replacement / `CAL-SUB-ROTATE-001`.
+- Integration Sync scheduling / `INT-SYNC-002`.
+- School Space source association / `SCHOOL-SCOPE-002`.
+- Changes to the merged Brightspace provider behavior beyond compatibility with the shared hardened calendar layer.
+- Pulse, AI, frontend, IPC, or provider-specific limit/redirect behavior.
+- Broad async-runtime or threading redesign.
 
 ## Architecture constraints
 
-- Preserve the existing React → typed invoke → Tauri command → native services/repositories → SQLite/DPAPI boundary.
-- Reuse ADR-027 through ADR-030; provider code must add no independent fetcher, parser, scheduler, reconciliation engine, or secret store.
-- The full URL is accepted only by dedicated native configuration commands and is never returned through IPC, logs, backups, normal diagnostics, Integration records, subscription records, or events.
-- Runtime routing remains a closed allowlist and checks both provider ID and `ics_feed` auth type.
-- Authoritative reconciliation occurs only from a complete valid CAL-ICS snapshot; failure and partial paths preserve cached events.
+- Preserve the native trust boundary and provider-neutral CAL-ICS ownership.
+- Preserve authoritative reconciliation as an atomic post-parse commit only.
+- Use one occurrence-budget helper and one redirect/request-policy path.
+- Do not expose validator origin through public Integration serialization or IPC.
+- Keep migrations append-only and existing cached events intact.
 
 ## Dependencies
 
-- `INT-CORE-001`, `INT-CONN-001`, `CAL-CORE-001`, `CAL-ICS-001`, `INT-SYNC-001`, and `SCHOOL-MTT-001` are complete.
-- `SCHOOL-BSP-CAP-001` product research is supplied by the approved implementation brief.
-- No new package or crate dependency is expected.
-- No database migration is required because all persistent records are already provider-neutral.
+- Merged `CAL-ICS-001`, `INT-SYNC-001`, `SCHOOL-MTT-001`, and `SCHOOL-SPACE-001` on `origin/master`.
+- Existing `ical`, `rrule`, `reqwest`, SQLite, and Calendar Core infrastructure.
+
+No new dependency is required.
 
 ## Risks and safeguards
 
-- **Bearer URL exposure:** retain URL solely in encrypted native secret storage; assert redaction/no public serialization.
-- **SSRF/redirect abuse:** route all validation and sync traffic through CAL-ICS without provider transport overrides.
-- **Replacement data loss:** validate first, use the existing atomic credential-store behavior, and do not mutate lifecycle/cache until persistence succeeds.
-- **Semantic overclaiming:** advertise only calendar read/manual refresh and normalize Brightspace data as general events.
-- **Runtime broadening:** add one explicit `(brightspace, ics_feed)` registry case only.
-- **Regression to MyTimetable:** preserve provider-specific structured MyTimetable metadata and rerun its shared/provider tests.
+- **False rejection of normal feeds:** limits align with downstream Calendar Core field limits and existing 2,000-occurrence policy; real-world MyTimetable fixtures remain regression-tested.
+- **Legacy validator ambiguity:** migration clears validators whose origin cannot be proven, forcing one safe complete refresh without deleting cached events.
+- **Incorrect 304:** accept 304 only when at least one validator was actually attached to that exact request.
+- **Data loss on parser failure:** normalization completes before the transaction that reconciles events; failure follows the existing sanitized failure path.
+- **SSRF regression:** keep per-hop URL validation, DNS resolution, public-address checks, pinned addresses, and redirect bounds unchanged and covered.
 
 ## Rollback considerations
 
-The change is additive and requires no migration. Reverting the task commit removes Brightspace commands/UI/runtime registration. Any locally created Brightspace Integration can be disconnected before downgrade; its existing generic foreign-key cascade removes subscription and event rows, while credential cleanup remains owned by the native disconnect flow.
+Code can be reverted, but the additive validator-origin column remains harmless. Cleared legacy validators cause only a future full refresh. No cached event rows or credentials are migrated or deleted.
 
 ## Required validation
 
-- Focused Brightspace Rust tests.
-- Relevant CAL-ICS, Integration Sync Runtime, MyTimetable, and Integration repository tests.
+- Focused CAL-ICS parser/recurrence/security tests.
+- Focused redirect transport tests.
+- Relevant Integration Sync, subscribed-calendar, migration, and MyTimetable regression tests.
 - `cargo test --manifest-path src-tauri/Cargo.toml`
-- Focused Connections/presentation frontend tests.
-- `pnpm test`
+- `cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`
+- `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings`
 - `pnpm typecheck`
 - `pnpm lint`
 - `pnpm build`
-- `cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`
-- `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings`
 - `git diff --check`
+
+Full frontend tests are required only if frontend contracts unexpectedly change; no frontend change is planned.
 
 ## Independent review requirement
 
 | Field | Value |
 | --- | --- |
-| Required | `No` |
-| Reason | Repository workflow requires a distinct evidence-based Codex self-review; no separate reviewer was requested. |
-| Reviewer scope | Final diff, security boundary, runtime dispatch, lifecycle rollback, semantic truthfulness, UI, tests, and scope. |
+| Required | No |
+| Reason | The repository workflow requires a distinct evidence-based Codex self-review; no separate reviewer was requested. |
+| Reviewer scope | Parser budgets, redirect origin isolation, persistence semantics, cache preservation, and scope discipline. |
 
 ## Human decisions required
 
-None. The implementation brief resolves the product/auth/capability boundary and authorizes normal draft-PR publication.
+None. The requested limits and security behavior are bounded by the existing Calendar Core and CAL-ICS architecture.
 
 ## Blocking decisions
 
@@ -132,41 +132,61 @@ None.
 
 | Check | State |
 | --- | --- |
-| Correct branch/worktree confirmed | Pass — `agent/brightspace` at current `origin/master` |
-| `git status` inspected | Pass — clean before task records |
+| Correct branch/worktree confirmed | Pass — `agent/cal-ics-security` |
+| `git status` inspected | Pass — clean before contract updates |
 | User-owned changes identified | None |
-| Parallel task overlap checked | Pass — current worktree owns this task |
-| Serialization points identified | Closed runtime registry, native command registry, Connections UI, Integration capability transition |
+| Parallel task overlap checked | Pass — merged Brightspace behavior is preserved |
+| Serialization points identified | CAL-ICS, Integration validator persistence, migration ordering |
 
 ## Readiness review
 
-Ready. The objective, security model, acceptance criteria, allowed paths, dependencies, rollback, validation, and publication requirements are bounded. Existing accepted ADRs already govern the design; no new durable architecture decision or migration is required.
+Ready. The objective, boundaries, risks, persistence requirement, exact implementation surface, validation, and stop condition are explicit. Production implementation may begin.
 
 ## Implementation log
 
-Implemented a shared closed subscribed-calendar provider lifecycle; added the thin Brightspace profile/commands; registered only `(brightspace, ics_feed)` in the native runtime; preserved MyTimetable structured metadata; activated effective capabilities only after validated configuration; and generalized Connections setup/management with safe validation metadata and calendar-only Brightspace copy.
+- Added a single incremental `OccurrenceBudget` shared by ordinary, recurring, RDATE, and override output; recurrence collection receives only a one-item sentinel beyond the remaining allowance.
+- Added pre-parse logical-line bounds plus per-event/property, recurrence-property, RDATE, EXDATE, category, and Calendar Core-aligned field limits.
+- Added origin-associated conditional validators, explicit follow-redirect statuses, cross-origin sticky header stripping, conditioned-304 enforcement, and bounded response-validator parsing.
+- Added migration `016_ics_validator_origin`, private runtime repository plumbing, atomic validator replacement/preservation semantics, and legacy ICS validator clearing without cache deletion.
+- Updated ADR-029, database documentation, diagnostics schema evidence, and provider/shared regression coverage. No frontend source or dependency changed.
 
 ## Verification evidence
 
-Pass: focused Brightspace Rust tests (4), focused MyTimetable tests (17), closed runtime registry test, focused Integration repository tests (4), focused Connections/presentation tests (16), `pnpm typecheck`, `pnpm lint`, `pnpm test` (37 files / 131 tests), `pnpm build`, `cargo fmt --check`, strict Clippy, `cargo test` (163 tests), and `git diff --check`.
+- Focused CAL-ICS tests: 21 passed.
+- Focused migration tests: 14 passed.
+- Focused Integration Sync tests: 5 passed.
+- Focused Integration repository tests: 5 passed.
+- Focused MyTimetable tests: 18 passed.
+- `cargo test --manifest-path src-tauri/Cargo.toml`: 178 passed after reconciling the merged Brightspace connector.
+- `cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`: passed.
+- `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings`: passed.
+- `pnpm typecheck`: passed.
+- `pnpm lint`: passed.
+- `pnpm test`: 131 passed across 37 files after merge reconciliation.
+- `pnpm build`: passed.
+- `git diff --check`: passed.
 
 ## Acceptance evidence
 
-- Native lifecycle tests prove failed validation/secret writes create no connection, failed replacement retains the old credential and cache, successful replacement is runtime-visible before refresh, disconnect removes the credential/cascades data, and connected state precedes runtime work.
-- CAL-ICS and shared runtime tests cover HTTPS/SSRF/DNS/redirect/size/error/304, stable identity, reconciliation, cancellation/removal/reappearance, failure preservation, and single-flight behavior for the reused path.
-- Brightspace profile and normalization tests prove the exact capability set and that LMS-like text remains a `general` ExternalEvent without inferred entities.
-- Frontend tests prove setup, validation metadata, calendar-only copy, connected controls, replacement, refresh, disconnect, validation state, and URL/error redaction.
-- No schema migration and no new dependency were required.
+- AC1: boundary/adversarial tests prove exactly 2,000 occurrences succeed, 2,001 and combined-series/RDATE overflow fail, and the output vector never grows past the limit.
+- AC2: RDATE/EXDATE counts, repeated recurrence properties, 128 properties/event, 80,000-byte logical properties, and downstream-aligned field lengths fail with fixed sanitized codes.
+- AC3: MyTimetable normalization and cancellation/removal/reappearance tests pass; an adversarial budget failure leaves the cached active event intact.
+- AC4: transport fixtures prove same-origin preservation, cross-origin stripping of both headers, final-origin validator capture, per-hop DNS rejection, multi-origin non-reappearance, direct fetch, and conditioned 304 behavior.
+- AC5: migration/repository tests prove legacy validators are cleared without cached-event loss, final validators and origin replace atomically, 304 preserves them, and origin is absent from serialized Integration IPC state.
 
 ## Self-review
 
-Pass. Final diff is limited to the approved native provider/runtime/Integration seams, typed Connections boundary/UI/tests, and control records. The URL remains native-only and is never serialized or logged; dispatch is a closed provider/auth tuple; MyTimetable behavior remains covered; no OAuth, LMS entities, heuristics, Pulse, AI, or unrelated refactor entered scope. One write-only formatting command briefly touched unrelated frontend files; every formatter-only change was identified and reverted before validation and review.
+Passed. The security implementation stays inside the approved shared CAL-ICS/native Integration scope plus the migration-required diagnostics expectation. No provider-specific policy, scheduler redesign, School association, frontend, Pulse, or AI work was introduced; the later merged Brightspace provider continues to reuse the same hardened shared lifecycle. Parser failures remain pre-reconciliation; validator origin remains native-only; existing HTTPS, userinfo, redirect-hop, DNS/public-address, and pinned-IP protections remain enforced. No secrets, URLs, payloads, or attacker-controlled values enter error messages.
 
 ## Publication state
 
 | Field | Value |
 | --- | --- |
-| Commit | `a9347c80db5b1584ad785fd6a552e8826614b81e` |
-| Remote branch | `origin/agent/brightspace` |
-| Draft PR | `#59` — https://github.com/bimberlotDEV/Aether-Desktop/pull/59 |
-| Exact-head CI | Windows quality gate started; completion not required to open the draft PR. |
+| Commit | `ed0aafb` |
+| Remote branch | `origin/agent/cal-ics-security` |
+| Draft PR | [#60](https://github.com/bimberlotDEV/Aether-Desktop/pull/60) |
+| Exact-head CI | `None` |
+
+## Stop condition
+
+Stop after all acceptance criteria are evidenced, required checks pass, the conflict-resolution merge commit is pushed, and the Aether 24 draft PR is ready for review. Do not begin any named follow-up task.

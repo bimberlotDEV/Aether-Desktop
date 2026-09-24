@@ -3,17 +3,17 @@
 | Field | Value |
 | --- | --- |
 | Schema version | 2 |
-| Session date | 2026-09-23 |
-| Active task | `SCHOOL-BSP-001` |
+| Session date | 2026-09-24 |
+| Active task | `CAL-ICS-SEC-001` + `CAL-ICS-REDIRECT-001` |
 | Agent | Codex |
-| State | complete |
+| State | published |
 
 ## Current work
 
-`SCHOOL-BSP-001` is complete on `agent/brightspace`. Brightspace now connects through a renewable HTTPS ICS link stored only as a native encrypted bearer credential, reusing subscribed calendars, CAL-ICS, Calendar Core, and the closed Integration Sync Runtime.
+The Aether 24 security implementation is complete on `agent/cal-ics-security`. Shared CAL-ICS now enforces one incremental 2,000-occurrence feed budget, bounded recurrence/property inputs, origin-associated conditional validators, and sticky cross-origin header stripping. Migration `016_ics_validator_origin` clears legacy unassociated ICS validators while preserving cached events. The branch is reconciled with the now-merged Brightspace connector from `origin/master`; both features retain the shared subscribed-calendar architecture.
 
-The shared provider lifecycle removes MyTimetable/Brightspace duplication; runtime routing explicitly requires an approved provider plus `ics_feed`; Brightspace events remain general ExternalEvents without title-based LMS inference. No schema migration, dependency, or new ADR was required. Full validation passes: 131 frontend tests and 163 Rust tests, plus typecheck, lint, production build, Rust formatting, strict Clippy, and diff checks.
+After reconciliation, all 178 Rust tests and all 131 frontend tests pass, together with Rust formatting, strict Clippy, frontend typecheck/lint/build, and diff checks. Implementation commit `ed0aafb` and merge-resolution commit `f3c1277` are pushed; PR #60 is mergeable and ready for review. Generation-safe feed replacement, Sync Runtime scheduling, School source association, Pulse, and AI remain out of scope.
 
 ## Exact resume point
 
-Implementation commit `a9347c8` is pushed to `origin/agent/brightspace`; draft PR `#59` is open and its Windows quality gate has started. No live Brightspace bearer URL was available for a real-provider smoke in this session.
+Wait for review/CI on PR #60. Do not start the separately scoped follow-ups from this task.

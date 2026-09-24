@@ -1,5 +1,5 @@
-//! Shared, native-only RFC 5545 subscription normalization. URLs never enter this module's
-//! public values; callers pass already fetched bytes and reconcile only after a full parse.
+//! Shared, native-only RFC 5545 subscription normalization. Bearer URLs never enter returned
+//! values; callers reconcile only after a complete bounded fetch and parse.
 use crate::calendar::ExternalEventInput;
 use async_trait::async_trait;
 use chrono::{DateTime, Duration, NaiveDate, NaiveDateTime, TimeZone, Utc};
@@ -17,7 +17,23 @@ use std::{
 
 pub const MAX_FEED_BYTES: usize = 5 * 1024 * 1024;
 pub const MAX_COMPONENTS: usize = 5_000;
-pub const MAX_OCCURRENCES: u16 = 2_000;
+pub const MAX_FEED_OCCURRENCES: usize = 2_000;
+pub const MAX_RECURRENCE_OCCURRENCES: u16 = 2_000;
+const MAX_PROPERTIES_PER_EVENT: usize = 128;
+const MAX_PROPERTY_VALUE_BYTES: usize = 80_000;
+const MAX_RECURRENCE_PROPERTIES: usize = 32;
+const MAX_RDATE_VALUES: usize = 512;
+const MAX_EXDATE_VALUES: usize = 512;
+const MAX_CATEGORY_VALUES: usize = 64;
+const MAX_UID_CHARS: usize = 512;
+const MAX_SUMMARY_CHARS: usize = 500;
+const MAX_DESCRIPTION_CHARS: usize = 20_000;
+const MAX_LOCATION_CHARS: usize = 500;
+const MAX_URL_CHARS: usize = 2_048;
+const MAX_TIMEZONE_CHARS: usize = 128;
+const MAX_RRULE_CHARS: usize = 2_048;
+const MAX_RECURRENCE_VALUE_CHARS: usize = 128;
+const MAX_CATEGORY_CHARS: usize = 200;
 const EXPANSION_DAYS: i64 = 366;
 
 #[derive(Debug, Clone, serde::Serialize)]
@@ -63,13 +79,25 @@ fn value<'a>(props: &'a [Property], name: &str) -> Option<&'a Property> {
 fn values<'a>(props: &'a [Property], name: &str) -> Vec<&'a Property> {
     props.iter().filter(|p| p.name == name).collect()
 }
-fn text(p: Option<&Property>) -> Option<String> {
-    p.and_then(|p| p.value.as_ref()).map(|v| {
-        v.replace("\\n", "\n")
-            .replace("\\,", ",")
-            .replace("\\;", ";")
-            .replace("\\\\", "\\")
-    })
+fn unescape_text(value: &str) -> String {
+    value
+        .replace("\\n", "\n")
+        .replace("\\,", ",")
+        .replace("\\;", ";")
+        .replace("\\\\", "\\")
+}
+fn bounded_text(p: Option<&Property>, max_chars: usize) -> Result<Option<String>, String> {
+    let Some(value) = p.and_then(|property| property.value.as_deref()) else {
+        return Ok(None);
+    };
+    if value.len() > MAX_PROPERTY_VALUE_BYTES {
+        return Err("property_limit".into());
+    }
+    let value = unescape_text(value);
+    if value.chars().count() > max_chars {
+        return Err("property_limit".into());
+    }
+    Ok(Some(value))
 }
 fn param(p: &Property, key: &str) -> Option<String> {
     p.params
@@ -78,6 +106,75 @@ fn param(p: &Property, key: &str) -> Option<String> {
         .find(|(k, _)| k == key)
         .and_then(|(_, v)| v.first())
         .cloned()
+}
+fn bounded_param(p: &Property, key: &str, max_chars: usize) -> Result<Option<String>, String> {
+    let value = param(p, key);
+    if value
+        .as_ref()
+        .is_some_and(|value| value.chars().count() > max_chars)
+    {
+        return Err("property_limit".into());
+    }
+    Ok(value)
+}
+fn ensure_single(props: &[Property], name: &str) -> Result<(), String> {
+    if props
+        .iter()
+        .filter(|property| property.name == name)
+        .count()
+        > 1
+    {
+        return Err("recurrence_property_limit".into());
+    }
+    Ok(())
+}
+fn split_property_values(
+    props: &[Property],
+    name: &str,
+    max_properties: usize,
+    max_values: usize,
+    max_chars: usize,
+) -> Result<Vec<String>, String> {
+    let matching = values(props, name);
+    if matching.len() > max_properties {
+        return Err("recurrence_property_limit".into());
+    }
+    let mut output = Vec::with_capacity(matching.len().min(max_values));
+    for property in matching {
+        let Some(value) = bounded_text(Some(property), MAX_PROPERTY_VALUE_BYTES)? else {
+            continue;
+        };
+        for item in value.split(',') {
+            if output.len() == max_values {
+                return Err(match name {
+                    "RDATE" => "rdate_limit",
+                    "EXDATE" => "exdate_limit",
+                    _ => "property_limit",
+                }
+                .into());
+            }
+            if item.chars().count() > max_chars {
+                return Err("property_limit".into());
+            }
+            output.push(item.to_string());
+        }
+    }
+    Ok(output)
+}
+fn validate_content_lines(bytes: &[u8]) -> Result<(), String> {
+    let mut logical_len = 0_usize;
+    for raw_line in bytes.split(|byte| *byte == b'\n') {
+        let line = raw_line.strip_suffix(b"\r").unwrap_or(raw_line);
+        if matches!(line.first(), Some(b' ' | b'\t')) {
+            logical_len = logical_len.saturating_add(line.len().saturating_sub(1));
+        } else {
+            logical_len = line.len();
+        }
+        if logical_len > MAX_PROPERTY_VALUE_BYTES {
+            return Err("property_limit".into());
+        }
+    }
+    Ok(())
 }
 fn datetime(value: &str, tzid: &str) -> Result<DateTime<Utc>, String> {
     if let Some(raw) = value.strip_suffix('Z') {
@@ -97,21 +194,41 @@ fn date(value: &str) -> Result<NaiveDate, String> {
     NaiveDate::parse_from_str(value, "%Y%m%d").map_err(|_| "invalid_date".into())
 }
 fn parse_event(props: &[Property]) -> Result<Parsed, String> {
-    let uid = text(value(props, "UID"))
+    if props.len() > MAX_PROPERTIES_PER_EVENT {
+        return Err("property_limit".into());
+    }
+    ensure_single(props, "RRULE")?;
+    ensure_single(props, "RECURRENCE-ID")?;
+    let recurrence_property_count = props
+        .iter()
+        .filter(|property| {
+            matches!(
+                property.name.as_str(),
+                "RRULE" | "RDATE" | "EXDATE" | "RECURRENCE-ID"
+            )
+        })
+        .count();
+    if recurrence_property_count > MAX_RECURRENCE_PROPERTIES {
+        return Err("recurrence_property_limit".into());
+    }
+    let uid = bounded_text(value(props, "UID"), MAX_UID_CHARS)?
         .filter(|v| !v.trim().is_empty())
         .ok_or("missing_uid")?;
     let start_p = value(props, "DTSTART").ok_or("missing_dtstart")?;
-    let start = text(Some(start_p)).ok_or("missing_dtstart")?;
-    let all_day = param(start_p, "VALUE").as_deref() == Some("DATE") || start.len() == 8;
+    let start =
+        bounded_text(Some(start_p), MAX_RECURRENCE_VALUE_CHARS)?.ok_or("missing_dtstart")?;
+    let all_day =
+        bounded_param(start_p, "VALUE", 32)?.as_deref() == Some("DATE") || start.len() == 8;
     let tz = if all_day {
         "date".into()
     } else if start.ends_with('Z') {
         "UTC".into()
     } else {
-        param(start_p, "TZID").ok_or("floating_datetime")?
+        bounded_param(start_p, "TZID", MAX_TIMEZONE_CHARS)?.ok_or("floating_datetime")?
     };
-    let url = text(value(props, "URL")).filter(|v| v.starts_with("https://"));
-    let recurrence = text(value(props, "RECURRENCE-ID"))
+    let url =
+        bounded_text(value(props, "URL"), MAX_URL_CHARS)?.filter(|v| v.starts_with("https://"));
+    let recurrence = bounded_text(value(props, "RECURRENCE-ID"), MAX_RECURRENCE_VALUE_CHARS)?
         .map(|v| {
             if all_day {
                 Ok(v)
@@ -123,31 +240,38 @@ fn parse_event(props: &[Property]) -> Result<Parsed, String> {
     Ok(Parsed {
         uid,
         recurrence,
-        status: text(value(props, "STATUS")).unwrap_or_default(),
+        status: bounded_text(value(props, "STATUS"), 64)?.unwrap_or_default(),
         start,
-        end: text(value(props, "DTEND")),
+        end: bounded_text(value(props, "DTEND"), MAX_RECURRENCE_VALUE_CHARS)?,
         all_day,
         tz,
-        summary: text(value(props, "SUMMARY")).unwrap_or_else(|| "Untitled event".into()),
-        description: text(value(props, "DESCRIPTION")),
-        location: text(value(props, "LOCATION")),
+        summary: bounded_text(value(props, "SUMMARY"), MAX_SUMMARY_CHARS)?
+            .unwrap_or_else(|| "Untitled event".into()),
+        description: bounded_text(value(props, "DESCRIPTION"), MAX_DESCRIPTION_CHARS)?,
+        location: bounded_text(value(props, "LOCATION"), MAX_LOCATION_CHARS)?,
         url,
-        categories: values(props, "CATEGORIES")
-            .into_iter()
-            .filter_map(|property| text(Some(property)))
-            .flat_map(|value| value.split(',').map(str::to_string).collect::<Vec<_>>())
-            .collect(),
-        rrule: text(value(props, "RRULE")),
-        rdates: values(props, "RDATE")
-            .into_iter()
-            .filter_map(|p| text(Some(p)))
-            .flat_map(|v| v.split(',').map(str::to_string).collect::<Vec<_>>())
-            .collect(),
-        exdates: values(props, "EXDATE")
-            .into_iter()
-            .filter_map(|p| text(Some(p)))
-            .flat_map(|v| v.split(',').map(str::to_string).collect::<Vec<_>>())
-            .collect(),
+        categories: split_property_values(
+            props,
+            "CATEGORIES",
+            MAX_RECURRENCE_PROPERTIES,
+            MAX_CATEGORY_VALUES,
+            MAX_CATEGORY_CHARS,
+        )?,
+        rrule: bounded_text(value(props, "RRULE"), MAX_RRULE_CHARS)?,
+        rdates: split_property_values(
+            props,
+            "RDATE",
+            MAX_RECURRENCE_PROPERTIES,
+            MAX_RDATE_VALUES,
+            MAX_RECURRENCE_VALUE_CHARS,
+        )?,
+        exdates: split_property_values(
+            props,
+            "EXDATE",
+            MAX_RECURRENCE_PROPERTIES,
+            MAX_EXDATE_VALUES,
+            MAX_RECURRENCE_VALUE_CHARS,
+        )?,
     })
 }
 fn input(
@@ -238,6 +362,48 @@ fn input(
     })
 }
 
+struct OccurrenceBudget {
+    remaining: usize,
+}
+
+impl OccurrenceBudget {
+    fn new() -> Self {
+        Self {
+            remaining: MAX_FEED_OCCURRENCES,
+        }
+    }
+
+    fn consume(&mut self) -> Result<(), String> {
+        if self.remaining == 0 {
+            return Err("occurrence_limit".into());
+        }
+        self.remaining -= 1;
+        Ok(())
+    }
+
+    fn push<T, F>(&mut self, output: &mut Vec<T>, build: F) -> Result<(), String>
+    where
+        F: FnOnce() -> Result<T, String>,
+    {
+        self.consume()?;
+        output.push(build()?);
+        Ok(())
+    }
+
+    fn expansion_limit(&self) -> u16 {
+        let feed_sentinel = self.remaining.saturating_add(1).min(usize::from(u16::MAX));
+        let recurrence_sentinel = usize::from(MAX_RECURRENCE_OCCURRENCES).saturating_add(1);
+        feed_sentinel.min(recurrence_sentinel) as u16
+    }
+
+    fn accept_expansion(&self, count: usize, limited: bool) -> Result<(), String> {
+        if limited || count > self.remaining || count > usize::from(MAX_RECURRENCE_OCCURRENCES) {
+            return Err("occurrence_limit".into());
+        }
+        Ok(())
+    }
+}
+
 pub fn normalize(
     bytes: &[u8],
     connection_id: &str,
@@ -273,6 +439,7 @@ where
     if bytes.len() > MAX_FEED_BYTES {
         return Err("feed_too_large".into());
     };
+    validate_content_lines(bytes)?;
     let calendars: Vec<_> = IcalParser::new(BufReader::new(bytes))
         .collect::<Result<_, _>>()
         .map_err(|_| "invalid_icalendar".to_string())?;
@@ -288,30 +455,35 @@ where
         .iter()
         .filter_map(|e| e.recurrence.clone().map(|r| (e.uid.clone(), r)))
         .collect();
-    let mut output = Vec::new();
+    let mut output = Vec::with_capacity(events.len().min(MAX_FEED_OCCURRENCES));
+    let mut budget = OccurrenceBudget::new();
     for e in &events {
         if e.recurrence.is_some() {
-            let mut x = input(
-                e,
-                e.recurrence.clone(),
-                &e.start,
-                e.end.as_deref(),
-                metadata(&e.categories, e.description.as_deref()),
-            )?;
-            x.connection_id = connection_id.into();
-            output.push(x);
+            budget.push(&mut output, || {
+                let mut occurrence = input(
+                    e,
+                    e.recurrence.clone(),
+                    &e.start,
+                    e.end.as_deref(),
+                    metadata(&e.categories, e.description.as_deref()),
+                )?;
+                occurrence.connection_id = connection_id.into();
+                Ok(occurrence)
+            })?;
             continue;
         }
         if e.rrule.is_none() && e.rdates.is_empty() {
-            let mut x = input(
-                e,
-                None,
-                &e.start,
-                e.end.as_deref(),
-                metadata(&e.categories, e.description.as_deref()),
-            )?;
-            x.connection_id = connection_id.into();
-            output.push(x);
+            budget.push(&mut output, || {
+                let mut occurrence = input(
+                    e,
+                    None,
+                    &e.start,
+                    e.end.as_deref(),
+                    metadata(&e.categories, e.description.as_deref()),
+                )?;
+                occurrence.connection_id = connection_id.into();
+                Ok(occurrence)
+            })?;
             continue;
         }
         if e.all_day {
@@ -345,10 +517,8 @@ where
             let result = set
                 .after((now - Duration::days(EXPANSION_DAYS)).with_timezone(&RRuleTz::UTC))
                 .before((now + Duration::days(EXPANSION_DAYS)).with_timezone(&RRuleTz::UTC))
-                .all(MAX_OCCURRENCES);
-            if result.limited {
-                return Err("recurrence_limit".into());
-            }
+                .all(budget.expansion_limit());
+            budget.accept_expansion(result.dates.len(), result.limited)?;
             let duration = e
                 .end
                 .as_deref()
@@ -361,15 +531,17 @@ where
                     continue;
                 };
                 let end = (d.date_naive() + duration).format("%Y%m%d").to_string();
-                let mut x = input(
-                    e,
-                    Some(original.clone()),
-                    &original,
-                    Some(&end),
-                    metadata(&e.categories, e.description.as_deref()),
-                )?;
-                x.connection_id = connection_id.into();
-                output.push(x);
+                budget.push(&mut output, || {
+                    let mut occurrence = input(
+                        e,
+                        Some(original.clone()),
+                        &original,
+                        Some(&end),
+                        metadata(&e.categories, e.description.as_deref()),
+                    )?;
+                    occurrence.connection_id = connection_id.into();
+                    Ok(occurrence)
+                })?;
             }
             continue;
         }
@@ -394,10 +566,11 @@ where
         }
         let before = (now + Duration::days(EXPANSION_DAYS)).with_timezone(&tz);
         let after = (now - Duration::days(EXPANSION_DAYS)).with_timezone(&tz);
-        let result = set.after(after).before(before).all(MAX_OCCURRENCES);
-        if result.limited {
-            return Err("recurrence_limit".into());
-        }
+        let result = set
+            .after(after)
+            .before(before)
+            .all(budget.expansion_limit());
+        budget.accept_expansion(result.dates.len(), result.limited)?;
         let duration = e
             .end
             .as_deref()
@@ -412,20 +585,19 @@ where
             let end = (d.with_timezone(&Utc) + duration)
                 .format("%Y%m%dT%H%M%SZ")
                 .to_string();
-            let mut x = input(
-                e,
-                Some(original),
-                &d.with_timezone(&Utc).format("%Y%m%dT%H%M%SZ").to_string(),
-                Some(&end),
-                metadata(&e.categories, e.description.as_deref()),
-            )?;
-            x.connection_id = connection_id.into();
-            output.push(x);
+            budget.push(&mut output, || {
+                let mut occurrence = input(
+                    e,
+                    Some(original),
+                    &d.with_timezone(&Utc).format("%Y%m%dT%H%M%SZ").to_string(),
+                    Some(&end),
+                    metadata(&e.categories, e.description.as_deref()),
+                )?;
+                occurrence.connection_id = connection_id.into();
+                Ok(occurrence)
+            })?;
         }
     }
-    if output.len() > usize::from(MAX_OCCURRENCES) {
-        return Err("recurrence_limit".into());
-    };
     Ok(output)
 }
 pub fn validate(bytes: &[u8]) -> IcsValidation {
@@ -440,13 +612,13 @@ pub fn validate_with_host(bytes: &[u8], public_host: Option<String>) -> IcsValid
     if calendars.is_empty() {
         return invalid_validation("invalid_icalendar", public_host);
     }
-    let display_name = calendars
-        .iter()
-        .find_map(|calendar| {
-            text(value(&calendar.properties, "X-WR-CALNAME"))
-                .or_else(|| text(value(&calendar.properties, "NAME")))
-        })
-        .map(|name| name.chars().take(200).collect());
+    let display_property = calendars.iter().find_map(|calendar| {
+        value(&calendar.properties, "X-WR-CALNAME").or_else(|| value(&calendar.properties, "NAME"))
+    });
+    let display_name = match bounded_text(display_property, 200) {
+        Ok(value) => value,
+        Err(code) => return invalid_validation(&code, public_host),
+    };
     let raw_count = calendars
         .iter()
         .map(|calendar| calendar.events.len())
@@ -506,6 +678,7 @@ pub enum FetchResult {
         bytes: Vec<u8>,
         etag: Option<String>,
         last_modified: Option<String>,
+        validator_origin: String,
         retry_after_at: Option<String>,
         rate_limit_reset_at: Option<String>,
     },
@@ -513,6 +686,13 @@ pub enum FetchResult {
         retry_after_at: Option<String>,
         rate_limit_reset_at: Option<String>,
     },
+}
+
+#[derive(Clone, Copy)]
+pub struct ConditionalValidators<'a> {
+    pub origin: &'a str,
+    pub etag: Option<&'a str>,
+    pub last_modified: Option<&'a str>,
 }
 pub fn retry_after_at(value: Option<&str>, now: DateTime<Utc>) -> Option<String> {
     let value = value?.trim();
@@ -608,6 +788,36 @@ fn redirect_target(
     Ok(next)
 }
 
+fn is_follow_redirect(status: reqwest::StatusCode) -> bool {
+    matches!(
+        status,
+        reqwest::StatusCode::MOVED_PERMANENTLY
+            | reqwest::StatusCode::FOUND
+            | reqwest::StatusCode::SEE_OTHER
+            | reqwest::StatusCode::TEMPORARY_REDIRECT
+            | reqwest::StatusCode::PERMANENT_REDIRECT
+    )
+}
+
+fn request_origin(url: &reqwest::Url) -> String {
+    url.origin().ascii_serialization()
+}
+
+fn response_header(
+    headers: &reqwest::header::HeaderMap,
+    name: reqwest::header::HeaderName,
+    max_bytes: usize,
+) -> Result<Option<String>, String> {
+    let Some(value) = headers.get(name) else {
+        return Ok(None);
+    };
+    let value = value.to_str().map_err(|_| "feed_validator_invalid")?;
+    if value.len() > max_bytes {
+        return Err("feed_validator_invalid".into());
+    }
+    Ok(Some(value.to_string()))
+}
+
 struct TransportResponse {
     status: reqwest::StatusCode,
     headers: reqwest::header::HeaderMap,
@@ -686,41 +896,53 @@ impl FetchTransport for ReqwestTransport {
 
 pub async fn fetch(
     url: &str,
-    etag: Option<&str>,
-    last_modified: Option<&str>,
+    validators: Option<ConditionalValidators<'_>>,
 ) -> Result<FetchResult, String> {
-    fetch_with_transport(url, etag, last_modified, &ReqwestTransport).await
+    fetch_with_transport(url, validators, &ReqwestTransport).await
 }
 
 async fn fetch_with_transport<T: FetchTransport + Sync>(
     url: &str,
-    etag: Option<&str>,
-    last_modified: Option<&str>,
+    validators: Option<ConditionalValidators<'_>>,
     transport: &T,
 ) -> Result<FetchResult, String> {
     crate::db::repositories::subscribed_calendars::validate_feed_url(url)?;
     let mut current =
         reqwest::Url::parse(url).map_err(|_| "feed_destination_invalid".to_string())?;
     let mut redirects = 0_u8;
-    let response = loop {
+    let mut validators = validators.filter(|validators| {
+        validators.origin == request_origin(&current)
+            && (validators.etag.is_some() || validators.last_modified.is_some())
+    });
+    let (response, final_url, sent_conditionals) = loop {
         crate::db::repositories::subscribed_calendars::validate_feed_url(current.as_str())?;
         let (host, addresses) = transport.resolve(&current).await?;
         validate_resolved_addresses(&addresses)?;
+        let etag = validators.and_then(|validators| validators.etag);
+        let last_modified = validators.and_then(|validators| validators.last_modified);
+        let sent_conditionals = etag.is_some() || last_modified.is_some();
         let response = transport
             .get(current.clone(), &host, &addresses, etag, last_modified)
             .await?;
-        if !response.status.is_redirection() {
-            break response;
+        if !is_follow_redirect(response.status) {
+            break (response, current, sent_conditionals);
         }
         let location = response
             .headers
             .get(reqwest::header::LOCATION)
             .and_then(|value| value.to_str().ok())
             .ok_or_else(|| "feed_redirect_invalid".to_string())?;
-        current = redirect_target(&current, location, redirects)?;
+        let next = redirect_target(&current, location, redirects)?;
+        if request_origin(&next) != request_origin(&current) {
+            validators = None;
+        }
+        current = next;
         redirects += 1;
     };
     if response.status == reqwest::StatusCode::NOT_MODIFIED {
+        if !sent_conditionals {
+            return Err("feed_unexpected_not_modified".into());
+        }
         return Ok(FetchResult::NotModified);
     };
     let retry_after_at = retry_after_at(
@@ -745,20 +967,13 @@ async fn fetch_with_transport<T: FetchTransport + Sync>(
     if !response.status.is_success() {
         return Err("feed_http_error".into());
     };
-    let etag = response
-        .headers
-        .get(reqwest::header::ETAG)
-        .and_then(|v| v.to_str().ok())
-        .map(str::to_string);
-    let last_modified = response
-        .headers
-        .get(reqwest::header::LAST_MODIFIED)
-        .and_then(|v| v.to_str().ok())
-        .map(str::to_string);
+    let etag = response_header(&response.headers, reqwest::header::ETAG, 512)?;
+    let last_modified = response_header(&response.headers, reqwest::header::LAST_MODIFIED, 128)?;
     Ok(FetchResult::Complete {
         bytes: response.bytes,
         etag,
         last_modified,
+        validator_origin: request_origin(&final_url),
         retry_after_at,
         rate_limit_reset_at,
     })
@@ -775,7 +990,14 @@ mod tests {
     struct FixtureTransport {
         resolutions: Mutex<VecDeque<Vec<SocketAddr>>>,
         responses: Mutex<VecDeque<TransportResponse>>,
-        requests: Mutex<Vec<String>>,
+        requests: Mutex<Vec<FixtureRequest>>,
+    }
+
+    #[derive(Debug, PartialEq, Eq)]
+    struct FixtureRequest {
+        url: String,
+        etag: Option<String>,
+        last_modified: Option<String>,
     }
 
     impl FixtureTransport {
@@ -806,10 +1028,14 @@ mod tests {
             url: reqwest::Url,
             _host: &str,
             _addresses: &[SocketAddr],
-            _etag: Option<&str>,
-            _last_modified: Option<&str>,
+            etag: Option<&str>,
+            last_modified: Option<&str>,
         ) -> Result<TransportResponse, String> {
-            self.requests.lock().unwrap().push(url.to_string());
+            self.requests.lock().unwrap().push(FixtureRequest {
+                url: url.to_string(),
+                etag: etag.map(str::to_string),
+                last_modified: last_modified.map(str::to_string),
+            });
             self.responses
                 .lock()
                 .unwrap()
@@ -834,6 +1060,28 @@ mod tests {
         }
     }
 
+    fn fixture_response_with_validators(
+        status: reqwest::StatusCode,
+        location: Option<&str>,
+        body: &[u8],
+        etag: Option<&str>,
+        last_modified: Option<&str>,
+    ) -> TransportResponse {
+        let mut response = fixture_response(status, location, body);
+        if let Some(etag) = etag {
+            response
+                .headers
+                .insert(reqwest::header::ETAG, etag.parse().unwrap());
+        }
+        if let Some(last_modified) = last_modified {
+            response.headers.insert(
+                reqwest::header::LAST_MODIFIED,
+                last_modified.parse().unwrap(),
+            );
+        }
+        response
+    }
+
     fn public_socket() -> SocketAddr {
         "8.8.8.8:443".parse().unwrap()
     }
@@ -844,6 +1092,11 @@ mod tests {
             Utc.with_ymd_and_hms(2026, 1, 1, 0, 0, 0).unwrap(),
         )
         .unwrap()
+    }
+    fn recurring_feed(count: usize) -> String {
+        format!(
+            "{HEAD}BEGIN:VEVENT\r\nUID:series\r\nDTSTART:20260102T000000Z\r\nRRULE:FREQ=HOURLY;COUNT={count}\r\nSUMMARY:Bounded series\r\nEND:VEVENT\r\n{TAIL}"
+        )
     }
     #[test]
     fn normalizes_timed_all_day_timezone_recurrence_exdate_override_and_cancellation() {
@@ -874,6 +1127,148 @@ mod tests {
             .is_err()
         );
         assert!(normalize(&vec![b'x'; MAX_FEED_BYTES + 1], "c", Utc::now()).is_err());
+    }
+
+    #[test]
+    fn aggregate_budget_accepts_exact_boundary_and_rejects_one_more() {
+        let now = Utc.with_ymd_and_hms(2026, 1, 1, 0, 0, 0).unwrap();
+        let exact = normalize(
+            recurring_feed(MAX_FEED_OCCURRENCES).as_bytes(),
+            "connection",
+            now,
+        )
+        .unwrap();
+        assert_eq!(exact.len(), MAX_FEED_OCCURRENCES);
+        assert_eq!(
+            normalize(
+                recurring_feed(MAX_FEED_OCCURRENCES + 1).as_bytes(),
+                "connection",
+                now,
+            )
+            .unwrap_err(),
+            "occurrence_limit"
+        );
+    }
+
+    #[test]
+    fn combined_recurrence_series_share_one_incremental_budget() {
+        let mut body = String::new();
+        for index in 0..3 {
+            body.push_str(&format!(
+                "BEGIN:VEVENT\r\nUID:series-{index}\r\nDTSTART:20260102T000000Z\r\nRRULE:FREQ=HOURLY;COUNT=1000\r\nSUMMARY:Series {index}\r\nEND:VEVENT\r\n"
+            ));
+        }
+        let error = normalize(
+            format!("{HEAD}{body}{TAIL}").as_bytes(),
+            "connection",
+            Utc.with_ymd_and_hms(2026, 1, 1, 0, 0, 0).unwrap(),
+        )
+        .unwrap_err();
+        assert_eq!(error, "occurrence_limit");
+    }
+
+    #[test]
+    fn ordinary_and_rdate_occurrences_share_the_feed_budget() {
+        let mut body = String::new();
+        for index in 0..(MAX_FEED_OCCURRENCES - 1) {
+            body.push_str(&format!(
+                "BEGIN:VEVENT\r\nUID:ordinary-{index}\r\nDTSTART:20260102T000000Z\r\nEND:VEVENT\r\n"
+            ));
+        }
+        body.push_str(
+            "BEGIN:VEVENT\r\nUID:rdate-series\r\nDTSTART:20260103T000000Z\r\nRDATE:20260104T000000Z,20260105T000000Z\r\nEND:VEVENT\r\n",
+        );
+        assert_eq!(
+            normalize(
+                format!("{HEAD}{body}{TAIL}").as_bytes(),
+                "connection",
+                Utc.with_ymd_and_hms(2026, 1, 1, 0, 0, 0).unwrap(),
+            )
+            .unwrap_err(),
+            "occurrence_limit"
+        );
+    }
+
+    #[test]
+    fn occurrence_budget_never_appends_past_the_limit() {
+        let mut budget = OccurrenceBudget::new();
+        let mut output = Vec::new();
+        for value in 0..MAX_FEED_OCCURRENCES {
+            budget.push(&mut output, || Ok(value)).unwrap();
+        }
+        assert_eq!(output.len(), MAX_FEED_OCCURRENCES);
+        assert_eq!(
+            budget.push(&mut output, || Ok(MAX_FEED_OCCURRENCES)),
+            Err("occurrence_limit".into())
+        );
+        assert_eq!(output.len(), MAX_FEED_OCCURRENCES);
+    }
+
+    #[test]
+    fn bounds_recurrence_lists_repeated_properties_and_untrusted_text() {
+        let dates = (0..=MAX_RDATE_VALUES)
+            .map(|index| format!("202601{:02}T{:02}0000Z", 1 + index / 24, index % 24))
+            .collect::<Vec<_>>()
+            .join(",");
+        let rdate_feed = format!(
+            "{HEAD}BEGIN:VEVENT\r\nUID:rdates\r\nDTSTART:20260101T000000Z\r\nRDATE:{dates}\r\nEND:VEVENT\r\n{TAIL}"
+        );
+        assert_eq!(
+            normalize(&rdate_feed.into_bytes(), "c", Utc::now()).unwrap_err(),
+            "rdate_limit"
+        );
+
+        let exdates = (0..=MAX_EXDATE_VALUES)
+            .map(|index| format!("202601{:02}T{:02}0000Z", 1 + index / 24, index % 24))
+            .collect::<Vec<_>>()
+            .join(",");
+        let exdate_feed = format!(
+            "{HEAD}BEGIN:VEVENT\r\nUID:exdates\r\nDTSTART:20260101T000000Z\r\nRRULE:FREQ=DAILY;COUNT=1\r\nEXDATE:{exdates}\r\nEND:VEVENT\r\n{TAIL}"
+        );
+        assert_eq!(
+            normalize(&exdate_feed.into_bytes(), "c", Utc::now()).unwrap_err(),
+            "exdate_limit"
+        );
+
+        let repeated_rule = format!(
+            "{HEAD}BEGIN:VEVENT\r\nUID:repeat\r\nDTSTART:20260101T000000Z\r\nRRULE:FREQ=DAILY;COUNT=1\r\nRRULE:FREQ=WEEKLY;COUNT=1\r\nEND:VEVENT\r\n{TAIL}"
+        );
+        assert_eq!(
+            normalize(repeated_rule.as_bytes(), "c", Utc::now()).unwrap_err(),
+            "recurrence_property_limit"
+        );
+
+        let repeated_rdates = (0..=MAX_RECURRENCE_PROPERTIES)
+            .map(|_| "RDATE:20260102T000000Z\r\n")
+            .collect::<String>();
+        let repeated_feed = format!(
+            "{HEAD}BEGIN:VEVENT\r\nUID:repeat-rdate\r\nDTSTART:20260101T000000Z\r\n{repeated_rdates}END:VEVENT\r\n{TAIL}"
+        );
+        assert_eq!(
+            normalize(repeated_feed.as_bytes(), "c", Utc::now()).unwrap_err(),
+            "recurrence_property_limit"
+        );
+
+        let oversized_summary = "x".repeat(MAX_SUMMARY_CHARS + 1);
+        let text_feed = format!(
+            "{HEAD}BEGIN:VEVENT\r\nUID:text\r\nDTSTART:20260101T000000Z\r\nSUMMARY:{oversized_summary}\r\nEND:VEVENT\r\n{TAIL}"
+        );
+        assert_eq!(
+            normalize(text_feed.as_bytes(), "c", Utc::now()).unwrap_err(),
+            "property_limit"
+        );
+    }
+
+    #[test]
+    fn rejects_oversized_logical_property_before_ical_allocation() {
+        let oversized = "x".repeat(MAX_PROPERTY_VALUE_BYTES + 1);
+        let feed = format!(
+            "{HEAD}BEGIN:VEVENT\r\nUID:large\r\nDTSTART:20260101T000000Z\r\nDESCRIPTION:{oversized}\r\nEND:VEVENT\r\n{TAIL}"
+        );
+        assert_eq!(
+            normalize(feed.as_bytes(), "c", Utc::now()).unwrap_err(),
+            "property_limit"
+        );
     }
     #[test]
     fn parses_retry_after_delta_http_date_and_reset() {
@@ -952,7 +1347,6 @@ mod tests {
             let error = fetch_with_transport(
                 "https://public.example/private-path?token=source-secret",
                 None,
-                None,
                 &transport,
             )
             .await
@@ -983,7 +1377,6 @@ mod tests {
             let error = fetch_with_transport(
                 "https://public.example/source-path?token=source-secret",
                 None,
-                None,
                 &transport,
             )
             .await
@@ -1003,6 +1396,25 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn redirect_destination_dns_is_revalidated_before_the_next_request() {
+        let transport = FixtureTransport::new(
+            vec![vec![public_socket()], vec!["10.0.0.8:443".parse().unwrap()]],
+            vec![fixture_response(
+                reqwest::StatusCode::FOUND,
+                Some("https://calendar.example/private-dns.ics"),
+                b"",
+            )],
+        );
+        assert_eq!(
+            fetch_with_transport("https://public.example/source.ics", None, &transport)
+                .await
+                .unwrap_err(),
+            "feed_destination_unsafe"
+        );
+        assert_eq!(transport.requests.lock().unwrap().len(), 1);
+    }
+
+    #[tokio::test]
     async fn fetch_loop_follows_safe_https_redirect_and_enforces_hop_limit() {
         let body = format!(
             "{HEAD}BEGIN:VEVENT\r\nUID:event\r\nDTSTART:20260101T090000Z\r\nEND:VEVENT\r\n{TAIL}"
@@ -1019,7 +1431,7 @@ mod tests {
             ],
         );
         assert!(matches!(
-            fetch_with_transport("https://public.example/source.ics", None, None, &transport).await,
+            fetch_with_transport("https://public.example/source.ics", None, &transport).await,
             Ok(FetchResult::Complete { .. })
         ));
         assert_eq!(transport.requests.lock().unwrap().len(), 2);
@@ -1035,11 +1447,187 @@ mod tests {
             .collect();
         let transport = FixtureTransport::new(vec![vec![public_socket()]; 4], redirects);
         assert_eq!(
-            fetch_with_transport("https://public.example/source.ics", None, None, &transport)
+            fetch_with_transport("https://public.example/source.ics", None, &transport)
                 .await
                 .unwrap_err(),
             "feed_redirect_limit"
         );
         assert_eq!(transport.requests.lock().unwrap().len(), 4);
+    }
+
+    #[tokio::test]
+    async fn direct_and_same_origin_redirects_preserve_origin_bound_validators_and_304() {
+        let validators = ConditionalValidators {
+            origin: "https://public.example",
+            etag: Some("\"old\""),
+            last_modified: Some("Wed, 21 Oct 2015 07:28:00 GMT"),
+        };
+        let transport = FixtureTransport::new(
+            vec![vec![public_socket()], vec![public_socket()]],
+            vec![
+                fixture_response(reqwest::StatusCode::FOUND, Some("/next.ics"), b""),
+                fixture_response(reqwest::StatusCode::NOT_MODIFIED, None, b""),
+            ],
+        );
+        assert!(matches!(
+            fetch_with_transport(
+                "https://public.example/source.ics",
+                Some(validators),
+                &transport,
+            )
+            .await,
+            Ok(FetchResult::NotModified)
+        ));
+        let requests = transport.requests.lock().unwrap();
+        assert_eq!(requests.len(), 2);
+        for request in requests.iter() {
+            assert_eq!(request.etag.as_deref(), Some("\"old\""));
+            assert_eq!(
+                request.last_modified.as_deref(),
+                Some("Wed, 21 Oct 2015 07:28:00 GMT")
+            );
+        }
+    }
+
+    #[tokio::test]
+    async fn ordinary_direct_request_remains_unconditioned_and_returns_complete_data() {
+        let body = format!(
+            "{HEAD}BEGIN:VEVENT\r\nUID:event\r\nDTSTART:20260101T090000Z\r\nEND:VEVENT\r\n{TAIL}"
+        );
+        let transport = FixtureTransport::new(
+            vec![vec![public_socket()]],
+            vec![fixture_response(
+                reqwest::StatusCode::OK,
+                None,
+                body.as_bytes(),
+            )],
+        );
+        assert!(matches!(
+            fetch_with_transport("https://public.example/source.ics", None, &transport).await,
+            Ok(FetchResult::Complete { .. })
+        ));
+        let requests = transport.requests.lock().unwrap();
+        assert_eq!(requests.len(), 1);
+        assert!(requests[0].etag.is_none());
+        assert!(requests[0].last_modified.is_none());
+    }
+
+    #[tokio::test]
+    async fn cross_origin_redirect_strips_both_validators_and_returns_final_origin_metadata() {
+        let body = format!(
+            "{HEAD}BEGIN:VEVENT\r\nUID:event\r\nDTSTART:20260101T090000Z\r\nEND:VEVENT\r\n{TAIL}"
+        );
+        let transport = FixtureTransport::new(
+            vec![vec![public_socket()], vec![public_socket()]],
+            vec![
+                fixture_response(
+                    reqwest::StatusCode::FOUND,
+                    Some("https://calendar.example/final.ics"),
+                    b"",
+                ),
+                fixture_response_with_validators(
+                    reqwest::StatusCode::OK,
+                    None,
+                    body.as_bytes(),
+                    Some("\"new\""),
+                    Some("Thu, 22 Oct 2015 07:28:00 GMT"),
+                ),
+            ],
+        );
+        let result = fetch_with_transport(
+            "https://public.example/source.ics",
+            Some(ConditionalValidators {
+                origin: "https://public.example",
+                etag: Some("\"old\""),
+                last_modified: Some("Wed, 21 Oct 2015 07:28:00 GMT"),
+            }),
+            &transport,
+        )
+        .await
+        .unwrap();
+        let FetchResult::Complete {
+            etag,
+            last_modified,
+            validator_origin,
+            ..
+        } = result
+        else {
+            panic!("expected complete response");
+        };
+        assert_eq!(etag.as_deref(), Some("\"new\""));
+        assert_eq!(
+            last_modified.as_deref(),
+            Some("Thu, 22 Oct 2015 07:28:00 GMT")
+        );
+        assert_eq!(validator_origin, "https://calendar.example");
+        let requests = transport.requests.lock().unwrap();
+        assert_eq!(requests[0].etag.as_deref(), Some("\"old\""));
+        assert!(requests[1].etag.is_none());
+        assert!(requests[1].last_modified.is_none());
+    }
+
+    #[tokio::test]
+    async fn validators_never_reappear_after_a_chain_crosses_origin() {
+        let body = format!(
+            "{HEAD}BEGIN:VEVENT\r\nUID:event\r\nDTSTART:20260101T090000Z\r\nEND:VEVENT\r\n{TAIL}"
+        );
+        let transport = FixtureTransport::new(
+            vec![vec![public_socket()]; 3],
+            vec![
+                fixture_response(
+                    reqwest::StatusCode::FOUND,
+                    Some("https://calendar.example/middle.ics"),
+                    b"",
+                ),
+                fixture_response(
+                    reqwest::StatusCode::FOUND,
+                    Some("https://public.example/final.ics"),
+                    b"",
+                ),
+                fixture_response(reqwest::StatusCode::OK, None, body.as_bytes()),
+            ],
+        );
+        fetch_with_transport(
+            "https://public.example/source.ics",
+            Some(ConditionalValidators {
+                origin: "https://public.example",
+                etag: Some("\"old\""),
+                last_modified: None,
+            }),
+            &transport,
+        )
+        .await
+        .unwrap();
+        let requests = transport.requests.lock().unwrap();
+        assert_eq!(requests[0].etag.as_deref(), Some("\"old\""));
+        assert!(requests[1].etag.is_none());
+        assert!(requests[2].etag.is_none());
+    }
+
+    #[tokio::test]
+    async fn cross_origin_unconditioned_304_is_rejected() {
+        let transport = FixtureTransport::new(
+            vec![vec![public_socket()], vec![public_socket()]],
+            vec![
+                fixture_response(
+                    reqwest::StatusCode::FOUND,
+                    Some("https://calendar.example/final.ics"),
+                    b"",
+                ),
+                fixture_response(reqwest::StatusCode::NOT_MODIFIED, None, b""),
+            ],
+        );
+        let error = fetch_with_transport(
+            "https://public.example/source.ics",
+            Some(ConditionalValidators {
+                origin: "https://public.example",
+                etag: Some("\"old\""),
+                last_modified: None,
+            }),
+            &transport,
+        )
+        .await
+        .unwrap_err();
+        assert_eq!(error, "feed_unexpected_not_modified");
     }
 }

@@ -95,6 +95,7 @@ pub enum PreparedSync {
         events: Vec<calendar::ExternalEventInput>,
         etag: Option<String>,
         last_modified: Option<String>,
+        validator_origin: String,
         window_start: String,
         window_end: String,
     },
@@ -236,9 +237,18 @@ impl RuntimeHost for TauriRuntimeHost {
                 message: "Calendar subscription is not configured",
                 connection_status: "institution_configuration_required",
             })?;
+        let validators =
+            record
+                .validator_origin
+                .as_deref()
+                .map(|origin| calendar_ics::ConditionalValidators {
+                    origin,
+                    etag: record.integration.last_sync_etag.as_deref(),
+                    last_modified: record.integration.last_sync_last_modified.as_deref(),
+                });
         let fetched = tokio::select! {
             _ = cancel.cancelled() => return Err(SyncFailure { code: "cancelled", message: "Sync was cancelled", connection_status: "connected" }),
-            fetched = calendar_ics::fetch(&url, record.integration.last_sync_etag.as_deref(), record.integration.last_sync_last_modified.as_deref()) => fetched,
+            fetched = calendar_ics::fetch(&url, validators) => fetched,
         }.map_err(|_| SyncFailure { code: "transient", message: "Calendar feed could not be reached", connection_status: "degraded" })?;
         if cancel.is_cancelled() {
             return Err(SyncFailure {
@@ -259,6 +269,7 @@ impl RuntimeHost for TauriRuntimeHost {
                 bytes,
                 etag,
                 last_modified,
+                validator_origin,
                 retry_after_at,
                 rate_limit_reset_at,
             } => {
@@ -286,6 +297,7 @@ impl RuntimeHost for TauriRuntimeHost {
                     events,
                     etag,
                     last_modified,
+                    validator_origin,
                     window_start: (now - Duration::days(366))
                         .to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
                     window_end: (now + Duration::days(366))
@@ -320,6 +332,7 @@ impl RuntimeHost for TauriRuntimeHost {
                 events,
                 etag,
                 last_modified,
+                validator_origin,
                 window_start,
                 window_end,
             } => calendar::reconcile_in_transaction(
@@ -335,13 +348,16 @@ impl RuntimeHost for TauriRuntimeHost {
                     &tx,
                     id,
                     now,
-                    etag.as_deref(),
-                    last_modified.as_deref(),
+                    Some(integrations::SyncValidators {
+                        origin: &validator_origin,
+                        etag: etag.as_deref(),
+                        last_modified: last_modified.as_deref(),
+                    }),
                     next,
                 )
             })?,
             PreparedSync::NotModified => {
-                integrations::runtime_finish_success(&tx, id, now, None, None, next)?
+                integrations::runtime_finish_success(&tx, id, now, None, next)?
             }
             PreparedSync::RateLimited { .. } => {
                 return Err("Rate-limited result cannot commit success".to_string())
@@ -856,7 +872,7 @@ mod tests {
                 .map_err(|error| error.to_string())?;
             match prepared {
                 PreparedSync::NotModified => {
-                    integrations::runtime_finish_success(&tx, id, now, None, None, next_allowed)?
+                    integrations::runtime_finish_success(&tx, id, now, None, next_allowed)?
                 }
                 _ => return Err("Fake handler only commits no-change results".into()),
             }

@@ -26,7 +26,7 @@ pub async fn validate(config: ProviderConfig, url: &str) -> Result<IcsValidation
     let host = reqwest::Url::parse(url)
         .ok()
         .and_then(|value| value.host_str().map(str::to_string));
-    match calendar_ics::fetch(url, None, None).await? {
+    match calendar_ics::fetch(url, None).await? {
         FetchResult::Complete { bytes, .. } => Ok(calendar_ics::validate_with_host(&bytes, host)),
         FetchResult::NotModified => {
             Err("Calendar feed validation needs a complete response".into())

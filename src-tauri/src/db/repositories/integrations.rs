@@ -237,6 +237,7 @@ pub fn list(conn: &Connection) -> Result<Vec<Integration>, String> {
 pub struct SyncRuntimeRecord {
     pub integration: Integration,
     pub credential_key: Option<String>,
+    pub validator_origin: Option<String>,
     pub consecutive_failures: u32,
 }
 
@@ -244,12 +245,13 @@ pub fn sync_runtime_record(
     conn: &Connection,
     id: &str,
 ) -> Result<Option<SyncRuntimeRecord>, String> {
-    let sql = format!("SELECT {INTEGRATION_COLS}, credential_key, consecutive_sync_failures FROM integrations WHERE id=?1");
+    let sql = format!("SELECT {INTEGRATION_COLS}, credential_key, last_sync_validator_origin, consecutive_sync_failures FROM integrations WHERE id=?1");
     conn.query_row(&sql, [id], |row| {
         Ok(SyncRuntimeRecord {
             integration: row_to_integration(row)?,
             credential_key: row.get(26)?,
-            consecutive_failures: row.get::<_, i64>(27)?.max(0) as u32,
+            validator_origin: row.get(27)?,
+            consecutive_failures: row.get::<_, i64>(28)?.max(0) as u32,
         })
     })
     .optional()
@@ -281,17 +283,31 @@ pub fn runtime_mark_running(
     Ok(changed == 1)
 }
 
+pub struct SyncValidators<'a> {
+    pub origin: &'a str,
+    pub etag: Option<&'a str>,
+    pub last_modified: Option<&'a str>,
+}
+
 pub fn runtime_finish_success(
     tx: &rusqlite::Transaction<'_>,
     id: &str,
     now: &str,
-    etag: Option<&str>,
-    last_modified: Option<&str>,
+    validators: Option<SyncValidators<'_>>,
     next_allowed: &str,
 ) -> Result<(), String> {
+    let replace_validators = validators.is_some();
+    let origin = validators.as_ref().and_then(|validators| {
+        (validators.etag.is_some() || validators.last_modified.is_some())
+            .then_some(validators.origin)
+    });
+    let etag = validators.as_ref().and_then(|validators| validators.etag);
+    let last_modified = validators
+        .as_ref()
+        .and_then(|validators| validators.last_modified);
     let changed = tx.execute(
-        "UPDATE integrations SET sync_status='succeeded', connection_status='connected', last_successful_sync_at=?1, last_sync_finished_at=?1, next_allowed_sync_at=?2, last_sync_error_code=NULL, last_sync_error_message=NULL, last_sync_etag=COALESCE(?3,last_sync_etag), last_sync_last_modified=COALESCE(?4,last_sync_last_modified), rate_limit_remaining=NULL, retry_after_at=NULL, consecutive_sync_failures=0, updated_at=datetime('now') WHERE id=?5 AND enabled=1",
-        params![now, next_allowed, etag, last_modified, id],
+        "UPDATE integrations SET sync_status='succeeded', connection_status='connected', last_successful_sync_at=?1, last_sync_finished_at=?1, next_allowed_sync_at=?2, last_sync_error_code=NULL, last_sync_error_message=NULL, last_sync_etag=CASE WHEN ?3 THEN ?4 ELSE last_sync_etag END, last_sync_last_modified=CASE WHEN ?3 THEN ?5 ELSE last_sync_last_modified END, last_sync_validator_origin=CASE WHEN ?3 THEN ?6 ELSE last_sync_validator_origin END, rate_limit_remaining=NULL, retry_after_at=NULL, consecutive_sync_failures=0, updated_at=datetime('now') WHERE id=?7 AND enabled=1",
+        params![now, next_allowed, replace_validators, etag, last_modified, origin, id],
     ).map_err(|error| format!("Integration runtime success error: {error}"))?;
     if changed != 1 {
         return Err("Integration was disabled before sync completion".to_string());
@@ -397,6 +413,77 @@ mod tests {
         invalid.sync_modes = vec!["manual".into()];
         invalid.sync_config = serde_json::json!({"feedUrl": "https://secret.example/feed"});
         assert!(create(&conn, &invalid).is_err());
+    }
+
+    #[test]
+    fn runtime_replaces_and_origin_binds_validators_without_public_origin_exposure() {
+        let conn = setup();
+        let created = create(&conn, &input()).unwrap();
+        let tx = conn.unchecked_transaction().unwrap();
+        runtime_finish_success(
+            &tx,
+            &created.id,
+            "2026-09-24T10:00:00Z",
+            Some(SyncValidators {
+                origin: "https://calendar.example",
+                etag: Some("\"new\""),
+                last_modified: Some("Wed, 21 Oct 2015 07:28:00 GMT"),
+            }),
+            "2026-09-24T10:30:00Z",
+        )
+        .unwrap();
+        tx.commit().unwrap();
+
+        let record = sync_runtime_record(&conn, &created.id).unwrap().unwrap();
+        assert_eq!(
+            record.validator_origin.as_deref(),
+            Some("https://calendar.example")
+        );
+        assert_eq!(
+            record.integration.last_sync_etag.as_deref(),
+            Some("\"new\"")
+        );
+        assert!(!serde_json::to_string(&record.integration)
+            .unwrap()
+            .contains("validator_origin"));
+
+        let tx = conn.unchecked_transaction().unwrap();
+        runtime_finish_success(
+            &tx,
+            &created.id,
+            "2026-09-24T10:30:00Z",
+            None,
+            "2026-09-24T11:00:00Z",
+        )
+        .unwrap();
+        tx.commit().unwrap();
+        assert_eq!(
+            sync_runtime_record(&conn, &created.id)
+                .unwrap()
+                .unwrap()
+                .validator_origin
+                .as_deref(),
+            Some("https://calendar.example")
+        );
+
+        let tx = conn.unchecked_transaction().unwrap();
+        runtime_finish_success(
+            &tx,
+            &created.id,
+            "2026-09-24T11:00:00Z",
+            Some(SyncValidators {
+                origin: "https://other.example",
+                etag: None,
+                last_modified: None,
+            }),
+            "2026-09-24T11:30:00Z",
+        )
+        .unwrap();
+        tx.commit().unwrap();
+        let record = sync_runtime_record(&conn, &created.id).unwrap().unwrap();
+        assert!(record.validator_origin.is_none());
+        assert!(record.integration.last_sync_etag.is_none());
+        assert!(record.integration.last_sync_last_modified.is_none());
     }
 
     #[test]
