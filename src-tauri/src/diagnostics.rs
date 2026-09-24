@@ -83,7 +83,7 @@ mod tests {
                 "updaterConfigured",
             ]
         );
-        assert_eq!(value["databaseSchema"], "015_external_event_groups");
+        assert_eq!(value["databaseSchema"], "016_ics_validator_origin");
         assert_eq!(value["databaseIntegrity"], "ok");
         assert_eq!(
             value["platform"],

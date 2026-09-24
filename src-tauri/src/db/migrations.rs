@@ -440,6 +440,22 @@ const MIGRATIONS: &[(&str, &str)] = &[
         WHERE provider_id='my_timetable';
         ",
     ),
+    // Migration 016: origin-bind persisted HTTP validators used by native ICS fetches.
+    // Existing validators predate origin tracking and are therefore cleared fail-closed.
+    (
+        "016_ics_validator_origin",
+        "
+        ALTER TABLE integrations ADD COLUMN last_sync_validator_origin TEXT
+            CHECK(last_sync_validator_origin IS NULL OR length(last_sync_validator_origin) <= 512);
+        UPDATE integrations
+        SET last_sync_etag=NULL,
+            last_sync_last_modified=NULL,
+            last_sync_validator_origin=NULL,
+            next_allowed_sync_at=NULL,
+            updated_at=datetime('now')
+        WHERE auth_type='ics_feed';
+        ",
+    ),
 ];
 
 pub fn known_names() -> impl Iterator<Item = &'static str> {
@@ -1296,7 +1312,11 @@ mod tests {
         let conn = in_memory_db();
         let tx = conn.unchecked_transaction().unwrap();
         ensure_migrations_table(&tx).unwrap();
-        for (name, sql) in &MIGRATIONS[..MIGRATIONS.len() - 1] {
+        let migration_index = MIGRATIONS
+            .iter()
+            .position(|(name, _)| *name == "015_external_event_groups")
+            .unwrap();
+        for (name, sql) in &MIGRATIONS[..migration_index] {
             apply_migration(&tx, name, sql).unwrap();
         }
         tx.execute(
@@ -1320,5 +1340,36 @@ mod tests {
             )
             .unwrap();
         assert_eq!(row, (1, "[]".into(), None, None, None));
+    }
+
+    #[test]
+    fn validator_origin_upgrade_preserves_cache_and_clears_unassociated_ics_validators() {
+        let conn = in_memory_db();
+        let tx = conn.unchecked_transaction().unwrap();
+        ensure_migrations_table(&tx).unwrap();
+        for (name, sql) in &MIGRATIONS[..MIGRATIONS.len() - 1] {
+            apply_migration(&tx, name, sql).unwrap();
+        }
+        tx.execute(
+            "INSERT INTO integrations(id,provider_id,auth_type,last_sync_etag,last_sync_last_modified,next_allowed_sync_at) VALUES ('ics','my_timetable','ics_feed','etag','modified','2026-10-01T00:00:00Z')",
+            [],
+        )
+        .unwrap();
+        tx.execute(
+            "INSERT INTO external_events(id,connection_id,external_id,title,time_kind,start_at_utc,end_at_utc,timezone,event_kind,status,ingestion_provenance,source_version,content_hash,first_seen_at,last_seen_at,synchronized_at) VALUES ('cached','ics','cached','Cached lesson','timed','2026-09-23T09:00:00Z','2026-09-23T10:00:00Z','Europe/Berlin','lesson','active','ics','1','hash','2026-09-23T00:00:00Z','2026-09-23T00:00:00Z','2026-09-23T00:00:00Z')",
+            [],
+        )
+        .unwrap();
+        tx.commit().unwrap();
+
+        run(&conn).unwrap();
+        let row: (i64, Option<String>, Option<String>, Option<String>, Option<String>) = conn
+            .query_row(
+                "SELECT count(*), min(i.last_sync_etag), min(i.last_sync_last_modified), min(i.last_sync_validator_origin), min(i.next_allowed_sync_at) FROM external_events e JOIN integrations i ON i.id=e.connection_id WHERE e.id='cached'",
+                [],
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?, row.get(4)?)),
+            )
+            .unwrap();
+        assert_eq!(row, (1, None, None, None, None));
     }
 }

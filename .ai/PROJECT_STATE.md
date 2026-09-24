@@ -7,7 +7,7 @@
 | Field                   | Value                              |
 | ----------------------- | ---------------------------------- |
 | Schema version          | 2                                  |
-| Last updated            | 2026-09-23                         |
+| Last updated            | 2026-09-24                         |
 | Updated by              | Codex                              |
 | Repository              | `bimberlotDEV/Aether-Desktop`      |
 | Product maturity        | Alpha                              |
@@ -94,6 +94,7 @@ The current verified product foundation includes:
 * update-ready trusted-release infrastructure;
 * onboarding;
 * native subscribed-calendar ingestion and a read-only MyTimetable connector;
+* aggregate-bounded ICS parsing/recurrence and origin-isolated conditional redirect handling;
 * native Integration Sync runtime with deterministic lifecycle, retry-gating, recovery, and atomic Calendar/Integration completion coverage;
 * ICS-first Today, Week, and Upcoming timetable views in the existing parent School Space, scoped to a persisted user-selected group from bounded local normalized data;
 * automated quality gates.
@@ -173,6 +174,7 @@ There is no requirement for a cloud account to use the core product.
 | `ONBOARD-001`        | Onboarding & UX                       | `complete` | First-run onboarding and upgrade-safe configuration are implemented and verified.                                                                           |
 | `SCHOOL-MTT-001`     | MyTimetable connector                 | `complete` | Read-only ICS setup, secret handling, CAL-ICS safety, shared synchronization, reconciliation, and Connections management are covered by automated evidence. |
 | `SCHOOL-SPACE-001`   | ICS-first School timetable            | `complete` | Parent School Spaces expose group-scoped local Today, Week, and Upcoming views with truthful conflicts, cancellations, all-day timing, and sync freshness. |
+| `CAL-ICS-SEC-001`    | Shared calendar security hardening     | `complete` | Feed-wide occurrence/property budgets and origin-associated redirect validators are enforced in shared CAL-ICS with cache-preserving failures. |
 
 ---
 
@@ -212,12 +214,14 @@ Public Beta is not considered complete until the external evidence requirements 
 | Check                                       | Last verified result | Verified date | Notes                                                                           |
 | ------------------------------------------- | -------------------- | ------------- | ------------------------------------------------------------------------------- |
 | `pnpm check`                                | Pass                 | 2026-08-29    | 100/100 frontend tests across 33 files; typecheck and lint pass.                |
-| `pnpm build`                                | Pass                 | 2026-08-29    | Alpha 0.5.0 production frontend build passes.                                   |
+| `pnpm typecheck`                            | Pass                 | 2026-09-24    | No frontend contract change; strict TypeScript remains clean.                   |
+| `pnpm lint`                                 | Pass                 | 2026-09-24    | Frontend lint remains clean.                                                     |
+| `pnpm build`                                | Pass                 | 2026-09-24    | Alpha 0.5.0 production frontend build passes.                                   |
 | `pnpm audit --audit-level high`             | Pass                 | 2026-08-29    | No known high-severity vulnerabilities reported.                                |
-| `cargo test`                                | Pass                 | 2026-08-29    | 108/108 all-feature Rust tests pass.                                            |
+| `cargo test`                                | Pass                 | 2026-09-24    | 173/173 all-feature Rust tests pass.                                            |
 | `cargo build --release`                     | Pass                 | 2026-08-29    | Optimized Aether 0.5.0 Windows executable builds and starts.                    |
-| `cargo fmt --check`                         | Pass                 | 2026-08-29    | Rust formatting clean.                                                          |
-| `cargo clippy --all-targets -- -D warnings` | Pass                 | 2026-08-29    | Relevant targets/features warning-free.                                         |
+| `cargo fmt --check`                         | Pass                 | 2026-09-24    | Rust formatting clean.                                                          |
+| `cargo clippy --all-targets -- -D warnings` | Pass                 | 2026-09-24    | Relevant targets/features warning-free.                                         |
 | `pnpm tauri:build`                          | Pass                 | 2026-08-29    | Aether 0.5.0 x64 MSI and NSIS bundles build successfully.                       |
 | GitHub Actions                              | Pass                 | 2026-08-29    | Frontend quality/build and Rust validation pass on the recorded readiness head. |
 | Release startup smoke                       | Pass                 | 2026-08-29    | Optimized Aether 0.5.0 starts and exposes a responsive native window.           |
@@ -249,6 +253,8 @@ These blockers must NOT prevent unrelated local product development unless a tas
 # Active engineering risks
 
 No unresolved high-severity repository engineering risk is currently recorded in this snapshot.
+
+The Aether 22 findings for generation-safe feed replacement (`CAL-SUB-ROTATE-001`), Integration Sync scheduling (`INT-SYNC-002`), and School source association (`SCHOOL-SCOPE-002`) remain separately scoped candidates. They were not implemented by the CAL-ICS resource/redirect hardening task.
 
 Previously resolved risks include:
 

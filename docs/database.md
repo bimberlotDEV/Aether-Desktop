@@ -164,7 +164,7 @@ Provider-neutral local connection and synchronization metadata, defined by ADR-0
 |---|---|
 | Identity and lifecycle | UUIDv7 id, bounded provider_id, enabled, created_at, updated_at |
 | Provider-neutral capability/auth metadata | JSON string arrays for capabilities and declared sync modes; auth_type is none, api_key, api_token, oauth, or ics_feed |
-| Sync state | generic configuration object, connection and sync statuses, last attempt/success, optional next sync, bounded last error |
+| Sync state | generic configuration object, connection and sync statuses, last attempt/success, optional next sync, bounded last error, and native HTTP validators with a private normalized origin association |
 | Credential boundary | nullable native-only credential_key; secrets remain encrypted and excluded from workspace export |
 
 Versioned in `src-tauri/src/db/migrations.rs`. Each migration has a name and SQL. Applied migrations are tracked in `_migrations` table. Migrations run in a transaction — all or nothing.
@@ -188,6 +188,8 @@ Normalized provider-owned calendar occurrences defined by ADR-028. Identity is `
 Removed records are tombstones, not deletions. Only a complete authoritative native reconciliation window can mark a previously seen occurrence removed. Raw provider payloads, feed URLs, credentials, tokens, and secret metadata are not columns in this table.
 
 Migration `015_external_event_groups` adds `group_references_json` as a validated JSON array so one occurrence can belong to multiple cohorts without encoding provider rules in Calendar or School UI. Existing cached rows are retained with an empty array. The migration clears only MyTimetable HTTP validators and sync eligibility, causing its next enabled synchronization to retrieve a complete feed and populate structured group metadata without deleting the cache.
+
+Migration `016_ics_validator_origin` adds the private `last_sync_validator_origin` field. Existing `ics_feed` validators have no provable origin, so the migration clears those validators and sync eligibility fail-closed while preserving credentials, subscriptions, and cached events. Later successful complete responses replace ETag, Last-Modified, and origin atomically; a valid 304 preserves them.
 
 ### integration sync runtime
 

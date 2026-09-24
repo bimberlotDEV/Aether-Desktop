@@ -26,6 +26,17 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-09-24 — `CAL-ICS-SEC-001` + `CAL-ICS-REDIRECT-001` — Bounded ICS expansion and origin-isolated validators
+
+- **Type:** Security, fix, migration, and test
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review
+- **Summary:** Added incremental feed-wide occurrence budgeting and bounded recurrence/property parsing in shared CAL-ICS, and prevented ETag/Last-Modified validators from crossing origins during redirect chains while preserving conditioned same-origin 304 behavior.
+- **Files:** `src-tauri/src/calendar_ics.rs`, Integration Sync/repository plumbing, migration `016_ics_validator_origin`, MyTimetable/cache regression tests, ADR-029, database documentation, and `.ai/*` task records.
+- **Verification:** 21 focused CAL-ICS tests, focused migration/Integration/MyTimetable suites, `cargo test` (173 tests), Rust formatting, strict Clippy, `pnpm typecheck`, `pnpm lint`, `pnpm build`, and `git diff --check` — Pass. Frontend source was untouched, so the task contract did not require the full frontend test suite.
+- **Decisions/deviations:** The aggregate and per-series occurrence ceilings are both 2,000, but recurrence collection is capped at one sentinel beyond the remaining feed allowance so combined series cannot allocate large intermediate vectors. Migration 016 adds a private validator-origin column and clears legacy unassociated ICS validators without deleting cached events. ADR-029 was amended; no new ADR or dependency was added.
+- **Follow-up:** `CAL-SUB-ROTATE-001`, `INT-SYNC-002`, and `SCHOOL-SCOPE-002` remain separately scoped; Brightspace PR #59 was not modified or merged.
+
 ## 2026-09-23 — `SCHOOL-SPACE-001` — Group-scoped ICS-first School Space timetable
 
 - **Type:** Feature, fix, migration, UX, and test

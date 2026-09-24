@@ -3,19 +3,17 @@
 | Field | Value |
 | --- | --- |
 | Schema version | 2 |
-| Session date | 2026-09-23 |
-| Active task | None |
+| Session date | 2026-09-24 |
+| Active task | `CAL-ICS-SEC-001` + `CAL-ICS-REDIRECT-001` |
 | Agent | Codex |
-| State | idle |
+| State | complete_pending_publication |
 
 ## Current work
 
-`SCHOOL-SPACE-001` is complete on `agent/school-space`: the existing parent School Space now reads a bounded local MyTimetable schedule through a native School read model and presents Today, Week, and Upcoming views scoped to a persisted user-selected group, with truthful freshness, cancellation, all-day, and overlap states.
+The Aether 24 security implementation is complete on `agent/cal-ics-security`. Shared CAL-ICS now enforces one incremental 2,000-occurrence feed budget, bounded recurrence/property inputs, origin-associated conditional validators, and sticky cross-origin header stripping. Migration `016_ics_validator_origin` clears legacy unassociated ICS validators while preserving cached events.
 
-Migration `015_external_event_groups` preserves cached events, adds structured provider-neutral group arrays, and forces the next enabled MyTimetable synchronization to return a complete feed. No ADR was required. Brightspace, Pulse, AI tooling, Course inference, and provider fetching during rendering remain out of scope.
-
-Full validation passes: 130 frontend tests and 158 Rust tests, plus typecheck, lint, production build, Rust formatting, strict Clippy, and diff checks.
+All focused gates pass, as do 173 Rust tests, Rust formatting, strict Clippy, frontend typecheck/lint/build, and diff checks. Frontend source is untouched, so the contract did not require the full frontend test suite. Brightspace PR #59, generation-safe feed replacement, Sync Runtime scheduling, School source association, Pulse, and AI remain out of scope.
 
 ## Exact resume point
 
-No active implementation task. Update/launch the desktop app, allow or manually request one complete MyTimetable sync, select `ADSAI-ZM-1.a` in the top-level School Space, and perform the group-scoping smoke matrix.
+Publish the verified task-owned diff through `scripts/publish-task.ps1`, record the commit and draft PR, then stop.

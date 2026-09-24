@@ -75,7 +75,7 @@ pub async fn validate(url: &str) -> Result<IcsValidation, String> {
     let host = reqwest::Url::parse(url)
         .ok()
         .and_then(|value| value.host_str().map(str::to_string));
-    match calendar_ics::fetch(url, None, None).await? {
+    match calendar_ics::fetch(url, None).await? {
         FetchResult::Complete { bytes, .. } => Ok(calendar_ics::validate_with_host(&bytes, host)),
         FetchResult::NotModified => {
             Err("Calendar feed validation needs a complete response".into())
@@ -433,7 +433,7 @@ mod tests {
             let transaction = conn
                 .unchecked_transaction()
                 .map_err(|error| error.to_string())?;
-            integrations::runtime_finish_success(&transaction, id, now, None, None, next)?;
+            integrations::runtime_finish_success(&transaction, id, now, None, next)?;
             transaction.commit().map_err(|error| error.to_string())
         }
         fn finish_failure(
@@ -948,6 +948,41 @@ mod tests {
             .unwrap();
         assert_eq!(state.sync_status, "failed");
         assert_eq!(state.last_sync_error_code.as_deref(), Some("transient"));
+    }
+
+    #[test]
+    fn adversarial_parser_budget_failure_cannot_erase_cached_events() {
+        let (db, _) = test_db();
+        let (connection_id, _) = connected_calendar(&db);
+        cache_event(&db, &connection_id);
+        let feed = format!(
+            "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:attack\r\nDTSTART:20260102T000000Z\r\nRRULE:FREQ=HOURLY;COUNT={}\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+            calendar_ics::MAX_FEED_OCCURRENCES + 1
+        );
+
+        assert_eq!(
+            calendar_ics::normalize(
+                feed.as_bytes(),
+                &connection_id,
+                chrono::DateTime::parse_from_rfc3339("2026-01-01T00:00:00Z")
+                    .unwrap()
+                    .with_timezone(&chrono::Utc),
+            )
+            .unwrap_err(),
+            "occurrence_limit"
+        );
+        assert_eq!(cached_event_count(&db, &connection_id), 1);
+        let cached_status: String = db
+            .conn
+            .lock()
+            .unwrap()
+            .query_row(
+                "SELECT status FROM external_events WHERE connection_id=?1 AND external_id='cached'",
+                [&connection_id],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(cached_status, "active");
     }
 
     #[test]
