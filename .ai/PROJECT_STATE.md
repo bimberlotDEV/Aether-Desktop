@@ -95,6 +95,7 @@ The current verified product foundation includes:
 * onboarding;
 * native subscribed-calendar ingestion and a read-only MyTimetable connector;
 * aggregate-bounded ICS parsing/recurrence and origin-isolated conditional redirect handling;
+* a calendar-only Brightspace renewable-ICS connector;
 * native Integration Sync runtime with deterministic lifecycle, retry-gating, recovery, and atomic Calendar/Integration completion coverage;
 * ICS-first Today, Week, and Upcoming timetable views in the existing parent School Space, scoped to a persisted user-selected group from bounded local normalized data;
 * automated quality gates.
@@ -111,6 +112,11 @@ There is no requirement for a cloud account to use the core product.
 ---
 
 # Current milestone state
+
+`SCHOOL-BSP-001` is complete. Brightspace can be connected with a renewable HTTPS
+iCalendar subscription through native encrypted credentials, CAL-ICS, Calendar
+Core, and the closed Integration Sync Runtime. It intentionally exposes calendar
+events only; OAuth, LMS entities, Pulse, and AI remain outside this milestone.
 
 ## Product development milestones
 
@@ -173,6 +179,7 @@ There is no requirement for a cloud account to use the core product.
 | `RELEASE-TRUST-001`  | Trusted Releases & Updates            | `complete` | Owner-gated release tooling and Rust-owned stable-update architecture are implemented.                                                                      |
 | `ONBOARD-001`        | Onboarding & UX                       | `complete` | First-run onboarding and upgrade-safe configuration are implemented and verified.                                                                           |
 | `SCHOOL-MTT-001`     | MyTimetable connector                 | `complete` | Read-only ICS setup, secret handling, CAL-ICS safety, shared synchronization, reconciliation, and Connections management are covered by automated evidence. |
+| `SCHOOL-BSP-001`     | Brightspace calendar connector        | `complete` | Renewable Brightspace ICS setup, native-only bearer storage, shared synchronization, truthful general-event normalization, and Connections management are covered by automated evidence. |
 | `SCHOOL-SPACE-001`   | ICS-first School timetable            | `complete` | Parent School Spaces expose group-scoped local Today, Week, and Upcoming views with truthful conflicts, cancellations, all-day timing, and sync freshness. |
 | `CAL-ICS-SEC-001`    | Shared calendar security hardening     | `complete` | Feed-wide occurrence/property budgets and origin-associated redirect validators are enforced in shared CAL-ICS with cache-preserving failures. |
 
@@ -216,9 +223,10 @@ Public Beta is not considered complete until the external evidence requirements 
 | `pnpm check`                                | Pass                 | 2026-08-29    | 100/100 frontend tests across 33 files; typecheck and lint pass.                |
 | `pnpm typecheck`                            | Pass                 | 2026-09-24    | No frontend contract change; strict TypeScript remains clean.                   |
 | `pnpm lint`                                 | Pass                 | 2026-09-24    | Frontend lint remains clean.                                                     |
+| `pnpm test`                                 | Pass                 | 2026-09-24    | 131/131 frontend tests across 37 files pass.                                    |
 | `pnpm build`                                | Pass                 | 2026-09-24    | Alpha 0.5.0 production frontend build passes.                                   |
 | `pnpm audit --audit-level high`             | Pass                 | 2026-08-29    | No known high-severity vulnerabilities reported.                                |
-| `cargo test`                                | Pass                 | 2026-09-24    | 173/173 all-feature Rust tests pass.                                            |
+| `cargo test`                                | Pass                 | 2026-09-24    | 178/178 all-feature Rust tests pass after Brightspace merge reconciliation.     |
 | `cargo build --release`                     | Pass                 | 2026-08-29    | Optimized Aether 0.5.0 Windows executable builds and starts.                    |
 | `cargo fmt --check`                         | Pass                 | 2026-09-24    | Rust formatting clean.                                                          |
 | `cargo clippy --all-targets -- -D warnings` | Pass                 | 2026-09-24    | Relevant targets/features warning-free.                                         |

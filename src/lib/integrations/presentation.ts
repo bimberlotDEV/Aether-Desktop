@@ -54,17 +54,41 @@ export const providerCatalog = [
     id: 'my_timetable',
     name: 'MyTimetable',
     category: 'School schedule',
+    description: 'Read-only calendar subscription',
     setupSupported: true,
   },
   {
     id: 'brightspace',
     name: 'Brightspace',
-    category: 'Learning platform',
+    category: 'Learning platform calendar',
+    description: 'Calendar-only; no courses, assignments, or materials',
+    setupSupported: true,
+  },
+  {
+    id: 'github',
+    name: 'GitHub',
+    category: 'Development',
+    description: 'Provider setup is not available',
     setupSupported: false,
   },
-  { id: 'github', name: 'GitHub', category: 'Development', setupSupported: false },
-  { id: 'n8n', name: 'n8n', category: 'Automation', setupSupported: false },
+  {
+    id: 'n8n',
+    name: 'n8n',
+    category: 'Automation',
+    description: 'Provider setup is not available',
+    setupSupported: false,
+  },
 ] as const
+
+export type CalendarProviderId = 'my_timetable' | 'brightspace'
+
+export function isCalendarProvider(providerId: string): providerId is CalendarProviderId {
+  return providerId === 'my_timetable' || providerId === 'brightspace'
+}
+
+export function calendarProviderDetails(providerId: CalendarProviderId) {
+  return providerCatalog.find((provider) => provider.id === providerId)!
+}
 
 const sensitiveValuePattern =
   /\b(?:https?:\/\/|www\.)\S+|\b(?:sk|pk|api[_-]?key|token|secret|bearer|password)[_-]?[a-z0-9][a-z0-9._-]{5,}\b/gi

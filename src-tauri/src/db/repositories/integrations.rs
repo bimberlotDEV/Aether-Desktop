@@ -351,7 +351,7 @@ pub fn set_enabled(
 /// not change sync status or successful-sync metadata.
 pub fn mark_configured(conn: &Connection, id: &str) -> Result<Option<Integration>, String> {
     let changed = conn.execute(
-        "UPDATE integrations SET connection_status='connected', disconnect_reason=NULL, updated_at=datetime('now') WHERE id=?1",
+        "UPDATE integrations SET connection_status='connected', effective_capabilities_json=advertised_capabilities_json, disconnect_reason=NULL, updated_at=datetime('now') WHERE id=?1",
         [id],
     )
     .map_err(|error| format!("Integration configuration update error: {error}"))?;
@@ -492,6 +492,10 @@ mod tests {
         let created = create(&conn, &input()).unwrap();
         let configured = mark_configured(&conn, &created.id).unwrap().unwrap();
         assert_eq!(configured.connection_status, "connected");
+        assert_eq!(
+            configured.effective_capabilities,
+            configured.advertised_capabilities
+        );
         assert_eq!(configured.sync_status, "idle");
         assert!(configured.last_successful_sync_at.is_none());
     }

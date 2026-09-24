@@ -66,7 +66,7 @@ The Aether 22 security review found that CAL-ICS limits each recurrence but chec
 - Generation-safe feed replacement / `CAL-SUB-ROTATE-001`.
 - Integration Sync scheduling / `INT-SYNC-002`.
 - School Space source association / `SCHOOL-SCOPE-002`.
-- Brightspace implementation or PR #59 changes/merge.
+- Changes to the merged Brightspace provider behavior beyond compatibility with the shared hardened calendar layer.
 - Pulse, AI, frontend, IPC, or provider-specific limit/redirect behavior.
 - Broad async-runtime or threading redesign.
 
@@ -135,7 +135,7 @@ None.
 | Correct branch/worktree confirmed | Pass — `agent/cal-ics-security` |
 | `git status` inspected | Pass — clean before contract updates |
 | User-owned changes identified | None |
-| Parallel task overlap checked | Pass — draft Brightspace PR #59 is not modified |
+| Parallel task overlap checked | Pass — merged Brightspace behavior is preserved |
 | Serialization points identified | CAL-ICS, Integration validator persistence, migration ordering |
 
 ## Readiness review
@@ -157,14 +157,14 @@ Ready. The objective, boundaries, risks, persistence requirement, exact implemen
 - Focused Integration Sync tests: 5 passed.
 - Focused Integration repository tests: 5 passed.
 - Focused MyTimetable tests: 18 passed.
-- `cargo test --manifest-path src-tauri/Cargo.toml`: 173 passed.
+- `cargo test --manifest-path src-tauri/Cargo.toml`: 178 passed after reconciling the merged Brightspace connector.
 - `cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`: passed.
 - `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings`: passed.
 - `pnpm typecheck`: passed.
 - `pnpm lint`: passed.
+- `pnpm test`: 131 passed across 37 files after merge reconciliation.
 - `pnpm build`: passed.
 - `git diff --check`: passed.
-- Full frontend tests were not run because no frontend source or shared frontend contract changed, as permitted by the task contract.
 
 ## Acceptance evidence
 
@@ -176,7 +176,7 @@ Ready. The objective, boundaries, risks, persistence requirement, exact implemen
 
 ## Self-review
 
-Passed. The final diff stays inside the approved shared CAL-ICS/native Integration scope plus the migration-required diagnostics expectation. No provider-specific policy, scheduler redesign, School association, Brightspace, frontend, Pulse, or AI work was introduced. Parser failures remain pre-reconciliation; validator origin remains native-only; existing HTTPS, userinfo, redirect-hop, DNS/public-address, and pinned-IP protections remain enforced. No secrets, URLs, payloads, or attacker-controlled values enter error messages.
+Passed. The security implementation stays inside the approved shared CAL-ICS/native Integration scope plus the migration-required diagnostics expectation. No provider-specific policy, scheduler redesign, School association, frontend, Pulse, or AI work was introduced; the later merged Brightspace provider continues to reuse the same hardened shared lifecycle. Parser failures remain pre-reconciliation; validator origin remains native-only; existing HTTPS, userinfo, redirect-hop, DNS/public-address, and pinned-IP protections remain enforced. No secrets, URLs, payloads, or attacker-controlled values enter error messages.
 
 ## Publication state
 
@@ -189,4 +189,4 @@ Passed. The final diff stays inside the approved shared CAL-ICS/native Integrati
 
 ## Stop condition
 
-Stop after all acceptance criteria are evidenced, required checks pass, the task-owned commit is pushed, and the Aether 24 draft PR is open. Do not merge PR #59 or begin any named follow-up task.
+Stop after all acceptance criteria are evidenced, required checks pass, the conflict-resolution merge commit is pushed, and the Aether 24 draft PR is ready for review. Do not begin any named follow-up task.
