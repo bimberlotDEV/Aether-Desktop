@@ -182,9 +182,9 @@ Passed. The final diff stays inside the approved shared CAL-ICS/native Integrati
 
 | Field | Value |
 | --- | --- |
-| Commit | Pending publication |
-| Remote branch | `agent/cal-ics-security` |
-| Draft PR | Pending publication |
+| Commit | `ed0aafb` |
+| Remote branch | `origin/agent/cal-ics-security` |
+| Draft PR | [#60](https://github.com/bimberlotDEV/Aether-Desktop/pull/60) |
 | Exact-head CI | `None` |
 
 ## Stop condition
