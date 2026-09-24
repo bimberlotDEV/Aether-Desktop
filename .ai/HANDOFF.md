@@ -198,9 +198,9 @@ Passed. The final diff contains only task-owned native lifecycle, persistence, p
 
 | Field | Value |
 | --- | --- |
-| Commit | Pending |
+| Commit | `173b517` |
 | Remote branch | `origin/agent/calendar-rotate` |
-| Draft PR | Pending |
+| Draft PR | [#61](https://github.com/bimberlotDEV/Aether-Desktop/pull/61) |
 | Exact-head CI | Pending |
 
 ## Stop condition
