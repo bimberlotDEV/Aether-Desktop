@@ -106,7 +106,11 @@ pub fn create(
         return Err("Calendar subscription name is too long".to_string());
     }
     let id = Uuid::now_v7().to_string();
-    conn.execute("INSERT INTO subscribed_calendars(id,connection_id,display_name) VALUES (?1,?2,?3) ON CONFLICT(connection_id) DO UPDATE SET display_name=excluded.display_name,updated_at=datetime('now')", params![id, connection_id, display_name]).map_err(|_| "Calendar subscription could not be saved".to_string())?;
+    conn.execute(
+        "INSERT INTO subscribed_calendars(id,connection_id,display_name) VALUES (?1,?2,?3)",
+        params![id, connection_id, display_name],
+    )
+    .map_err(|_| "Calendar subscription already exists or could not be saved".to_string())?;
     get_by_connection(conn, connection_id)?
         .ok_or_else(|| "Calendar subscription could not be loaded".to_string())
 }

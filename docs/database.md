@@ -162,7 +162,7 @@ Provider-neutral local connection and synchronization metadata, defined by ADR-0
 
 | Column group | Notes |
 |---|---|
-| Identity and lifecycle | UUIDv7 id, bounded provider_id, enabled, created_at, updated_at |
+| Identity and lifecycle | UUIDv7 id, bounded provider_id, enabled, native-only subscribed-calendar configuration generation, created_at, updated_at |
 | Provider-neutral capability/auth metadata | JSON string arrays for capabilities and declared sync modes; auth_type is none, api_key, api_token, oauth, or ics_feed |
 | Sync state | generic configuration object, connection and sync statuses, last attempt/success, optional next sync, bounded last error, and native HTTP validators with a private normalized origin association |
 | Credential boundary | nullable native-only credential_key; secrets remain encrypted and excluded from workspace export |
@@ -191,6 +191,8 @@ Migration `015_external_event_groups` adds `group_references_json` as a validate
 
 Migration `016_ics_validator_origin` adds the private `last_sync_validator_origin` field. Existing `ics_feed` validators have no provable origin, so the migration clears those validators and sync eligibility fail-closed while preserving credentials, subscriptions, and cached events. Later successful complete responses replace ETag, Last-Modified, and origin atomically; a valid 304 preserves them.
 
+Migration `017_subscribed_calendar_generation` adds the private `configuration_generation` field with generation 1 for existing connections. A validated feed replacement pre-encrypts the candidate URL, then updates the secret, increments this generation, and clears validators, retry/defer state, errors, and prior-generation success metadata in one SQLite transaction. Cached ExternalEvents are retained until a complete current-generation snapshot reconciles them. Runtime start, success, failure, and authoritative reconciliation are generation-guarded, so stale or disconnected work cannot mutate current state.
+
 ### integration sync runtime
 
 Migration `014_integration_sync_runtime` adds native-only lifecycle bookkeeping to `integrations`: consecutive failure count, last finished time, and last trigger. `next_allowed_sync_at` remains the earliest permitted time for every new request, including a manual request. These fields are maintained only by the native runtime; frontend IPC can only toggle `enabled` and must refetch the normal Integration read model for details.
@@ -198,6 +200,8 @@ Migration `014_integration_sync_runtime` adds native-only lifecycle bookkeeping 
 ### subscribed_calendars
 
 Provider-neutral renewable iCalendar feed metadata defined by ADR-029. Each row links one existing `ics_feed` Integration and contains only a local UUID and optional display name. The actual HTTPS feed URL is stored solely in the Integration's opaque DPAPI-protected secret entry and never appears in this table or normal IPC.
+
+The Integration row is the canonical owner of configuration generation. `subscribed_calendars` does not duplicate it, and creating a second metadata row for an existing connection is rejected so replacement cannot bypass the shared validated lifecycle.
 
 ## Workspace export
 

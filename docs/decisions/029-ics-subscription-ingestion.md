@@ -15,11 +15,14 @@ The native engine accepts HTTPS only, rejects embedded URL credentials, follows 
 
 Persisted ETag/Last-Modified validators carry a private normalized origin association. They may be sent through same-origin redirects, but the request policy permanently drops both headers after any cross-origin hop in that chain. A complete final response replaces validators together with its actual response origin; a valid 304 preserves the existing association. Legacy unassociated ICS validators are cleared during migration. The parser uses the maintained `ical` crate and expands RFC recurrence sets with `rrule` plus `chrono-tz`. Floating timed values and unresolved/ambiguous named-zone local values are rejected rather than interpreted using the machine timezone.
 
+The owning Integration carries a durable private configuration generation. Sync work captures the connection ID, generation, credential snapshot, and validators before remote work begins. Candidate replacements validate without mutation; a successful replacement atomically writes the pre-encrypted URL, increments the expected generation, clears all conditional/retry/current-success state, and leaves cached events intact. Completion checks the generation inside the same transaction before authoritative reconciliation or Integration state changes. Connection-scoped cancellation reduces obsolete work, while a single replacement follow-up runs after old work drains; correctness does not depend on cancellation.
+
 Normalized records use UID plus the canonical UTC recurrence identity as Calendar Core's external/occurrence identity. Overrides retain their original recurrence identity, cancellations remain cancelled records, and a complete parsed snapshot may be passed to Calendar Core authoritative reconciliation. Fetch, parse, validation, or limit failures never produce a snapshot and therefore cannot tombstone existing events.
 
 ## Consequences
 
 - Migration `013_subscribed_calendars` stores no URL or provider payload.
 - Migration `016_ics_validator_origin` stores only the normalized validator origin and clears legacy unassociated ICS validators without removing cached events.
+- Migration `017_subscribed_calendar_generation` initializes durable generation 1 without removing credentials, subscriptions, or cached events.
 - Calendar feed policy remains provider-neutral; setup UI and provider adapters can reuse the narrow configuration/validation boundary.
 - `INT-SYNC-001` owns scheduling, retries, runtime guards, cancellation, and Integration lifecycle state. CAL-ICS supplies transport results and normalized data only.

@@ -166,6 +166,7 @@ mod tests {
         fn mark_running(
             &self,
             _id: &str,
+            _configuration_generation: i64,
             _trigger: SyncTrigger,
             _now: &str,
         ) -> Result<bool, String> {
@@ -182,21 +183,21 @@ mod tests {
 
         fn commit_success(
             &self,
-            _id: &str,
             _prepared: PreparedSync,
             _now: &str,
             _next_allowed: &str,
-        ) -> Result<(), String> {
+        ) -> Result<integrations::SyncCompletion, String> {
             unreachable!()
         }
 
         fn finish_failure(
             &self,
             _id: &str,
+            _configuration_generation: i64,
             _failure: &SyncFailure,
             _next_allowed: &str,
             _retry_after: Option<&str>,
-        ) -> Result<(), String> {
+        ) -> Result<integrations::SyncCompletion, String> {
             unreachable!()
         }
 
@@ -345,8 +346,15 @@ mod tests {
         .await
         .unwrap();
         assert_eq!(
-            host.credentials.lock().unwrap().last().unwrap().as_deref(),
+            credentials::get(&db, &key).unwrap().as_deref(),
             Some(replacement_url)
+        );
+        assert_eq!(
+            integrations::sync_runtime_record(&db.conn.lock().unwrap(), &integration.id)
+                .unwrap()
+                .unwrap()
+                .configuration_generation,
+            2
         );
         assert!(disconnect(&db, &runtime, &integration.id).unwrap());
         assert_eq!(credentials::get(&db, &key).unwrap(), None);

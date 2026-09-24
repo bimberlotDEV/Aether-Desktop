@@ -83,7 +83,10 @@ mod tests {
                 "updaterConfigured",
             ]
         );
-        assert_eq!(value["databaseSchema"], "016_ics_validator_origin");
+        assert_eq!(
+            value["databaseSchema"],
+            "017_subscribed_calendar_generation"
+        );
         assert_eq!(value["databaseIntegrity"], "ok");
         assert_eq!(
             value["platform"],

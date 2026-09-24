@@ -152,7 +152,7 @@ This section defines direction, not automatic implementation authorization.
 | P0       | `SCHOOL-MTT-001`   | Connect MyTimetable schedule data                  | Product / Integration              | `done`         | `CAL-CORE-001`                                        | Read-only MyTimetable ICS subscriptions now import and reconcile schedule events safely and idempotently through shared Calendar/Sync Runtime ownership.                |
 | P0       | `CAL-ICS-SEC-001`  | Bound ICS resources and isolate redirect validators | Security / Integration            | `done`         | `CAL-ICS-001`, `INT-SYNC-001`                         | Shared calendar parsing is feed-budgeted during expansion and conditional validators never cross origins.                                                                 |
 | P0       | `SCHOOL-BSP-001`   | Connect Brightspace calendar data                  | Product / Integration              | `done`         | `CAL-CORE-001`, `CAL-ICS-001`, `INT-SYNC-001`, `SCHOOL-BSP-CAP-001` | Brightspace renewable ICS data synchronizes as general ExternalEvents without scraping credentials or pretending LMS API access exists. |
-| P0       | `CAL-SUB-ROTATE-001` | Make feed replacement generation-safe             | Security / Integration              | `candidate`    | `CAL-ICS-SEC-001`                                     | A replaced subscription cannot accept or reconcile a stale in-flight result from the prior feed generation.                                                              |
+| P0       | `CAL-SUB-ROTATE-001` | Make feed replacement generation-safe             | Security / Integration              | `done`         | `CAL-ICS-SEC-001`                                     | Durable configuration generations, atomic replacement, and guarded runtime completion prevent prior-feed work from mutating current state.                               |
 | P1       | `INT-SYNC-002`     | Review Integration Sync scheduling hardening       | Security / Runtime                  | `candidate`    | `INT-SYNC-001`                                        | The separately scoped Aether 22 scheduling finding is resolved without redesigning provider ingestion.                                                                    |
 | P1       | `SCHOOL-SCOPE-002` | Review School source association hardening          | Security / Data                     | `candidate`    | `SCHOOL-SPACE-001`                                    | The separately scoped Aether 22 source-association finding is resolved without provider-specific UI coupling.                                                             |
 | P0       | `SCHOOL-SPACE-001` | Add ICS-first School timetable views                | Product / UX                       | `done`         | `SCHOOL-MTT-001`                                      | The existing School parent Space surfaces local normalized MyTimetable events in truthful Today, Week, and Upcoming views, scoped to a persisted user-selected group. |
@@ -170,9 +170,10 @@ This section defines direction, not automatic implementation authorization.
 
 # Next recommended planned task
 
-There is no active planned task. `SCHOOL-BSP-001` completed the renewable-ICS,
-calendar-only Brightspace connector. Pulse, AI, OAuth, richer LMS entities, and
-additional School work remain separately scoped.
+There is no active planned task. `CAL-SUB-ROTATE-001` completed generation-safe
+subscribed-calendar replacement. `INT-SYNC-002` and `SCHOOL-SCOPE-002` remain
+separately scoped candidates; Pulse, AI, OAuth, and richer LMS entities remain
+outside the completed task.
 
 ---
 

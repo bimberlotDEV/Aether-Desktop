@@ -8,51 +8,58 @@
 | Field | Value |
 | --- | --- |
 | Schema version | 3 |
-| Task ID | `CAL-ICS-SEC-001` + `CAL-ICS-REDIRECT-001` |
+| Task ID | `CAL-SUB-ROTATE-001` |
 | Status | `complete` |
 | Owner | Codex |
-| Last updated | 2026-09-24 |
-| Related milestone | Aether 24 — shared Calendar ICS security hardening |
+| Last updated | 2026-09-25 |
+| Related milestone | Aether 25 — generation-safe subscribed-calendar replacement |
 | Classification | `planned_codex` |
-| Branch / worktree | `agent/cal-ics-security` |
+| Branch / worktree | `agent/calendar-rotate` |
 
 ## Objective
 
-Bound aggregate iCalendar parsing/recurrence work before excessive occurrence allocation and ensure HTTP conditional validators never cross request origins during redirects.
+Make subscribed-calendar replacement generation-safe so work prepared for an older feed can never mutate current events, validators, success/failure metadata, or retry state.
 
 ## Context
 
-The Aether 22 security review found that CAL-ICS limits each recurrence but checks the feed-wide result only after expansion, and that ETag/Last-Modified values are currently sent on every validated redirect hop. MyTimetable and the draft Brightspace connector both reuse this shared native layer, so the correction belongs in CAL-ICS rather than provider code.
+- Aether 24 added bounded ICS parsing and origin-bound validators in migration 016.
+- MyTimetable and Brightspace share `subscribed_calendar_provider` and the native Integration Sync runtime.
+- Feed URLs are DPAPI-encrypted values in the SQLite `secrets` table referenced by Integration records.
+- Cached ExternalEvents must remain available until a complete current-generation snapshot succeeds.
 
 ## Success criteria
 
-- A centralized feed budget rejects before appending occurrence 2,001 and bounds recurrence expansion using the remaining aggregate allowance.
-- Ordinary events, RRULE/RDATE occurrences, and recurrence overrides all consume the same aggregate budget while the existing ±366-day horizon and per-series ceiling remain intact.
-- RDATE, EXDATE, repeated recurrence properties, per-component property count, and copied untrusted field lengths have explicit deterministic limits with sanitized error codes.
-- Parse/budget failure produces no authoritative reconciliation, preserves cached events, and records a sanitized failed sync.
-- Conditional validators have a persisted private origin association; legacy unassociated validators are cleared on upgrade.
-- Same-origin redirects may retain validators; after an origin change the chain sends neither conditional header, including if a later hop returns to the original origin.
-- Redirect DNS/SSRF, HTTPS, pinned-IP, userinfo, and hop-limit protections remain intact.
-- Same-origin/direct 304 behavior remains successful; an unconditioned cross-origin 304 cannot be mistaken for a valid no-change response.
-- Final-response validators replace prior validators together with the normalized final response origin.
-- Focused adversarial and regression tests plus the required repository validation pass.
+- [x] Each subscribed-calendar Integration has one durable, native-owned, monotonically increasing configuration generation.
+- [x] Candidate validation failure changes no secret, generation, validator, retry state, cache, or usable connection state.
+- [x] Successful replacement atomically updates the encrypted secret, increments generation exactly once, clears conditional/retry/current-success state, and retains cached events.
+- [x] Prepared work captures connection ID, generation, credential/config snapshot, and only validators belonging to that snapshot.
+- [x] Transaction-time generation checks prevent stale success, failure, validator, retry, and authoritative reconciliation writes, including after disconnect.
+- [x] The first request for a new generation is unconditional and a failed first sync leaves cached events intact with truthful current-generation failure state.
+- [x] Connection-scoped cancellation is used when practical, with one current-generation follow-up requested after old work drains.
+- [x] Rapid replacements and restart preserve monotonic generation and allow only the current generation to establish state.
+- [x] MyTimetable and Brightspace continue using the same provider-neutral lifecycle.
+- [x] Required focused and repository validation passes.
 
 ## In scope
 
-- Shared CAL-ICS parsing, recurrence expansion, transport, and tests.
-- Native Integration Sync plumbing needed to supply and persist validator origin.
-- Append-only SQLite migration and repository behavior for private validator-origin metadata.
-- Existing database and ADR-029 documentation.
-- Current task state, verification, and completion records.
+- Shared subscribed-calendar replacement lifecycle and native credential transaction helpers.
+- Integration generation persistence, repository guards, and migration 017.
+- Integration Sync work preparation, completion guards, and bounded replacement follow-up scheduling.
+- Shared/provider regression tests and relevant migration/documentation updates.
+- Current task state, verification, self-review, and publication records.
 
 ## Allowed paths
 
-- `src-tauri/src/calendar_ics.rs`
-- `src-tauri/src/integration_sync.rs`
+- `src-tauri/src/ai/credentials.rs`
 - `src-tauri/src/db/migrations.rs`
 - `src-tauri/src/db/repositories/integrations.rs`
-- `src-tauri/src/diagnostics.rs` only for the latest-schema test expectation
-- `src-tauri/src/my_timetable.rs` only if shared signature/regression tests require mechanical updates
+- `src-tauri/src/db/repositories/subscribed_calendars.rs`
+- `src-tauri/src/integration_sync.rs`
+- `src-tauri/src/subscribed_calendar_provider.rs`
+- `src-tauri/src/my_timetable.rs`
+- `src-tauri/src/brightspace.rs`
+- `src-tauri/src/commands.rs` only if required to close the legacy configuration bypass
+- `src-tauri/src/diagnostics.rs` only for the latest-schema expectation
 - `docs/database.md`
 - `docs/decisions/029-ics-subscription-ingestion.md`
 - `.ai/HANDOFF.md`
@@ -63,45 +70,48 @@ The Aether 22 security review found that CAL-ICS limits each recurrence but chec
 
 ## Out of scope
 
-- Generation-safe feed replacement / `CAL-SUB-ROTATE-001`.
-- Integration Sync scheduling / `INT-SYNC-002`.
-- School Space source association / `SCHOOL-SCOPE-002`.
-- Changes to the merged Brightspace provider behavior beyond compatibility with the shared hardened calendar layer.
-- Pulse, AI, frontend, IPC, or provider-specific limit/redirect behavior.
-- Broad async-runtime or threading redesign.
+- `INT-SYNC-002` provider queue redesign.
+- `SCHOOL-SCOPE-002` source-association hardening.
+- Pulse, AI calendar tools, OAuth, richer LMS entities, generalized providers, or frontend redesign.
+- New Brightspace semantic models or provider-specific race handling.
+- Aether 26 or Aether 27 work.
 
 ## Architecture constraints
 
-- Preserve the native trust boundary and provider-neutral CAL-ICS ownership.
-- Preserve authoritative reconciliation as an atomic post-parse commit only.
-- Use one occurrence-budget helper and one redirect/request-policy path.
-- Do not expose validator origin through public Integration serialization or IPC.
-- Keep migrations append-only and existing cached events intact.
+- Store generation canonically on the Integration row; do not expose it through public Integration IPC.
+- Keep credentials and replacement mutation behind the Rust trust boundary.
+- Keep migrations append-only and cached ExternalEvents intact.
+- Reconcile events and finish Integration success in one transaction only after a current-generation check.
+- Treat cancellation as an optimization; generation checks remain authoritative.
+- Keep runtime dispatch closed to approved provider/auth pairs.
 
 ## Dependencies
 
-- Merged `CAL-ICS-001`, `INT-SYNC-001`, `SCHOOL-MTT-001`, and `SCHOOL-SPACE-001` on `origin/master`.
-- Existing `ical`, `rrule`, `reqwest`, SQLite, and Calendar Core infrastructure.
+- Merged CAL-ICS security hardening on `origin/master`.
+- Existing DPAPI credential storage, migrations 013/016, Calendar Core, and Integration Sync runtime.
 
 No new dependency is required.
 
 ## Risks and safeguards
 
-- **False rejection of normal feeds:** limits align with downstream Calendar Core field limits and existing 2,000-occurrence policy; real-world MyTimetable fixtures remain regression-tested.
-- **Legacy validator ambiguity:** migration clears validators whose origin cannot be proven, forcing one safe complete refresh without deleting cached events.
-- **Incorrect 304:** accept 304 only when at least one validator was actually attached to that exact request.
-- **Data loss on parser failure:** normalization completes before the transaction that reconciles events; failure follows the existing sanitized failure path.
-- **SSRF regression:** keep per-hop URL validation, DNS resolution, public-address checks, pinned addresses, and redirect bounds unchanged and covered.
+- **Secret/metadata split state:** pre-encrypt, then update the SQLite secret and Integration generation/state in one transaction; rollback preserves the prior configuration.
+- **Replacement races:** compare the generation captured before validation and reject a stale candidate rather than overwrite newer configuration.
+- **Late old work:** check generation before any reconciliation or completion write in the same transaction.
+- **Cancelled work overwriting state:** failure completion is generation-guarded and stale cancellation outcomes are discarded.
+- **Replacement sync coalescing:** record one connection-scoped follow-up while old work drains; this is not a general queue redesign.
+- **Sensitive diagnostics:** return fixed stale/configuration outcomes without URLs, credentials, validators, or payloads.
 
 ## Rollback considerations
 
-Code can be reverted, but the additive validator-origin column remains harmless. Cleared legacy validators cause only a future full refresh. No cached event rows or credentials are migrated or deleted.
+Code can be reverted while the additive generation column remains harmless. Existing rows start at generation 1. Replacement transaction failure rolls back both the secret and generation/state reset, and cached events are never removed by replacement itself.
 
 ## Required validation
 
-- Focused CAL-ICS parser/recurrence/security tests.
-- Focused redirect transport tests.
-- Relevant Integration Sync, subscribed-calendar, migration, and MyTimetable regression tests.
+- Focused subscribed-calendar replacement/generation tests.
+- Focused CAL-ICS regressions.
+- Focused Integration Sync and Integration repository tests.
+- Focused MyTimetable and Brightspace shared-lifecycle tests.
+- Migration fresh/upgrade tests.
 - `cargo test --manifest-path src-tauri/Cargo.toml`
 - `cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`
 - `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings`
@@ -110,19 +120,19 @@ Code can be reverted, but the additive validator-origin column remains harmless.
 - `pnpm build`
 - `git diff --check`
 
-Full frontend tests are required only if frontend contracts unexpectedly change; no frontend change is planned.
+No frontend test suite is required unless frontend source or contracts change.
 
 ## Independent review requirement
 
 | Field | Value |
 | --- | --- |
 | Required | No |
-| Reason | The repository workflow requires a distinct evidence-based Codex self-review; no separate reviewer was requested. |
-| Reviewer scope | Parser budgets, redirect origin isolation, persistence semantics, cache preservation, and scope discipline. |
+| Reason | The repository workflow requires a distinct evidence-based self-review; no separate reviewer was requested. |
+| Reviewer scope | Generation monotonicity, credential atomicity, stale completion guards, cache preservation, and provider-neutral reuse. |
 
 ## Human decisions required
 
-None. The requested limits and security behavior are bounded by the existing Calendar Core and CAL-ICS architecture.
+None. The requested behavior and current native storage/runtime architecture determine a bounded implementation.
 
 ## Blocking decisions
 
@@ -132,61 +142,67 @@ None.
 
 | Check | State |
 | --- | --- |
-| Correct branch/worktree confirmed | Pass — `agent/cal-ics-security` |
+| Correct branch/worktree confirmed | Pass — `agent/calendar-rotate` |
 | `git status` inspected | Pass — clean before contract updates |
 | User-owned changes identified | None |
-| Parallel task overlap checked | Pass — merged Brightspace behavior is preserved |
-| Serialization points identified | CAL-ICS, Integration validator persistence, migration ordering |
+| Parallel task overlap checked | Pass — current worktree is based on merged Aether 24 `origin/master` |
+| Serialization points identified | Migration ordering, Integration generation/state, shared runtime completion |
 
 ## Readiness review
 
-Ready. The objective, boundaries, risks, persistence requirement, exact implementation surface, validation, and stop condition are explicit. Production implementation may begin.
+Ready. The objective, acceptance criteria, bounded paths, migration and atomicity design, stale-work guard, validation, rollback behavior, and stop condition are explicit.
 
 ## Implementation log
 
-- Added a single incremental `OccurrenceBudget` shared by ordinary, recurring, RDATE, and override output; recurrence collection receives only a one-item sentinel beyond the remaining allowance.
-- Added pre-parse logical-line bounds plus per-event/property, recurrence-property, RDATE, EXDATE, category, and Calendar Core-aligned field limits.
-- Added origin-associated conditional validators, explicit follow-redirect statuses, cross-origin sticky header stripping, conditioned-304 enforcement, and bounded response-validator parsing.
-- Added migration `016_ics_validator_origin`, private runtime repository plumbing, atomic validator replacement/preservation semantics, and legacy ICS validator clearing without cache deletion.
-- Updated ADR-029, database documentation, diagnostics schema evidence, and provider/shared regression coverage. No frontend source or dependency changed.
+- Added migration `017_subscribed_calendar_generation` with private generation 1 for existing Integration rows.
+- Added atomic DPAPI-secret replacement helpers and a compare-and-swap replacement transaction that advances generation, clears validators/retry/errors/prior success, and retains cached events.
+- Bound request-time records and prepared outcomes to connection ID and generation; production preparation captures the decrypted credential under the same SQLite lock used to verify generation.
+- Guarded runtime start, success, failure, validator persistence, and authoritative reconciliation by generation with a typed `StaleGeneration` outcome.
+- Added connection-scoped cancellation and one replacement follow-up after old work drains; queued work now retains its request-time generation.
+- Rejected duplicate subscribed-calendar metadata creation so the legacy configuration seam cannot act as an unvalidated replacement path.
+- Updated migration/database documentation and ADR-029. No frontend source, dependency, or new ADR was added.
 
 ## Verification evidence
 
+- Focused Integration Sync tests: 8 passed.
+- Focused Integration repository tests: 6 passed.
+- Focused MyTimetable tests: 22 passed.
+- Focused Brightspace tests: 4 passed.
 - Focused CAL-ICS tests: 21 passed.
-- Focused migration tests: 14 passed.
-- Focused Integration Sync tests: 5 passed.
-- Focused Integration repository tests: 5 passed.
-- Focused MyTimetable tests: 18 passed.
-- `cargo test --manifest-path src-tauri/Cargo.toml`: 178 passed after reconciling the merged Brightspace connector.
+- Focused migration tests: 15 passed.
+- Focused subscribed-calendar repository tests: 1 passed.
+- `cargo test --manifest-path src-tauri/Cargo.toml`: 186 passed.
 - `cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`: passed.
 - `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings`: passed.
 - `pnpm typecheck`: passed.
 - `pnpm lint`: passed.
-- `pnpm test`: 131 passed across 37 files after merge reconciliation.
 - `pnpm build`: passed.
 - `git diff --check`: passed.
+- Full frontend tests were not required because no frontend source or contract changed.
 
 ## Acceptance evidence
 
-- AC1: boundary/adversarial tests prove exactly 2,000 occurrences succeed, 2,001 and combined-series/RDATE overflow fail, and the output vector never grows past the limit.
-- AC2: RDATE/EXDATE counts, repeated recurrence properties, 128 properties/event, 80,000-byte logical properties, and downstream-aligned field lengths fail with fixed sanitized codes.
-- AC3: MyTimetable normalization and cancellation/removal/reappearance tests pass; an adversarial budget failure leaves the cached active event intact.
-- AC4: transport fixtures prove same-origin preservation, cross-origin stripping of both headers, final-origin validator capture, per-hop DNS rejection, multi-origin non-reappearance, direct fetch, and conditioned 304 behavior.
-- AC5: migration/repository tests prove legacy validators are cleared without cached-event loss, final validators and origin replace atomically, 304 preserves them, and origin is absent from serialized Integration IPC state.
+- Migration/restart tests prove generation persists, existing connections start at 1, same-feed validation does not advance it, and rapid replacements advance exactly once each.
+- Candidate-validation and encryption-failure tests prove the old secret, generation, validators, retry gate, connection state, and cache survive failure.
+- Runtime tests prove old fetching work is cancelled and followed once, while stale parsed work cannot reconcile events, persist validators, or overwrite success/failure state.
+- Replacement-state tests prove validators/origin and retry/defer/error/prior-success state clear before the first current-generation request, so it is unconditional.
+- Failed first-sync coverage proves cached events remain while the current generation reports degraded failure; successful current-generation coverage proves one authoritative reconciliation and current validator persistence.
+- Concurrent replacement coverage proves a slower caller cannot overwrite a newer generation; disconnect coverage proves stale work cannot recreate a removed connection.
+- MyTimetable and Brightspace focused suites prove both providers retain the shared lifecycle.
 
 ## Self-review
 
-Passed. The security implementation stays inside the approved shared CAL-ICS/native Integration scope plus the migration-required diagnostics expectation. No provider-specific policy, scheduler redesign, School association, frontend, Pulse, or AI work was introduced; the later merged Brightspace provider continues to reuse the same hardened shared lifecycle. Parser failures remain pre-reconciliation; validator origin remains native-only; existing HTTPS, userinfo, redirect-hop, DNS/public-address, and pinned-IP protections remain enforced. No secrets, URLs, payloads, or attacker-controlled values enter error messages.
+Passed. The final diff contains only task-owned native lifecycle, persistence, provider regression tests, migration/docs, and control records. Generation remains private to Rust and canonical on the Integration row. Credential bytes, URLs, validators, and payloads do not enter public results or errors. Replacement itself never deletes cached events. The commit guard runs before reconciliation inside the same SQLite transaction, and failure writes carry the captured generation. Same-feed validation remains an ordinary refresh and does not advance generation. `INT-SYNC-002`, `SCHOOL-SCOPE-002`, Pulse, AI, frontend redesign, and provider-specific race logic were not introduced.
 
 ## Publication state
 
 | Field | Value |
 | --- | --- |
-| Commit | `ed0aafb` |
-| Remote branch | `origin/agent/cal-ics-security` |
-| Draft PR | [#60](https://github.com/bimberlotDEV/Aether-Desktop/pull/60) |
-| Exact-head CI | `None` |
+| Commit | `173b517` |
+| Remote branch | `origin/agent/calendar-rotate` |
+| Draft PR | [#61](https://github.com/bimberlotDEV/Aether-Desktop/pull/61) |
+| Exact-head CI | Pending |
 
 ## Stop condition
 
-Stop after all acceptance criteria are evidenced, required checks pass, the conflict-resolution merge commit is pushed, and the Aether 24 draft PR is ready for review. Do not begin any named follow-up task.
+Stop after all acceptance criteria are evidenced, required checks pass, the task commit is pushed, and a draft PR is open. Do not begin `INT-SYNC-002`, `SCHOOL-SCOPE-002`, Aether 26, Aether 27, Pulse, or AI work.

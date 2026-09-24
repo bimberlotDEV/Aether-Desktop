@@ -239,19 +239,21 @@ pub struct SyncRuntimeRecord {
     pub credential_key: Option<String>,
     pub validator_origin: Option<String>,
     pub consecutive_failures: u32,
+    pub configuration_generation: i64,
 }
 
 pub fn sync_runtime_record(
     conn: &Connection,
     id: &str,
 ) -> Result<Option<SyncRuntimeRecord>, String> {
-    let sql = format!("SELECT {INTEGRATION_COLS}, credential_key, last_sync_validator_origin, consecutive_sync_failures FROM integrations WHERE id=?1");
+    let sql = format!("SELECT {INTEGRATION_COLS}, credential_key, last_sync_validator_origin, consecutive_sync_failures, configuration_generation FROM integrations WHERE id=?1");
     conn.query_row(&sql, [id], |row| {
         Ok(SyncRuntimeRecord {
             integration: row_to_integration(row)?,
             credential_key: row.get(26)?,
             validator_origin: row.get(27)?,
             consecutive_failures: row.get::<_, i64>(28)?.max(0) as u32,
+            configuration_generation: row.get(29)?,
         })
     })
     .optional()
@@ -273,14 +275,36 @@ pub fn recover_interrupted_runs(conn: &Connection, next_allowed: &str) -> Result
 pub fn runtime_mark_running(
     conn: &Connection,
     id: &str,
+    configuration_generation: i64,
     trigger: &str,
     now: &str,
 ) -> Result<bool, String> {
     let changed = conn.execute(
-        "UPDATE integrations SET sync_status='syncing', connection_status='syncing', last_attempted_at=?1, last_sync_trigger=?2, updated_at=datetime('now') WHERE id=?3 AND enabled=1 AND connection_status NOT IN ('disconnected','unsupported','reauthentication_required','permission_denied','institution_configuration_required')",
-        params![now, trigger, id],
+        "UPDATE integrations SET sync_status='syncing', connection_status='syncing', last_attempted_at=?1, last_sync_trigger=?2, updated_at=datetime('now') WHERE id=?3 AND configuration_generation=?4 AND enabled=1 AND connection_status NOT IN ('disconnected','unsupported','reauthentication_required','permission_denied','institution_configuration_required')",
+        params![now, trigger, id, configuration_generation],
     ).map_err(|error| format!("Integration runtime start error: {error}"))?;
     Ok(changed == 1)
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SyncCompletion {
+    Applied,
+    StaleGeneration,
+}
+
+pub fn generation_is_current(
+    conn: &Connection,
+    id: &str,
+    configuration_generation: i64,
+) -> Result<bool, String> {
+    conn.query_row(
+        "SELECT configuration_generation=?2 FROM integrations WHERE id=?1",
+        params![id, configuration_generation],
+        |row| row.get(0),
+    )
+    .optional()
+    .map(|value| value.unwrap_or(false))
+    .map_err(|error| format!("Integration generation lookup error: {error}"))
 }
 
 pub struct SyncValidators<'a> {
@@ -292,10 +316,11 @@ pub struct SyncValidators<'a> {
 pub fn runtime_finish_success(
     tx: &rusqlite::Transaction<'_>,
     id: &str,
+    configuration_generation: i64,
     now: &str,
     validators: Option<SyncValidators<'_>>,
     next_allowed: &str,
-) -> Result<(), String> {
+) -> Result<SyncCompletion, String> {
     let replace_validators = validators.is_some();
     let origin = validators.as_ref().and_then(|validators| {
         (validators.etag.is_some() || validators.last_modified.is_some())
@@ -306,29 +331,63 @@ pub fn runtime_finish_success(
         .as_ref()
         .and_then(|validators| validators.last_modified);
     let changed = tx.execute(
-        "UPDATE integrations SET sync_status='succeeded', connection_status='connected', last_successful_sync_at=?1, last_sync_finished_at=?1, next_allowed_sync_at=?2, last_sync_error_code=NULL, last_sync_error_message=NULL, last_sync_etag=CASE WHEN ?3 THEN ?4 ELSE last_sync_etag END, last_sync_last_modified=CASE WHEN ?3 THEN ?5 ELSE last_sync_last_modified END, last_sync_validator_origin=CASE WHEN ?3 THEN ?6 ELSE last_sync_validator_origin END, rate_limit_remaining=NULL, retry_after_at=NULL, consecutive_sync_failures=0, updated_at=datetime('now') WHERE id=?7 AND enabled=1",
-        params![now, next_allowed, replace_validators, etag, last_modified, origin, id],
+        "UPDATE integrations SET sync_status='succeeded', connection_status='connected', last_successful_sync_at=?1, last_sync_finished_at=?1, next_allowed_sync_at=?2, last_sync_error_code=NULL, last_sync_error_message=NULL, last_sync_etag=CASE WHEN ?3 THEN ?4 ELSE last_sync_etag END, last_sync_last_modified=CASE WHEN ?3 THEN ?5 ELSE last_sync_last_modified END, last_sync_validator_origin=CASE WHEN ?3 THEN ?6 ELSE last_sync_validator_origin END, rate_limit_remaining=NULL, retry_after_at=NULL, consecutive_sync_failures=0, updated_at=datetime('now') WHERE id=?7 AND configuration_generation=?8 AND enabled=1",
+        params![now, next_allowed, replace_validators, etag, last_modified, origin, id, configuration_generation],
     ).map_err(|error| format!("Integration runtime success error: {error}"))?;
     if changed != 1 {
-        return Err("Integration was disabled before sync completion".to_string());
+        return if generation_is_current(tx, id, configuration_generation)? {
+            Err("Integration was disabled before sync completion".to_string())
+        } else {
+            Ok(SyncCompletion::StaleGeneration)
+        };
     }
-    Ok(())
+    Ok(SyncCompletion::Applied)
+}
+
+pub struct SyncFailureUpdate<'a> {
+    pub code: &'a str,
+    pub message: &'a str,
+    pub next_allowed: &'a str,
+    pub connection_status: &'a str,
+    pub retry_after: Option<&'a str>,
 }
 
 pub fn runtime_finish_failure(
     conn: &Connection,
     id: &str,
-    code: &str,
-    message: &str,
-    next_allowed: &str,
-    connection_status: &str,
-    retry_after: Option<&str>,
-) -> Result<(), String> {
-    conn.execute(
-        "UPDATE integrations SET sync_status='failed', connection_status=?1, last_sync_finished_at=?2, next_allowed_sync_at=?3, retry_after_at=?4, last_sync_error_code=?5, last_sync_error_message=?6, consecutive_sync_failures=consecutive_sync_failures+1, updated_at=datetime('now') WHERE id=?7",
-        params![connection_status, Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true), next_allowed, retry_after, code, message, id],
+    configuration_generation: i64,
+    update: SyncFailureUpdate<'_>,
+) -> Result<SyncCompletion, String> {
+    let changed = conn.execute(
+        "UPDATE integrations SET sync_status='failed', connection_status=?1, last_sync_finished_at=?2, next_allowed_sync_at=?3, retry_after_at=?4, last_sync_error_code=?5, last_sync_error_message=?6, consecutive_sync_failures=consecutive_sync_failures+1, updated_at=datetime('now') WHERE id=?7 AND configuration_generation=?8",
+        params![update.connection_status, Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true), update.next_allowed, update.retry_after, update.code, update.message, id, configuration_generation],
     ).map_err(|error| format!("Integration runtime failure error: {error}"))?;
-    Ok(())
+    Ok(if changed == 1 {
+        SyncCompletion::Applied
+    } else {
+        SyncCompletion::StaleGeneration
+    })
+}
+
+pub fn replace_ics_configuration(
+    tx: &rusqlite::Transaction<'_>,
+    id: &str,
+    expected_generation: i64,
+) -> Result<Option<i64>, String> {
+    let changed = tx.execute(
+        "UPDATE integrations SET configuration_generation=configuration_generation+1, connection_status='connected', effective_capabilities_json=advertised_capabilities_json, disconnect_reason=NULL, sync_status='idle', last_attempted_at=NULL, last_successful_sync_at=NULL, next_allowed_sync_at=NULL, last_sync_error_code=NULL, last_sync_error_message=NULL, last_sync_etag=NULL, last_sync_last_modified=NULL, last_sync_validator_origin=NULL, sync_cursor=NULL, rate_limit_remaining=NULL, retry_after_at=NULL, credential_expires_at=NULL, credential_rotated_at=datetime('now'), consecutive_sync_failures=0, last_sync_finished_at=NULL, last_sync_trigger=NULL, updated_at=datetime('now') WHERE id=?1 AND auth_type='ics_feed' AND configuration_generation=?2 AND configuration_generation<9223372036854775807",
+        params![id, expected_generation],
+    ).map_err(|error| format!("Calendar subscription replacement error: {error}"))?;
+    if changed == 0 {
+        return Ok(None);
+    }
+    tx.query_row(
+        "SELECT configuration_generation FROM integrations WHERE id=?1",
+        [id],
+        |row| row.get(0),
+    )
+    .map(Some)
+    .map_err(|error| format!("Calendar subscription generation lookup error: {error}"))
 }
 
 pub fn set_enabled(
@@ -359,6 +418,19 @@ pub fn mark_configured(conn: &Connection, id: &str) -> Result<Option<Integration
         return Ok(None);
     }
     get_by_id(conn, id)
+}
+
+pub fn mark_configured_at_generation(
+    conn: &Connection,
+    id: &str,
+    configuration_generation: i64,
+) -> Result<bool, String> {
+    conn.execute(
+        "UPDATE integrations SET connection_status='connected', effective_capabilities_json=advertised_capabilities_json, disconnect_reason=NULL, updated_at=datetime('now') WHERE id=?1 AND configuration_generation=?2",
+        params![id, configuration_generation],
+    )
+    .map(|changed| changed == 1)
+    .map_err(|error| format!("Integration configuration update error: {error}"))
 }
 
 #[cfg(test)]
@@ -423,6 +495,7 @@ mod tests {
         runtime_finish_success(
             &tx,
             &created.id,
+            1,
             "2026-09-24T10:00:00Z",
             Some(SyncValidators {
                 origin: "https://calendar.example",
@@ -451,6 +524,7 @@ mod tests {
         runtime_finish_success(
             &tx,
             &created.id,
+            1,
             "2026-09-24T10:30:00Z",
             None,
             "2026-09-24T11:00:00Z",
@@ -470,6 +544,7 @@ mod tests {
         runtime_finish_success(
             &tx,
             &created.id,
+            1,
             "2026-09-24T11:00:00Z",
             Some(SyncValidators {
                 origin: "https://other.example",
@@ -522,5 +597,104 @@ mod tests {
                 Some("2026-01-01T00:01:00Z")
             );
         }
+    }
+
+    #[test]
+    fn replacement_generation_is_monotonic_and_rejects_stale_completion_state() {
+        let conn = setup();
+        let mut value = input();
+        value.auth_type = "ics_feed".into();
+        let created = create(&conn, &value).unwrap();
+        conn.execute(
+            "UPDATE integrations SET connection_status='connected', sync_status='succeeded', last_successful_sync_at='2026-09-24T09:00:00Z', last_sync_etag='old', last_sync_last_modified='old-modified', last_sync_validator_origin='https://old.example', next_allowed_sync_at='2099-01-01T00:00:00Z', retry_after_at='2099-01-01T00:00:00Z', consecutive_sync_failures=3 WHERE id=?1",
+            [&created.id],
+        )
+        .unwrap();
+
+        set_enabled(&conn, &created.id, false).unwrap();
+        set_enabled(&conn, &created.id, true).unwrap();
+        assert_eq!(
+            sync_runtime_record(&conn, &created.id)
+                .unwrap()
+                .unwrap()
+                .configuration_generation,
+            1
+        );
+
+        let tx = conn.unchecked_transaction().unwrap();
+        assert_eq!(
+            replace_ics_configuration(&tx, &created.id, 1).unwrap(),
+            Some(2)
+        );
+        tx.commit().unwrap();
+        let tx = conn.unchecked_transaction().unwrap();
+        assert_eq!(
+            replace_ics_configuration(&tx, &created.id, 1).unwrap(),
+            None
+        );
+        tx.commit().unwrap();
+        let current = sync_runtime_record(&conn, &created.id).unwrap().unwrap();
+        assert_eq!(current.configuration_generation, 2);
+        assert_eq!(current.integration.sync_status, "idle");
+        assert!(current.integration.last_successful_sync_at.is_none());
+        assert!(current.integration.last_sync_etag.is_none());
+        assert!(current.integration.last_sync_last_modified.is_none());
+        assert!(current.validator_origin.is_none());
+        assert!(current.integration.next_allowed_sync_at.is_none());
+        assert!(current.integration.retry_after_at.is_none());
+        assert_eq!(current.consecutive_failures, 0);
+
+        let tx = conn.unchecked_transaction().unwrap();
+        assert_eq!(
+            runtime_finish_success(
+                &tx,
+                &created.id,
+                1,
+                "2026-09-24T10:00:00Z",
+                Some(SyncValidators {
+                    origin: "https://stale.example",
+                    etag: Some("stale"),
+                    last_modified: None,
+                }),
+                "2026-09-24T10:30:00Z",
+            )
+            .unwrap(),
+            SyncCompletion::StaleGeneration
+        );
+        assert_eq!(
+            runtime_finish_failure(
+                &tx,
+                &created.id,
+                1,
+                SyncFailureUpdate {
+                    code: "stale",
+                    message: "stale failure",
+                    next_allowed: "2099-01-01T00:00:00Z",
+                    connection_status: "degraded",
+                    retry_after: None,
+                },
+            )
+            .unwrap(),
+            SyncCompletion::StaleGeneration
+        );
+        tx.commit().unwrap();
+        let current = sync_runtime_record(&conn, &created.id).unwrap().unwrap();
+        assert_eq!(current.configuration_generation, 2);
+        assert_eq!(current.integration.sync_status, "idle");
+        assert!(current.integration.last_sync_error_code.is_none());
+
+        let tx = conn.unchecked_transaction().unwrap();
+        assert_eq!(
+            replace_ics_configuration(&tx, &created.id, 2).unwrap(),
+            Some(3)
+        );
+        tx.commit().unwrap();
+        assert_eq!(
+            sync_runtime_record(&conn, &created.id)
+                .unwrap()
+                .unwrap()
+                .configuration_generation,
+            3
+        );
     }
 }
