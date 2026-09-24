@@ -4,18 +4,16 @@
 | --- | --- |
 | Schema version | 2 |
 | Session date | 2026-09-23 |
-| Active task | None |
+| Active task | `SCHOOL-BSP-001` |
 | Agent | Codex |
-| State | idle |
+| State | complete |
 
 ## Current work
 
-`SCHOOL-SPACE-001` is complete on `agent/school-space`: the existing parent School Space now reads a bounded local MyTimetable schedule through a native School read model and presents Today, Week, and Upcoming views scoped to a persisted user-selected group, with truthful freshness, cancellation, all-day, and overlap states.
+`SCHOOL-BSP-001` is complete on `agent/brightspace`. Brightspace now connects through a renewable HTTPS ICS link stored only as a native encrypted bearer credential, reusing subscribed calendars, CAL-ICS, Calendar Core, and the closed Integration Sync Runtime.
 
-Migration `015_external_event_groups` preserves cached events, adds structured provider-neutral group arrays, and forces the next enabled MyTimetable synchronization to return a complete feed. No ADR was required. Brightspace, Pulse, AI tooling, Course inference, and provider fetching during rendering remain out of scope.
-
-Full validation passes: 130 frontend tests and 158 Rust tests, plus typecheck, lint, production build, Rust formatting, strict Clippy, and diff checks.
+The shared provider lifecycle removes MyTimetable/Brightspace duplication; runtime routing explicitly requires an approved provider plus `ics_feed`; Brightspace events remain general ExternalEvents without title-based LMS inference. No schema migration, dependency, or new ADR was required. Full validation passes: 131 frontend tests and 163 Rust tests, plus typecheck, lint, production build, Rust formatting, strict Clippy, and diff checks.
 
 ## Exact resume point
 
-No active implementation task. Update/launch the desktop app, allow or manually request one complete MyTimetable sync, select `ADSAI-ZM-1.a` in the top-level School Space, and perform the group-scoping smoke matrix.
+Implementation commit `a9347c8` is pushed to `origin/agent/brightspace`; draft PR `#59` is open and its Windows quality gate has started. No live Brightspace bearer URL was available for a real-provider smoke in this session.

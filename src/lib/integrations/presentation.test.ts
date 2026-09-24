@@ -37,15 +37,23 @@ describe('integration presentation helpers', () => {
     ).toBe('Request to [redacted] failed with [redacted].')
   })
 
-  it('marks only MyTimetable as available for supported calendar setup', () => {
+  it('marks only the two approved ICS providers as available for setup', () => {
     expect(providerCatalog).toHaveLength(4)
     expect(
       providerCatalog.find((provider) => provider.id === 'my_timetable')?.setupSupported,
     ).toBe(true)
     expect(
       providerCatalog
-        .filter((provider) => provider.id !== 'my_timetable')
+        .filter(
+          (provider) => provider.id !== 'my_timetable' && provider.id !== 'brightspace',
+        )
         .every((provider) => !provider.setupSupported),
     ).toBe(true)
+    expect(
+      providerCatalog.find((provider) => provider.id === 'brightspace')?.setupSupported,
+    ).toBe(true)
+    expect(
+      providerCatalog.find((provider) => provider.id === 'brightspace')?.description,
+    ).toMatch(/Calendar-only/)
   })
 })

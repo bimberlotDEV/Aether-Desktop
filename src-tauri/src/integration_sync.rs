@@ -24,9 +24,23 @@ use tokio_util::sync::CancellationToken;
 
 const PROVIDER_ICS: &str = "calendar_ics";
 const PROVIDER_MY_TIMETABLE: &str = "my_timetable";
+const PROVIDER_BRIGHTSPACE: &str = "brightspace";
 
-fn is_ics_provider(provider: &str) -> bool {
-    matches!(provider, PROVIDER_ICS | PROVIDER_MY_TIMETABLE)
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum IcsNormalization {
+    Default,
+    MyTimetable,
+}
+
+fn ics_handler(provider: &str, auth_type: &str) -> Option<IcsNormalization> {
+    if auth_type != "ics_feed" {
+        return None;
+    }
+    match provider {
+        PROVIDER_ICS | PROVIDER_BRIGHTSPACE => Some(IcsNormalization::Default),
+        PROVIDER_MY_TIMETABLE => Some(IcsNormalization::MyTimetable),
+        _ => None,
+    }
 }
 const PERIODIC_SECONDS: u64 = 15 * 60;
 const TIMEOUT_SECONDS: u64 = 30;
@@ -178,13 +192,15 @@ impl RuntimeHost for TauriRuntimeHost {
         record: &integrations::SyncRuntimeRecord,
         cancel: CancellationToken,
     ) -> Result<(PreparedSync, SyncPolicy), SyncFailure> {
-        if !is_ics_provider(&record.integration.provider_id) {
-            return Err(SyncFailure {
-                code: "unsupported",
-                message: "Provider is unsupported",
-                connection_status: "unsupported",
-            });
-        }
+        let normalization = ics_handler(
+            &record.integration.provider_id,
+            &record.integration.auth_type,
+        )
+        .ok_or(SyncFailure {
+            code: "unsupported",
+            message: "Provider is unsupported",
+            connection_status: "unsupported",
+        })?;
         let key = record.credential_key.as_deref().ok_or(SyncFailure {
             code: "configuration",
             message: "Calendar subscription is not configured",
@@ -250,15 +266,16 @@ impl RuntimeHost for TauriRuntimeHost {
                 // the safe timing metadata here so the fetch contract remains closed.
                 let _safe_provider_gate = latest_allowed(retry_after_at, rate_limit_reset_at);
                 let now = Utc::now();
-                let events = if record.integration.provider_id == PROVIDER_MY_TIMETABLE {
-                    calendar_ics::normalize_with_metadata(
+                let events = match normalization {
+                    IcsNormalization::MyTimetable => calendar_ics::normalize_with_metadata(
                         &bytes,
                         &record.integration.id,
                         now,
                         crate::my_timetable::metadata,
-                    )
-                } else {
-                    calendar_ics::normalize(&bytes, &record.integration.id, now)
+                    ),
+                    IcsNormalization::Default => {
+                        calendar_ics::normalize(&bytes, &record.integration.id, now)
+                    }
                 }
                 .map_err(|_| SyncFailure {
                     code: "provider_data",
@@ -479,7 +496,12 @@ fn request(
             reason: "Connection is disabled".into(),
         };
     }
-    if !is_ics_provider(&record.integration.provider_id) {
+    if ics_handler(
+        &record.integration.provider_id,
+        &record.integration.auth_type,
+    )
+    .is_none()
+    {
         return SyncRequestResult::Rejected {
             reason: "Provider is unsupported".into(),
         };
@@ -682,6 +704,20 @@ mod tests {
     };
     use tokio::sync::Notify;
 
+    #[test]
+    fn closed_ics_registry_requires_an_approved_provider_and_auth_pair() {
+        assert_eq!(
+            ics_handler(PROVIDER_BRIGHTSPACE, "ics_feed"),
+            Some(IcsNormalization::Default)
+        );
+        assert_eq!(
+            ics_handler(PROVIDER_MY_TIMETABLE, "ics_feed"),
+            Some(IcsNormalization::MyTimetable)
+        );
+        assert_eq!(ics_handler(PROVIDER_BRIGHTSPACE, "oauth"), None);
+        assert_eq!(ics_handler("unregistered", "ics_feed"), None);
+    }
+
     #[derive(Clone, Copy)]
     enum HandlerMode {
         Success,
@@ -722,7 +758,7 @@ mod tests {
                     provider_id: PROVIDER_ICS.into(),
                     enabled: true,
                     advertised_capabilities: Vec::new(),
-                    auth_type: "none".into(),
+                    auth_type: "ics_feed".into(),
                     sync_modes: vec!["manual".into()],
                     sync_config: serde_json::json!({}),
                 },

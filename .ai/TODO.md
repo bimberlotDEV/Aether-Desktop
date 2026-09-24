@@ -150,7 +150,7 @@ This section defines direction, not automatic implementation authorization.
 | P0       | `CAL-CORE-001`     | Build external Calendar domain                     | Product / Data                     | `done`         | `INT-CORE-001`                                        | Aether can normalize, persist, query, update, and deduplicate external calendar events independently of provider-specific schemas.                                       |
 | P0       | `CAL-ICS-001`      | Build shared subscribed-calendar ingestion engine  | Product / Integration              | `done`         | `CAL-CORE-001`                                        | Renewable HTTPS iCalendar feeds can be configured securely and normalized for future runtime orchestration without provider-specific policy.                              |
 | P0       | `SCHOOL-MTT-001`   | Connect MyTimetable schedule data                  | Product / Integration              | `done`         | `CAL-CORE-001`                                        | Read-only MyTimetable ICS subscriptions now import and reconcile schedule events safely and idempotently through shared Calendar/Sync Runtime ownership.                |
-| P0       | `SCHOOL-BSP-001`   | Connect Brightspace calendar/deadline data         | Product / Integration              | `needs_design` | `CAL-CORE-001`, provider capability research          | Brightspace deadlines/calendar data can be synchronized without scraping credentials or pretending unsupported API access exists.                                        |
+| P0       | `SCHOOL-BSP-001`   | Connect Brightspace calendar data                  | Product / Integration              | `done`         | `CAL-CORE-001`, `CAL-ICS-001`, `INT-SYNC-001`, `SCHOOL-BSP-CAP-001` | Brightspace renewable ICS data synchronizes as general ExternalEvents without scraping credentials or pretending LMS API access exists. |
 | P0       | `SCHOOL-SPACE-001` | Add ICS-first School timetable views                | Product / UX                       | `done`         | `SCHOOL-MTT-001`                                      | The existing School parent Space surfaces local normalized MyTimetable events in truthful Today, Week, and Upcoming views, scoped to a persisted user-selected group. |
 | P0       | `PULSE-003`        | Add connected schedule/deadline relevance to Pulse | Product / UX / Data                | `candidate`    | `CAL-CORE-001`, at least one working school connector | Pulse surfaces today's real schedule and upcoming deadlines through deterministic local read models without provider-specific UI coupling or hidden AI.                  |
 | P1       | `AI-CAL-001`       | Add bounded AI calendar/school read tools          | Product / AI / Security            | `needs_design` | Calendar + school read models                         | Aether can answer bounded questions such as “what do I have tomorrow?” using explicit local tool results instead of sending unrestricted database context.               |
@@ -166,10 +166,9 @@ This section defines direction, not automatic implementation authorization.
 
 # Next recommended planned task
 
-There is no active planned task. The remaining connected-workspace candidates have
-distinct prerequisites and must receive their own ready `.ai/HANDOFF.md` contract
-before implementation. In particular, Brightspace still requires design and does
-not implicitly authorize Pulse, AI, or additional School scope.
+There is no active planned task. `SCHOOL-BSP-001` completed the renewable-ICS,
+calendar-only Brightspace connector. Pulse, AI, OAuth, richer LMS entities, and
+additional School work remain separately scoped.
 
 ---
 
@@ -288,7 +287,7 @@ Previously resolved items belong in `.ai/CHANGELOG.md`, including:
 | Connections                 | `complete`               | Truthful provider-neutral Settings UI is available; provider setup remains separate.   |
 | Calendar                    | `complete`               | Reuse the normalized bounded local event domain for approved consumers.                 |
 | MyTimetable                 | `complete`               | Preserve read-only native ICS synchronization and truthful connection state.            |
-| Brightspace                 | `needs_design`           | Determine supported calendar/API path before implementation.                            |
+| Brightspace                 | `calendar_ics_complete`  | Preserve the calendar-only boundary; OAuth and richer LMS semantics require new design. |
 | School connected experience | `ics_timetable_complete` | Brightspace/deadline work remains separately designed and unauthorized.                 |
 | GitHub                      | `not_started`            | Build after generic Integration Core is proven.                                         |
 | Automation / n8n            | `needs_design`           | Define generic automation boundary before provider implementation.                      |

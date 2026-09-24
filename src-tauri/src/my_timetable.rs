@@ -1,20 +1,22 @@
 //! Thin MyTimetable provider profile. Transport, parsing, reconciliation, and scheduling
 //! remain owned by the shared subscribed-calendar and integration-sync modules.
 use crate::{
-    ai::credentials,
-    calendar_ics::{self, FetchResult, IcsValidation},
-    db::{
-        repositories::{integrations, subscribed_calendars},
-        Database,
-    },
+    calendar_ics::{self, IcsValidation},
+    db::{repositories::integrations, Database},
     integration_sync::IntegrationSyncRuntime,
+    subscribed_calendar_provider::{self, ProviderConfig},
 };
 use serde::Serialize;
+#[cfg(test)]
 use std::future::Future;
 use tauri::State;
 
 pub const PROVIDER_ID: &str = "my_timetable";
-const CAPABILITIES: &[&str] = &["calendar_read", "manual_refresh"];
+const CONFIG: ProviderConfig = ProviderConfig {
+    id: PROVIDER_ID,
+    name: "MyTimetable",
+};
+const CAPABILITIES: &[&str] = subscribed_calendar_provider::CAPABILITIES;
 
 #[derive(Debug, Clone, Serialize)]
 pub struct ProviderProfile {
@@ -72,21 +74,11 @@ pub fn metadata(categories: &[String], description: Option<&str>) -> calendar_ic
 }
 
 pub async fn validate(url: &str) -> Result<IcsValidation, String> {
-    let host = reqwest::Url::parse(url)
-        .ok()
-        .and_then(|value| value.host_str().map(str::to_string));
-    match calendar_ics::fetch(url, None, None).await? {
-        FetchResult::Complete { bytes, .. } => Ok(calendar_ics::validate_with_host(&bytes, host)),
-        FetchResult::NotModified => {
-            Err("Calendar feed validation needs a complete response".into())
-        }
-        FetchResult::RateLimited { .. } => Err("MyTimetable temporarily limited validation".into()),
-    }
+    subscribed_calendar_provider::validate(CONFIG, url).await
 }
 
 fn candidate(url: &str) -> Result<(), String> {
-    subscribed_calendars::validate_feed_url(url)
-        .map_err(|_| "Enter a valid HTTPS calendar subscription link.".to_string())
+    subscribed_calendar_provider::candidate(url)
 }
 
 pub async fn connect(
@@ -94,9 +86,10 @@ pub async fn connect(
     runtime: &IntegrationSyncRuntime,
     url: String,
 ) -> Result<integrations::Integration, String> {
-    connect_with_validation(db, runtime, url, |url| async move { validate(&url).await }).await
+    subscribed_calendar_provider::connect(CONFIG, db, runtime, url).await
 }
 
+#[cfg(test)]
 async fn connect_with_validation<F, Fut>(
     db: &Database,
     runtime: &IntegrationSyncRuntime,
@@ -107,67 +100,8 @@ where
     F: FnOnce(String) -> Fut,
     Fut: Future<Output = Result<IcsValidation, String>>,
 {
-    candidate(&url)?;
-    let inspected = validate_feed(url.clone()).await?;
-    if !inspected.usable {
-        return Err("The subscription did not contain usable calendar data.".into());
-    }
-    let integration = {
-        let conn = db
-            .conn
-            .lock()
-            .map_err(|_| "Local connection state is unavailable".to_string())?;
-        integrations::create(
-            &conn,
-            &integrations::IntegrationCreateInput {
-                provider_id: PROVIDER_ID.into(),
-                enabled: true,
-                advertised_capabilities: CAPABILITIES.iter().map(|v| (*v).into()).collect(),
-                auth_type: "ics_feed".into(),
-                sync_modes: vec![
-                    "manual".into(),
-                    "periodic".into(),
-                    "app_start".into(),
-                    "app_resume".into(),
-                ],
-                sync_config: serde_json::json!({}),
-            },
-        )?
-    };
-    let key = {
-        let conn = db
-            .conn
-            .lock()
-            .map_err(|_| "Local connection state is unavailable".to_string())?;
-        subscribed_calendars::create(
-            &conn,
-            &subscribed_calendars::SubscribedCalendarInput {
-                connection_id: integration.id.clone(),
-                feed_url: url.clone(),
-                display_name: None,
-            },
-        )?;
-        subscribed_calendars::credential_key(&conn, &integration.id)?
-    };
-    if credentials::store(db, &key, &url).is_err() {
-        if let Ok(conn) = db.conn.lock() {
-            let _ = conn.execute("DELETE FROM integrations WHERE id=?1", [&integration.id]);
-        }
-        return Err("Calendar subscription secret could not be stored".into());
-    }
-    let integration = {
-        let conn = db
-            .conn
-            .lock()
-            .map_err(|_| "Local connection state is unavailable".to_string())?;
-        integrations::mark_configured(&conn, &integration.id)?
-            .ok_or_else(|| "MyTimetable connection was not found".to_string())?
-    };
-    let _ = runtime.request(
-        integration.id.clone(),
-        crate::integration_sync::SyncTrigger::Manual,
-    );
-    Ok(integration)
+    subscribed_calendar_provider::connect_with_validation(CONFIG, db, runtime, url, validate_feed)
+        .await
 }
 
 pub async fn replace(
@@ -176,14 +110,12 @@ pub async fn replace(
     connection_id: &str,
     url: String,
 ) -> Result<(), String> {
-    replace_with_validation(db, runtime, connection_id, url, |url| async move {
-        validate(&url).await
-    })
-    .await
+    subscribed_calendar_provider::replace(CONFIG, db, runtime, connection_id, url).await
 }
 
 /// Internal composition seam: public production calls retain the shared CAL-ICS
 /// validator, while provider-path tests can supply a deterministic result.
+#[cfg(test)]
 async fn replace_with_validation<F, Fut>(
     db: &Database,
     runtime: &IntegrationSyncRuntime,
@@ -195,50 +127,20 @@ where
     F: FnOnce(String) -> Fut,
     Fut: Future<Output = Result<IcsValidation, String>>,
 {
-    candidate(&url)?;
-    let inspected = validate_feed(url.clone()).await?;
-    if !inspected.usable {
-        return Err("The subscription did not contain usable calendar data.".into());
-    }
-    replace_validated_secret(db, connection_id, &url)?;
-    mark_configured(db, connection_id)?;
-    let _ = runtime.request(
-        connection_id.to_string(),
-        crate::integration_sync::SyncTrigger::Manual,
-    );
-    Ok(())
+    subscribed_calendar_provider::replace_with_validation(
+        CONFIG,
+        db,
+        runtime,
+        connection_id,
+        url,
+        validate_feed,
+    )
+    .await
 }
 
-fn mark_configured(db: &Database, connection_id: &str) -> Result<(), String> {
-    let conn = db
-        .conn
-        .lock()
-        .map_err(|_| "Local connection state is unavailable".to_string())?;
-    integrations::mark_configured(&conn, connection_id)?
-        .ok_or_else(|| "MyTimetable connection was not found".to_string())?;
-    Ok(())
-}
-
+#[cfg(test)]
 fn replace_validated_secret(db: &Database, connection_id: &str, url: &str) -> Result<(), String> {
-    let key = {
-        let conn = db
-            .conn
-            .lock()
-            .map_err(|_| "Local connection state is unavailable".to_string())?;
-        let provider: Option<String> = conn
-            .query_row(
-                "SELECT provider_id FROM integrations WHERE id=?1",
-                [connection_id],
-                |row| row.get(0),
-            )
-            .ok();
-        if provider.as_deref() != Some(PROVIDER_ID) {
-            return Err("MyTimetable connection was not found".into());
-        }
-        subscribed_calendars::credential_key(&conn, connection_id)?
-    };
-    credentials::store(db, &key, url)
-        .map_err(|_| "Calendar subscription secret could not be stored".to_string())
+    subscribed_calendar_provider::replace_validated_secret(CONFIG, db, connection_id, url)
 }
 
 pub fn disconnect(
@@ -246,37 +148,12 @@ pub fn disconnect(
     runtime: &IntegrationSyncRuntime,
     connection_id: &str,
 ) -> Result<bool, String> {
-    runtime.cancel_connection(connection_id);
-    disconnect_persisted_connection(db, connection_id)
+    subscribed_calendar_provider::disconnect(CONFIG, db, runtime, connection_id)
 }
 
+#[cfg(test)]
 fn disconnect_persisted_connection(db: &Database, connection_id: &str) -> Result<bool, String> {
-    let key = {
-        let conn = db
-            .conn
-            .lock()
-            .map_err(|_| "Local connection state is unavailable".to_string())?;
-        let provider: Option<String> = conn
-            .query_row(
-                "SELECT provider_id FROM integrations WHERE id=?1",
-                [connection_id],
-                |row| row.get(0),
-            )
-            .ok();
-        if provider.as_deref() != Some(PROVIDER_ID) {
-            return Ok(false);
-        }
-        subscribed_calendars::credential_key(&conn, connection_id)?
-    };
-    credentials::remove(db, &key)
-        .map_err(|_| "Calendar subscription secret could not be removed".to_string())?;
-    let conn = db
-        .conn
-        .lock()
-        .map_err(|_| "Local connection state is unavailable".to_string())?;
-    conn.execute("DELETE FROM integrations WHERE id=?1", [connection_id])
-        .map_err(|_| "MyTimetable connection could not be removed".to_string())
-        .map(|count| count == 1)
+    subscribed_calendar_provider::disconnect_persisted_connection(CONFIG, db, connection_id)
 }
 
 #[tauri::command]
@@ -317,9 +194,12 @@ pub fn my_timetable_disconnect(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ai::credentials::SecretCrypto;
     use crate::integration_sync::{
         PreparedSync, RuntimeHost, SyncFailure, SyncPolicy, SyncStateEvent, SyncTrigger,
+    };
+    use crate::{
+        ai::credentials::{self, SecretCrypto},
+        db::repositories::subscribed_calendars,
     };
     use async_trait::async_trait;
     use futures_util::future::BoxFuture;

@@ -715,3 +715,18 @@ export async function replaceMyTimetableLink(
 export async function disconnectMyTimetable(connectionId: string): Promise<boolean> {
   return invoke('my_timetable_disconnect', { connectionId })
 }
+export async function validateBrightspace(url: string): Promise<IcsValidation> {
+  return IcsValidationSchema.parse(await invoke('brightspace_validate', { url }))
+}
+export async function connectBrightspace(url: string): Promise<Integration> {
+  return IntegrationSchema.parse(await invoke('brightspace_connect', { url }))
+}
+export async function replaceBrightspaceLink(
+  connectionId: string,
+  url: string,
+): Promise<void> {
+  return invoke('brightspace_replace', { connectionId, url })
+}
+export async function disconnectBrightspace(connectionId: string): Promise<boolean> {
+  return invoke('brightspace_disconnect', { connectionId })
+}
