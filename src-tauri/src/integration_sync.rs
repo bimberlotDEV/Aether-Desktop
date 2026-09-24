@@ -90,7 +90,14 @@ pub struct SyncPolicy {
     pub success_interval_minutes: i64,
 }
 #[derive(Debug)]
-pub enum PreparedSync {
+pub struct PreparedSync {
+    pub connection_id: String,
+    pub configuration_generation: i64,
+    pub outcome: PreparedSyncOutcome,
+}
+
+#[derive(Debug)]
+pub enum PreparedSyncOutcome {
     Ics {
         events: Vec<calendar::ExternalEventInput>,
         etag: Option<String>,
@@ -118,7 +125,13 @@ pub trait RuntimeHost: Send + Sync {
     fn record(&self, id: &str) -> Result<Option<integrations::SyncRuntimeRecord>, String>;
     fn candidates(&self) -> Result<Vec<integrations::Integration>, String>;
     fn recover_interrupted(&self, next_allowed: &str) -> Result<usize, String>;
-    fn mark_running(&self, id: &str, trigger: SyncTrigger, now: &str) -> Result<bool, String>;
+    fn mark_running(
+        &self,
+        id: &str,
+        configuration_generation: i64,
+        trigger: SyncTrigger,
+        now: &str,
+    ) -> Result<bool, String>;
     async fn prepare(
         &self,
         record: &integrations::SyncRuntimeRecord,
@@ -126,18 +139,18 @@ pub trait RuntimeHost: Send + Sync {
     ) -> Result<(PreparedSync, SyncPolicy), SyncFailure>;
     fn commit_success(
         &self,
-        id: &str,
         prepared: PreparedSync,
         now: &str,
         next_allowed: &str,
-    ) -> Result<(), String>;
+    ) -> Result<integrations::SyncCompletion, String>;
     fn finish_failure(
         &self,
         id: &str,
+        configuration_generation: i64,
         failure: &SyncFailure,
         next_allowed: &str,
         retry_after: Option<&str>,
-    ) -> Result<(), String>;
+    ) -> Result<integrations::SyncCompletion, String>;
     fn emit(&self, event: SyncStateEvent);
     fn spawn(&self, task: BoxFuture<'static, ()>);
 }
@@ -180,13 +193,25 @@ impl RuntimeHost for TauriRuntimeHost {
             .map_err(|_| "Local sync state is unavailable".to_string())?;
         integrations::recover_interrupted_runs(&conn, next)
     }
-    fn mark_running(&self, id: &str, trigger: SyncTrigger, now: &str) -> Result<bool, String> {
+    fn mark_running(
+        &self,
+        id: &str,
+        configuration_generation: i64,
+        trigger: SyncTrigger,
+        now: &str,
+    ) -> Result<bool, String> {
         let db = self.db();
         let conn = db
             .conn
             .lock()
             .map_err(|_| "Local sync state is unavailable".to_string())?;
-        integrations::runtime_mark_running(&conn, id, trigger.as_str(), now)
+        integrations::runtime_mark_running(
+            &conn,
+            id,
+            configuration_generation,
+            trigger.as_str(),
+            now,
+        )
     }
     async fn prepare(
         &self,
@@ -208,12 +233,28 @@ impl RuntimeHost for TauriRuntimeHost {
             connection_status: "institution_configuration_required",
         })?;
         let db = self.db();
-        {
+        let url = {
             let conn = db.conn.lock().map_err(|_| SyncFailure {
                 code: "internal",
                 message: "Local sync state is unavailable",
                 connection_status: "degraded",
             })?;
+            if !integrations::generation_is_current(
+                &conn,
+                &record.integration.id,
+                record.configuration_generation,
+            )
+            .map_err(|_| SyncFailure {
+                code: "internal",
+                message: "Local sync state is unavailable",
+                connection_status: "degraded",
+            })? {
+                return Err(SyncFailure {
+                    code: "stale_generation",
+                    message: "Sync configuration changed",
+                    connection_status: "connected",
+                });
+            }
             subscribed_calendars::get_by_connection(&conn, &record.integration.id)
                 .map_err(|_| SyncFailure {
                     code: "configuration",
@@ -225,18 +266,18 @@ impl RuntimeHost for TauriRuntimeHost {
                     message: "Calendar subscription is not configured",
                     connection_status: "institution_configuration_required",
                 })?;
-        }
-        let url = credentials::get(&db, key)
-            .map_err(|_| SyncFailure {
-                code: "configuration",
-                message: "Calendar subscription is not configured",
-                connection_status: "institution_configuration_required",
-            })?
-            .ok_or(SyncFailure {
-                code: "configuration",
-                message: "Calendar subscription is not configured",
-                connection_status: "institution_configuration_required",
-            })?;
+            credentials::get_from_connection(&conn, db.crypto.as_ref(), key)
+                .map_err(|_| SyncFailure {
+                    code: "configuration",
+                    message: "Calendar subscription is not configured",
+                    connection_status: "institution_configuration_required",
+                })?
+                .ok_or(SyncFailure {
+                    code: "configuration",
+                    message: "Calendar subscription is not configured",
+                    connection_status: "institution_configuration_required",
+                })?
+        };
         let validators =
             record
                 .validator_origin
@@ -257,12 +298,12 @@ impl RuntimeHost for TauriRuntimeHost {
                 connection_status: "connected",
             });
         }
-        let prepared = match fetched {
-            calendar_ics::FetchResult::NotModified => PreparedSync::NotModified,
+        let outcome = match fetched {
+            calendar_ics::FetchResult::NotModified => PreparedSyncOutcome::NotModified,
             calendar_ics::FetchResult::RateLimited {
                 retry_after_at,
                 rate_limit_reset_at,
-            } => PreparedSync::RateLimited {
+            } => PreparedSyncOutcome::RateLimited {
                 eligible_at: latest_allowed(retry_after_at, rate_limit_reset_at),
             },
             calendar_ics::FetchResult::Complete {
@@ -293,7 +334,7 @@ impl RuntimeHost for TauriRuntimeHost {
                     message: "Calendar feed data could not be safely processed",
                     connection_status: "degraded",
                 })?;
-                PreparedSync::Ics {
+                PreparedSyncOutcome::Ics {
                     events,
                     etag,
                     last_modified,
@@ -306,7 +347,11 @@ impl RuntimeHost for TauriRuntimeHost {
             }
         };
         Ok((
-            prepared,
+            PreparedSync {
+                connection_id: record.integration.id.clone(),
+                configuration_generation: record.configuration_generation,
+                outcome,
+            },
             SyncPolicy {
                 success_interval_minutes: SUCCESS_INTERVAL_MINUTES,
             },
@@ -314,64 +359,25 @@ impl RuntimeHost for TauriRuntimeHost {
     }
     fn commit_success(
         &self,
-        id: &str,
         prepared: PreparedSync,
         now: &str,
         next: &str,
-    ) -> Result<(), String> {
+    ) -> Result<integrations::SyncCompletion, String> {
         let db = self.db();
         let conn = db
             .conn
             .lock()
             .map_err(|_| "Local sync state is unavailable".to_string())?;
-        let tx = conn
-            .unchecked_transaction()
-            .map_err(|error| error.to_string())?;
-        match prepared {
-            PreparedSync::Ics {
-                events,
-                etag,
-                last_modified,
-                validator_origin,
-                window_start,
-                window_end,
-            } => calendar::reconcile_in_transaction(
-                &tx,
-                id,
-                &events,
-                calendar::ReconciliationMode::Authoritative,
-                Some((&window_start, &window_end)),
-                now,
-            )
-            .and_then(|_| {
-                integrations::runtime_finish_success(
-                    &tx,
-                    id,
-                    now,
-                    Some(integrations::SyncValidators {
-                        origin: &validator_origin,
-                        etag: etag.as_deref(),
-                        last_modified: last_modified.as_deref(),
-                    }),
-                    next,
-                )
-            })?,
-            PreparedSync::NotModified => {
-                integrations::runtime_finish_success(&tx, id, now, None, next)?
-            }
-            PreparedSync::RateLimited { .. } => {
-                return Err("Rate-limited result cannot commit success".to_string())
-            }
-        }
-        tx.commit().map_err(|error| error.to_string())
+        commit_prepared(&conn, prepared, now, next)
     }
     fn finish_failure(
         &self,
         id: &str,
+        configuration_generation: i64,
         failure: &SyncFailure,
         next: &str,
         retry: Option<&str>,
-    ) -> Result<(), String> {
+    ) -> Result<integrations::SyncCompletion, String> {
         let db = self.db();
         let conn = db
             .conn
@@ -380,11 +386,14 @@ impl RuntimeHost for TauriRuntimeHost {
         integrations::runtime_finish_failure(
             &conn,
             id,
-            failure.code,
-            failure.message,
-            next,
-            failure.connection_status,
-            retry,
+            configuration_generation,
+            integrations::SyncFailureUpdate {
+                code: failure.code,
+                message: failure.message,
+                next_allowed: next,
+                connection_status: failure.connection_status,
+                retry_after: retry,
+            },
         )
     }
     fn emit(&self, event: SyncStateEvent) {
@@ -400,7 +409,72 @@ struct State {
     active: HashSet<String>,
     provider_active: HashMap<String, usize>,
     tokens: HashMap<String, CancellationToken>,
+    replacement_followups: HashSet<String>,
     shutting_down: bool,
+}
+
+fn commit_prepared(
+    conn: &rusqlite::Connection,
+    prepared: PreparedSync,
+    now: &str,
+    next: &str,
+) -> Result<integrations::SyncCompletion, String> {
+    let tx = conn
+        .unchecked_transaction()
+        .map_err(|error| error.to_string())?;
+    if !integrations::generation_is_current(
+        &tx,
+        &prepared.connection_id,
+        prepared.configuration_generation,
+    )? {
+        return Ok(integrations::SyncCompletion::StaleGeneration);
+    }
+    let completion = match prepared.outcome {
+        PreparedSyncOutcome::Ics {
+            events,
+            etag,
+            last_modified,
+            validator_origin,
+            window_start,
+            window_end,
+        } => calendar::reconcile_in_transaction(
+            &tx,
+            &prepared.connection_id,
+            &events,
+            calendar::ReconciliationMode::Authoritative,
+            Some((&window_start, &window_end)),
+            now,
+        )
+        .and_then(|_| {
+            integrations::runtime_finish_success(
+                &tx,
+                &prepared.connection_id,
+                prepared.configuration_generation,
+                now,
+                Some(integrations::SyncValidators {
+                    origin: &validator_origin,
+                    etag: etag.as_deref(),
+                    last_modified: last_modified.as_deref(),
+                }),
+                next,
+            )
+        })?,
+        PreparedSyncOutcome::NotModified => integrations::runtime_finish_success(
+            &tx,
+            &prepared.connection_id,
+            prepared.configuration_generation,
+            now,
+            None,
+            next,
+        )?,
+        PreparedSyncOutcome::RateLimited { .. } => {
+            return Err("Rate-limited result cannot commit success".to_string())
+        }
+    };
+    if completion == integrations::SyncCompletion::Applied {
+        tx.commit().map_err(|error| error.to_string())?;
+    }
+    Ok(completion)
 }
 struct Inner {
     state: Mutex<State>,
@@ -463,6 +537,23 @@ impl IntegrationSyncRuntime {
             .get(id)
         {
             token.cancel();
+        }
+    }
+    pub fn request_replacement_sync(&self, id: String) {
+        let request_now = {
+            let mut state = self.inner.state.lock().expect("sync state poisoned");
+            if let Some(token) = state.tokens.get(&id) {
+                token.cancel();
+            }
+            if state.active.contains(&id) {
+                state.replacement_followups.insert(id.clone());
+                false
+            } else {
+                true
+            }
+        };
+        if request_now {
+            let _ = self.request(id, SyncTrigger::Manual);
         }
     }
     pub async fn shutdown(&self) {
@@ -570,9 +661,19 @@ fn request(
     let task_host = host.clone();
     host.spawn(Box::pin(async move {
         if let Ok(_permit) = semaphore.acquire_owned().await {
-            run_one(inner.clone(), task_host, id.clone(), trigger, token).await;
+            run_one(
+                inner.clone(),
+                task_host.clone(),
+                id.clone(),
+                record,
+                trigger,
+                token,
+            )
+            .await;
         }
-        cleanup(&inner, &id, &provider);
+        if cleanup(&inner, &id, &provider) {
+            let _ = request(inner.clone(), task_host, id.clone(), SyncTrigger::Manual);
+        }
     }));
     SyncRequestResult::Accepted
 }
@@ -596,13 +697,14 @@ fn shutting_down(inner: &Inner) -> bool {
         .expect("sync state poisoned")
         .shutting_down
 }
-fn cleanup(inner: &Inner, id: &str, provider: &str) {
+fn cleanup(inner: &Inner, id: &str, provider: &str) -> bool {
     let mut state = inner.state.lock().expect("sync state poisoned");
     state.active.remove(id);
     state.tokens.remove(id);
     if let Some(count) = state.provider_active.get_mut(provider) {
         *count = count.saturating_sub(1);
     }
+    state.replacement_followups.remove(id)
 }
 async fn shutdown(inner: Arc<Inner>) {
     {
@@ -630,15 +732,16 @@ async fn run_one(
     inner: Arc<Inner>,
     host: Arc<dyn RuntimeHost>,
     id: String,
+    record: integrations::SyncRuntimeRecord,
     trigger: SyncTrigger,
     cancel: CancellationToken,
 ) {
-    let record = match host.record(&id) {
-        Ok(Some(record)) => record,
-        _ => return,
-    };
     let now = Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
-    if host.mark_running(&id, trigger, &now).ok() != Some(true) {
+    if host
+        .mark_running(&id, record.configuration_generation, trigger, &now)
+        .ok()
+        != Some(true)
+    {
         return;
     }
     host.emit(SyncStateEvent {
@@ -654,7 +757,13 @@ async fn run_one(
         prepared = host.prepare(&record, cancel.clone()) => prepared,
     };
     match prepared {
-        Ok((PreparedSync::RateLimited { eligible_at }, _)) => {
+        Ok((
+            PreparedSync {
+                outcome: PreparedSyncOutcome::RateLimited { eligible_at },
+                ..
+            },
+            _,
+        )) => {
             let fallback = backoff(record.consecutive_failures);
             let next = eligible_at.as_deref().unwrap_or(&fallback);
             let failure = SyncFailure {
@@ -662,7 +771,13 @@ async fn run_one(
                 message: "Calendar provider temporarily limited sync requests",
                 connection_status: "rate_limited",
             };
-            let _ = host.finish_failure(&id, &failure, next, eligible_at.as_deref());
+            let _ = host.finish_failure(
+                &id,
+                record.configuration_generation,
+                &failure,
+                next,
+                eligible_at.as_deref(),
+            );
             host.emit(SyncStateEvent {
                 connection_id: id,
                 state: "terminal",
@@ -677,7 +792,10 @@ async fn run_one(
                 .to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
             if !cancel.is_cancelled()
                 && !shutting_down(&inner)
-                && host.commit_success(&id, prepared, &now, &next).is_ok()
+                && matches!(
+                    host.commit_success(prepared, &now, &next),
+                    Ok(integrations::SyncCompletion::Applied)
+                )
             {
                 host.emit(SyncStateEvent {
                     connection_id: id,
@@ -688,7 +806,13 @@ async fn run_one(
         Err(failure) => {
             if !shutting_down(&inner) {
                 let next = backoff(record.consecutive_failures);
-                let _ = host.finish_failure(&id, &failure, &next, None);
+                let _ = host.finish_failure(
+                    &id,
+                    record.configuration_generation,
+                    &failure,
+                    &next,
+                    None,
+                );
                 host.emit(SyncStateEvent {
                     connection_id: id,
                     state: "terminal",
@@ -814,24 +938,35 @@ mod tests {
         fn recover_interrupted(&self, next_allowed: &str) -> Result<usize, String> {
             integrations::recover_interrupted_runs(&self.conn.lock().unwrap(), next_allowed)
         }
-        fn mark_running(&self, id: &str, trigger: SyncTrigger, now: &str) -> Result<bool, String> {
+        fn mark_running(
+            &self,
+            id: &str,
+            configuration_generation: i64,
+            trigger: SyncTrigger,
+            now: &str,
+        ) -> Result<bool, String> {
             integrations::runtime_mark_running(
                 &self.conn.lock().unwrap(),
                 id,
+                configuration_generation,
                 trigger.as_str(),
                 now,
             )
         }
         async fn prepare(
             &self,
-            _record: &integrations::SyncRuntimeRecord,
+            record: &integrations::SyncRuntimeRecord,
             cancel: CancellationToken,
         ) -> Result<(PreparedSync, SyncPolicy), SyncFailure> {
             self.started.notify_waiters();
             let mode = *self.mode.lock().unwrap();
             match mode {
                 HandlerMode::Success => Ok((
-                    PreparedSync::NotModified,
+                    PreparedSync {
+                        connection_id: record.integration.id.clone(),
+                        configuration_generation: record.configuration_generation,
+                        outcome: PreparedSyncOutcome::NotModified,
+                    },
                     SyncPolicy {
                         success_interval_minutes: 30,
                     },
@@ -846,11 +981,15 @@ mod tests {
                     })
                 }
                 HandlerMode::RateLimited => Ok((
-                    PreparedSync::RateLimited {
-                        eligible_at: latest_allowed(
-                            Some("2999-01-01T00:00:30Z".into()),
-                            Some("2999-01-01T00:01:00Z".into()),
-                        ),
+                    PreparedSync {
+                        connection_id: record.integration.id.clone(),
+                        configuration_generation: record.configuration_generation,
+                        outcome: PreparedSyncOutcome::RateLimited {
+                            eligible_at: latest_allowed(
+                                Some("2999-01-01T00:00:30Z".into()),
+                                Some("2999-01-01T00:01:00Z".into()),
+                            ),
+                        },
                     },
                     SyncPolicy {
                         success_interval_minutes: 30,
@@ -860,41 +999,58 @@ mod tests {
         }
         fn commit_success(
             &self,
-            id: &str,
             prepared: PreparedSync,
             now: &str,
             next_allowed: &str,
-        ) -> Result<(), String> {
-            *self.domain_commits.lock().unwrap() += 1;
+        ) -> Result<integrations::SyncCompletion, String> {
             let conn = self.conn.lock().unwrap();
             let tx = conn
                 .unchecked_transaction()
                 .map_err(|error| error.to_string())?;
-            match prepared {
-                PreparedSync::NotModified => {
-                    integrations::runtime_finish_success(&tx, id, now, None, next_allowed)?
-                }
-                _ => return Err("Fake handler only commits no-change results".into()),
+            if !integrations::generation_is_current(
+                &tx,
+                &prepared.connection_id,
+                prepared.configuration_generation,
+            )? {
+                return Ok(integrations::SyncCompletion::StaleGeneration);
             }
-            tx.commit().map_err(|error| error.to_string())?;
-            *self.success_commits.lock().unwrap() += 1;
-            Ok(())
+            *self.domain_commits.lock().unwrap() += 1;
+            let completion = match prepared.outcome {
+                PreparedSyncOutcome::NotModified => integrations::runtime_finish_success(
+                    &tx,
+                    &prepared.connection_id,
+                    prepared.configuration_generation,
+                    now,
+                    None,
+                    next_allowed,
+                )?,
+                _ => return Err("Fake handler only commits no-change results".into()),
+            };
+            if completion == integrations::SyncCompletion::Applied {
+                tx.commit().map_err(|error| error.to_string())?;
+                *self.success_commits.lock().unwrap() += 1;
+            }
+            Ok(completion)
         }
         fn finish_failure(
             &self,
             id: &str,
+            configuration_generation: i64,
             failure: &SyncFailure,
             next_allowed: &str,
             retry_after: Option<&str>,
-        ) -> Result<(), String> {
+        ) -> Result<integrations::SyncCompletion, String> {
             integrations::runtime_finish_failure(
                 &self.conn.lock().unwrap(),
                 id,
-                failure.code,
-                failure.message,
-                next_allowed,
-                failure.connection_status,
-                retry_after,
+                configuration_generation,
+                integrations::SyncFailureUpdate {
+                    code: failure.code,
+                    message: failure.message,
+                    next_allowed,
+                    connection_status: failure.connection_status,
+                    retry_after,
+                },
             )
         }
         fn emit(&self, event: SyncStateEvent) {
@@ -971,6 +1127,47 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn replacement_cancels_old_work_and_runs_one_current_generation_followup() {
+        let host = FakeRuntimeHost::new(HandlerMode::Blocking);
+        let runtime = IntegrationSyncRuntime::new(host.clone());
+        let id = host.integration(None);
+        let started = host.started.notified();
+        assert!(matches!(
+            runtime.request(id.clone(), SyncTrigger::Manual),
+            SyncRequestResult::Accepted
+        ));
+        tokio::time::timeout(TokioDuration::from_secs(1), started)
+            .await
+            .expect("old generation did not start");
+        {
+            let conn = host.conn.lock().unwrap();
+            let tx = conn.unchecked_transaction().unwrap();
+            assert_eq!(
+                integrations::replace_ics_configuration(&tx, &id, 1).unwrap(),
+                Some(2)
+            );
+            tx.commit().unwrap();
+        }
+        *host.mode.lock().unwrap() = HandlerMode::Success;
+        runtime.request_replacement_sync(id.clone());
+
+        for _ in 0..100 {
+            sleep(TokioDuration::from_millis(10)).await;
+            if runtime.status().running_count == 0 && *host.success_commits.lock().unwrap() == 1 {
+                break;
+            }
+        }
+        assert!(host.cancelled.load(Ordering::SeqCst));
+        assert_eq!(*host.domain_commits.lock().unwrap(), 1);
+        assert_eq!(*host.success_commits.lock().unwrap(), 1);
+        let record = integrations::sync_runtime_record(&host.conn.lock().unwrap(), &id)
+            .unwrap()
+            .unwrap();
+        assert_eq!(record.configuration_generation, 2);
+        assert_eq!(record.integration.sync_status, "succeeded");
+    }
+
+    #[tokio::test]
     async fn rate_limited_result_persists_the_maximum_gate_and_defers_manual_work() {
         let host = FakeRuntimeHost::new(HandlerMode::RateLimited);
         let runtime = IntegrationSyncRuntime::new(host.clone());
@@ -1038,5 +1235,157 @@ mod tests {
         assert!(!serialized.contains("https://"));
         assert!(!serialized.contains("credential"));
         assert!(!serialized.contains("payload"));
+    }
+
+    #[test]
+    fn stale_authoritative_work_cannot_reconcile_or_overwrite_current_generation() {
+        let host = FakeRuntimeHost::new(HandlerMode::Success);
+        let id = host.integration(None);
+        let old_events = calendar_ics::normalize(
+            b"BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:old\r\nDTSTART:20260924T090000Z\r\nDTEND:20260924T100000Z\r\nSUMMARY:Old\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+            &id,
+            Utc::now(),
+        )
+        .unwrap();
+        crate::db::repositories::external_events::reconcile(
+            &mut host.conn.lock().unwrap(),
+            &id,
+            &old_events,
+            crate::db::repositories::external_events::ReconciliationMode::ObservedOnly,
+            None,
+            "2026-09-24T08:00:00Z",
+        )
+        .unwrap();
+        let new_events = calendar_ics::normalize(
+            b"BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:new\r\nDTSTART:20260924T110000Z\r\nDTEND:20260924T120000Z\r\nSUMMARY:New\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+            &id,
+            Utc::now(),
+        )
+        .unwrap();
+
+        {
+            let conn = host.conn.lock().unwrap();
+            let tx = conn.unchecked_transaction().unwrap();
+            assert_eq!(
+                integrations::replace_ics_configuration(&tx, &id, 1).unwrap(),
+                Some(2)
+            );
+            tx.commit().unwrap();
+        }
+        assert_eq!(
+            commit_prepared(
+                &host.conn.lock().unwrap(),
+                PreparedSync {
+                    connection_id: id.clone(),
+                    configuration_generation: 1,
+                    outcome: PreparedSyncOutcome::Ics {
+                        events: new_events.clone(),
+                        etag: Some("stale-etag".into()),
+                        last_modified: None,
+                        validator_origin: "https://stale.example".into(),
+                        window_start: "2026-09-24T00:00:00Z".into(),
+                        window_end: "2026-09-25T00:00:00Z".into(),
+                    },
+                },
+                "2026-09-24T10:00:00Z",
+                "2026-09-24T10:30:00Z",
+            )
+            .unwrap(),
+            integrations::SyncCompletion::StaleGeneration
+        );
+        let conn = host.conn.lock().unwrap();
+        assert_eq!(
+            conn.query_row(
+                "SELECT count(*) FROM external_events WHERE connection_id=?1 AND external_id='old' AND status='active'",
+                [&id],
+                |row| row.get::<_, i64>(0),
+            )
+            .unwrap(),
+            1
+        );
+        assert_eq!(
+            conn.query_row(
+                "SELECT count(*) FROM external_events WHERE connection_id=?1 AND external_id='new'",
+                [&id],
+                |row| row.get::<_, i64>(0),
+            )
+            .unwrap(),
+            0
+        );
+        drop(conn);
+
+        assert_eq!(
+            commit_prepared(
+                &host.conn.lock().unwrap(),
+                PreparedSync {
+                    connection_id: id.clone(),
+                    configuration_generation: 2,
+                    outcome: PreparedSyncOutcome::Ics {
+                        events: new_events,
+                        etag: Some("current-etag".into()),
+                        last_modified: None,
+                        validator_origin: "https://current.example".into(),
+                        window_start: "2026-09-24T00:00:00Z".into(),
+                        window_end: "2026-09-25T00:00:00Z".into(),
+                    },
+                },
+                "2026-09-24T10:01:00Z",
+                "2026-09-24T10:31:00Z",
+            )
+            .unwrap(),
+            integrations::SyncCompletion::Applied
+        );
+        let conn = host.conn.lock().unwrap();
+        assert_eq!(
+            conn.query_row(
+                "SELECT count(*) FROM external_events WHERE connection_id=?1 AND external_id='old' AND status='removed'",
+                [&id],
+                |row| row.get::<_, i64>(0),
+            )
+            .unwrap(),
+            1
+        );
+        assert_eq!(
+            conn.query_row(
+                "SELECT count(*) FROM external_events WHERE connection_id=?1 AND external_id='new' AND status='active'",
+                [&id],
+                |row| row.get::<_, i64>(0),
+            )
+            .unwrap(),
+            1
+        );
+        let record = integrations::sync_runtime_record(&conn, &id)
+            .unwrap()
+            .unwrap();
+        assert_eq!(record.configuration_generation, 2);
+        assert_eq!(
+            record.integration.last_sync_etag.as_deref(),
+            Some("current-etag")
+        );
+        assert_eq!(
+            record.validator_origin.as_deref(),
+            Some("https://current.example")
+        );
+        drop(conn);
+
+        host.conn
+            .lock()
+            .unwrap()
+            .execute("DELETE FROM integrations WHERE id=?1", [&id])
+            .unwrap();
+        assert_eq!(
+            commit_prepared(
+                &host.conn.lock().unwrap(),
+                PreparedSync {
+                    connection_id: id,
+                    configuration_generation: 2,
+                    outcome: PreparedSyncOutcome::NotModified,
+                },
+                "2026-09-24T10:02:00Z",
+                "2026-09-24T10:32:00Z",
+            )
+            .unwrap(),
+            integrations::SyncCompletion::StaleGeneration
+        );
     }
 }

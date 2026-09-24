@@ -26,6 +26,17 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-09-25 — `CAL-SUB-ROTATE-001` — Generation-safe subscribed-calendar replacement
+
+- **Type:** Security, fix, migration, and test
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review
+- **Summary:** Added durable private configuration generations and an atomic shared replacement lifecycle so validated feed rotation preserves the old usable configuration on failure, resets origin-bound conditional/retry state on success, retains cached events until a complete new snapshot, and rejects every stale success, failure, validator, retry, or reconciliation write.
+- **Files:** `src-tauri/src/subscribed_calendar_provider.rs`, `src-tauri/src/integration_sync.rs`, Integration/subscribed-calendar/credential repositories, migration `017_subscribed_calendar_generation`, MyTimetable/Brightspace regression tests, ADR-029, database documentation, and `.ai/*` task records.
+- **Verification:** Focused Integration Sync (8), Integration repository (6), MyTimetable (22), Brightspace (4), CAL-ICS (21), migration (15), and subscribed-calendar repository (1) tests; `cargo test` (186 tests), Rust formatting, strict Clippy, `pnpm typecheck`, `pnpm lint`, `pnpm build`, and `git diff --check` — Pass. No frontend source or contract changed, so the full frontend test suite was not required.
+- **Decisions/deviations:** Generation is canonical and private on the Integration row. The DPAPI ciphertext and generation/state reset share one SQLite transaction after validation; an expected-generation compare-and-swap rejects slower concurrent replacement. Runtime cancellation schedules one replacement follow-up, while transaction-time generation checks remain authoritative. ADR-029 was amended; no new ADR or dependency was added. Repository `master` already contained merged Brightspace PR #59 before this task branch was updated; this task did not merge it.
+- **Follow-up:** `INT-SYNC-002` and `SCHOOL-SCOPE-002` remain separately scoped blockers. Aether 26, Aether 27, Pulse, and AI work were not started.
+
 ## 2026-09-24 — `CAL-ICS-SEC-001` + `CAL-ICS-REDIRECT-001` — Bounded ICS expansion and origin-isolated validators
 
 - **Type:** Security, fix, migration, and test

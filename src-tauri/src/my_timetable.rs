@@ -269,18 +269,30 @@ mod tests {
         fn recover_interrupted(&self, next: &str) -> Result<usize, String> {
             integrations::recover_interrupted_runs(&self.db.conn.lock().unwrap(), next)
         }
-        fn mark_running(&self, id: &str, trigger: SyncTrigger, now: &str) -> Result<bool, String> {
+        fn mark_running(
+            &self,
+            id: &str,
+            configuration_generation: i64,
+            trigger: SyncTrigger,
+            now: &str,
+        ) -> Result<bool, String> {
             let trigger = match trigger {
                 SyncTrigger::Manual => "manual",
                 SyncTrigger::Periodic => "periodic",
                 SyncTrigger::Startup => "app_start",
                 SyncTrigger::Resume => "app_resume",
             };
-            integrations::runtime_mark_running(&self.db.conn.lock().unwrap(), id, trigger, now)
+            integrations::runtime_mark_running(
+                &self.db.conn.lock().unwrap(),
+                id,
+                configuration_generation,
+                trigger,
+                now,
+            )
         }
         async fn prepare(
             &self,
-            _record: &integrations::SyncRuntimeRecord,
+            record: &integrations::SyncRuntimeRecord,
             cancel: CancellationToken,
         ) -> Result<(PreparedSync, SyncPolicy), SyncFailure> {
             self.prepare_count.fetch_add(1, Ordering::SeqCst);
@@ -296,7 +308,11 @@ mod tests {
                 });
             }
             Ok((
-                PreparedSync::NotModified,
+                PreparedSync {
+                    connection_id: record.integration.id.clone(),
+                    configuration_generation: record.configuration_generation,
+                    outcome: crate::integration_sync::PreparedSyncOutcome::NotModified,
+                },
                 SyncPolicy {
                     success_interval_minutes: 30,
                 },
@@ -304,33 +320,46 @@ mod tests {
         }
         fn commit_success(
             &self,
-            id: &str,
-            _prepared: PreparedSync,
+            prepared: PreparedSync,
             now: &str,
             next: &str,
-        ) -> Result<(), String> {
+        ) -> Result<integrations::SyncCompletion, String> {
             let conn = self.db.conn.lock().unwrap();
             let transaction = conn
                 .unchecked_transaction()
                 .map_err(|error| error.to_string())?;
-            integrations::runtime_finish_success(&transaction, id, now, None, next)?;
-            transaction.commit().map_err(|error| error.to_string())
+            let completion = integrations::runtime_finish_success(
+                &transaction,
+                &prepared.connection_id,
+                prepared.configuration_generation,
+                now,
+                None,
+                next,
+            )?;
+            if completion == integrations::SyncCompletion::Applied {
+                transaction.commit().map_err(|error| error.to_string())?;
+            }
+            Ok(completion)
         }
         fn finish_failure(
             &self,
             id: &str,
+            configuration_generation: i64,
             failure: &SyncFailure,
             next: &str,
             retry: Option<&str>,
-        ) -> Result<(), String> {
+        ) -> Result<integrations::SyncCompletion, String> {
             integrations::runtime_finish_failure(
                 &self.db.conn.lock().unwrap(),
                 id,
-                failure.code,
-                failure.message,
-                next,
-                failure.connection_status,
-                retry,
+                configuration_generation,
+                integrations::SyncFailureUpdate {
+                    code: failure.code,
+                    message: failure.message,
+                    next_allowed: next,
+                    connection_status: failure.connection_status,
+                    retry_after: retry,
+                },
             )
         }
         fn emit(&self, event: SyncStateEvent) {
@@ -531,6 +560,154 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn failed_replacement_validation_preserves_generation_validators_retry_and_cache() {
+        let (db, _) = test_db();
+        let db = Arc::new(db);
+        let (connection_id, key) = connected_calendar(&db);
+        cache_event(&db, &connection_id);
+        db.conn
+            .lock()
+            .unwrap()
+            .execute(
+                "UPDATE integrations SET last_sync_etag='old-etag', last_sync_last_modified='old-modified', last_sync_validator_origin='https://calendar.example', next_allowed_sync_at='2099-01-01T00:00:00Z', retry_after_at='2099-01-01T00:00:00Z' WHERE id=?1",
+                [&connection_id],
+            )
+            .unwrap();
+        let host = SqliteRuntimeHost::new(db.clone());
+        let runtime = IntegrationSyncRuntime::new(host);
+
+        assert!(replace_with_validation(
+            &db,
+            &runtime,
+            &connection_id,
+            "https://calendar.example/rejected?token=new".into(),
+            |_| async { Err("candidate rejected".into()) },
+        )
+        .await
+        .is_err());
+
+        assert_eq!(
+            credentials::get(&db, &key).unwrap().as_deref(),
+            Some("https://calendar.example/old?token=old-secret")
+        );
+        let record = integrations::sync_runtime_record(&db.conn.lock().unwrap(), &connection_id)
+            .unwrap()
+            .unwrap();
+        assert_eq!(record.configuration_generation, 1);
+        assert_eq!(
+            record.integration.last_sync_etag.as_deref(),
+            Some("old-etag")
+        );
+        assert_eq!(
+            record.validator_origin.as_deref(),
+            Some("https://calendar.example")
+        );
+        assert_eq!(
+            record.integration.next_allowed_sync_at.as_deref(),
+            Some("2099-01-01T00:00:00Z")
+        );
+        assert_eq!(cached_event_count(&db, &connection_id), 1);
+    }
+
+    #[tokio::test]
+    async fn slower_concurrent_replacement_cannot_overwrite_a_newer_generation() {
+        let (db, _) = test_db();
+        let db = Arc::new(db);
+        let (connection_id, key) = connected_calendar(&db);
+        let host = SqliteRuntimeHost::new(db.clone());
+        host.fail_prepare.store(true, Ordering::SeqCst);
+        let runtime = Arc::new(IntegrationSyncRuntime::new(host));
+        let validation_started = Arc::new(tokio::sync::Notify::new());
+        let release_validation = Arc::new(tokio::sync::Notify::new());
+        let stale_task = {
+            let db = db.clone();
+            let runtime = runtime.clone();
+            let connection_id = connection_id.clone();
+            let validation_started = validation_started.clone();
+            let release_validation = release_validation.clone();
+            tokio::spawn(async move {
+                replace_with_validation(
+                    &db,
+                    &runtime,
+                    &connection_id,
+                    "https://calendar.example/b?token=b".into(),
+                    |_| async move {
+                        validation_started.notify_one();
+                        release_validation.notified().await;
+                        Ok(usable_validation())
+                    },
+                )
+                .await
+            })
+        };
+        validation_started.notified().await;
+
+        replace_with_validation(
+            &db,
+            &runtime,
+            &connection_id,
+            "https://calendar.example/c?token=c".into(),
+            |_| async { Ok(usable_validation()) },
+        )
+        .await
+        .unwrap();
+        release_validation.notify_one();
+        assert!(stale_task.await.unwrap().is_err());
+
+        assert_eq!(
+            credentials::get(&db, &key).unwrap().as_deref(),
+            Some("https://calendar.example/c?token=c")
+        );
+        assert_eq!(
+            integrations::sync_runtime_record(&db.conn.lock().unwrap(), &connection_id)
+                .unwrap()
+                .unwrap()
+                .configuration_generation,
+            2
+        );
+    }
+
+    #[tokio::test]
+    async fn validating_the_same_feed_does_not_advance_generation_or_clear_validators() {
+        let (db, _) = test_db();
+        let db = Arc::new(db);
+        let (connection_id, _) = connected_calendar(&db);
+        db.conn
+            .lock()
+            .unwrap()
+            .execute(
+                "UPDATE integrations SET last_sync_etag='same-etag', last_sync_validator_origin='https://calendar.example' WHERE id=?1",
+                [&connection_id],
+            )
+            .unwrap();
+        let host = SqliteRuntimeHost::new(db.clone());
+        let runtime = IntegrationSyncRuntime::new(host);
+
+        replace_with_validation(
+            &db,
+            &runtime,
+            &connection_id,
+            "https://calendar.example/old?token=old-secret".into(),
+            |_| async { Ok(usable_validation()) },
+        )
+        .await
+        .unwrap();
+
+        let record = integrations::sync_runtime_record(&db.conn.lock().unwrap(), &connection_id)
+            .unwrap()
+            .unwrap();
+        assert_eq!(record.configuration_generation, 1);
+        assert_eq!(
+            record.integration.last_sync_etag.as_deref(),
+            Some("same-etag")
+        );
+        assert_eq!(
+            record.validator_origin.as_deref(),
+            Some("https://calendar.example")
+        );
+    }
+
+    #[tokio::test]
     async fn replacement_persists_new_secret_before_runtime_observes_a_failed_refresh() {
         let (db, _) = test_db();
         let db = Arc::new(db);
@@ -539,7 +716,7 @@ mod tests {
             .lock()
             .unwrap()
             .execute(
-                "UPDATE integrations SET connection_status='disconnected' WHERE id=?1",
+                "UPDATE integrations SET connection_status='disconnected', last_successful_sync_at='2026-01-01T00:00:00Z', last_sync_etag='old-etag', last_sync_last_modified='old-modified', last_sync_validator_origin='https://calendar.example', next_allowed_sync_at='2099-01-01T00:00:00Z', retry_after_at='2099-01-01T00:00:00Z', consecutive_sync_failures=4 WHERE id=?1",
                 [&connection_id],
             )
             .unwrap();
@@ -559,15 +736,44 @@ mod tests {
         )
         .await
         .expect("runtime did not proceed beyond mark_running after replacement");
+        tokio::time::timeout(
+            std::time::Duration::from_secs(1),
+            host.entered_terminal.notified(),
+        )
+        .await
+        .expect("replacement failure did not reach a terminal state");
         assert_eq!(credentials::get(&db, &key).unwrap().as_deref(), Some(new));
         assert_eq!(cached_event_count(&db, &connection_id), 1);
         let observed = host.observed.lock().unwrap();
-        assert_eq!(observed[0].credential.as_deref(), Some(new));
-        assert_eq!(observed[0].connection_id, connection_id);
+        assert!(observed
+            .iter()
+            .all(|observation| observation.credential.as_deref() == Some(new)));
+        assert!(observed
+            .iter()
+            .all(|observation| observation.connection_id == connection_id));
         assert_eq!(
             observed[0].record.integration.connection_status,
             "connected"
         );
+        assert_eq!(observed[0].record.configuration_generation, 2);
+        assert!(observed[0].record.integration.last_sync_etag.is_none());
+        assert!(observed[0]
+            .record
+            .integration
+            .last_sync_last_modified
+            .is_none());
+        assert!(observed[0].record.validator_origin.is_none());
+        drop(observed);
+        let current = integrations::sync_runtime_record(&db.conn.lock().unwrap(), &connection_id)
+            .unwrap()
+            .unwrap();
+        assert_eq!(current.configuration_generation, 2);
+        assert_eq!(current.integration.connection_status, "degraded");
+        assert!(current.integration.last_successful_sync_at.is_none());
+        assert!(current.integration.last_sync_etag.is_none());
+        assert!(current.integration.last_sync_last_modified.is_none());
+        assert!(current.validator_origin.is_none());
+        assert_eq!(current.consecutive_failures, 1);
     }
 
     #[test]
@@ -945,6 +1151,13 @@ mod tests {
         fail_writes.store(true, Ordering::SeqCst);
         assert!(replace_validated_secret(&db, &connection_id, new).is_err());
         assert_eq!(credentials::get(&db, &key).unwrap().as_deref(), Some(old));
+        assert_eq!(
+            integrations::sync_runtime_record(&db.conn.lock().unwrap(), &connection_id)
+                .unwrap()
+                .unwrap()
+                .configuration_generation,
+            1
+        );
         assert_eq!(cached_event_count(&db, &connection_id), 1);
         assert_eq!(
             integrations::get_by_id(&db.conn.lock().unwrap(), &connection_id)
@@ -957,6 +1170,13 @@ mod tests {
         fail_writes.store(false, Ordering::SeqCst);
         replace_validated_secret(&db, &connection_id, new).unwrap();
         assert_eq!(credentials::get(&db, &key).unwrap().as_deref(), Some(new));
+        assert_eq!(
+            integrations::sync_runtime_record(&db.conn.lock().unwrap(), &connection_id)
+                .unwrap()
+                .unwrap()
+                .configuration_generation,
+            2
+        );
         let count: i64 = db
             .conn
             .lock()
@@ -971,6 +1191,41 @@ mod tests {
         assert!(!public.contains("old-secret"));
         assert!(!public.contains("new-secret"));
         assert!(!public.contains("calendar.example"));
+    }
+
+    #[test]
+    fn rapid_replacements_increment_once_each_and_current_generation_survives_restart() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("aether.db");
+        let fail_writes = Arc::new(AtomicBool::new(false));
+        let db = Database::open(path.clone(), Box::new(TestCrypto(fail_writes.clone()))).unwrap();
+        let (connection_id, key) = connected_calendar(&db);
+
+        replace_validated_secret(&db, &connection_id, "https://calendar.example/b?token=b")
+            .unwrap();
+        replace_validated_secret(&db, &connection_id, "https://calendar.example/c?token=c")
+            .unwrap();
+        assert_eq!(
+            integrations::sync_runtime_record(&db.conn.lock().unwrap(), &connection_id)
+                .unwrap()
+                .unwrap()
+                .configuration_generation,
+            3
+        );
+        drop(db);
+
+        let reopened = Database::open(path, Box::new(TestCrypto(fail_writes))).unwrap();
+        let record =
+            integrations::sync_runtime_record(&reopened.conn.lock().unwrap(), &connection_id)
+                .unwrap()
+                .unwrap();
+        assert_eq!(record.configuration_generation, 3);
+        assert_eq!(
+            credentials::get(&reopened, &key).unwrap().as_deref(),
+            Some("https://calendar.example/c?token=c")
+        );
+        assert!(record.integration.last_sync_etag.is_none());
+        assert!(record.validator_origin.is_none());
     }
 
     #[test]

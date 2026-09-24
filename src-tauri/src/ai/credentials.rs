@@ -179,11 +179,26 @@ pub fn ensure_table(conn: &Connection) -> Result<(), String> {
 
 /// Encrypt and store a secret value.
 pub fn store(db: &Database, key_name: &str, value: &str) -> Result<(), String> {
-    let encrypted = db.crypto.encrypt(value.as_bytes())?;
-    let encoded = BASE64.encode(encrypted);
+    let encoded = prepare_value(db.crypto.as_ref(), value)?;
 
     let conn = db.conn.lock().map_err(|e| format!("Lock error: {}", e))?;
-    ensure_table(&conn)?;
+    store_prepared(&conn, key_name, &encoded)
+}
+
+/// Encrypt a secret before entering a caller-owned SQLite transaction.
+pub(crate) fn prepare_value(crypto: &dyn SecretCrypto, value: &str) -> Result<String, String> {
+    crypto
+        .encrypt(value.as_bytes())
+        .map(|value| BASE64.encode(value))
+}
+
+/// Store an already encrypted secret through a caller-owned connection/transaction.
+pub(crate) fn store_prepared(
+    conn: &Connection,
+    key_name: &str,
+    encoded: &str,
+) -> Result<(), String> {
+    ensure_table(conn)?;
     conn.execute(
         "INSERT INTO secrets (key, value, updated_at) VALUES (?1, ?2, datetime('now'))
          ON CONFLICT(key) DO UPDATE SET value = ?2, updated_at = datetime('now')",
@@ -196,17 +211,26 @@ pub fn store(db: &Database, key_name: &str, value: &str) -> Result<(), String> {
 
 /// Retrieve and decrypt a secret value.
 pub fn get(db: &Database, key_name: &str) -> Result<Option<String>, String> {
-    let encoded: Option<String> = {
-        let conn = db.conn.lock().map_err(|e| format!("Lock error: {}", e))?;
-        ensure_table(&conn)?;
-        conn.query_row(
+    let conn = db.conn.lock().map_err(|e| format!("Lock error: {}", e))?;
+    get_from_connection(&conn, db.crypto.as_ref(), key_name)
+}
+
+/// Read a credential while the caller holds the same SQLite lock used to capture
+/// its configuration generation.
+pub(crate) fn get_from_connection(
+    conn: &Connection,
+    crypto: &dyn SecretCrypto,
+    key_name: &str,
+) -> Result<Option<String>, String> {
+    ensure_table(conn)?;
+    let encoded: Option<String> = conn
+        .query_row(
             "SELECT value FROM secrets WHERE key = ?1",
             [key_name],
             |row| row.get(0),
         )
         .optional()
-        .map_err(|e| format!("Query error: {}", e))?
-    };
+        .map_err(|e| format!("Query error: {}", e))?;
 
     let Some(encoded) = encoded else {
         return Ok(None);
@@ -215,7 +239,7 @@ pub fn get(db: &Database, key_name: &str) -> Result<Option<String>, String> {
     let encrypted = BASE64
         .decode(encoded)
         .map_err(|e| format!("Base64 decode error: {}", e))?;
-    let plaintext = db.crypto.decrypt(&encrypted)?;
+    let plaintext = crypto.decrypt(&encrypted)?;
 
     String::from_utf8(plaintext)
         .map(Some)

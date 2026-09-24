@@ -456,6 +456,15 @@ const MIGRATIONS: &[(&str, &str)] = &[
         WHERE auth_type='ics_feed';
         ",
     ),
+    // Migration 017: durable subscribed-calendar configuration generation.
+    // Existing connections begin at generation 1; replacement advances it atomically.
+    (
+        "017_subscribed_calendar_generation",
+        "
+        ALTER TABLE integrations ADD COLUMN configuration_generation INTEGER NOT NULL DEFAULT 1
+            CHECK(configuration_generation >= 1);
+        ",
+    ),
 ];
 
 pub fn known_names() -> impl Iterator<Item = &'static str> {
@@ -1305,6 +1314,7 @@ mod tests {
             .unwrap();
         assert!(columns.contains(&"credential_key".to_string()));
         assert!(columns.contains(&"last_successful_sync_at".to_string()));
+        assert!(columns.contains(&"configuration_generation".to_string()));
     }
 
     #[test]
@@ -1347,7 +1357,11 @@ mod tests {
         let conn = in_memory_db();
         let tx = conn.unchecked_transaction().unwrap();
         ensure_migrations_table(&tx).unwrap();
-        for (name, sql) in &MIGRATIONS[..MIGRATIONS.len() - 1] {
+        let migration_index = MIGRATIONS
+            .iter()
+            .position(|(name, _)| *name == "016_ics_validator_origin")
+            .unwrap();
+        for (name, sql) in &MIGRATIONS[..migration_index] {
             apply_migration(&tx, name, sql).unwrap();
         }
         tx.execute(
@@ -1371,5 +1385,46 @@ mod tests {
             )
             .unwrap();
         assert_eq!(row, (1, None, None, None, None));
+    }
+
+    #[test]
+    fn subscribed_calendar_generation_upgrade_preserves_cache_and_defaults_to_one() {
+        let conn = in_memory_db();
+        let tx = conn.unchecked_transaction().unwrap();
+        ensure_migrations_table(&tx).unwrap();
+        for (name, sql) in &MIGRATIONS[..MIGRATIONS.len() - 1] {
+            apply_migration(&tx, name, sql).unwrap();
+        }
+        tx.execute(
+            "INSERT INTO integrations(id,provider_id,auth_type) VALUES ('ics','my_timetable','ics_feed')",
+            [],
+        )
+        .unwrap();
+        tx.execute(
+            "INSERT INTO external_events(id,connection_id,external_id,title,time_kind,start_at_utc,end_at_utc,timezone,event_kind,status,ingestion_provenance,source_version,content_hash,first_seen_at,last_seen_at,synchronized_at) VALUES ('cached','ics','cached','Cached lesson','timed','2026-09-23T09:00:00Z','2026-09-23T10:00:00Z','Europe/Berlin','lesson','active','ics','1','hash','2026-09-23T00:00:00Z','2026-09-23T00:00:00Z','2026-09-23T00:00:00Z')",
+            [],
+        )
+        .unwrap();
+        tx.commit().unwrap();
+
+        run(&conn).unwrap();
+        assert_eq!(
+            conn.query_row(
+                "SELECT configuration_generation FROM integrations WHERE id='ics'",
+                [],
+                |row| row.get::<_, i64>(0),
+            )
+            .unwrap(),
+            1
+        );
+        assert_eq!(
+            conn.query_row(
+                "SELECT count(*) FROM external_events WHERE id='cached' AND status='active'",
+                [],
+                |row| row.get::<_, i64>(0),
+            )
+            .unwrap(),
+            1
+        );
     }
 }
