@@ -50,12 +50,18 @@ function event(
 function source(overrides: Partial<SchoolCalendarSource> = {}): SchoolCalendarSource {
   return {
     connection_id: 'school-source',
+    provider_id: 'my_timetable',
+    display_name: 'MyTimetable',
+    associated: true,
     enabled: true,
     connection_status: 'connected',
     sync_status: 'succeeded',
     last_successful_sync_at: '2026-09-23T09:30:00Z',
     last_sync_error_code: null,
     last_sync_error_message: null,
+    selected_groups: ['ADSAI-ZM-1.a'],
+    group_options: ['ADSAI-ZM-1.a'],
+    group_selection_valid: true,
     ...overrides,
   }
 }

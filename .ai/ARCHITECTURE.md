@@ -122,6 +122,7 @@ SQLite / native capabilities / external providers
 | `ADR-027` | Persist provider-neutral Integration Core connection metadata behind native credential and typed IPC boundaries.                                                                                 | Accepted                | `docs/decisions/027-integration-core.md`             |
 | `ADR-028` | Normalize provider-owned external calendar occurrences with stable provider identity, native authoritative reconciliation, and read-only bounded IPC.                                         | Accepted                | `docs/decisions/028-calendar-core.md`                |
 | `ADR-029` | Ingest renewable iCalendar subscriptions through a native, bounded HTTPS/parser/recurrence engine while retaining URLs only in DPAPI secrets and leaving sync runtime ownership separate. | Accepted | `docs/decisions/029-ics-subscription-ingestion.md` |
+| `ADR-031` | Bind each parent School Space to explicit Integration connection IDs and scope MyTimetable group selection and timetable reads per bound source. | Accepted | `docs/decisions/031-school-source-scoping.md` |
 | `ADR-027` | Persist provider-neutral integration lifecycle metadata locally and retain only opaque native credential references; connectors, transport, and provider payloads remain outside the generic core. | Accepted | `docs/decisions/027-integration-core.md` |
 
 ## Architecture change protocol

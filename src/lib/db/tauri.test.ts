@@ -64,7 +64,8 @@ import {
   requestIntegrationSync,
   listExternalEvents,
   getSchoolSchedule,
-  setSchoolGroup,
+  setSchoolSourceAssociation,
+  setSchoolSourceGroups,
 } from '@/lib/db/tauri'
 
 describe('Tauri database boundary', () => {
@@ -134,11 +135,36 @@ describe('Tauri database boundary', () => {
   })
 
   it('uses typed provider-neutral Integration Core commands without credential values', async () => {
-    invoke.mockResolvedValueOnce({
-      id: 'integration-1', provider_id: 'calendar', enabled: true, advertised_capabilities: ['events_read'], effective_capabilities: [],
-      auth_type: 'oauth', sync_modes: ['manual'], sync_config: {}, connection_status: 'disconnected',
-      sync_status: 'idle', disconnect_reason: null, last_attempted_at: null, last_successful_sync_at: null, next_allowed_sync_at: null, last_sync_error_code: null, last_sync_error_message: null, last_sync_etag: null, last_sync_last_modified: null, sync_cursor: null, rate_limit_remaining: null, retry_after_at: null, credential_expires_at: null, credential_rotated_at: null, sync_execution_scope: 'desktop_running', created_at: '2026-09-21', updated_at: '2026-09-21',
-    }).mockResolvedValueOnce([])
+    invoke
+      .mockResolvedValueOnce({
+        id: 'integration-1',
+        provider_id: 'calendar',
+        enabled: true,
+        advertised_capabilities: ['events_read'],
+        effective_capabilities: [],
+        auth_type: 'oauth',
+        sync_modes: ['manual'],
+        sync_config: {},
+        connection_status: 'disconnected',
+        sync_status: 'idle',
+        disconnect_reason: null,
+        last_attempted_at: null,
+        last_successful_sync_at: null,
+        next_allowed_sync_at: null,
+        last_sync_error_code: null,
+        last_sync_error_message: null,
+        last_sync_etag: null,
+        last_sync_last_modified: null,
+        sync_cursor: null,
+        rate_limit_remaining: null,
+        retry_after_at: null,
+        credential_expires_at: null,
+        credential_rotated_at: null,
+        sync_execution_scope: 'desktop_running',
+        created_at: '2026-09-21',
+        updated_at: '2026-09-21',
+      })
+      .mockResolvedValueOnce([])
     await createIntegration({
       providerId: 'calendar',
       authType: 'oauth',
@@ -184,8 +210,6 @@ describe('Tauri database boundary', () => {
     invoke.mockResolvedValueOnce({
       events: [],
       sources: [],
-      group_options: [],
-      selected_group: null,
     })
     await getSchoolSchedule({
       spaceId: 'school-space',
@@ -207,10 +231,18 @@ describe('Tauri database boundary', () => {
       },
     })
 
-    await setSchoolGroup('school-space', 'ADSAI-ZM-1.a')
-    expect(invoke).toHaveBeenLastCalledWith('set_school_group', {
+    await setSchoolSourceAssociation('school-space', 'connection-x', true)
+    expect(invoke).toHaveBeenLastCalledWith('set_school_source_association', {
       spaceId: 'school-space',
-      selectedGroup: 'ADSAI-ZM-1.a',
+      connectionId: 'connection-x',
+      associated: true,
+    })
+
+    await setSchoolSourceGroups('school-space', 'connection-x', ['ADSAI-ZM-1.a'])
+    expect(invoke).toHaveBeenLastCalledWith('set_school_source_groups', {
+      spaceId: 'school-space',
+      connectionId: 'connection-x',
+      selectedGroups: ['ADSAI-ZM-1.a'],
     })
   })
 

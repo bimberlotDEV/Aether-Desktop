@@ -1009,16 +1009,35 @@ pub fn get_school_schedule(
 }
 
 #[tauri::command]
-pub fn set_school_group(
+pub fn set_school_source_association(
     db: State<Database>,
     space_id: String,
-    selected_group: Option<String>,
+    connection_id: String,
+    associated: bool,
 ) -> Result<(), String> {
     with_conn(&db.conn, |conn| {
-        repositories::school_schedule::set_selected_group(
+        repositories::school_schedule::set_source_association(
             conn,
             &space_id,
-            selected_group.as_deref(),
+            &connection_id,
+            associated,
+        )
+    })
+}
+
+#[tauri::command]
+pub fn set_school_source_groups(
+    db: State<Database>,
+    space_id: String,
+    connection_id: String,
+    selected_groups: Vec<String>,
+) -> Result<(), String> {
+    with_conn(&db.conn, |conn| {
+        repositories::school_schedule::set_selected_groups(
+            conn,
+            &space_id,
+            &connection_id,
+            &selected_groups,
         )
     })
 }

@@ -130,19 +130,23 @@ export const SchoolScheduleRequestSchema = z
 export type SchoolScheduleRequest = z.input<typeof SchoolScheduleRequestSchema>
 export const SchoolCalendarSourceSchema = z.object({
   connection_id: z.string(),
+  provider_id: z.enum(['my_timetable', 'brightspace']),
+  display_name: z.string().nullable(),
+  associated: z.boolean(),
   enabled: z.boolean(),
   connection_status: IntegrationConnectionStatusSchema,
   sync_status: IntegrationSyncStatusSchema,
   last_successful_sync_at: z.string().nullable(),
   last_sync_error_code: z.string().nullable(),
   last_sync_error_message: z.string().nullable(),
+  selected_groups: z.array(z.string()),
+  group_options: z.array(z.string()),
+  group_selection_valid: z.boolean(),
 })
 export type SchoolCalendarSource = z.infer<typeof SchoolCalendarSourceSchema>
 export const SchoolScheduleSchema = z.object({
   events: z.array(ExternalEventSchema),
   sources: z.array(SchoolCalendarSourceSchema),
-  group_options: z.array(z.string()),
-  selected_group: z.string().nullable(),
 })
 export type SchoolSchedule = z.infer<typeof SchoolScheduleSchema>
 export const IntegrationCreateInputSchema = z.object({

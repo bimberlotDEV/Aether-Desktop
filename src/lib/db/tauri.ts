@@ -641,11 +641,20 @@ export async function getSchoolSchedule(
   )
 }
 
-export async function setSchoolGroup(
+export async function setSchoolSourceAssociation(
   spaceId: string,
-  selectedGroup: string | null,
+  connectionId: string,
+  associated: boolean,
 ): Promise<void> {
-  await invoke('set_school_group', { spaceId, selectedGroup })
+  await invoke('set_school_source_association', { spaceId, connectionId, associated })
+}
+
+export async function setSchoolSourceGroups(
+  spaceId: string,
+  connectionId: string,
+  selectedGroups: string[],
+): Promise<void> {
+  await invoke('set_school_source_groups', { spaceId, connectionId, selectedGroups })
 }
 
 export async function createIntegration(
