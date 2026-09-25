@@ -156,6 +156,7 @@ export const IntegrationCreateInputSchema = z.object({
 export type IntegrationCreateInput = z.input<typeof IntegrationCreateInputSchema>
 export const IntegrationSyncRequestResultSchema = z.discriminatedUnion('status', [
   z.object({ status: z.literal('accepted') }),
+  z.object({ status: z.literal('queued') }),
   z.object({ status: z.literal('coalesced') }),
   z.object({ status: z.literal('deferred'), eligible_at: z.string() }),
   z.object({ status: z.literal('rejected'), reason: z.string() }),

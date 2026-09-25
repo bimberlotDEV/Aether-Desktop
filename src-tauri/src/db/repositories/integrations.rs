@@ -290,6 +290,7 @@ pub fn runtime_mark_running(
 pub enum SyncCompletion {
     Applied,
     StaleGeneration,
+    Ineligible,
 }
 
 pub fn generation_is_current(
@@ -336,7 +337,7 @@ pub fn runtime_finish_success(
     ).map_err(|error| format!("Integration runtime success error: {error}"))?;
     if changed != 1 {
         return if generation_is_current(tx, id, configuration_generation)? {
-            Err("Integration was disabled before sync completion".to_string())
+            Ok(SyncCompletion::Ineligible)
         } else {
             Ok(SyncCompletion::StaleGeneration)
         };
@@ -359,14 +360,16 @@ pub fn runtime_finish_failure(
     update: SyncFailureUpdate<'_>,
 ) -> Result<SyncCompletion, String> {
     let changed = conn.execute(
-        "UPDATE integrations SET sync_status='failed', connection_status=?1, last_sync_finished_at=?2, next_allowed_sync_at=?3, retry_after_at=?4, last_sync_error_code=?5, last_sync_error_message=?6, consecutive_sync_failures=consecutive_sync_failures+1, updated_at=datetime('now') WHERE id=?7 AND configuration_generation=?8",
+        "UPDATE integrations SET sync_status='failed', connection_status=?1, last_sync_finished_at=?2, next_allowed_sync_at=?3, retry_after_at=?4, last_sync_error_code=?5, last_sync_error_message=?6, consecutive_sync_failures=consecutive_sync_failures+1, updated_at=datetime('now') WHERE id=?7 AND configuration_generation=?8 AND enabled=1",
         params![update.connection_status, Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true), update.next_allowed, update.retry_after, update.code, update.message, id, configuration_generation],
     ).map_err(|error| format!("Integration runtime failure error: {error}"))?;
-    Ok(if changed == 1 {
-        SyncCompletion::Applied
+    if changed == 1 {
+        Ok(SyncCompletion::Applied)
+    } else if generation_is_current(conn, id, configuration_generation)? {
+        Ok(SyncCompletion::Ineligible)
     } else {
-        SyncCompletion::StaleGeneration
-    })
+        Ok(SyncCompletion::StaleGeneration)
+    }
 }
 
 pub fn replace_ics_configuration(
@@ -597,6 +600,51 @@ mod tests {
                 Some("2026-01-01T00:01:00Z")
             );
         }
+    }
+
+    #[test]
+    fn disabled_connection_rejects_late_terminal_writes() {
+        let conn = setup();
+        let created = create(&conn, &input()).unwrap();
+        mark_configured(&conn, &created.id).unwrap();
+        assert!(
+            runtime_mark_running(&conn, &created.id, 1, "manual", "2026-09-24T10:00:00Z").unwrap()
+        );
+        set_enabled(&conn, &created.id, false).unwrap();
+        assert_eq!(
+            runtime_finish_failure(
+                &conn,
+                &created.id,
+                1,
+                SyncFailureUpdate {
+                    code: "cancelled",
+                    message: "Sync was cancelled",
+                    next_allowed: "2026-09-24T10:01:00Z",
+                    connection_status: "connected",
+                    retry_after: None,
+                },
+            )
+            .unwrap(),
+            SyncCompletion::Ineligible
+        );
+        let current = get_by_id(&conn, &created.id).unwrap().unwrap();
+        assert!(!current.enabled);
+        assert_eq!(current.sync_status, "idle");
+        assert!(current.last_sync_error_code.is_none());
+
+        let tx = conn.unchecked_transaction().unwrap();
+        assert_eq!(
+            runtime_finish_success(
+                &tx,
+                &created.id,
+                1,
+                "2026-09-24T10:01:00Z",
+                None,
+                "2026-09-24T10:31:00Z",
+            )
+            .unwrap(),
+            SyncCompletion::Ineligible
+        );
     }
 
     #[test]

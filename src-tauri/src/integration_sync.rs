@@ -12,7 +12,7 @@ use chrono::{Duration, Utc};
 use futures_util::future::BoxFuture;
 use serde::Serialize;
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{HashMap, HashSet, VecDeque},
     sync::{Arc, Mutex},
 };
 use tauri::{AppHandle, Emitter, Manager};
@@ -68,6 +68,7 @@ impl SyncTrigger {
 #[serde(tag = "status", rename_all = "snake_case")]
 pub enum SyncRequestResult {
     Accepted,
+    Queued,
     Coalesced,
     Deferred { eligible_at: String },
     Rejected { reason: String },
@@ -407,10 +408,20 @@ impl RuntimeHost for TauriRuntimeHost {
 #[derive(Default)]
 struct State {
     active: HashSet<String>,
-    provider_active: HashMap<String, usize>,
+    queued: HashSet<String>,
+    provider_active: HashSet<String>,
+    provider_queues: HashMap<String, VecDeque<QueuedRequest>>,
     tokens: HashMap<String, CancellationToken>,
     replacement_followups: HashSet<String>,
     shutting_down: bool,
+}
+
+#[derive(Clone)]
+struct QueuedRequest {
+    id: String,
+    provider: String,
+    configuration_generation: i64,
+    trigger: SyncTrigger,
 }
 
 fn commit_prepared(
@@ -500,7 +511,7 @@ impl IntegrationSyncRuntime {
         let state = self.inner.state.lock().expect("sync state poisoned");
         RuntimeStatus {
             running_count: state.active.len(),
-            queued_count: 0,
+            queued_count: state.queued.len(),
             shutting_down: state.shutting_down,
         }
     }
@@ -528,16 +539,12 @@ impl IntegrationSyncRuntime {
         schedule(self.inner.clone(), self.host.clone(), SyncTrigger::Resume);
     }
     pub fn cancel_connection(&self, id: &str) {
-        if let Some(token) = self
-            .inner
-            .state
-            .lock()
-            .expect("sync state poisoned")
-            .tokens
-            .get(id)
-        {
+        let mut state = self.inner.state.lock().expect("sync state poisoned");
+        if let Some(token) = state.tokens.get(id) {
             token.cancel();
         }
+        remove_queued(&mut state, id);
+        state.replacement_followups.remove(id);
     }
     pub fn request_replacement_sync(&self, id: String) {
         let request_now = {
@@ -549,6 +556,7 @@ impl IntegrationSyncRuntime {
                 state.replacement_followups.insert(id.clone());
                 false
             } else {
+                remove_queued(&mut state, &id);
                 true
             }
         };
@@ -580,10 +588,16 @@ fn request(
     id: String,
     trigger: SyncTrigger,
 ) -> SyncRequestResult {
-    if shutting_down(&inner) {
-        return SyncRequestResult::Rejected {
-            reason: "Sync runtime is shutting down".into(),
-        };
+    {
+        let state = inner.state.lock().expect("sync state poisoned");
+        if state.shutting_down {
+            return SyncRequestResult::Rejected {
+                reason: "Sync runtime is shutting down".into(),
+            };
+        }
+        if state.active.contains(&id) || state.queued.contains(&id) {
+            return SyncRequestResult::Coalesced;
+        }
     }
     let record = match host.record(&id) {
         Ok(Some(record)) => record,
@@ -598,10 +612,79 @@ fn request(
             }
         }
     };
+    if let Err(result) = validate_request(&record, None, trigger) {
+        return result;
+    }
+    let queued = QueuedRequest {
+        id: id.clone(),
+        provider: record.integration.provider_id.clone(),
+        configuration_generation: record.configuration_generation,
+        trigger,
+    };
+    let token = inner.root.child_token();
+    {
+        let mut state = inner.state.lock().expect("sync state poisoned");
+        if state.shutting_down {
+            return SyncRequestResult::Rejected {
+                reason: "Sync runtime is shutting down".into(),
+            };
+        }
+        if state.active.contains(&id) || state.queued.contains(&id) {
+            return SyncRequestResult::Coalesced;
+        }
+        if state.provider_active.contains(&queued.provider) {
+            state.queued.insert(id);
+            state
+                .provider_queues
+                .entry(queued.provider.clone())
+                .or_default()
+                .push_back(queued);
+            return SyncRequestResult::Queued;
+        }
+        state.active.insert(id.clone());
+        state.provider_active.insert(queued.provider.clone());
+        state.tokens.insert(id.clone(), token.clone());
+    }
+    spawn_reserved(inner, host, queued, record, token);
+    SyncRequestResult::Accepted
+}
+
+fn validate_request(
+    record: &integrations::SyncRuntimeRecord,
+    expected_generation: Option<i64>,
+    trigger: SyncTrigger,
+) -> Result<(), SyncRequestResult> {
+    if expected_generation.is_some_and(|expected| expected != record.configuration_generation) {
+        return Err(SyncRequestResult::Rejected {
+            reason: "Sync configuration changed".into(),
+        });
+    }
     if !record.integration.enabled {
-        return SyncRequestResult::Rejected {
+        return Err(SyncRequestResult::Rejected {
             reason: "Connection is disabled".into(),
-        };
+        });
+    }
+    if !record
+        .integration
+        .sync_modes
+        .iter()
+        .any(|mode| mode == trigger.as_str())
+    {
+        return Err(SyncRequestResult::Rejected {
+            reason: "Sync trigger is not enabled for this connection".into(),
+        });
+    }
+    if matches!(
+        record.integration.connection_status.as_str(),
+        "disconnected"
+            | "unsupported"
+            | "reauthentication_required"
+            | "permission_denied"
+            | "institution_configuration_required"
+    ) {
+        return Err(SyncRequestResult::Rejected {
+            reason: "Connection is not eligible for synchronization".into(),
+        });
     }
     if ics_handler(
         &record.integration.provider_id,
@@ -609,9 +692,9 @@ fn request(
     )
     .is_none()
     {
-        return SyncRequestResult::Rejected {
+        return Err(SyncRequestResult::Rejected {
             reason: "Provider is unsupported".into(),
-        };
+        });
     }
     if let Some(eligible) = record
         .integration
@@ -620,71 +703,55 @@ fn request(
         .and_then(|value| chrono::DateTime::parse_from_rfc3339(value).ok())
         .filter(|value| *value > Utc::now())
     {
-        return SyncRequestResult::Deferred {
+        return Err(SyncRequestResult::Deferred {
             eligible_at: eligible.to_rfc3339_opts(chrono::SecondsFormat::Secs, true),
-        };
+        });
     }
-    {
-        let mut state = inner.state.lock().expect("sync state poisoned");
-        if state.shutting_down {
-            return SyncRequestResult::Rejected {
-                reason: "Sync runtime is shutting down".into(),
-            };
-        }
-        if !state.active.insert(id.clone()) {
-            return SyncRequestResult::Coalesced;
-        }
-        if state
-            .provider_active
-            .get(&record.integration.provider_id)
-            .copied()
-            .unwrap_or(0)
-            >= 1
-        {
-            state.active.remove(&id);
-            return SyncRequestResult::Coalesced;
-        }
-        *state
-            .provider_active
-            .entry(record.integration.provider_id.clone())
-            .or_default() += 1;
-    }
-    let token = inner.root.child_token();
-    inner
-        .state
-        .lock()
-        .expect("sync state poisoned")
-        .tokens
-        .insert(id.clone(), token.clone());
-    let provider = record.integration.provider_id.clone();
+    Ok(())
+}
+
+fn spawn_reserved(
+    inner: Arc<Inner>,
+    host: Arc<dyn RuntimeHost>,
+    queued_request: QueuedRequest,
+    record: integrations::SyncRuntimeRecord,
+    token: CancellationToken,
+) {
     let semaphore = inner.global.clone();
     let task_host = host.clone();
     host.spawn(Box::pin(async move {
-        if let Ok(_permit) = semaphore.acquire_owned().await {
-            run_one(
+        tokio::select! {
+            _ = token.cancelled() => {}
+            permit = semaphore.acquire_owned() => {
+                if let Ok(_permit) = permit {
+                    run_one(
+                        inner.clone(),
+                        task_host.clone(),
+                        queued_request.id.clone(),
+                        record,
+                        queued_request.trigger,
+                        token,
+                    )
+                    .await;
+                }
+            }
+        }
+        let followup = finish_active(&inner, &queued_request.id);
+        if followup {
+            let _ = request(
                 inner.clone(),
                 task_host.clone(),
-                id.clone(),
-                record,
-                trigger,
-                token,
-            )
-            .await;
+                queued_request.id.clone(),
+                SyncTrigger::Manual,
+            );
         }
-        if cleanup(&inner, &id, &provider) {
-            let _ = request(inner.clone(), task_host, id.clone(), SyncTrigger::Manual);
-        }
+        dispatch_next(inner, task_host, queued_request.provider);
     }));
-    SyncRequestResult::Accepted
 }
 fn schedule(inner: Arc<Inner>, host: Arc<dyn RuntimeHost>, trigger: SyncTrigger) {
     if let Ok(items) = host.candidates() {
         for item in items.into_iter().filter(|item| {
-            item.enabled
-                && item
-                    .sync_modes
-                    .iter()
-                    .any(|mode| matches!(mode.as_str(), "app_start" | "app_resume" | "periodic"))
+            item.enabled && item.sync_modes.iter().any(|mode| mode == trigger.as_str())
         }) {
             let _ = request(inner.clone(), host.clone(), item.id, trigger);
         }
@@ -697,19 +764,78 @@ fn shutting_down(inner: &Inner) -> bool {
         .expect("sync state poisoned")
         .shutting_down
 }
-fn cleanup(inner: &Inner, id: &str, provider: &str) -> bool {
+fn finish_active(inner: &Inner, id: &str) -> bool {
     let mut state = inner.state.lock().expect("sync state poisoned");
     state.active.remove(id);
     state.tokens.remove(id);
-    if let Some(count) = state.provider_active.get_mut(provider) {
-        *count = count.saturating_sub(1);
-    }
     state.replacement_followups.remove(id)
 }
+
+fn dispatch_next(inner: Arc<Inner>, host: Arc<dyn RuntimeHost>, provider: String) {
+    loop {
+        let next = {
+            let mut state = inner.state.lock().expect("sync state poisoned");
+            if state.shutting_down {
+                state.provider_active.remove(&provider);
+                state.provider_queues.remove(&provider);
+                return;
+            }
+            let next = state
+                .provider_queues
+                .get_mut(&provider)
+                .and_then(VecDeque::pop_front);
+            if let Some(next) = &next {
+                state.queued.remove(&next.id);
+            } else {
+                state.provider_queues.remove(&provider);
+                state.provider_active.remove(&provider);
+            }
+            next
+        };
+        let Some(next) = next else {
+            return;
+        };
+        let record = match host.record(&next.id) {
+            Ok(Some(record)) => record,
+            _ => continue,
+        };
+        if record.integration.provider_id != provider
+            || validate_request(&record, Some(next.configuration_generation), next.trigger).is_err()
+        {
+            continue;
+        }
+        let token = inner.root.child_token();
+        {
+            let mut state = inner.state.lock().expect("sync state poisoned");
+            if state.shutting_down {
+                state.provider_active.remove(&provider);
+                return;
+            }
+            state.active.insert(next.id.clone());
+            state.tokens.insert(next.id.clone(), token.clone());
+        }
+        spawn_reserved(inner, host, next, record, token);
+        return;
+    }
+}
+
+fn remove_queued(state: &mut State, id: &str) {
+    if !state.queued.remove(id) {
+        return;
+    }
+    state.provider_queues.retain(|_, queue| {
+        queue.retain(|request| request.id != id);
+        !queue.is_empty()
+    });
+}
+
 async fn shutdown(inner: Arc<Inner>) {
     {
         let mut state = inner.state.lock().expect("sync state poisoned");
         state.shutting_down = true;
+        state.queued.clear();
+        state.provider_queues.clear();
+        state.replacement_followups.clear();
         for token in state.tokens.values() {
             token.cancel();
         }
@@ -771,55 +897,68 @@ async fn run_one(
                 message: "Calendar provider temporarily limited sync requests",
                 connection_status: "rate_limited",
             };
-            let _ = host.finish_failure(
+            let _completion = host.finish_failure(
                 &id,
                 record.configuration_generation,
                 &failure,
                 next,
                 eligible_at.as_deref(),
             );
-            host.emit(SyncStateEvent {
-                connection_id: id,
-                state: "terminal",
-            });
         }
         Ok((prepared, policy)) => {
             if cancel.is_cancelled() || shutting_down(&inner) {
-                return;
-            }
-            let now = Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
-            let next = (Utc::now() + Duration::minutes(policy.success_interval_minutes))
-                .to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
-            if !cancel.is_cancelled()
-                && !shutting_down(&inner)
-                && matches!(
-                    host.commit_success(prepared, &now, &next),
-                    Ok(integrations::SyncCompletion::Applied)
-                )
-            {
-                host.emit(SyncStateEvent {
-                    connection_id: id,
-                    state: "terminal",
-                });
-            }
-        }
-        Err(failure) => {
-            if !shutting_down(&inner) {
+                let failure = SyncFailure {
+                    code: if shutting_down(&inner) {
+                        "interrupted"
+                    } else {
+                        "cancelled"
+                    },
+                    message: if shutting_down(&inner) {
+                        "Sync was interrupted when Aether closed"
+                    } else {
+                        "Sync was cancelled"
+                    },
+                    connection_status: "connected",
+                };
                 let next = backoff(record.consecutive_failures);
-                let _ = host.finish_failure(
+                let _completion = host.finish_failure(
                     &id,
                     record.configuration_generation,
                     &failure,
                     &next,
                     None,
                 );
-                host.emit(SyncStateEvent {
-                    connection_id: id,
-                    state: "terminal",
-                });
+            } else {
+                let now = Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+                let next = (Utc::now() + Duration::minutes(policy.success_interval_minutes))
+                    .to_rfc3339_opts(chrono::SecondsFormat::Secs, true);
+                if host.commit_success(prepared, &now, &next).is_err() {
+                    let failure = SyncFailure {
+                        code: "local_commit",
+                        message: "Local synchronized data could not be committed",
+                        connection_status: "degraded",
+                    };
+                    let retry = backoff(record.consecutive_failures);
+                    let _completion = host.finish_failure(
+                        &id,
+                        record.configuration_generation,
+                        &failure,
+                        &retry,
+                        None,
+                    );
+                }
             }
         }
+        Err(failure) => {
+            let next = backoff(record.consecutive_failures);
+            let _completion =
+                host.finish_failure(&id, record.configuration_generation, &failure, &next, None);
+        }
     }
+    host.emit(SyncStateEvent {
+        connection_id: id,
+        state: "terminal",
+    });
 }
 fn backoff(prior: u32) -> String {
     (Utc::now() + Duration::seconds((30_i64.saturating_mul(2_i64.pow(prior.min(8)))).min(3600)))
@@ -862,16 +1001,22 @@ mod tests {
     enum HandlerMode {
         Success,
         Blocking,
+        Controlled,
+        ControlledFailure(&'static str),
         RateLimited,
     }
 
     struct FakeRuntimeHost {
         conn: Mutex<Connection>,
         mode: Mutex<HandlerMode>,
+        connection_modes: Mutex<HashMap<String, HandlerMode>>,
         started: Arc<Notify>,
+        started_order: Mutex<Vec<String>>,
+        releases: Mutex<HashMap<String, Arc<Notify>>>,
         events: Mutex<Vec<SyncStateEvent>>,
         domain_commits: Mutex<usize>,
         success_commits: Mutex<usize>,
+        commit_failures: Mutex<HashSet<String>>,
         cancelled: AtomicBool,
     }
 
@@ -882,20 +1027,28 @@ mod tests {
             Arc::new(Self {
                 conn: Mutex::new(conn),
                 mode: Mutex::new(mode),
+                connection_modes: Mutex::new(HashMap::new()),
                 started: Arc::new(Notify::new()),
+                started_order: Mutex::new(Vec::new()),
+                releases: Mutex::new(HashMap::new()),
                 events: Mutex::new(Vec::new()),
                 domain_commits: Mutex::new(0),
                 success_commits: Mutex::new(0),
+                commit_failures: Mutex::new(HashSet::new()),
                 cancelled: AtomicBool::new(false),
             })
         }
 
         fn integration(&self, next_allowed: Option<&str>) -> String {
+            self.integration_for_provider(PROVIDER_ICS, next_allowed)
+        }
+
+        fn integration_for_provider(&self, provider: &str, next_allowed: Option<&str>) -> String {
             let conn = self.conn.lock().unwrap();
             let id = integrations::create(
                 &conn,
                 &integrations::IntegrationCreateInput {
-                    provider_id: PROVIDER_ICS.into(),
+                    provider_id: provider.into(),
                     enabled: true,
                     advertised_capabilities: Vec::new(),
                     auth_type: "ics_feed".into(),
@@ -918,6 +1071,36 @@ mod tests {
                 .unwrap();
             }
             id
+        }
+
+        fn set_mode(&self, id: &str, mode: HandlerMode) {
+            self.connection_modes
+                .lock()
+                .unwrap()
+                .insert(id.to_string(), mode);
+        }
+
+        fn release(&self, id: &str) {
+            self.releases
+                .lock()
+                .unwrap()
+                .entry(id.to_string())
+                .or_insert_with(|| Arc::new(Notify::new()))
+                .notify_one();
+        }
+
+        fn fail_commit(&self, id: &str) {
+            self.commit_failures.lock().unwrap().insert(id.to_string());
+        }
+
+        async fn wait_for_starts(&self, count: usize) {
+            for _ in 0..100 {
+                if self.started_order.lock().unwrap().len() >= count {
+                    return;
+                }
+                sleep(TokioDuration::from_millis(10)).await;
+            }
+            panic!("expected {count} started syncs");
         }
 
         fn record_state(&self, id: &str) -> integrations::Integration {
@@ -958,8 +1141,18 @@ mod tests {
             record: &integrations::SyncRuntimeRecord,
             cancel: CancellationToken,
         ) -> Result<(PreparedSync, SyncPolicy), SyncFailure> {
+            self.started_order
+                .lock()
+                .unwrap()
+                .push(record.integration.id.clone());
             self.started.notify_waiters();
-            let mode = *self.mode.lock().unwrap();
+            let mode = self
+                .connection_modes
+                .lock()
+                .unwrap()
+                .get(&record.integration.id)
+                .copied()
+                .unwrap_or_else(|| *self.mode.lock().unwrap());
             match mode {
                 HandlerMode::Success => Ok((
                     PreparedSync {
@@ -979,6 +1172,54 @@ mod tests {
                         message: "cancelled",
                         connection_status: "connected",
                     })
+                }
+                HandlerMode::Controlled => {
+                    let release = self
+                        .releases
+                        .lock()
+                        .unwrap()
+                        .entry(record.integration.id.clone())
+                        .or_insert_with(|| Arc::new(Notify::new()))
+                        .clone();
+                    tokio::select! {
+                        _ = release.notified() => Ok((
+                            PreparedSync {
+                                connection_id: record.integration.id.clone(),
+                                configuration_generation: record.configuration_generation,
+                                outcome: PreparedSyncOutcome::NotModified,
+                            },
+                            SyncPolicy { success_interval_minutes: 30 },
+                        )),
+                        _ = cancel.cancelled() => {
+                            self.cancelled.store(true, Ordering::SeqCst);
+                            Err(SyncFailure {
+                                code: "cancelled",
+                                message: "cancelled",
+                                connection_status: "connected",
+                            })
+                        }
+                    }
+                }
+                HandlerMode::ControlledFailure(code) => {
+                    let release = self
+                        .releases
+                        .lock()
+                        .unwrap()
+                        .entry(record.integration.id.clone())
+                        .or_insert_with(|| Arc::new(Notify::new()))
+                        .clone();
+                    tokio::select! {
+                        _ = release.notified() => Err(SyncFailure {
+                            code,
+                            message: "prepared work failed",
+                            connection_status: "degraded",
+                        }),
+                        _ = cancel.cancelled() => Err(SyncFailure {
+                            code: "cancelled",
+                            message: "cancelled",
+                            connection_status: "connected",
+                        }),
+                    }
                 }
                 HandlerMode::RateLimited => Ok((
                     PreparedSync {
@@ -1003,6 +1244,14 @@ mod tests {
             now: &str,
             next_allowed: &str,
         ) -> Result<integrations::SyncCompletion, String> {
+            if self
+                .commit_failures
+                .lock()
+                .unwrap()
+                .remove(&prepared.connection_id)
+            {
+                return Err("injected commit failure".into());
+            }
             let conn = self.conn.lock().unwrap();
             let tx = conn
                 .unchecked_transaction()
@@ -1083,7 +1332,7 @@ mod tests {
             SyncRequestResult::Accepted
         ));
         assert!(matches!(
-            runtime.request(id, SyncTrigger::Manual),
+            runtime.request(id.clone(), SyncTrigger::Manual),
             SyncRequestResult::Coalesced
         ));
         assert!(matches!(
@@ -1098,6 +1347,332 @@ mod tests {
             SyncRequestResult::Rejected { .. }
         ));
         runtime.shutdown().await;
+    }
+
+    #[tokio::test]
+    async fn same_provider_connections_run_fifo_without_duplicate_starvation() {
+        let host = FakeRuntimeHost::new(HandlerMode::Controlled);
+        let runtime = IntegrationSyncRuntime::new(host.clone());
+        let a = host.integration(None);
+        let b = host.integration(None);
+        let c = host.integration(None);
+
+        assert!(matches!(
+            runtime.request(a.clone(), SyncTrigger::Manual),
+            SyncRequestResult::Accepted
+        ));
+        host.wait_for_starts(1).await;
+        assert!(matches!(
+            runtime.request(b.clone(), SyncTrigger::Manual),
+            SyncRequestResult::Queued
+        ));
+        assert!(matches!(
+            runtime.request(c.clone(), SyncTrigger::Manual),
+            SyncRequestResult::Queued
+        ));
+        assert!(matches!(
+            runtime.request(a.clone(), SyncTrigger::Manual),
+            SyncRequestResult::Coalesced
+        ));
+        assert_eq!(runtime.status().queued_count, 2);
+
+        host.release(&a);
+        host.wait_for_starts(2).await;
+        assert_eq!(
+            &*host.started_order.lock().unwrap(),
+            &[a.clone(), b.clone()]
+        );
+        host.conn
+            .lock()
+            .unwrap()
+            .execute(
+                "UPDATE integrations SET next_allowed_sync_at=NULL WHERE id=?1",
+                [&a],
+            )
+            .unwrap();
+        assert!(matches!(
+            runtime.request(a.clone(), SyncTrigger::Manual),
+            SyncRequestResult::Queued
+        ));
+
+        host.release(&b);
+        host.wait_for_starts(3).await;
+        assert_eq!(
+            &*host.started_order.lock().unwrap(),
+            &[a.clone(), b.clone(), c.clone()]
+        );
+        host.release(&c);
+        host.wait_for_starts(4).await;
+        assert_eq!(
+            &*host.started_order.lock().unwrap(),
+            &[a.clone(), b, c, a.clone()]
+        );
+        host.release(&a);
+        for _ in 0..100 {
+            if runtime.status().running_count == 0 {
+                break;
+            }
+            sleep(TokioDuration::from_millis(10)).await;
+        }
+        assert_eq!(runtime.status().queued_count, 0);
+    }
+
+    #[tokio::test]
+    async fn different_providers_can_hold_global_slots_together() {
+        let host = FakeRuntimeHost::new(HandlerMode::Controlled);
+        let runtime = IntegrationSyncRuntime::new(host.clone());
+        let timetable = host.integration_for_provider(PROVIDER_MY_TIMETABLE, None);
+        let brightspace = host.integration_for_provider(PROVIDER_BRIGHTSPACE, None);
+
+        assert!(matches!(
+            runtime.request(timetable.clone(), SyncTrigger::Manual),
+            SyncRequestResult::Accepted
+        ));
+        assert!(matches!(
+            runtime.request(brightspace.clone(), SyncTrigger::Manual),
+            SyncRequestResult::Accepted
+        ));
+        host.wait_for_starts(2).await;
+        assert_eq!(runtime.status().running_count, 2);
+        host.release(&timetable);
+        host.release(&brightspace);
+    }
+
+    #[tokio::test]
+    async fn timetable_and_brightspace_each_queue_distinct_connections() {
+        for provider in [PROVIDER_MY_TIMETABLE, PROVIDER_BRIGHTSPACE] {
+            let host = FakeRuntimeHost::new(HandlerMode::Controlled);
+            let runtime = IntegrationSyncRuntime::new(host.clone());
+            let first = host.integration_for_provider(provider, None);
+            let second = host.integration_for_provider(provider, None);
+
+            assert!(matches!(
+                runtime.request(first.clone(), SyncTrigger::Manual),
+                SyncRequestResult::Accepted
+            ));
+            host.wait_for_starts(1).await;
+            assert!(matches!(
+                runtime.request(second.clone(), SyncTrigger::Manual),
+                SyncRequestResult::Queued
+            ));
+            host.release(&first);
+            host.wait_for_starts(2).await;
+            assert_eq!(
+                &*host.started_order.lock().unwrap(),
+                &[first, second.clone()]
+            );
+            host.release(&second);
+        }
+    }
+
+    #[tokio::test]
+    async fn lifecycle_scheduling_uses_only_the_matching_declared_trigger() {
+        let host = FakeRuntimeHost::new(HandlerMode::Success);
+        let runtime = IntegrationSyncRuntime::new(host.clone());
+        let startup = host.integration(None);
+        let resume = host.integration(None);
+        let periodic = host.integration(None);
+        {
+            let conn = host.conn.lock().unwrap();
+            conn.execute(
+                "UPDATE integrations SET sync_modes_json='[\"app_start\"]' WHERE id=?1",
+                [&startup],
+            )
+            .unwrap();
+            conn.execute(
+                "UPDATE integrations SET sync_modes_json='[\"app_resume\"]' WHERE id=?1",
+                [&resume],
+            )
+            .unwrap();
+            conn.execute(
+                "UPDATE integrations SET sync_modes_json='[\"periodic\"]' WHERE id=?1",
+                [&periodic],
+            )
+            .unwrap();
+        }
+
+        schedule(runtime.inner.clone(), host.clone(), SyncTrigger::Startup);
+        host.wait_for_starts(1).await;
+        schedule(runtime.inner.clone(), host.clone(), SyncTrigger::Resume);
+        host.wait_for_starts(2).await;
+        schedule(runtime.inner.clone(), host.clone(), SyncTrigger::Periodic);
+        host.wait_for_starts(3).await;
+        assert_eq!(
+            &*host.started_order.lock().unwrap(),
+            &[startup, resume, periodic]
+        );
+    }
+
+    #[tokio::test]
+    async fn queued_disconnect_and_disable_are_removed_before_dispatch() {
+        let host = FakeRuntimeHost::new(HandlerMode::Controlled);
+        let runtime = IntegrationSyncRuntime::new(host.clone());
+        let active = host.integration(None);
+        let disconnected = host.integration(None);
+        let disabled = host.integration(None);
+
+        assert!(matches!(
+            runtime.request(active.clone(), SyncTrigger::Manual),
+            SyncRequestResult::Accepted
+        ));
+        host.wait_for_starts(1).await;
+        assert!(matches!(
+            runtime.request(disconnected.clone(), SyncTrigger::Manual),
+            SyncRequestResult::Queued
+        ));
+        assert!(matches!(
+            runtime.request(disabled.clone(), SyncTrigger::Manual),
+            SyncRequestResult::Queued
+        ));
+        runtime.cancel_connection(&disconnected);
+        host.conn
+            .lock()
+            .unwrap()
+            .execute("DELETE FROM integrations WHERE id=?1", [&disconnected])
+            .unwrap();
+        integrations::set_enabled(&host.conn.lock().unwrap(), &disabled, false).unwrap();
+        runtime.cancel_connection(&disabled);
+        assert_eq!(runtime.status().queued_count, 0);
+
+        host.release(&active);
+        sleep(TokioDuration::from_millis(50)).await;
+        assert_eq!(&*host.started_order.lock().unwrap(), &[active]);
+    }
+
+    #[tokio::test]
+    async fn queued_replacement_runs_only_the_current_generation() {
+        let host = FakeRuntimeHost::new(HandlerMode::Controlled);
+        let runtime = IntegrationSyncRuntime::new(host.clone());
+        let active = host.integration(None);
+        let replacement = host.integration(None);
+
+        assert!(matches!(
+            runtime.request(active.clone(), SyncTrigger::Manual),
+            SyncRequestResult::Accepted
+        ));
+        host.wait_for_starts(1).await;
+        assert!(matches!(
+            runtime.request(replacement.clone(), SyncTrigger::Manual),
+            SyncRequestResult::Queued
+        ));
+        {
+            let conn = host.conn.lock().unwrap();
+            let tx = conn.unchecked_transaction().unwrap();
+            assert_eq!(
+                integrations::replace_ics_configuration(&tx, &replacement, 1).unwrap(),
+                Some(2)
+            );
+            tx.commit().unwrap();
+        }
+        runtime.request_replacement_sync(replacement.clone());
+        assert_eq!(runtime.status().queued_count, 1);
+
+        host.release(&active);
+        host.wait_for_starts(2).await;
+        host.release(&replacement);
+        for _ in 0..100 {
+            if runtime.status().running_count == 0 {
+                break;
+            }
+            sleep(TokioDuration::from_millis(10)).await;
+        }
+        let record = integrations::sync_runtime_record(&host.conn.lock().unwrap(), &replacement)
+            .unwrap()
+            .unwrap();
+        assert_eq!(record.configuration_generation, 2);
+        assert_eq!(record.integration.sync_status, "succeeded");
+    }
+
+    #[tokio::test]
+    async fn prepare_failures_and_cancellation_advance_the_provider_queue() {
+        for failure_code in ["transient", "provider_data"] {
+            let host = FakeRuntimeHost::new(HandlerMode::Success);
+            let runtime = IntegrationSyncRuntime::new(host.clone());
+            let first = host.integration(None);
+            let second = host.integration(None);
+            host.set_mode(&first, HandlerMode::ControlledFailure(failure_code));
+
+            assert!(matches!(
+                runtime.request(first.clone(), SyncTrigger::Manual),
+                SyncRequestResult::Accepted
+            ));
+            host.wait_for_starts(1).await;
+            assert!(matches!(
+                runtime.request(second.clone(), SyncTrigger::Manual),
+                SyncRequestResult::Queued
+            ));
+            host.release(&first);
+            host.wait_for_starts(2).await;
+            assert_eq!(
+                host.record_state(&first).last_sync_error_code.as_deref(),
+                Some(failure_code)
+            );
+            assert_eq!(host.record_state(&second).sync_status, "succeeded");
+        }
+
+        let host = FakeRuntimeHost::new(HandlerMode::Success);
+        let runtime = IntegrationSyncRuntime::new(host.clone());
+        let first = host.integration(None);
+        let second = host.integration(None);
+        host.set_mode(&first, HandlerMode::Blocking);
+        assert!(matches!(
+            runtime.request(first.clone(), SyncTrigger::Manual),
+            SyncRequestResult::Accepted
+        ));
+        host.wait_for_starts(1).await;
+        assert!(matches!(
+            runtime.request(second.clone(), SyncTrigger::Manual),
+            SyncRequestResult::Queued
+        ));
+        runtime.cancel_connection(&first);
+        host.wait_for_starts(2).await;
+        assert_eq!(
+            host.record_state(&first).last_sync_error_code.as_deref(),
+            Some("cancelled")
+        );
+        assert_eq!(host.record_state(&second).sync_status, "succeeded");
+    }
+
+    #[tokio::test]
+    async fn commit_failure_terminalizes_and_advances_the_provider_queue() {
+        let host = FakeRuntimeHost::new(HandlerMode::Controlled);
+        let runtime = IntegrationSyncRuntime::new(host.clone());
+        let first = host.integration(None);
+        let second = host.integration(None);
+        host.fail_commit(&first);
+
+        assert!(matches!(
+            runtime.request(first.clone(), SyncTrigger::Manual),
+            SyncRequestResult::Accepted
+        ));
+        host.wait_for_starts(1).await;
+        assert!(matches!(
+            runtime.request(second.clone(), SyncTrigger::Manual),
+            SyncRequestResult::Queued
+        ));
+        host.release(&first);
+        host.wait_for_starts(2).await;
+        host.release(&second);
+        for _ in 0..100 {
+            if runtime.status().running_count == 0 {
+                break;
+            }
+            sleep(TokioDuration::from_millis(10)).await;
+        }
+
+        let failed = host.record_state(&first);
+        assert_eq!(failed.sync_status, "failed");
+        assert_eq!(failed.last_sync_error_code.as_deref(), Some("local_commit"));
+        assert!(failed.last_successful_sync_at.is_none());
+        assert_eq!(host.record_state(&second).sync_status, "succeeded");
+        let events = host.events.lock().unwrap();
+        assert_eq!(
+            events
+                .iter()
+                .filter(|event| event.connection_id == first && event.state == "terminal")
+                .count(),
+            1
+        );
     }
 
     #[tokio::test]
@@ -1119,11 +1694,23 @@ mod tests {
         assert_eq!(runtime.status().running_count, 0);
         assert!(host.cancelled.load(Ordering::SeqCst));
         assert!(matches!(
-            runtime.request(id, SyncTrigger::Manual),
+            runtime.request(id.clone(), SyncTrigger::Manual),
             SyncRequestResult::Rejected { .. }
         ));
         assert_eq!(*host.domain_commits.lock().unwrap(), 0);
         assert_eq!(*host.success_commits.lock().unwrap(), 0);
+        let persisted = host.record_state(&id);
+        assert_eq!(persisted.sync_status, "failed");
+        assert_eq!(persisted.last_sync_error_code.as_deref(), Some("cancelled"));
+        assert_eq!(
+            host.events
+                .lock()
+                .unwrap()
+                .iter()
+                .filter(|event| event.connection_id == id && event.state == "terminal")
+                .count(),
+            1
+        );
     }
 
     #[tokio::test]
@@ -1235,6 +1822,110 @@ mod tests {
         assert!(!serialized.contains("https://"));
         assert!(!serialized.contains("credential"));
         assert!(!serialized.contains("payload"));
+    }
+
+    #[test]
+    fn reconciliation_commit_failure_rolls_back_snapshot_and_records_bounded_failure() {
+        let host = FakeRuntimeHost::new(HandlerMode::Success);
+        let id = host.integration(None);
+        let old_events = calendar_ics::normalize(
+            b"BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:old\r\nDTSTART:20260924T090000Z\r\nDTEND:20260924T100000Z\r\nSUMMARY:Old\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+            &id,
+            Utc::now(),
+        )
+        .unwrap();
+        crate::db::repositories::external_events::reconcile(
+            &mut host.conn.lock().unwrap(),
+            &id,
+            &old_events,
+            crate::db::repositories::external_events::ReconciliationMode::ObservedOnly,
+            None,
+            "2026-09-24T08:00:00Z",
+        )
+        .unwrap();
+        let new_events = calendar_ics::normalize(
+            b"BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nUID:new\r\nDTSTART:20260924T110000Z\r\nDTEND:20260924T120000Z\r\nSUMMARY:New\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n",
+            &id,
+            Utc::now(),
+        )
+        .unwrap();
+        let conn = host.conn.lock().unwrap();
+        integrations::runtime_mark_running(&conn, &id, 1, "manual", "2026-09-24T10:00:00Z")
+            .unwrap();
+        conn.execute_batch(
+            "CREATE TRIGGER fail_integration_success BEFORE UPDATE ON integrations
+             WHEN NEW.sync_status='succeeded'
+             BEGIN SELECT RAISE(ABORT, 'injected commit failure'); END;",
+        )
+        .unwrap();
+        let result = commit_prepared(
+            &conn,
+            PreparedSync {
+                connection_id: id.clone(),
+                configuration_generation: 1,
+                outcome: PreparedSyncOutcome::Ics {
+                    events: new_events,
+                    etag: Some("new-etag".into()),
+                    last_modified: None,
+                    validator_origin: "https://calendar.example".into(),
+                    window_start: "2026-09-24T00:00:00Z".into(),
+                    window_end: "2026-09-25T00:00:00Z".into(),
+                },
+            },
+            "2026-09-24T10:01:00Z",
+            "2026-09-24T10:31:00Z",
+        );
+        assert!(result.is_err());
+        assert_eq!(
+            conn.query_row(
+                "SELECT count(*) FROM external_events WHERE connection_id=?1 AND external_id='old' AND status='active'",
+                [&id],
+                |row| row.get::<_, i64>(0),
+            )
+            .unwrap(),
+            1
+        );
+        assert_eq!(
+            conn.query_row(
+                "SELECT count(*) FROM external_events WHERE connection_id=?1 AND external_id='new'",
+                [&id],
+                |row| row.get::<_, i64>(0),
+            )
+            .unwrap(),
+            0
+        );
+        let after_rollback = integrations::get_by_id(&conn, &id).unwrap().unwrap();
+        assert_eq!(after_rollback.sync_status, "syncing");
+        assert!(after_rollback.last_successful_sync_at.is_none());
+        assert!(after_rollback.last_sync_etag.is_none());
+        conn.execute_batch("DROP TRIGGER fail_integration_success;")
+            .unwrap();
+        let failure = SyncFailure {
+            code: "local_commit",
+            message: "Local synchronized data could not be committed",
+            connection_status: "degraded",
+        };
+        integrations::runtime_finish_failure(
+            &conn,
+            &id,
+            1,
+            integrations::SyncFailureUpdate {
+                code: failure.code,
+                message: failure.message,
+                next_allowed: "2026-09-24T10:02:00Z",
+                connection_status: failure.connection_status,
+                retry_after: None,
+            },
+        )
+        .unwrap();
+        let terminal = integrations::get_by_id(&conn, &id).unwrap().unwrap();
+        assert_eq!(terminal.sync_status, "failed");
+        assert_eq!(
+            terminal.last_sync_error_code.as_deref(),
+            Some("local_commit")
+        );
+        assert!(terminal.last_successful_sync_at.is_none());
+        assert!(terminal.last_sync_etag.is_none());
     }
 
     #[test]
