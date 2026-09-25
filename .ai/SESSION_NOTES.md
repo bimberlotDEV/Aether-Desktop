@@ -6,7 +6,7 @@
 | Session date | 2026-09-25 |
 | Active task | `SCHOOL-SCOPE-002` |
 | Agent | Codex |
-| State | verified; publication pending |
+| State | complete; draft PR open |
 
 ## Current work
 
@@ -24,10 +24,10 @@ Focused suites pass: School repository 13, source migration 2, MyTimetable 22,
 Brightspace 4, and School/frontend IPC 34. Full validation passes: 202 Rust tests,
 132 frontend tests across 37 files, production frontend build, Rust formatting,
 strict Clippy, TypeScript, lint, and diff check. No dependency was added; ADR-031
-records the durable boundary.
+records the durable boundary. Implementation commit `508866f` is pushed to
+`origin/agent/school-scope-002`; draft PR #63 is open.
 
 ## Exact resume point
 
-Publish the verified task-owned paths with `scripts/publish-task.ps1`, record the
-implementation commit and draft PR, then stop. Do not begin Pulse, AI, or richer
-LMS semantics.
+The task is complete. Await review and exact-head CI on draft PR #63. Do not begin
+Pulse, AI, or richer LMS semantics under this contract.

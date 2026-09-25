@@ -6,7 +6,7 @@
 | --- | --- |
 | Schema version | 3 |
 | Task ID | `SCHOOL-SCOPE-002` |
-| Status | `self_review` |
+| Status | `complete` |
 | Owner | Codex |
 | Last updated | 2026-09-25 |
 | Related milestone | Aether 27 — explicit School Space source scoping |
@@ -161,7 +161,8 @@ Passed. The ownership model, schema, migration ambiguity rule, Brightspace bound
 - 2026-09-25: Accepted ADR-031 and completed the readiness gate.
 - Added migration 018, connection-bound repository reads/mutations, typed IPC, and focused source/group setup UI.
 - Added deterministic isolation, lifecycle, migration, restart, provider, and frontend regression coverage.
-- Completed full validation and a distinct final-diff/security/scope self-review; publication remains.
+- Completed full validation and a distinct final-diff/security/scope self-review.
+- Published implementation commit `508866f` to `agent/school-scope-002` and opened draft PR #63.
 
 ## Verification evidence
 
@@ -198,10 +199,10 @@ Passed. The changed-path list is task-owned and contains migration 018, the Scho
 
 | Field | Value |
 | --- | --- |
-| Commit | `None` |
-| Remote branch | `None` |
-| Draft PR | `None` |
-| Exact-head CI | `None` |
+| Commit | `508866f` (`fix(school): scope schedules to explicit sources`) |
+| Remote branch | `origin/agent/school-scope-002` |
+| Draft PR | [#63](https://github.com/bimberlotDEV/Aether-Desktop/pull/63) |
+| Exact-head CI | Pending after publication; local required validation passed. |
 
 ## Stop condition
 
