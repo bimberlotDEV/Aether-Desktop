@@ -6,7 +6,7 @@
 | Session date | 2026-09-25 |
 | Active task | `AI-ROUTER-001` |
 | Agent | Codex |
-| State | verified; publication pending |
+| State | complete; draft PR open |
 
 ## Current work
 
@@ -27,9 +27,12 @@ lint, production build, Rust formatting, strict Clippy, and diff checks. No depe
 School/Calendar/Integration Sync change, tool execution, or local runtime was added.
 ADR-032 extends ADR-021.
 
+Implementation commit `11233f7` is pushed to `origin/agent/ai-router`; draft PR
+[#64](https://github.com/bimberlotDEV/Aether-Desktop/pull/64) is open. Exact-head CI
+is pending; all required local validation passed.
+
 ## Exact resume point
 
-Self-review is complete. Publish the task-owned implementation with conventional
-commit `feat(ai): add provider-neutral routing foundation`, push `agent/ai-router`,
-open the Aether 28 draft PR, then record commit/PR publication state and mark the
-handoff complete.
+The task is complete. Await review and exact-head CI on draft PR #64. Do not begin
+`LOCAL-LLM-001`, `AI-CAL-001`, tool-enabled routing, or a packaged runtime under
+this contract.

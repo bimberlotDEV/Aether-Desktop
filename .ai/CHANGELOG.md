@@ -36,6 +36,7 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Verification:** Focused native AI tests and 34 focused frontend/IPC tests; `cargo test` (216), `pnpm test` (136 across 37 files), TypeScript, lint, production build, Rust format, strict Clippy, and diff checks — Pass.
 - **Decisions/deviations:** ADR-032 extends rather than replaces ADR-021. No dependency, local runtime, tools, calendar behavior, arbitrary endpoint, vision, or embedding was added. The approval token boundary is native and fully tested; a dedicated approval-prompt UI remains later work, so default sensitive Aether context fails truthfully unless policy explicitly permits attached context.
 - **Follow-up:** `LOCAL-LLM-001`, `AI-CAL-001` native tool foundation, tool-enabled router integration, and optional packaged runtime.
+- **Publication:** Implementation commit `11233f7` is pushed to `origin/agent/ai-router`; draft PR [#64](https://github.com/bimberlotDEV/Aether-Desktop/pull/64) is open.
 
 ## 2026-09-25 — `SCHOOL-SCOPE-002` — Connection-bound School Space schedules
 

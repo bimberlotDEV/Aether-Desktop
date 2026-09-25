@@ -6,7 +6,7 @@
 | --- | --- |
 | Schema version | 3 |
 | Task ID | `AI-ROUTER-001` |
-| Status | `self_review` |
+| Status | `complete` |
 | Owner | Codex |
 | Last updated | 2026-09-25 |
 | Related milestone | Aether 28 — AI Router Phase 1 |
@@ -147,7 +147,12 @@ Passed. The final changed-path list is limited to AI routing/backend/privacy/set
 
 ## Publication state
 
-Pending implementation commit, push, and draft PR.
+| Field | Value |
+| --- | --- |
+| Implementation commit | `11233f7` (`feat(ai): add provider-neutral routing foundation`) |
+| Remote branch | `origin/agent/ai-router` |
+| Draft PR | [#64](https://github.com/bimberlotDEV/Aether-Desktop/pull/64) |
+| Exact-head CI | Pending after publication; all required local validation passed. |
 
 ## Manual desktop smoke steps
 
