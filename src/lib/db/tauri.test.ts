@@ -61,6 +61,7 @@ import {
   initializeProfile,
   createIntegration,
   listIntegrations,
+  requestIntegrationSync,
   listExternalEvents,
   getSchoolSchedule,
   setSchoolGroup,
@@ -152,6 +153,17 @@ describe('Tauri database boundary', () => {
     })
     expect(invoke).toHaveBeenNthCalledWith(2, 'list_integrations')
     expect(JSON.stringify(invoke.mock.calls[0])).not.toContain('credential')
+  })
+
+  it('accepts the truthful queued Integration sync request outcome', async () => {
+    invoke.mockResolvedValueOnce({ status: 'queued' })
+
+    await expect(requestIntegrationSync('integration-2')).resolves.toEqual({
+      status: 'queued',
+    })
+    expect(invoke).toHaveBeenCalledWith('request_integration_sync', {
+      connectionId: 'integration-2',
+    })
   })
 
   it('exposes external calendar records through a bounded read-only command', async () => {

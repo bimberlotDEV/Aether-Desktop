@@ -26,6 +26,17 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-09-25 — `INT-SYNC-002` — Fair and terminal Integration synchronization
+
+- **Type:** Security, fix, runtime, and test
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review
+- **Summary:** Added a bounded per-provider FIFO so distinct same-provider connections progress fairly while duplicate same-connection work coalesces, and made every persisted sync start converge on one terminal event and truthful state. Local reconciliation/commit failure now rolls back cached data and validators before recording sanitized retryable `local_commit` failure metadata.
+- **Files:** `src-tauri/src/integration_sync.rs`, Integration repository terminal guards, typed request-result schema/test, ADR-030, and `.ai/*` task records.
+- **Verification:** Focused Integration Sync (17), Integration repository (7), MyTimetable (22), Brightspace (4), CAL-ICS (21), subscribed-calendar (2), and generation-filtered (9) tests; `cargo test` (196 tests), Rust formatting, strict Clippy, `pnpm typecheck`, `pnpm lint`, `pnpm test` (132 tests across 37 files), `pnpm build`, and `git diff --check` — Pass.
+- **Decisions/deviations:** Retained ADR-030 provider serialization and the global semaphore. Queue entries capture generation and trigger, dequeue revalidates current eligibility, and terminal cleanup advances FIFO directly. `Accepted` remains the existing start-reserved outcome; `Queued` is the only public enum addition. No migration, dependency, or new ADR was required; ADR-030 was amended.
+- **Follow-up:** `SCHOOL-SCOPE-002` remains the release blocker. Pulse, AI Router, AI calendar, and Aether 27 were not started.
+
 ## 2026-09-25 — `CAL-SUB-ROTATE-001` — Generation-safe subscribed-calendar replacement
 
 - **Type:** Security, fix, migration, and test
