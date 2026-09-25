@@ -6,7 +6,7 @@
 | Session date | 2026-09-25 |
 | Active task | `INT-SYNC-002` |
 | Agent | Codex |
-| State | verified; publication pending |
+| State | published |
 
 ## Current work
 
@@ -33,8 +33,10 @@ validation passes: 196 Rust tests, 132 frontend tests across 37 files, productio
 frontend build, Rust formatting, strict Clippy, TypeScript, lint, and diff check.
 No migration or dependency was added; ADR-030 was amended.
 
+Implementation commit `e4d0baf` is pushed to
+`origin/agent/integration-sync-002`, and draft PR #62 is open.
+
 ## Exact resume point
 
-Publish the verified task commit and open the Aether 26 draft PR. After recording
-the commit/PR in the task contract, stop. `SCHOOL-SCOPE-002` remains the release
-blocker and must not be started in this task.
+Wait for review/CI on draft PR #62. `SCHOOL-SCOPE-002` remains the release blocker
+and must not be started in this task.

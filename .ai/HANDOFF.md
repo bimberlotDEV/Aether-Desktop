@@ -6,7 +6,7 @@
 | --- | --- |
 | Schema version | 3 |
 | Task ID | `INT-SYNC-002` |
-| Status | `self_review` |
+| Status | `complete` |
 | Owner | Codex |
 | Last updated | 2026-09-25 |
 | Related milestone | Aether 26 — Integration Sync Runtime hardening |
@@ -184,10 +184,10 @@ Passed. The complete diff is limited to the shared runtime, narrow Integration t
 
 | Field | Value |
 | --- | --- |
-| Commit | `None` |
-| Remote branch | `None` |
-| Draft PR | `None` |
-| Exact-head CI | `None` |
+| Commit | `e4d0baf` |
+| Remote branch | `origin/agent/integration-sync-002` |
+| Draft PR | [#62](https://github.com/bimberlotDEV/Aether-Desktop/pull/62) |
+| Exact-head CI | Pending |
 
 ## Stop condition
 
