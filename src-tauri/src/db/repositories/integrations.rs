@@ -14,6 +14,7 @@ const AUTH_TYPES: &[&str] = &[
     "oauth_authorization_code",
 ];
 const SYNC_MODES: &[&str] = &["manual", "periodic", "app_start", "app_resume", "webhook"];
+const RETIRED_PROVIDER_IDS: &[&str] = &["brightspace"];
 const INTEGRATION_COLS: &str = "id, provider_id, enabled, advertised_capabilities_json, effective_capabilities_json, auth_type, sync_modes_json, sync_config_json, connection_status, sync_status, disconnect_reason, last_attempted_at, last_successful_sync_at, next_allowed_sync_at, last_sync_error_code, last_sync_error_message, last_sync_etag, last_sync_last_modified, sync_cursor, rate_limit_remaining, retry_after_at, credential_expires_at, credential_rotated_at, sync_execution_scope, created_at, updated_at";
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
@@ -192,6 +193,12 @@ pub fn create(conn: &Connection, input: &IntegrationCreateInput) -> Result<Integ
     let provider_id = input.provider_id.trim();
     if provider_id.is_empty() || provider_id.chars().count() > 100 {
         return Err("Integration provider ID must contain 1 to 100 characters".to_string());
+    }
+    if RETIRED_PROVIDER_IDS
+        .iter()
+        .any(|retired| provider_id.eq_ignore_ascii_case(retired))
+    {
+        return Err("This Integration provider is no longer supported".to_string());
     }
     if !AUTH_TYPES.contains(&input.auth_type.as_str()) {
         return Err("Invalid Integration authentication type".to_string());
@@ -473,6 +480,29 @@ mod tests {
         assert!(!serde_json::to_string(&created)
             .unwrap()
             .contains("credential_key"));
+    }
+
+    #[test]
+    fn rejects_retired_provider_ids_without_affecting_legacy_reads() {
+        let conn = setup();
+        let mut retired = input();
+        for provider_id in ["brightspace", "Brightspace"] {
+            retired.provider_id = provider_id.into();
+            assert_eq!(
+                create(&conn, &retired).unwrap_err(),
+                "This Integration provider is no longer supported"
+            );
+        }
+
+        conn.execute(
+            "INSERT INTO integrations(id,provider_id,auth_type) VALUES ('legacy','brightspace','ics_feed')",
+            [],
+        )
+        .unwrap();
+        assert_eq!(
+            get_by_id(&conn, "legacy").unwrap().unwrap().provider_id,
+            "brightspace"
+        );
     }
 
     #[test]

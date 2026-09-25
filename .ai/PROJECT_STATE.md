@@ -96,7 +96,7 @@ The current verified product foundation includes:
 * native subscribed-calendar ingestion and a read-only MyTimetable connector;
 * aggregate-bounded ICS parsing/recurrence and origin-isolated conditional redirect handling;
 * generation-safe subscribed-calendar replacement with atomic credential rotation and stale-work rejection;
-* a calendar-only Brightspace renewable-ICS connector;
+* safe compatibility cleanup for retired subscribed-calendar connections;
 * native Integration Sync runtime with deterministic lifecycle, retry-gating, recovery, fair per-provider FIFO scheduling, and atomic terminal Calendar/Integration completion coverage;
 * ICS-first Today, Week, and Upcoming timetable views whose explicit parent School Space connection bindings and per-source groups prevent provider-wide or cross-account reads;
 * automated quality gates.
@@ -114,10 +114,12 @@ There is no requirement for a cloud account to use the core product.
 
 # Current milestone state
 
-`SCHOOL-SCOPE-002` is verified. Each active parent School Space now owns explicit
-connection bindings and per-source MyTimetable groups; all schedule reads derive
-their authority from that Space, while Brightspace remains calendar-only and is not
-projected into timetable lesson views.
+`SCHOOL-BSP-REMOVE-001` removes the calendar-only Brightspace connector. MyTimetable
+remains the sole School timetable authority. Generic CAL-ICS, subscribed-calendar,
+credential, replacement, Integration Sync, ExternalEvent, Calendar Core, and School
+source persistence remain intact. Legacy Brightspace rows remain readable, never
+sync or enter School views, and can be explicitly removed with their native secret
+and dependent cached data.
 
 ## Product development milestones
 
@@ -186,6 +188,7 @@ projected into timetable lesson views.
 | `CAL-SUB-ROTATE-001` | Generation-safe calendar replacement   | `complete` | Atomic credential rotation, durable generations, guarded runtime completion, cancellation follow-up, and cache-preserving first-sync failures are verified. |
 | `INT-SYNC-002`       | Fair Integration sync runtime           | `complete` | Same-provider connections use bounded FIFO scheduling, generation-aware dequeue, and one terminal path with rollback-safe local commit failure handling. |
 | `SCHOOL-SCOPE-002`   | Explicit School source scoping          | `complete` | Parent School Spaces authorize connection IDs and per-source groups; same provider/group labels cannot cross connection or Space boundaries. |
+| `SCHOOL-BSP-REMOVE-001` | Retire Brightspace integration        | `complete` | Brightspace is no longer advertised, connectable, synchronizable, or School-associated; legacy rows remain readable and explicitly removable. |
 
 ---
 
@@ -224,16 +227,16 @@ Public Beta is not considered complete until the external evidence requirements 
 
 | Check                                       | Last verified result | Verified date | Notes                                                                           |
 | ------------------------------------------- | -------------------- | ------------- | ------------------------------------------------------------------------------- |
-| `pnpm check`                                | Pass                 | 2026-09-25    | Equivalent gates pass: typecheck, lint, and 132/132 frontend tests across 37 files. |
-| `pnpm typecheck`                            | Pass                 | 2026-09-25    | Strict School source/group IPC contracts compile cleanly.                       |
-| `pnpm lint`                                 | Pass                 | 2026-09-25    | Frontend lint remains clean.                                                     |
-| `pnpm test`                                 | Pass                 | 2026-09-25    | 132/132 frontend tests across 37 files pass.                                    |
-| `pnpm build`                                | Pass                 | 2026-09-25    | Alpha 0.5.0 production frontend build passes.                                   |
+| `pnpm check`                                | Pass                 | 2026-09-26    | Equivalent gates pass: typecheck, lint, and 133/133 frontend tests across 37 files. |
+| `pnpm typecheck`                            | Pass                 | 2026-09-26    | Strict Integration and School IPC contracts compile cleanly.                    |
+| `pnpm lint`                                 | Pass                 | 2026-09-26    | Frontend lint remains clean.                                                     |
+| `pnpm test`                                 | Pass                 | 2026-09-26    | 133/133 frontend tests across 37 files pass.                                    |
+| `pnpm build`                                | Pass                 | 2026-09-26    | Alpha 0.5.0 production frontend build passes.                                   |
 | `pnpm audit --audit-level high`             | Pass                 | 2026-08-29    | No known high-severity vulnerabilities reported.                                |
-| `cargo test`                                | Pass                 | 2026-09-25    | 202/202 all-feature Rust tests pass, including School source isolation and migration coverage. |
+| `cargo test`                                | Pass                 | 2026-09-26    | 202/202 Rust tests pass, including retired-provider, cleanup, runtime, School, and MyTimetable coverage. |
 | `cargo build --release`                     | Pass                 | 2026-08-29    | Optimized Aether 0.5.0 Windows executable builds and starts.                    |
-| `cargo fmt --check`                         | Pass                 | 2026-09-25    | Rust formatting clean.                                                          |
-| `cargo clippy --all-targets -- -D warnings` | Pass                 | 2026-09-25    | Relevant targets/features warning-free.                                         |
+| `cargo fmt --check`                         | Pass                 | 2026-09-26    | Rust formatting clean.                                                          |
+| `cargo clippy --all-targets -- -D warnings` | Pass                 | 2026-09-26    | Relevant targets/features warning-free.                                         |
 | `pnpm tauri:build`                          | Pass                 | 2026-08-29    | Aether 0.5.0 x64 MSI and NSIS bundles build successfully.                       |
 | GitHub Actions                              | Pass                 | 2026-08-29    | Frontend quality/build and Rust validation pass on the recorded readiness head. |
 | Release startup smoke                       | Pass                 | 2026-08-29    | Optimized Aether 0.5.0 starts and exposes a responsive native window.           |
@@ -423,11 +426,15 @@ Potential slices include:
 3. external calendar event model (CAL-CORE-001 complete)
 4. MyTimetable integration (SCHOOL-MTT-001 complete)
 5. School Calendar (SCHOOL-SPACE-001 ICS-first timetable complete)
-6. Brightspace integration
-7. Pulse calendar/deadline integration
-8. GitHub integration
-9. automation integration
-10. additional personal modules
+6. Pulse calendar/deadline integration
+7. GitHub integration
+8. automation integration
+9. additional personal modules
+
+Brightspace rich integration is parked. The former calendar-only ICS connector was
+intentionally removed because official rich API access requires institution-managed
+authorization. Any future Brightspace work requires institution access plus a new
+explicit product and architecture task.
 
 This section is directional only.
 

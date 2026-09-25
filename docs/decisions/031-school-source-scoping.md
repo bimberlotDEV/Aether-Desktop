@@ -3,6 +3,11 @@
 - Status: Accepted
 - Date: 2026-09-25
 
+> **2026-09-25 product update:** `SCHOOL-BSP-REMOVE-001` retired the
+> Brightspace calendar connector. The Brightspace association clauses below are
+> retained as historical context for this decision; current School source discovery,
+> association, group selection, and timetable reads support MyTimetable only.
+
 ## Context
 
 The School timetable currently starts from a valid parent School Space but discovers MyTimetable sources, groups, and events provider-wide. Provider IDs and group strings are classifications, not ownership identities: two connections can expose the same group and must remain isolated, and multiple parent School Spaces need independent configuration.

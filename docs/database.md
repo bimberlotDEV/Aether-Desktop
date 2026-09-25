@@ -211,7 +211,9 @@ Migration `018_school_space_sources` makes a parent School Space's calendar owne
 
 Selected timetable groups are normalized beneath a source binding and keyed by `(school_space_id, connection_id, group_reference)`. The composite foreign key cascades when the binding is removed. Group text is therefore meaningful only inside one Space/connection pair; identical cohort names on different connections do not merge.
 
-Migration 018 converts the legacy `spaces.settings_json.schoolGroup` value only when exactly one subscribed MyTimetable connection exists. Zero or multiple candidates create no binding and require explicit reselection. Cached ExternalEvents, feed credentials, validators, and sync state are untouched. Brightspace bindings are allowed for explicit calendar-source ownership/status, but they have no timetable groups and do not add general Brightspace events to the current timetable views.
+Migration 018 converts the legacy `spaces.settings_json.schoolGroup` value only when exactly one subscribed MyTimetable connection exists. Zero or multiple candidates create no binding and require explicit reselection. Cached ExternalEvents, feed credentials, validators, and sync state are untouched.
+
+After `SCHOOL-BSP-REMOVE-001`, MyTimetable is the only supported School source. A legacy Brightspace Integration or source binding remains database-readable for explicit cleanup, but is omitted from School source discovery, cannot be newly associated, never contributes timetable events, and is removed with its credential and dependent rows through the existing Integration foreign-key lifecycle. No migration automatically deletes or reinterprets legacy data.
 
 ## Workspace export
 

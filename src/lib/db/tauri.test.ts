@@ -62,6 +62,7 @@ import {
   createIntegration,
   listIntegrations,
   requestIntegrationSync,
+  removeUnsupportedCalendarConnection,
   listExternalEvents,
   getSchoolSchedule,
   setSchoolSourceAssociation,
@@ -189,6 +190,14 @@ describe('Tauri database boundary', () => {
     })
     expect(invoke).toHaveBeenCalledWith('request_integration_sync', {
       connectionId: 'integration-2',
+    })
+  })
+
+  it('removes an unsupported calendar only through the narrow cleanup command', async () => {
+    invoke.mockResolvedValueOnce(true)
+    await expect(removeUnsupportedCalendarConnection('legacy-1')).resolves.toBe(true)
+    expect(invoke).toHaveBeenCalledWith('remove_unsupported_calendar_connection', {
+      connectionId: 'legacy-1',
     })
   })
 

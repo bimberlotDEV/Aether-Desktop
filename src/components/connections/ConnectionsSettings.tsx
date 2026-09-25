@@ -16,6 +16,7 @@ import {
   formatConnectionTime,
   calendarProviderDetails,
   isCalendarProvider,
+  isUnsupportedCalendarConnection,
   providerCatalog,
   safeErrorSummary,
   type CalendarProviderId,
@@ -111,6 +112,21 @@ export function ConnectionsSettings() {
                   connectionId: connection.id,
                 })
               }}
+              onRemoveUnsupported={() => {
+                if (
+                  !isUnsupportedCalendarConnection(
+                    connection.provider_id,
+                    connection.auth_type,
+                  )
+                )
+                  return
+                if (
+                  window.confirm(
+                    `Remove ${displayProviderId(connection.provider_id)}? Its private credential and cached calendar items will be deleted.`,
+                  )
+                )
+                  void connections.removeUnsupportedCalendar(connection)
+              }}
             />
           ))}
         </div>
@@ -195,6 +211,7 @@ function ConnectionCard({
   onRefresh,
   onDisconnect,
   onReplace,
+  onRemoveUnsupported,
 }: {
   connection: Integration
   updating: boolean
@@ -202,10 +219,15 @@ function ConnectionCard({
   onRefresh: () => void
   onDisconnect: () => void
   onReplace: () => void
+  onRemoveUnsupported: () => void
 }) {
   const status = connectionStatusDetails[connection.connection_status]
   const error = safeErrorSummary(connection.last_sync_error_message)
   const statusId = `connection-status-${connection.id}`
+  const unsupportedCalendar = isUnsupportedCalendarConnection(
+    connection.provider_id,
+    connection.auth_type,
+  )
 
   return (
     <Surface className="p-5">
@@ -215,76 +237,89 @@ function ConnectionCard({
             <h3 className="text-sm font-semibold text-[var(--color-text-primary)]">
               {displayProviderId(connection.provider_id)}
             </h3>
-            <StatusBadge label={status.label} tone={status.tone} />
             <StatusBadge
-              label={connection.enabled ? 'Enabled' : 'Disabled'}
-              tone={connection.enabled ? 'success' : 'quiet'}
+              label={unsupportedCalendar ? 'Unsupported' : status.label}
+              tone={unsupportedCalendar ? 'quiet' : status.tone}
             />
+            {!unsupportedCalendar && (
+              <StatusBadge
+                label={connection.enabled ? 'Enabled' : 'Disabled'}
+                tone={connection.enabled ? 'success' : 'quiet'}
+              />
+            )}
           </div>
           <p
             id={statusId}
             className="mt-1 text-xs leading-5 text-[var(--color-text-tertiary)]"
           >
-            {status.description}
+            {unsupportedCalendar
+              ? 'This saved connection type is unsupported by this Aether version.'
+              : status.description}
           </p>
         </div>
-        <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-[var(--color-text-primary)]">
-          <input
-            type="checkbox"
-            checked={connection.enabled}
-            disabled={updating}
-            aria-describedby={statusId}
-            onChange={(event) => onEnabledChange(event.target.checked)}
-            className="h-4 w-4 accent-[var(--color-accent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
-          />
-          {updating ? 'Saving…' : 'Enabled'}
-        </label>
+        {!unsupportedCalendar && (
+          <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-[var(--color-text-primary)]">
+            <input
+              type="checkbox"
+              checked={connection.enabled}
+              disabled={updating}
+              aria-describedby={statusId}
+              onChange={(event) => onEnabledChange(event.target.checked)}
+              className="h-4 w-4 accent-[var(--color-accent)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]"
+            />
+            {updating ? 'Saving…' : 'Enabled'}
+          </label>
+        )}
       </div>
 
-      <dl className="mt-5 grid gap-x-6 gap-y-4 text-sm sm:grid-cols-2 xl:grid-cols-3">
-        <Detail label="Sync state" value={displayCapability(connection.sync_status)} />
-        <Detail
-          label="Last attempted sync"
-          value={formatConnectionTime(connection.last_attempted_at)}
-        />
-        <Detail
-          label="Last successful sync"
-          value={formatConnectionTime(connection.last_successful_sync_at)}
-        />
-        {connection.next_allowed_sync_at && (
+      {!unsupportedCalendar && (
+        <dl className="mt-5 grid gap-x-6 gap-y-4 text-sm sm:grid-cols-2 xl:grid-cols-3">
+          <Detail label="Sync state" value={displayCapability(connection.sync_status)} />
           <Detail
-            label="Next allowed sync"
-            value={formatConnectionTime(connection.next_allowed_sync_at)}
+            label="Last attempted sync"
+            value={formatConnectionTime(connection.last_attempted_at)}
           />
-        )}
-        {connection.retry_after_at && (
           <Detail
-            label="Retry after"
-            value={formatConnectionTime(connection.retry_after_at)}
+            label="Last successful sync"
+            value={formatConnectionTime(connection.last_successful_sync_at)}
           />
-        )}
-        {connection.rate_limit_remaining !== null && (
-          <Detail
-            label="Requests remaining"
-            value={String(connection.rate_limit_remaining)}
-          />
-        )}
-      </dl>
+          {connection.next_allowed_sync_at && (
+            <Detail
+              label="Next allowed sync"
+              value={formatConnectionTime(connection.next_allowed_sync_at)}
+            />
+          )}
+          {connection.retry_after_at && (
+            <Detail
+              label="Retry after"
+              value={formatConnectionTime(connection.retry_after_at)}
+            />
+          )}
+          {connection.rate_limit_remaining !== null && (
+            <Detail
+              label="Requests remaining"
+              value={String(connection.rate_limit_remaining)}
+            />
+          )}
+        </dl>
+      )}
 
-      <div className="mt-5 grid gap-4 border-t border-[var(--color-border)] pt-4 sm:grid-cols-2">
-        <CapabilityList
-          label="Advertised capabilities"
-          capabilities={connection.advertised_capabilities}
-          description="Provider-declared capabilities."
-        />
-        <CapabilityList
-          label="Effective capabilities"
-          capabilities={connection.effective_capabilities}
-          description="Capabilities currently available to Aether."
-        />
-      </div>
+      {!unsupportedCalendar && (
+        <div className="mt-5 grid gap-4 border-t border-[var(--color-border)] pt-4 sm:grid-cols-2">
+          <CapabilityList
+            label="Advertised capabilities"
+            capabilities={connection.advertised_capabilities}
+            description="Provider-declared capabilities."
+          />
+          <CapabilityList
+            label="Effective capabilities"
+            capabilities={connection.effective_capabilities}
+            description="Capabilities currently available to Aether."
+          />
+        </div>
+      )}
 
-      {error && (
+      {error && !unsupportedCalendar && (
         <div
           className="mt-4 rounded-md border border-[var(--color-border)] bg-[var(--color-bg)] px-3 py-2"
           role="status"
@@ -297,12 +332,6 @@ function ConnectionCard({
       )}
       {isCalendarProvider(connection.provider_id) && (
         <div className="mt-4 border-t border-[var(--color-border)] pt-4">
-          {connection.provider_id === 'brightspace' && (
-            <p className="mb-3 text-xs leading-5 text-[var(--color-text-tertiary)]">
-              Calendar-only connection. Aether does not read Brightspace courses,
-              assignments, grades, or materials.
-            </p>
-          )}
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
@@ -329,6 +358,22 @@ function ConnectionCard({
               Disconnect
             </button>
           </div>
+        </div>
+      )}
+      {unsupportedCalendar && (
+        <div className="mt-4 border-t border-[var(--color-border)] pt-4">
+          <p className="mb-3 text-xs leading-5 text-[var(--color-text-tertiary)]">
+            This saved calendar connection is no longer supported. It will not sync, but
+            you can remove its private credential and cached items safely.
+          </p>
+          <button
+            type="button"
+            className="aether-button aether-button--secondary focus-ring"
+            disabled={updating}
+            onClick={onRemoveUnsupported}
+          >
+            Remove connection
+          </button>
         </div>
       )}
     </Surface>
@@ -439,18 +484,12 @@ function ProviderCatalog({
   )
 }
 
-function calendarProviderApi(providerId: CalendarProviderId) {
-  return providerId === 'brightspace'
-    ? {
-        validate: db.validateBrightspace,
-        connect: db.connectBrightspace,
-        replace: db.replaceBrightspaceLink,
-      }
-    : {
-        validate: db.validateMyTimetable,
-        connect: db.connectMyTimetable,
-        replace: db.replaceMyTimetableLink,
-      }
+function calendarProviderApi() {
+  return {
+    validate: db.validateMyTimetable,
+    connect: db.connectMyTimetable,
+    replace: db.replaceMyTimetableLink,
+  }
 }
 
 function CalendarProviderSetup({
@@ -465,7 +504,7 @@ function CalendarProviderSetup({
   onConnected: () => void
 }) {
   const provider = calendarProviderDetails(providerId)
-  const api = calendarProviderApi(providerId)
+  const api = calendarProviderApi()
   const [url, setUrl] = useState('')
   const [message, setMessage] = useState<string | null>(null)
   const [working, setWorking] = useState(false)
@@ -527,12 +566,6 @@ function CalendarProviderSetup({
         Paste the renewable HTTPS calendar subscription link from {provider.name}. It is
         stored as a private bearer credential and is never shown again.
       </p>
-      {providerId === 'brightspace' && (
-        <p className="mt-2 text-xs leading-5 text-[var(--color-text-secondary)]">
-          This connection imports calendar events only. It does not grant Aether access to
-          courses, assignments, grades, or materials.
-        </p>
-      )}
       <form className="mt-4 space-y-3" onSubmit={submit}>
         <label className="block text-sm font-medium text-[var(--color-text-primary)]">
           Calendar subscription link

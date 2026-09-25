@@ -5,115 +5,97 @@
 | Field | Value |
 | --- | --- |
 | Schema version | 3 |
-| Task ID | `SCHOOL-SCOPE-002` |
-| Status | `complete` |
+| Task ID | `SCHOOL-BSP-REMOVE-001` |
+| Status | `self_review` |
 | Owner | Codex |
 | Last updated | 2026-09-25 |
-| Related milestone | Aether 27 — explicit School Space source scoping |
+| Related milestone | Aether 30 — remove the Brightspace integration |
 | Classification | `planned_codex` |
-| Branch / worktree | `agent/school-scope-002` |
+| Branch / worktree | `agent/remove-brightspace` |
 
 ## Objective
 
-Make each active parent School Space an explicit native-owned authorization boundary for subscribed calendar connections and per-source MyTimetable group selection, eliminating provider-wide and group-name-based cross-connection reads.
+Remove Brightspace as an advertised, connectable, synchronizable, or School-associated provider while preserving provider-neutral subscribed-calendar infrastructure and allowing legacy Brightspace rows and credentials to be safely inspected and removed.
 
 ## Context
 
-- Aether 24 through 26 are merged on `origin/master` and provide hardened subscribed-calendar ingestion, generation-safe replacement, and fair/truthful synchronization.
-- The existing School read model validates a parent School Space but then lists groups, sources, and events across every `my_timetable` connection.
-- Existing School Spaces persist one legacy `schoolGroup` string in `spaces.settings_json`; provider ID and group text are not ownership boundaries.
-- Brightspace is a calendar-only normalized source and must not be interpreted as timetable groups, courses, assignments, or deadlines.
+- The shipped Brightspace connector exposes only renewable ICS calendar data, while the intended product requires rich courses, assignments, deadlines, and materials.
+- Rich Brightspace APIs require institution-managed application authorization and are not presently a universal self-service integration.
+- MyTimetable, CAL-ICS, subscribed-calendar replacement, DPAPI secrets, Integration Sync, ExternalEvent, Calendar Core, and normalized School source scoping are shared infrastructure and remain authoritative.
+- Existing databases may contain `provider_id = 'brightspace'`, encrypted feed credentials, cached ExternalEvents, and School source bindings.
 
 ## Success criteria
 
-- [x] Parent School Spaces persist explicit connection bindings with referential cleanup and independent per-source group selections.
-- [x] Every School schedule read begins from the requested active parent School Space and can return events only from its associated connection IDs.
-- [x] No association or no valid group selection returns zero timetable events with a truthful setup/reselection state; there is no provider-wide or all-group fallback.
-- [x] MyTimetable group discovery and validation are scoped to one associated connection, including when two connections expose the same group string.
-- [x] Multiple parent School Spaces can independently bind different or shared sources and update source/group configuration without mutating one another.
-- [x] Disabled associations remain visible with truthful cached/stale state, deletion removes bindings through foreign keys, and same-ID feed replacement preserves bindings.
-- [x] Brightspace can be explicitly associated and reports truthful source state but contributes no groups and no events to the timetable views.
-- [x] Existing legacy selections migrate only when exactly one MyTimetable connection exists; multiple candidates remain unassociated and require explicit choice.
-- [x] Subject child and non-School Spaces cannot own or query School source scope.
-- [x] The public School IPC remains minimal and exposes no URL, validator, credential, raw payload, configuration generation, or unrelated group list.
-- [x] Required focused and full validation passes.
+- [x] Brightspace is absent from provider catalog/setup UI, typed setup wrappers, native provider commands, and active runtime dispatch.
+- [x] Generic creation rejects the retired Brightspace provider ID, while MyTimetable setup and refresh remain operational.
+- [x] Legacy Brightspace rows remain readable without startup failure, never dispatch sync, and can be removed through a provider-neutral unsupported-connection cleanup path that removes credentials and cascaded data.
+- [x] School source discovery and association accept only MyTimetable; legacy Brightspace bindings/events never enter School timetable presentation or event queries.
+- [x] Shared CAL-ICS, subscribed-calendar, DPAPI, redirect/SSRF, validator, replacement-generation, Integration Sync, ExternalEvent, Calendar Core, and `school_space_sources` infrastructure remain intact.
+- [x] Current-state documentation records intentional removal and parked rich support; historical changelog and ADR records remain historical.
+- [x] Required focused and full validation passes, followed by final diff review; draft PR publication is the remaining mechanical step.
 
 ## In scope
 
-- Additive normalized School source/group persistence and migration 018.
-- Rust School source configuration, scoped read model, lifecycle behavior, and repository/migration tests.
-- Typed Tauri commands and minimal TypeScript models/wrappers.
-- Focused School setup UI for source association and per-MyTimetable-source group selection.
-- School frontend tests and durable architecture/database/task records.
+- Provider catalog, Connections setup/action presentation, frontend wrappers/types/tests.
+- Native Brightspace module/command removal and closed runtime dispatch update.
+- Small provider-neutral legacy cleanup command/service plus creation denylist for the retired ID.
+- School source query/association restriction and regression tests.
+- Current-state/task documentation and truthful retirement notes.
 
 ## Allowed paths
 
-- `src-tauri/src/db/migrations.rs`
-- `src-tauri/src/db/repositories/school_schedule.rs`
-- `src-tauri/src/commands.rs`
+- `src-tauri/src/brightspace.rs` (delete)
 - `src-tauri/src/lib.rs`
-- `src-tauri/src/diagnostics.rs` only for the latest-schema expectation
-- `src/lib/db/types.ts`
+- `src-tauri/src/commands.rs`
+- `src-tauri/src/integration_sync.rs`
+- `src-tauri/src/subscribed_calendar_provider.rs`
+- `src-tauri/src/db/repositories/integrations.rs`
+- `src-tauri/src/db/repositories/school_schedule.rs`
+- `src/hooks/useConnections.ts`
 - `src/lib/db/tauri.ts`
-- `src/lib/db/tauri.test.ts`
-- `src/hooks/useSchoolSchedule.ts`
-- `src/components/school/SchoolSchedule.tsx`
-- `src/components/school/SchoolSchedule.test.tsx`
-- `src/lib/school/schedule.ts` and tests only if source-state presentation requires a focused adjustment
-- `src-tauri/src/my_timetable.rs` and `src-tauri/src/brightspace.rs` only for lifecycle regression tests if repository coverage is insufficient
+- `src/lib/db/types.ts`
+- `src/lib/integrations/presentation.ts` and focused tests
+- `src/components/connections/ConnectionsSettings.tsx` and focused tests
+- `src/components/school/SchoolSchedule.tsx` and focused tests
 - `docs/database.md`
-- `docs/decisions/031-school-source-scoping.md`
-- `.ai/ARCHITECTURE.md`
-- `.ai/HANDOFF.md`
-- `.ai/TODO.md`
-- `.ai/PROJECT_STATE.md`
-- `.ai/SESSION_NOTES.md`
-- `.ai/CHANGELOG.md`
+- `docs/decisions/031-school-source-scoping.md` only to mark the historical Brightspace clause superseded by this task
+- `.ai/ARCHITECTURE.md`, `.ai/HANDOFF.md`, `.ai/TODO.md`, `.ai/PROJECT_STATE.md`, `.ai/SESSION_NOTES.md`, `.ai/CHANGELOG.md`
 
 ## Out of scope
 
-- Pulse, AI Router, AI calendar tools, Safe Actions, OAuth, courses, assignments, deadlines, or richer LMS semantics.
-- Integration Sync scheduling, CAL-ICS transport/parsing, subscribed-calendar replacement, credentials, or generic Calendar Core identity.
-- Injecting Brightspace general events into timetable Today/Week/Upcoming views.
-- School visual redesign beyond focused source/group setup and truthful states.
-- A generalized plugin schema or provider-defined School settings.
+- Changes to MyTimetable behavior, generic calendar ingestion, Calendar Core identity, sync scheduling semantics, DPAPI, redirect/SSRF policy, validators, or replacement generations.
+- Database migration or automatic deletion of legacy rows, credentials, cached events, or historical records.
+- A replacement LMS connector, OAuth, courses, assignments, deadlines, materials, Pulse, AI, or Safe Actions.
+- Rewriting historical changelog entries, historical ADR rationale, Git history, or unrelated UI.
 
 ## Architecture constraints
 
-- Connection ID is the authoritative ownership boundary; provider ID is validation/presentation metadata only and is not duplicated in the binding table.
-- Use normalized `school_space_sources` and `school_space_source_groups` tables with explicit cascading foreign keys.
-- The group table is keyed by `(school_space_id, connection_id, group_reference)` so group text is meaningful only inside one bound source and the schema can support multiple selected groups later.
-- Query authorization is derived entirely in Rust from `school_space_id`; the schedule request accepts no provider, connection, or group authority.
-- Configuration mutations validate an active top-level School Space and an existing supported subscribed-calendar connection.
-- Keep cached ExternalEvents untouched; association removal changes only School ownership/configuration.
-- Retain current local-time, all-day, cancellation, overlap, stale/cache, and bounded-view behavior.
+- `my_timetable` remains the sole active School timetable provider.
+- Runtime provider dispatch stays closed; a persisted unregistered provider is rejected before work starts.
+- Legacy cleanup is provider-neutral and limited to unsupported subscribed-calendar records; it cancels runtime work, deletes the native secret, and then deletes the owning Integration so existing foreign-key lifecycle cleanup applies.
+- The public Integration schema continues to accept string provider IDs so legacy/unknown rows remain readable.
+- No migration: retention until explicit user cleanup is safer and smaller than mutating or deleting sensitive legacy state during upgrade.
 
 ## Dependencies
 
-- Merged Aether 24 CAL-ICS hardening, Aether 25 generation-safe replacement, and Aether 26 Integration Sync hardening.
-- Existing Spaces, Integration, subscribed-calendar, ExternalEvent, School timetable, and typed IPC layers.
-- Accepted ADR-031.
+- Existing Integration Core, CAL-ICS, subscribed-calendar provider, DPAPI credential repository, Integration Sync Runtime, Calendar Core, MyTimetable, and School source scoping.
 - No new dependency.
 
 ## Risks and safeguards
 
-- **Cross-connection leakage:** every event/group query joins the requested Space's persisted connection binding before considering provider or group text.
-- **Ambiguous legacy ownership:** migration binds only when the global MyTimetable candidate count is exactly one; zero or multiple candidates produce no binding.
-- **Stale group after source change:** removing a binding cascades its selected groups; adding another source starts with no selected group.
-- **Deleted or disabled source:** connection deletion cascades binding/event rows; disabled rows remain associated and visible without alternate-source fallback.
-- **Brightspace semantic inflation:** it may be associated and shown as a calendar source, but is excluded from group discovery and timetable event queries.
-- **Broad IPC exposure:** return only source identity/provider/display/status, association state, selected groups, scoped options, and the existing event projection; add no secret or sync-internal field.
+- **Legacy credential orphaning:** cleanup resolves the existing private credential key, removes it first, and deletes the Integration only after secret removal succeeds.
+- **Accidental legacy sync:** runtime handler registration excludes the retired provider and focused startup/manual-request tests prove rejection.
+- **School leakage:** source listing and association accept only MyTimetable; event SQL already requires MyTimetable and receives regression coverage with persisted legacy rows/bindings.
+- **Shared-infrastructure regression:** shared modules are retained and their focused/full suites are required.
+- **Recreation through generic IPC:** Integration creation explicitly rejects retired provider IDs without changing generic provider-neutral persistence.
 
 ## Rollback considerations
 
-Code and UI changes are reversible on the task branch. Migration 018 is append-only; its binding/group rows are isolated metadata and cascade with their owning Space or Integration. Cached ExternalEvents and credentials are not migrated or deleted. Earlier code safely ignores the new tables, though source ownership configured after upgrade would not be enforced by an older binary.
+Code/UI changes are reversible on the task branch. No migration or automatic data mutation occurs. Users retain legacy state until explicit cleanup, and rollback can again interpret those records through the historical provider code if required.
 
 ## Required validation
 
-- Focused School repository source-scoping, same-group/different-connection, multiple-Space, lifecycle, child/non-School, and persistence tests.
-- Focused migration fresh/upgrade tests for unique and ambiguous legacy MyTimetable candidates.
-- Focused MyTimetable and Brightspace tests.
-- Focused School frontend and typed IPC tests.
+- Focused Integration repository, Integration Sync, unsupported subscribed-calendar cleanup, MyTimetable, School repository/UI, Connections/presentation/typed IPC, CAL-ICS, subscribed-calendar, and Calendar Core tests.
 - `cargo test --manifest-path src-tauri/Cargo.toml`
 - `cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`
 - `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings`
@@ -122,19 +104,19 @@ Code and UI changes are reversible on the task branch. Migration 018 is append-o
 - `pnpm test`
 - `pnpm build`
 - `git diff --check`
-- Focused desktop smoke steps recorded; automated native behavior remains the authoritative evidence if an interactive desktop session is unavailable.
+- Final diff review confirming shared ICS/MyTimetable infrastructure is intact.
 
 ## Independent review requirement
 
 | Field | Value |
 | --- | --- |
 | Required | No |
-| Reason | The repository workflow requires a distinct evidence-based self-review; no separate reviewer was requested. |
-| Reviewer scope | Connection-bound authorization, migration ambiguity, lifecycle cleanup, Brightspace semantics, IPC minimization, and multi-Space isolation. |
+| Reason | Repository workflow requires a distinct evidence-based self-review; no separate reviewer was requested. |
+| Reviewer scope | Runtime dispatch closure, legacy cleanup/credential ordering, School isolation, MyTimetable preservation, current documentation truth, and scope discipline. |
 
 ## Human decisions required
 
-None. The request explicitly chooses connection identity as the ownership boundary and permits deterministic one-candidate migration.
+None. The request explicitly chooses removal, retention of shared infrastructure, smallest safe legacy compatibility, no automatic reinterpretation, and draft-PR publication.
 
 ## Blocking decisions
 
@@ -144,66 +126,55 @@ None.
 
 | Check | State |
 | --- | --- |
-| Correct branch/worktree confirmed | Pass — `agent/school-scope-002` fast-forwarded to merged Aether 26 `origin/master` |
-| `git status` inspected | Pass — clean before contract/ADR updates |
+| Correct branch/worktree confirmed | Pass — clean `agent/remove-brightspace` at merged `origin/master` commit `1999a51` |
+| `git status` inspected | Pass — clean before contract updates |
 | User-owned changes identified | None |
-| Parallel task overlap checked | Pass — Aether 24–26 are merged; this branch owns migration 018 and School IPC/read model |
-| Serialization points identified | Migration ordering, School IPC contract, School source configuration, ADR-031 |
+| Parallel task overlap checked | Pass — prior School scoping task is merged; no PR exists for this branch |
+| Serialization points identified | Provider registry/commands, Integration runtime dispatch, generic connection cleanup, School source policy, current state docs |
 
 ## Readiness review
 
-Passed. The ownership model, schema, migration ambiguity rule, Brightspace boundary, IPC authority, UI scope, lifecycle semantics, rollback, validation, and stop condition are explicit. Implementation is in progress.
+Passed. Removal boundaries, legacy-data behavior, credential cleanup ordering, no-migration decision, School isolation, shared-infrastructure preservation, validation, rollback, publication, and stop condition are explicit. Production implementation may begin.
 
 ## Implementation log
 
-- 2026-09-25: Fetched and fast-forwarded the clean task branch to merged Aether 26.
-- 2026-09-25: Inspected the School repository/UI, Spaces hierarchy/settings, Integration/subscribed-calendar lifecycle, ExternalEvents, migrations 012–017, provider connectors, and ADRs 028–030.
-- 2026-09-25: Accepted ADR-031 and completed the readiness gate.
-- Added migration 018, connection-bound repository reads/mutations, typed IPC, and focused source/group setup UI.
-- Added deterministic isolation, lifecycle, migration, restart, provider, and frontend regression coverage.
-- Completed full validation and a distinct final-diff/security/scope self-review.
-- Published implementation commit `508866f` to `agent/school-scope-002` and opened draft PR #63.
+- 2026-09-25: Read the approved request and mandatory control documents; confirmed the clean task branch at merged Aether 27.
+- 2026-09-25: Classified repository references into production removal, current-state update, and historical/shared retention categories.
+- 2026-09-26: Removed the provider module, command/setup wrappers, runtime registration, catalog entry, capability presentation, and School association path.
+- 2026-09-26: Added generic unsupported-calendar cleanup, retired-ID creation rejection, legacy startup/sync/credential/cascade/School regression coverage, and truthful current-state documentation.
+- 2026-09-26: Completed focused/full validation and a distinct final-diff, security, shared-infrastructure, and scope review.
 
 ## Verification evidence
 
-- Focused School repository tests: 13 passed.
-- Focused School source migration tests: 2 passed.
-- Focused MyTimetable tests: 22 passed.
-- Focused Brightspace tests: 4 passed.
-- Focused School/frontend IPC tests: 34 passed across 3 files.
+- Integration repository retired-ID/legacy-read test: 1 passed.
+- Unsupported subscribed-calendar cleanup tests: 2 passed.
+- MyTimetable tests: 22 passed.
+- CAL-ICS tests: 21 passed.
+- Integration Sync Runtime tests: 18 passed.
+- School repository tests: 13 passed.
+- Calendar Core repository tests: 3 passed.
+- Focused Connections, presentation, School, and typed IPC tests: 46 passed across 4 files.
 - `cargo test --manifest-path src-tauri/Cargo.toml`: 202 passed.
-- `cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`: passed.
-- `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings`: passed.
-- `pnpm typecheck`: passed.
-- `pnpm lint`: passed.
-- `pnpm test`: 132 passed across 37 files.
-- `pnpm build`: passed.
-- `git diff --check`: passed.
+- `pnpm test`: 133 passed across 37 files.
+- `pnpm typecheck`, `pnpm lint`, `pnpm build`, Rust formatting, strict Clippy, and `git diff --check`: passed.
 
 ## Acceptance evidence
 
-- AC1/AC2/AC3: migration tables plus the binding-first event query; no-association and invalid-selection tests return zero events.
-- AC4/AC5: same-group/different-connection, multiple-MTT-source, two-Space, source-change, and group-change tests prove identity and configuration isolation.
-- AC6: disabled, disconnected, deleted, replacement-generation, and restart tests prove lifecycle semantics and persistence.
-- AC7: combined Brightspace/MyTimetable test proves Brightspace has no groups and contributes no timetable event.
-- AC8: unique-candidate and ambiguous-candidate upgrade tests prove deterministic fail-closed migration.
-- AC9: non-School and subject-child tests reject read and configuration ownership.
-- AC10: the School source schema exposes bounded identity/presentation/status/group fields only; UI tests verify no feed URL text.
-- AC11: all focused and repository gates above pass.
+- AC1: provider file and Tauri commands are deleted; frontend catalog/setup/wrappers contain no active Brightspace path.
+- AC2: retired provider IDs are rejected case-insensitively by generic creation; all 22 MyTimetable tests and active setup/refresh frontend tests pass.
+- AC3: legacy rows deserialize, manual/startup runtime requests reject before work, and generic cleanup removes the encrypted secret plus subscribed-calendar, ExternalEvent, and School-binding dependents.
+- AC4: School discovery, association, public schema, and UI now accept only MyTimetable; a seeded legacy binding/event remains invisible.
+- AC5: shared CAL-ICS, subscribed-calendar replacement, credential, Integration Sync, Calendar Core, ExternalEvent, and normalized School tables remain present and green.
+- AC6: no migration was added; current docs record intentional retirement and the institution-authorization gate while historical ADR/changelog evidence remains.
 
 ## Self-review
 
-Passed. The changed-path list is task-owned and contains migration 018, the School repository/IPC/UI, necessary diagnostics and documentation, and task records only. The schedule read accepts only `school_space_id` and a bounded range; connection and group authority are derived in Rust. Every group lookup is connection-scoped and every event joins the Space binding plus that connection's selected group. Brightspace is excluded from timetable events. Disabled cached behavior is preserved; disconnected/deleted sources cannot return events; foreign keys clean up ownership; replacement retains the same connection ID. No credential, feed URL, validator, raw payload, configuration generation, or new dependency crosses the School IPC. Pulse, AI, richer LMS entities, sync scheduling, CAL-ICS, and credential storage remain untouched.
+Passed. The final diff is limited to the provider/runtime/Connections/School removal, provider-neutral legacy cleanup, regression tests, and current task/documentation records. No generic parser, fetcher, redirect/SSRF rule, validator, generation guard, sync scheduling policy, ExternalEvent identity, Calendar Core contract, DPAPI implementation, migration, or MyTimetable behavior was removed or weakened. Cleanup cancels in-flight work, refuses supported connections, removes the native secret before deleting the Integration, and relies on existing foreign-key cascades. Remaining production `brightspace` text is only the explicit retired-ID creation guard; other source references are compatibility tests. Historical docs remain intentionally historical. No Pulse, AI, replacement LMS, dependency, or unrelated change was introduced.
 
 ## Publication state
 
-| Field | Value |
-| --- | --- |
-| Commit | `508866f` (`fix(school): scope schedules to explicit sources`) |
-| Remote branch | `origin/agent/school-scope-002` |
-| Draft PR | [#63](https://github.com/bimberlotDEV/Aether-Desktop/pull/63) |
-| Exact-head CI | Pending after publication; local required validation passed. |
+Verified implementation is ready for the required `scripts/publish-task.ps1` commit, push, and draft PR. Exact commit and PR are recorded after publication.
 
 ## Stop condition
 
-Stop after all acceptance criteria are evidenced, required checks pass, required records are updated, the implementation is committed and pushed on `agent/school-scope-002`, and an Aether 27 draft PR is open. Do not begin Pulse, AI Router, AI calendar, or richer School/LMS work.
+Stop after all acceptance criteria are evidenced, required checks pass, task records are updated, the implementation is committed and pushed on `agent/remove-brightspace`, and a draft PR is open. Do not begin a replacement LMS, Pulse, AI, or unrelated integration work.

@@ -1,7 +1,6 @@
 mod actions;
 mod ai;
 mod backup;
-mod brightspace;
 mod calendar;
 mod calendar_ics;
 mod commands;
@@ -204,6 +203,7 @@ pub fn run() {
             commands::list_integrations,
             commands::set_integration_enabled,
             commands::request_integration_sync,
+            commands::remove_unsupported_calendar_connection,
             commands::get_integration_sync_runtime_status,
             commands::configure_subscribed_calendar,
             commands::validate_subscribed_calendar_url,
@@ -212,11 +212,6 @@ pub fn run() {
             my_timetable::my_timetable_connect,
             my_timetable::my_timetable_replace,
             my_timetable::my_timetable_disconnect,
-            brightspace::brightspace_profile,
-            brightspace::brightspace_validate,
-            brightspace::brightspace_connect,
-            brightspace::brightspace_replace,
-            brightspace::brightspace_disconnect,
             // AI
             commands::ai_list_models,
             commands::ai_parse_action_proposals,

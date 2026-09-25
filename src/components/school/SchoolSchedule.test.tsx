@@ -201,7 +201,7 @@ describe('School schedule', () => {
     expect(screen.queryByText(/https?:\/\//)).not.toBeInTheDocument()
   })
 
-  it('shows disabled cached state and keeps Brightspace calendar-only', () => {
+  it('shows disabled cached MyTimetable state', () => {
     state.data = {
       events: [
         event(
@@ -219,21 +219,11 @@ describe('School schedule', () => {
           last_sync_error_code: 'network',
           last_sync_error_message: 'Offline',
         }),
-        source({
-          connection_id: 'bsp',
-          provider_id: 'brightspace',
-          display_name: 'Brightspace',
-          associated: true,
-          selected_groups: [],
-          group_options: [],
-          group_selection_valid: true,
-        }),
       ],
     }
     renderSchedule()
-    expect(screen.getByText(/latest calendar sync failed/)).toBeInTheDocument()
+    expect(screen.getByText(/disconnected or disabled/)).toBeInTheDocument()
     expect(screen.getByText('Cached lesson')).toBeInTheDocument()
-    expect(screen.getByText(/Calendar-only/)).toBeInTheDocument()
     expect(screen.getByText('Disabled')).toBeInTheDocument()
   })
 })

@@ -130,12 +130,11 @@ The first connected domains should focus on real personal utility:
 2. Connections
 3. Calendar
 4. MyTimetable
-5. Brightspace
-6. School Space improvements
-7. Pulse calendar/deadline relevance
-8. GitHub
-9. Automation / n8n
-10. additional integrations only after the core pattern is proven
+5. School Space improvements
+6. Pulse calendar/deadline relevance
+7. GitHub
+8. Automation / n8n
+9. additional integrations only after the core pattern is proven
 
 This section defines direction, not automatic implementation authorization.
 
@@ -152,6 +151,7 @@ This section defines direction, not automatic implementation authorization.
 | P0       | `SCHOOL-MTT-001`   | Connect MyTimetable schedule data                  | Product / Integration              | `done`         | `CAL-CORE-001`                                        | Read-only MyTimetable ICS subscriptions now import and reconcile schedule events safely and idempotently through shared Calendar/Sync Runtime ownership.                |
 | P0       | `CAL-ICS-SEC-001`  | Bound ICS resources and isolate redirect validators | Security / Integration            | `done`         | `CAL-ICS-001`, `INT-SYNC-001`                         | Shared calendar parsing is feed-budgeted during expansion and conditional validators never cross origins.                                                                 |
 | P0       | `SCHOOL-BSP-001`   | Connect Brightspace calendar data                  | Product / Integration              | `done`         | `CAL-CORE-001`, `CAL-ICS-001`, `INT-SYNC-001`, `SCHOOL-BSP-CAP-001` | Brightspace renewable ICS data synchronizes as general ExternalEvents without scraping credentials or pretending LMS API access exists. |
+| P0       | `SCHOOL-BSP-REMOVE-001` | Remove the Brightspace integration              | Product / Integration / Security   | `active`       | `SCHOOL-BSP-001`, `SCHOOL-SCOPE-002`                 | Brightspace is no longer advertised, connectable, synchronizable, or School-associated; legacy state remains readable and explicitly removable without weakening shared calendar infrastructure. |
 | P0       | `CAL-SUB-ROTATE-001` | Make feed replacement generation-safe             | Security / Integration              | `done`         | `CAL-ICS-SEC-001`                                     | Durable configuration generations, atomic replacement, and guarded runtime completion prevent prior-feed work from mutating current state.                               |
 | P1       | `INT-SYNC-002`     | Harden Integration Sync scheduling and terminal state | Security / Runtime               | `done`         | `INT-SYNC-001`, `CAL-SUB-ROTATE-001`                  | Distinct same-provider connections progress through a fair bounded FIFO and every started run reaches one truthful terminal outcome.                                      |
 | P1       | `SCHOOL-SCOPE-002` | Implement explicit School Space source scoping      | Security / Data                     | `done`         | `SCHOOL-SPACE-001`, `CAL-SUB-ROTATE-001`, `INT-SYNC-002` | Parent School Spaces authorize explicit connection IDs; group discovery and timetable reads cannot cross connection or Space boundaries.                                  |
@@ -291,8 +291,8 @@ Previously resolved items belong in `.ai/CHANGELOG.md`, including:
 | Connections                 | `complete`               | Truthful provider-neutral Settings UI is available; provider setup remains separate.   |
 | Calendar                    | `complete`               | Reuse the normalized bounded local event domain for approved consumers.                 |
 | MyTimetable                 | `complete`               | Preserve read-only native ICS synchronization and truthful connection state.            |
-| Brightspace                 | `calendar_ics_complete`  | Preserve the calendar-only boundary; OAuth and richer LMS semantics require new design. |
-| School connected experience | `ics_timetable_complete` | Brightspace/deadline work remains separately designed and unauthorized.                 |
+| Brightspace                 | `retired`                | Calendar-only ICS support was intentionally removed; reconsider only after institution-managed rich API authorization is available and a new task is approved. |
+| School connected experience | `ics_timetable_complete` | Preserve MyTimetable authority; deadline or richer LMS work remains separately designed and unauthorized. |
 | GitHub                      | `not_started`            | Build after generic Integration Core is proven.                                         |
 | Automation / n8n            | `needs_design`           | Define generic automation boundary before provider implementation.                      |
 
