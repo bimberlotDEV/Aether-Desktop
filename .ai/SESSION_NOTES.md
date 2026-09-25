@@ -6,7 +6,7 @@
 | Session date | 2026-09-26 |
 | Active task | `SCHOOL-BSP-REMOVE-001` |
 | Agent | Codex |
-| State | verified; publication next |
+| State | complete; draft PR open |
 
 ## Current work
 
@@ -29,7 +29,7 @@ diff check. No migration, dependency, Pulse, AI, or replacement LMS work was add
 
 ## Exact resume point
 
-Implementation, verification, and self-review are complete. Publish the task-owned
-paths on `agent/remove-brightspace`, open the draft PR, record the exact artifacts,
-and stop. Do not modify shared calendar behavior or begin replacement LMS, Pulse,
-or AI work.
+Implementation commit `57ca726` is pushed to `origin/agent/remove-brightspace` and
+draft PR #65 is open. The post-commit helper could not fork, but the required
+publication script's explicit push and PR creation succeeded. The task is complete;
+stop without beginning replacement LMS, Pulse, AI, or unrelated work.

@@ -6,7 +6,7 @@
 | --- | --- |
 | Schema version | 3 |
 | Task ID | `SCHOOL-BSP-REMOVE-001` |
-| Status | `self_review` |
+| Status | `complete` |
 | Owner | Codex |
 | Last updated | 2026-09-25 |
 | Related milestone | Aether 30 — remove the Brightspace integration |
@@ -173,7 +173,7 @@ Passed. The final diff is limited to the provider/runtime/Connections/School rem
 
 ## Publication state
 
-Verified implementation is ready for the required `scripts/publish-task.ps1` commit, push, and draft PR. Exact commit and PR are recorded after publication.
+Published implementation commit `57ca726` (`refactor(integrations): retire Brightspace connector`) to `origin/agent/remove-brightspace`; draft PR [#65](https://github.com/bimberlotDEV/Aether-Desktop/pull/65) is open. The post-commit hook could not fork its helper process, but `scripts/publish-task.ps1` completed its explicit push and PR creation successfully.
 
 ## Stop condition
 
