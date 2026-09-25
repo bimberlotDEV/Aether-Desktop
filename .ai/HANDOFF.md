@@ -5,205 +5,159 @@
 | Field | Value |
 | --- | --- |
 | Schema version | 3 |
-| Task ID | `SCHOOL-SCOPE-002` |
-| Status | `complete` |
+| Task ID | `AI-ROUTER-001` |
+| Status | `self_review` |
 | Owner | Codex |
 | Last updated | 2026-09-25 |
-| Related milestone | Aether 27 — explicit School Space source scoping |
+| Related milestone | Aether 28 — AI Router Phase 1 |
 | Classification | `planned_codex` |
-| Branch / worktree | `agent/school-scope-002` |
+| Branch / worktree | `agent/ai-router` |
 
 ## Objective
 
-Make each active parent School Space an explicit native-owned authorization boundary for subscribed calendar connections and per-source MyTimetable group selection, eliminating provider-wide and group-name-based cross-connection reads.
-
-## Context
-
-- Aether 24 through 26 are merged on `origin/master` and provide hardened subscribed-calendar ingestion, generation-safe replacement, and fair/truthful synchronization.
-- The existing School read model validates a parent School Space but then lists groups, sources, and events across every `my_timetable` connection.
-- Existing School Spaces persist one legacy `schoolGroup` string in `spaces.settings_json`; provider ID and group text are not ownership boundaries.
-- Brightspace is a calendar-only normalized source and must not be interpreted as timetable groups, courses, assignments, or deadlines.
+Replace the cloud-specific AI route selector with a Rust-owned provider-neutral backend contract, deterministic Local only / Cloud only / Automatic routing, native privacy/disclosure policy, typed routing settings, and richer content-free provenance while preserving DeepSeek/OpenAI streaming, cancellation, credentials, proposal parsing, and Safe Actions separation.
 
 ## Success criteria
 
-- [x] Parent School Spaces persist explicit connection bindings with referential cleanup and independent per-source group selections.
-- [x] Every School schedule read begins from the requested active parent School Space and can return events only from its associated connection IDs.
-- [x] No association or no valid group selection returns zero timetable events with a truthful setup/reselection state; there is no provider-wide or all-group fallback.
-- [x] MyTimetable group discovery and validation are scoped to one associated connection, including when two connections expose the same group string.
-- [x] Multiple parent School Spaces can independently bind different or shared sources and update source/group configuration without mutating one another.
-- [x] Disabled associations remain visible with truthful cached/stale state, deletion removes bindings through foreign keys, and same-ID feed replacement preserves bindings.
-- [x] Brightspace can be explicitly associated and reports truthful source state but contributes no groups and no events to the timetable views.
-- [x] Existing legacy selections migrate only when exactly one MyTimetable connection exists; multiple candidates remain unassociated and require explicit choice.
-- [x] Subject child and non-School Spaces cannot own or query School source scope.
-- [x] The public School IPC remains minimal and exposes no URL, validator, credential, raw payload, configuration generation, or unrelated group list.
-- [x] Required focused and full validation passes.
+- [ ] DeepSeek and OpenAI implement one closed `ModelBackend` contract and retain fixed official endpoints, classified errors, streaming, and cancellation.
+- [ ] `LocalOnly`, `CloudOnly`, and `Automatic` are deterministic; Local only truthfully fails because no local backend exists; no route changes after dispatch.
+- [ ] Typed capabilities, task profile, context budget, environment, tool-scope placeholder, privacy snapshot, route request, immutable route decision, closed reasons, and typed failures are native-owned.
+- [ ] Prompt/history and explicitly attached Aether context are classified natively; prohibited data cannot be cloud-serialized; sensitive disclosure and one-time approval foundations are enforced.
+- [ ] Typed AI routing settings round-trip through dedicated commands and never expose or store credentials in `app_settings`.
+- [ ] Migration 019 adds bounded route/disclosure provenance without rewriting historical content; legacy route semantics map deterministically.
+- [ ] AI Settings exposes truthful routing/privacy controls and no-local-runtime state; responses show locality-aware provenance without raw decision JSON or hashes.
+- [ ] Existing proposals and Safe Actions remain separate; no tools, local runtime, vision, embeddings, or provider fallback after dispatch are added.
+- [ ] Required focused and full validation passes; no School/Calendar/Integration Sync path changes.
 
-## In scope
+## In scope / allowed paths
 
-- Additive normalized School source/group persistence and migration 018.
-- Rust School source configuration, scoped read model, lifecycle behavior, and repository/migration tests.
-- Typed Tauri commands and minimal TypeScript models/wrappers.
-- Focused School setup UI for source association and per-MyTimetable-source group selection.
-- School frontend tests and durable architecture/database/task records.
-
-## Allowed paths
-
+- `src-tauri/src/ai/**`
+- AI-specific portions of `src-tauri/src/commands.rs` and command registration in `src-tauri/src/lib.rs`
 - `src-tauri/src/db/migrations.rs`
-- `src-tauri/src/db/repositories/school_schedule.rs`
-- `src-tauri/src/commands.rs`
-- `src-tauri/src/lib.rs`
+- `src-tauri/src/db/repositories/conversations.rs` and `settings.rs`
 - `src-tauri/src/diagnostics.rs` only for the latest-schema expectation
-- `src/lib/db/types.ts`
-- `src/lib/db/tauri.ts`
-- `src/lib/db/tauri.test.ts`
-- `src/hooks/useSchoolSchedule.ts`
-- `src/components/school/SchoolSchedule.tsx`
-- `src/components/school/SchoolSchedule.test.tsx`
-- `src/lib/school/schedule.ts` and tests only if source-state presentation requires a focused adjustment
-- `src-tauri/src/my_timetable.rs` and `src-tauri/src/brightspace.rs` only for lifecycle regression tests if repository coverage is insufficient
-- `docs/database.md`
-- `docs/decisions/031-school-source-scoping.md`
-- `.ai/ARCHITECTURE.md`
-- `.ai/HANDOFF.md`
-- `.ai/TODO.md`
-- `.ai/PROJECT_STATE.md`
-- `.ai/SESSION_NOTES.md`
-- `.ai/CHANGELOG.md`
+- AI-specific schemas/wrappers/hooks/components/routes/tests under `src/`
+- `docs/decisions/021-ai-provider-routing.md`, new ADR-032, `docs/database.md`
+- `.ai/ARCHITECTURE.md`, `.ai/HANDOFF.md`, `.ai/TODO.md`, `.ai/PROJECT_STATE.md`, `.ai/SESSION_NOTES.md`, `.ai/CHANGELOG.md`
+- publication scripts only through their existing interfaces
 
 ## Out of scope
 
-- Pulse, AI Router, AI calendar tools, Safe Actions, OAuth, courses, assignments, deadlines, or richer LMS semantics.
-- Integration Sync scheduling, CAL-ICS transport/parsing, subscribed-calendar replacement, credentials, or generic Calendar Core identity.
-- Injecting Brightspace general events into timetable Today/Week/Upcoming views.
-- School visual redesign beyond focused source/group setup and truthful states.
-- A generalized plugin schema or provider-defined School settings.
+- Ollama, llama.cpp, packaged runtimes, remote-private runtime implementations, discovery outside the closed registry, arbitrary endpoints, vision behavior, embeddings, context compression, native AI tools, calendar/task tools, and model tool execution.
+- School, Calendar, MyTimetable, Brightspace, Integration Sync, Pulse, or unrelated UI redesign/refactoring.
+- Reusing Safe Actions tokens for disclosure approval or allowing the model/frontend to lower native classification or authorize execution.
 
 ## Architecture constraints
 
-- Connection ID is the authoritative ownership boundary; provider ID is validation/presentation metadata only and is not duplicated in the binding table.
-- Use normalized `school_space_sources` and `school_space_source_groups` tables with explicit cascading foreign keys.
-- The group table is keyed by `(school_space_id, connection_id, group_reference)` so group text is meaningful only inside one bound source and the schema can support multiple selected groups later.
-- Query authorization is derived entirely in Rust from `school_space_id`; the schedule request accepts no provider, connection, or group authority.
-- Configuration mutations validate an active top-level School Space and an existing supported subscribed-calendar connection.
-- Keep cached ExternalEvents untouched; association removal changes only School ownership/configuration.
-- Retain current local-time, all-day, cancellation, overlap, stale/cache, and bounded-view behavior.
+- ADR-032 is the binding successor/extension to ADR-021 for routing, locality, disclosure, and provenance; ADR-021 remains binding for fixed endpoints and Safe Actions separation.
+- Registry order is stable and closed. Filtering order is registered, enabled, routing locality, health/availability, capabilities, context capacity, privacy, approval, preference, then registry order.
+- The route decision is created before request serialization and is not mutated after dispatch. A provider failure never chooses another backend/locality.
+- `ExecutionLocation` is security-relevant. DeepSeek/OpenAI are Cloud; Phase 1 registers no OnDevice or RemotePrivate backend.
+- Missing capability metadata is unsupported and unknown context capacity is conservative.
+- Native classification floors are prompt/history = Personal; explicit Note/Task/Memory/Vault context = Sensitive; credentials and unbounded/raw sources = Prohibited.
+- `CloudOnly` is standing consent only for ordinary prompt/history sent to its selected cloud backend. Sensitive Aether context follows disclosure policy and approval requirements.
+- `ToolScope` is an empty/future-compatible authorization contract only; it grants no execution ability.
+- Migration 019 is append-only and stores only IDs, enums, reason/capability summaries, disclosure categories, and approval metadata—never prompt/context/tool bodies, credentials, or raw provider errors.
 
 ## Dependencies
 
-- Merged Aether 24 CAL-ICS hardening, Aether 25 generation-safe replacement, and Aether 26 Integration Sync hardening.
-- Existing Spaces, Integration, subscribed-calendar, ExternalEvent, School timetable, and typed IPC layers.
-- Accepted ADR-031.
+- Existing ADR-011 context isolation, ADR-021 provider routing/proposals, DPAPI credential store, cancellable streaming runtime, conversation repository, app settings repository, and Safe Actions.
 - No new dependency.
 
 ## Risks and safeguards
 
-- **Cross-connection leakage:** every event/group query joins the requested Space's persisted connection binding before considering provider or group text.
-- **Ambiguous legacy ownership:** migration binds only when the global MyTimetable candidate count is exactly one; zero or multiple candidates produce no binding.
-- **Stale group after source change:** removing a binding cascades its selected groups; adding another source starts with no selected group.
-- **Deleted or disabled source:** connection deletion cascades binding/event rows; disabled rows remain associated and visible without alternate-source fallback.
-- **Brightspace semantic inflation:** it may be associated and shown as a calendar source, but is excluded from group discovery and timetable event queries.
-- **Broad IPC exposure:** return only source identity/provider/display/status, association state, selected groups, scoped options, and the existing event projection; add no secret or sync-internal field.
+- **Data egress:** native classification, cloud policy, and approval are checked before backend request construction; prohibited data is rejected.
+- **Hidden recipient change:** one immutable route is persisted and dispatched; no post-selection fallback exists.
+- **Legacy behavior regression:** legacy conversation provider/model fields are mapped deterministically and adapters reuse current request/SSE logic.
+- **Nondeterminism:** router accepts an ordered candidate slice and never depends on map iteration, races, scores, or model output.
+- **Sensitive provenance:** persisted JSON is generated from typed snapshots and tested not to contain request bodies.
+- **Settings corruption:** dedicated commands validate closed enums/identifiers; credentials remain only in the secure credential store.
 
 ## Rollback considerations
 
-Code and UI changes are reversible on the task branch. Migration 018 is append-only; its binding/group rows are isolated metadata and cascade with their owning Space or Integration. Cached ExternalEvents and credentials are not migrated or deleted. Earlier code safely ignores the new tables, though source ownership configured after upgrade would not be enforced by an older binary.
+Code/UI changes are reversible on the task branch. Migration 019 is append-only and nullable; older binaries ignore the added columns/settings. New routing settings have safe defaults when absent. Historical messages are not rewritten.
 
 ## Required validation
 
-- Focused School repository source-scoping, same-group/different-connection, multiple-Space, lifecycle, child/non-School, and persistence tests.
-- Focused migration fresh/upgrade tests for unique and ambiguous legacy MyTimetable candidates.
-- Focused MyTimetable and Brightspace tests.
-- Focused School frontend and typed IPC tests.
+- Focused router, privacy/approval, backend adapter, provenance/migration, settings, streaming/cancellation, provider, proposal/Safe Actions, and frontend AI tests.
 - `cargo test --manifest-path src-tauri/Cargo.toml`
 - `cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`
 - `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings`
-- `pnpm typecheck`
-- `pnpm lint`
-- `pnpm test`
-- `pnpm build`
+- `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`
 - `git diff --check`
-- Focused desktop smoke steps recorded; automated native behavior remains the authoritative evidence if an interactive desktop session is unavailable.
+- Focused desktop smoke steps recorded; automated native evidence is authoritative if interactive provider credentials are unavailable.
 
 ## Independent review requirement
 
 | Field | Value |
 | --- | --- |
 | Required | No |
-| Reason | The repository workflow requires a distinct evidence-based self-review; no separate reviewer was requested. |
-| Reviewer scope | Connection-bound authorization, migration ambiguity, lifecycle cleanup, Brightspace semantics, IPC minimization, and multi-Space isolation. |
+| Reason | The user did not request a separate agent/reviewer; workflow requires a distinct evidence-based self-review. |
+| Reviewer scope | Routing determinism, privacy/approval boundaries, provenance redaction, migration compatibility, backend regression, and forbidden-path review. |
 
-## Human decisions required
+## Human decisions / blockers
 
-None. The request explicitly chooses connection identity as the ownership boundary and permits deterministic one-candidate migration.
-
-## Blocking decisions
-
-None.
+None. The supplied task explicitly defines the modes, defaults, consent boundary, exclusions, validation, branch, and publication outcome.
 
 ## Worktree / ownership gate
 
 | Check | State |
 | --- | --- |
-| Correct branch/worktree confirmed | Pass — `agent/school-scope-002` fast-forwarded to merged Aether 26 `origin/master` |
-| `git status` inspected | Pass — clean before contract/ADR updates |
-| User-owned changes identified | None |
-| Parallel task overlap checked | Pass — Aether 24–26 are merged; this branch owns migration 018 and School IPC/read model |
-| Serialization points identified | Migration ordering, School IPC contract, School source configuration, ADR-031 |
+| Correct branch/worktree | Pass — clean `agent/ai-router` at merged Aether 27 head |
+| User-owned changes | None |
+| Parallel overlap | None identified |
+| Serialization points | Migration 019, AI registry/IPC/settings, conversation provenance, ADR-032 |
 
 ## Readiness review
 
-Passed. The ownership model, schema, migration ambiguity rule, Brightspace boundary, IPC authority, UI scope, lifecycle semantics, rollback, validation, and stop condition are explicit. Implementation is in progress.
+Passed. The objective, security authorities, consent behavior, compatibility mapping, schema strategy, allowed/forbidden paths, rollback, validation, publication, and stop condition are explicit. Production implementation may begin.
 
 ## Implementation log
 
-- 2026-09-25: Fetched and fast-forwarded the clean task branch to merged Aether 26.
-- 2026-09-25: Inspected the School repository/UI, Spaces hierarchy/settings, Integration/subscribed-calendar lifecycle, ExternalEvents, migrations 012–017, provider connectors, and ADRs 028–030.
-- 2026-09-25: Accepted ADR-031 and completed the readiness gate.
-- Added migration 018, connection-bound repository reads/mutations, typed IPC, and focused source/group setup UI.
-- Added deterministic isolation, lifecycle, migration, restart, provider, and frontend regression coverage.
-- Completed full validation and a distinct final-diff/security/scope self-review.
-- Published implementation commit `508866f` to `agent/school-scope-002` and opened draft PR #63.
+- 2026-09-25: Bootstrapped repository controls, confirmed clean `agent/ai-router`, inspected the existing AI provider/router/context/conversation/settings boundaries and ADR-021, accepted ADR-032, and passed the readiness gate.
+- Added the closed provider-neutral backend/capability contracts, deterministic three-mode router, native privacy/disclosure settings, approval-token foundation, migration 019 provenance, and focused AI settings/provenance UI.
+- Preserved fixed DeepSeek/OpenAI adapters, DPAPI credentials, request shaping, streaming, cancellation, proposal parsing, Safe Actions separation, and explicit Space context resolution.
+- Completed full validation and a distinct final-diff/security/scope self-review. Publication remains the only pending stop-condition item.
 
 ## Verification evidence
 
-- Focused School repository tests: 13 passed.
-- Focused School source migration tests: 2 passed.
-- Focused MyTimetable tests: 22 passed.
-- Focused Brightspace tests: 4 passed.
-- Focused School/frontend IPC tests: 34 passed across 3 files.
-- `cargo test --manifest-path src-tauri/Cargo.toml`: 202 passed.
-- `cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`: passed.
-- `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings`: passed.
+- Focused native AI backend/router/privacy/settings/context/provider/proposal/runtime tests are included in the final native suite.
+- Focused AI Settings/View/hooks/typed IPC tests: 34 passed across 4 files after the no-local-runtime regression case.
+- `cargo test --manifest-path src-tauri/Cargo.toml`: 216 passed.
+- `pnpm test`: 136 passed across 37 files.
 - `pnpm typecheck`: passed.
 - `pnpm lint`: passed.
-- `pnpm test`: 132 passed across 37 files.
 - `pnpm build`: passed.
+- `cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`: passed.
+- `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings`: passed.
 - `git diff --check`: passed.
 
 ## Acceptance evidence
 
-- AC1/AC2/AC3: migration tables plus the binding-first event query; no-association and invalid-selection tests return zero events.
-- AC4/AC5: same-group/different-connection, multiple-MTT-source, two-Space, source-change, and group-change tests prove identity and configuration isolation.
-- AC6: disabled, disconnected, deleted, replacement-generation, and restart tests prove lifecycle semantics and persistence.
-- AC7: combined Brightspace/MyTimetable test proves Brightspace has no groups and contributes no timetable event.
-- AC8: unique-candidate and ambiguous-candidate upgrade tests prove deterministic fail-closed migration.
-- AC9: non-School and subject-child tests reject read and configuration ownership.
-- AC10: the School source schema exposes bounded identity/presentation/status/group fields only; UI tests verify no feed URL text.
-- AC11: all focused and repository gates above pass.
+- Backend/compatibility: DeepSeek and OpenAI use one `ModelBackend`; current fixed endpoints, provider-specific shaping, classified errors, streaming, cancellation, credentials, and connection tests remain behind their adapters.
+- Modes/determinism: ordered native candidates implement Local only, Cloud only, and Automatic local-first policy; no local backend is fabricated; offline, fallback, capability, context, privacy, approval, provider, and model failures are typed.
+- Privacy/approval: native floors classify prompt/history as Personal and explicit/current-or-historical Aether context as Sensitive; Prohibited cannot select cloud; opaque five-minute one-time approvals bind request, backend, model, data inventory, and future tool-result inventory.
+- Settings/provenance: dedicated typed commands own validated settings; migration 019 adds content-free route/disclosure fields and deterministic legacy mapping; raw JSON/hashes remain off IPC.
+- UI: Settings exposes modes, fallback/disclosure policy, preferred cloud model, and truthful no-local-runtime copy; response provenance renders policy → locality → provider/model.
+- Scope: no School, Calendar, MyTimetable, Brightspace, Integration Sync, tool execution, local runtime, vision, embedding, dependency, or arbitrary endpoint change exists.
 
 ## Self-review
 
-Passed. The changed-path list is task-owned and contains migration 018, the School repository/IPC/UI, necessary diagnostics and documentation, and task records only. The schedule read accepts only `school_space_id` and a bounded range; connection and group authority are derived in Rust. Every group lookup is connection-scoped and every event joins the Space binding plus that connection's selected group. Brightspace is excluded from timetable events. Disabled cached behavior is preserved; disconnected/deleted sources cannot return events; foreign keys clean up ownership; replacement retains the same connection ID. No credential, feed URL, validator, raw payload, configuration generation, or new dependency crosses the School IPC. Pulse, AI, richer LMS entities, sync scheduling, CAL-ICS, and credential storage remain untouched.
+Passed. The final changed-path list is limited to AI routing/backend/privacy/settings, AI-specific IPC/persistence/UI/tests, migration diagnostics, ADR/database/architecture documentation, and task records. The router consumes a stable ordered registry and never mutates or reselects a decision after backend dispatch. Local only does not read cloud credentials and the UI no longer uses cloud-key status as local eligibility. Explicit legacy provider conversations map to Cloud only under the default Automatic setting; an explicit Local-only setting still overrides them. Request/context bodies, credentials, approval hashes, raw provider errors, and raw route/disclosure JSON do not cross provenance IPC or appear in staged content. No new dependency was added. Interactive cloud-provider smoke was not run because no owner API keys were supplied; deterministic adapter tests and the existing connection-test path are the evidence, with manual steps recorded for completion.
 
 ## Publication state
 
-| Field | Value |
-| --- | --- |
-| Commit | `508866f` (`fix(school): scope schedules to explicit sources`) |
-| Remote branch | `origin/agent/school-scope-002` |
-| Draft PR | [#63](https://github.com/bimberlotDEV/Aether-Desktop/pull/63) |
-| Exact-head CI | Pending after publication; local required validation passed. |
+Pending implementation commit, push, and draft PR.
+
+## Manual desktop smoke steps
+
+1. Open Settings → AI and verify Automatic, Cloud only, and Local only copy plus the no-local-runtime message.
+2. With no local runtime, select Local only and verify AI send remains unavailable/truthful without depending on cloud-key state.
+3. Select Cloud only, configure/test one existing provider key, send a prompt, cancel one stream, and verify completed/cancelled messages show Cloud provenance.
+4. Select Automatic, send an ordinary prompt, and verify `Automatic → Cloud` provenance because Phase 1 has no local candidate.
+5. Attach a Note under the default `Ask for Aether data` policy and verify dispatch is blocked with an approval-required message; select `Allow explicit attachments`, resend, and verify only displayed context is included.
+6. Restart Aether and verify routing settings and message provenance persist. Real-provider execution requires owner-supplied keys and was not run in this session.
 
 ## Stop condition
 
-Stop after all acceptance criteria are evidenced, required checks pass, required records are updated, the implementation is committed and pushed on `agent/school-scope-002`, and an Aether 27 draft PR is open. Do not begin Pulse, AI Router, AI calendar, or richer School/LMS work.
+Stop after the acceptance criteria are evidenced, required checks pass, self-review confirms no forbidden paths/secrets/unrelated changes, records are updated, the implementation is committed and pushed on `agent/ai-router`, and an Aether 28 draft PR is open.

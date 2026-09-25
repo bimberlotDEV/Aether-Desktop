@@ -11,19 +11,130 @@ const PROVIDERS: Array<{ id: AiProvider['id']; name: string; placeholder: string
 
 export function AiSettings() {
   const ai = useAiSettings()
+  const routing = ai.routingSettings
+
+  const saveRouting = (patch: Partial<typeof routing>) =>
+    ai.updateRouting({ ...routing, ...patch })
 
   return (
     <section>
       <div className="mb-4 flex items-center gap-2">
         <KeyRound size={16} className="text-[var(--color-text-secondary)]" />
         <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">
-          AI providers
+          AI routing and providers
         </h2>
       </div>
       <p className="mb-4 text-xs leading-relaxed text-[var(--color-text-tertiary)]">
-        Auto routing uses only providers configured here and shows the chosen route on
-        every response. It never retries through another provider without asking.
+        Aether selects one eligible route before dispatch and never switches providers or
+        locality after sending the request.
       </p>
+      <div className="mb-4 grid gap-3 rounded-xl border border-[var(--color-border)] bg-[var(--color-bg-secondary)] p-5 lg:grid-cols-2 xl:grid-cols-4">
+        <label className="text-xs text-[var(--color-text-secondary)]">
+          <span className="mb-1.5 block font-medium text-[var(--color-text-primary)]">
+            Routing
+          </span>
+          <select
+            aria-label="AI routing mode"
+            value={routing.mode}
+            disabled={!ai.isTauri || ai.loading}
+            onChange={(event) =>
+              void saveRouting({ mode: event.target.value as typeof routing.mode })
+            }
+            className="aether-field w-full px-3 py-2 text-sm"
+          >
+            <option value="local_only">Local only</option>
+            <option value="cloud_only">Cloud only</option>
+            <option value="automatic">Automatic</option>
+          </select>
+          <span className="mt-2 block leading-relaxed text-[var(--color-text-tertiary)]">
+            {routing.mode === 'local_only'
+              ? 'Runs on this device. Prompt and model processing stay on this device.'
+              : routing.mode === 'cloud_only'
+                ? 'Sends the displayed prompt and approved context to the selected cloud provider.'
+                : 'Uses an eligible local model first. Aether may offer cloud when local cannot satisfy the request.'}
+          </span>
+        </label>
+        <label className="text-xs text-[var(--color-text-secondary)]">
+          <span className="mb-1.5 block font-medium text-[var(--color-text-primary)]">
+            Automatic cloud fallback
+          </span>
+          <select
+            aria-label="Automatic cloud fallback"
+            value={routing.automaticCloudFallback}
+            disabled={!ai.isTauri || ai.loading || routing.mode !== 'automatic'}
+            onChange={(event) =>
+              void saveRouting({
+                automaticCloudFallback: event.target
+                  .value as typeof routing.automaticCloudFallback,
+              })
+            }
+            className="aether-field w-full px-3 py-2 text-sm"
+          >
+            <option value="never">Never</option>
+            <option value="prompt_only">Prompt only</option>
+            <option value="ask_when_needed">Ask when needed</option>
+          </select>
+          <span className="mt-2 block leading-relaxed text-[var(--color-text-tertiary)]">
+            Controls whether Automatic may consider cloud when no local model qualifies.
+          </span>
+        </label>
+        <label className="text-xs text-[var(--color-text-secondary)]">
+          <span className="mb-1.5 block font-medium text-[var(--color-text-primary)]">
+            Preferred cloud model
+          </span>
+          <select
+            aria-label="Preferred cloud model"
+            value={
+              routing.preferredCloudProvider && routing.preferredCloudModel
+                ? `${routing.preferredCloudProvider}:${routing.preferredCloudModel}`
+                : ''
+            }
+            disabled={!ai.isTauri || ai.loading}
+            onChange={(event) => {
+              const [provider, model] = event.target.value.split(':')
+              void saveRouting({
+                preferredCloudProvider: (provider || null) as
+                  'deepseek' | 'openai' | null,
+                preferredCloudModel: model || null,
+              })
+            }}
+            className="aether-field w-full px-3 py-2 text-sm"
+          >
+            <option value="">Product mode default</option>
+            <option value="deepseek:deepseek-v4-flash">DeepSeek V4 Flash</option>
+            <option value="deepseek:deepseek-v4-pro">DeepSeek V4 Pro</option>
+            <option value="openai:gpt-5-mini">OpenAI GPT-5 mini</option>
+            <option value="openai:gpt-5.2">OpenAI GPT-5.2</option>
+          </select>
+          <span className="mt-2 block leading-relaxed text-[var(--color-text-tertiary)]">
+            No local runtime is configured or available in this version.
+          </span>
+        </label>
+        <label className="text-xs text-[var(--color-text-secondary)]">
+          <span className="mb-1.5 block font-medium text-[var(--color-text-primary)]">
+            Cloud disclosure
+          </span>
+          <select
+            aria-label="Cloud disclosure policy"
+            value={routing.cloudDisclosurePolicy}
+            disabled={!ai.isTauri || ai.loading}
+            onChange={(event) =>
+              void saveRouting({
+                cloudDisclosurePolicy: event.target
+                  .value as typeof routing.cloudDisclosurePolicy,
+              })
+            }
+            className="aether-field w-full px-3 py-2 text-sm"
+          >
+            <option value="always_ask">Always ask</option>
+            <option value="ask_for_aether_data">Ask for Aether data</option>
+            <option value="allow_explicit_attachments">Allow explicit attachments</option>
+          </select>
+          <span className="mt-2 block leading-relaxed text-[var(--color-text-tertiary)]">
+            Explicit Note, Task, Memory, and Vault context is treated as sensitive.
+          </span>
+        </label>
+      </div>
       <div className="grid gap-3 lg:grid-cols-2">
         {PROVIDERS.map((provider) => (
           <ProviderCard

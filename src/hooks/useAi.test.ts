@@ -38,6 +38,9 @@ function message(
     model: null,
     routing_mode: null,
     route_reason: null,
+    route_policy_mode: null,
+    execution_location: null,
+    runtime_id: null,
     created_at: '2026-08-11T00:00:00Z',
     updated_at: '2026-08-11T00:00:00Z',
   }

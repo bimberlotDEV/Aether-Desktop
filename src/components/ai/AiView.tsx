@@ -40,6 +40,23 @@ function routeLabel(provider: string, model: string) {
   return model
 }
 
+function providerLabel(provider: string) {
+  if (provider === 'openai') return 'OpenAI'
+  if (provider === 'deepseek') return 'DeepSeek'
+  return provider
+}
+
+function provenanceLabel(message: AiMessage) {
+  const location =
+    message.execution_location === 'on_device'
+      ? 'Local'
+      : message.execution_location === 'remote_private'
+        ? 'Private remote'
+        : 'Cloud'
+  const prefix = message.route_policy_mode === 'automatic' ? 'Automatic → ' : ''
+  return `${prefix}${location} · ${providerLabel(message.provider ?? '')} · ${routeLabel(message.provider ?? '', message.model ?? '')}`
+}
+
 function modeFromMessage(message: AiMessage): AiMode {
   try {
     const mode = JSON.parse(message.metadata_json ?? '{}').mode
@@ -143,12 +160,11 @@ export function AiView({ spaceId }: { spaceId?: string }) {
   }, [chat.messages])
 
   const selected = list.conversations.find((item) => item.id === selectedId)
+  const routingMode = settings.routingSettings?.mode ?? 'automatic'
+  const routeConfigured =
+    routingMode === 'local_only' ? false : settings.status === 'configured'
   const canSend =
-    !!draft.trim() &&
-    !!selectedId &&
-    !chat.loading &&
-    !chat.streaming &&
-    settings.status === 'configured'
+    !!draft.trim() && !!selectedId && !chat.loading && !chat.streaming && routeConfigured
 
   async function createConversation() {
     try {
@@ -410,8 +426,7 @@ export function AiView({ spaceId }: { spaceId?: string }) {
                               className="mt-2 text-[10px] text-[var(--color-text-tertiary)]"
                               title={message.route_reason ?? undefined}
                             >
-                              {message.routing_mode === 'auto' ? 'Auto · ' : ''}
-                              {routeLabel(message.provider, message.model ?? '')} · Remote
+                              {provenanceLabel(message)}
                               {contextCountFromMessage(message) !== null
                                 ? ` · ${contextCountFromMessage(message)} context item${contextCountFromMessage(message) === 1 ? '' : 's'}`
                                 : ''}
@@ -483,9 +498,11 @@ export function AiView({ spaceId }: { spaceId?: string }) {
                     </button>
                   ))}
                 </div>
-                {settings.status !== 'configured' && (
+                {!routeConfigured && (
                   <p className="mb-2 text-xs text-[var(--color-warning)]">
-                    Configure a DeepSeek API key in Settings before sending.
+                    {routingMode === 'local_only'
+                      ? 'No local runtime is configured. Local only cannot send this request.'
+                      : 'Configure a cloud provider API key in Settings before sending.'}
                   </p>
                 )}
                 <div className="aether-field flex items-end gap-2 rounded-xl p-2">

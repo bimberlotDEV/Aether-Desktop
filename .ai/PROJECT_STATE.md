@@ -80,7 +80,7 @@ The current verified product foundation includes:
 * Pulse 2.0;
 * Safe Actions;
 * DeepSeek/OpenAI provider support;
-* transparent AI routing;
+* provider-neutral deterministic Local only / Cloud only / Automatic AI routing with native privacy settings and content-free route provenance;
 * persisted AI conversations;
 * approved AI Task/Note proposals;
 * Windows tray lifecycle;
@@ -114,10 +114,11 @@ There is no requirement for a cloud account to use the core product.
 
 # Current milestone state
 
-`SCHOOL-SCOPE-002` is verified. Each active parent School Space now owns explicit
-connection bindings and per-source MyTimetable groups; all schedule reads derive
-their authority from that Space, while Brightspace remains calendar-only and is not
-projected into timetable lesson views.
+`AI-ROUTER-001` is verified. DeepSeek and OpenAI now share a provider-neutral
+backend contract; Rust owns deterministic Local only, Cloud only, and Automatic
+routing, data classification/disclosure policy, typed settings, context budgeting,
+and immutable content-free route provenance. No local runtime or AI tool execution
+has been added.
 
 ## Product development milestones
 
@@ -186,6 +187,7 @@ projected into timetable lesson views.
 | `CAL-SUB-ROTATE-001` | Generation-safe calendar replacement   | `complete` | Atomic credential rotation, durable generations, guarded runtime completion, cancellation follow-up, and cache-preserving first-sync failures are verified. |
 | `INT-SYNC-002`       | Fair Integration sync runtime           | `complete` | Same-provider connections use bounded FIFO scheduling, generation-aware dequeue, and one terminal path with rollback-safe local commit failure handling. |
 | `SCHOOL-SCOPE-002`   | Explicit School source scoping          | `complete` | Parent School Spaces authorize connection IDs and per-source groups; same provider/group labels cannot cross connection or Space boundaries. |
+| `AI-ROUTER-001`      | Provider-neutral AI Router Phase 1       | `complete` | Local/Cloud/Automatic routing, native disclosure policy/settings, and immutable provenance preserve DeepSeek/OpenAI behavior without adding tools or a local runtime. |
 
 ---
 
@@ -197,7 +199,7 @@ Current repository product version:
 0.5.0
 ```
 
-Current verified repository quality snapshot is based on the latest recorded 0.5.0 readiness work.
+Current verified repository quality snapshot includes the completed AI-ROUTER-001 work on 0.5.0.
 
 The product remains Alpha.
 
@@ -224,13 +226,13 @@ Public Beta is not considered complete until the external evidence requirements 
 
 | Check                                       | Last verified result | Verified date | Notes                                                                           |
 | ------------------------------------------- | -------------------- | ------------- | ------------------------------------------------------------------------------- |
-| `pnpm check`                                | Pass                 | 2026-09-25    | Equivalent gates pass: typecheck, lint, and 132/132 frontend tests across 37 files. |
+| `pnpm check`                                | Pass                 | 2026-09-25    | Equivalent gates pass: typecheck, lint, and 136/136 frontend tests across 37 files. |
 | `pnpm typecheck`                            | Pass                 | 2026-09-25    | Strict School source/group IPC contracts compile cleanly.                       |
 | `pnpm lint`                                 | Pass                 | 2026-09-25    | Frontend lint remains clean.                                                     |
-| `pnpm test`                                 | Pass                 | 2026-09-25    | 132/132 frontend tests across 37 files pass.                                    |
+| `pnpm test`                                 | Pass                 | 2026-09-25    | 136/136 frontend tests across 37 files pass.                                    |
 | `pnpm build`                                | Pass                 | 2026-09-25    | Alpha 0.5.0 production frontend build passes.                                   |
 | `pnpm audit --audit-level high`             | Pass                 | 2026-08-29    | No known high-severity vulnerabilities reported.                                |
-| `cargo test`                                | Pass                 | 2026-09-25    | 202/202 all-feature Rust tests pass, including School source isolation and migration coverage. |
+| `cargo test`                                | Pass                 | 2026-09-25    | 216/216 Rust tests pass, including AI routing/privacy/backend/settings/provenance and existing School/Calendar regressions. |
 | `cargo build --release`                     | Pass                 | 2026-08-29    | Optimized Aether 0.5.0 Windows executable builds and starts.                    |
 | `cargo fmt --check`                         | Pass                 | 2026-09-25    | Rust formatting clean.                                                          |
 | `cargo clippy --all-targets -- -D warnings` | Pass                 | 2026-09-25    | Relevant targets/features warning-free.                                         |
@@ -346,6 +348,7 @@ Full rationale belongs in `.ai/ARCHITECTURE.md` or dedicated ADR files.
 | `ADR-015` | Aether uses an internal semantic interface system with a distinctive shell and reusable primitives.                           | Accepted                |
 | `ADR-016` | Sources require explicit authorization and bounded metadata-only indexing before file intelligence.                           | Accepted                |
 | `ADR-022` | Portable archives include verified managed Vault bytes and restore through explicit approval and rollback-safe replacement.   | Accepted                |
+| `ADR-032` | AI uses a closed provider-neutral backend contract with deterministic locality routing and a separate native disclosure authority. | Accepted |
 
 Historical superseded ADRs remain valid historical records.
 

@@ -223,6 +223,8 @@ pub fn run() {
             commands::ai_preview_action_proposal,
             commands::ai_list_providers,
             commands::ai_list_provider_statuses,
+            commands::ai_get_routing_settings,
+            commands::ai_set_routing_settings,
             commands::ai_set_provider_api_key,
             commands::ai_remove_provider_api_key,
             commands::ai_test_provider_connection,

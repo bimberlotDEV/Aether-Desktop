@@ -4,30 +4,32 @@
 | --- | --- |
 | Schema version | 2 |
 | Session date | 2026-09-25 |
-| Active task | `SCHOOL-SCOPE-002` |
+| Active task | `AI-ROUTER-001` |
 | Agent | Codex |
-| State | complete; draft PR open |
+| State | verified; publication pending |
 
 ## Current work
 
-Aether 27 explicit School source scoping is implemented and verified on
-`agent/school-scope-002`. Migration 018 adds normalized Space→connection bindings
-and per-source group rows. Rust derives all schedule authority from an active parent
-School Space; same provider/group labels cannot cross connections or Spaces.
+Aether 28 AI Router Phase 1 is implemented and verified on `agent/ai-router`.
+DeepSeek and OpenAI share one closed provider-neutral backend contract. Rust owns
+typed capabilities, conservative context budgets, Local only / Cloud only /
+Automatic policy, native data classification/disclosure policy, and one immutable
+route decision before request serialization. No backend/locality switch occurs after
+dispatch.
 
-Disabled sources retain scoped cached data with truthful state. Disconnected or
-deleted sources return no events, deletion cascades bindings, and same-connection
-feed replacement preserves them. Brightspace can be associated but remains
-calendar-only and is not projected into timetable views.
+Migration 019 adds content-free route/disclosure provenance and deterministic legacy
+mapping. Dedicated commands own validated routing settings; credentials remain in
+the existing DPAPI store. The UI exposes truthful routing/privacy controls, no-local-
+runtime state, and locality-aware response provenance without raw hashes or JSON.
 
-Focused suites pass: School repository 13, source migration 2, MyTimetable 22,
-Brightspace 4, and School/frontend IPC 34. Full validation passes: 202 Rust tests,
-132 frontend tests across 37 files, production frontend build, Rust formatting,
-strict Clippy, TypeScript, lint, and diff check. No dependency was added; ADR-031
-records the durable boundary. Implementation commit `508866f` is pushed to
-`origin/agent/school-scope-002`; draft PR #63 is open.
+Validation passes: 216 Rust tests, 136 frontend tests across 37 files, TypeScript,
+lint, production build, Rust formatting, strict Clippy, and diff checks. No dependency,
+School/Calendar/Integration Sync change, tool execution, or local runtime was added.
+ADR-032 extends ADR-021.
 
 ## Exact resume point
 
-The task is complete. Await review and exact-head CI on draft PR #63. Do not begin
-Pulse, AI, or richer LMS semantics under this contract.
+Self-review is complete. Publish the task-owned implementation with conventional
+commit `feat(ai): add provider-neutral routing foundation`, push `agent/ai-router`,
+open the Aether 28 draft PR, then record commit/PR publication state and mark the
+handoff complete.
