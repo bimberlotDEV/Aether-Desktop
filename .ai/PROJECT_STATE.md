@@ -98,7 +98,7 @@ The current verified product foundation includes:
 * generation-safe subscribed-calendar replacement with atomic credential rotation and stale-work rejection;
 * a calendar-only Brightspace renewable-ICS connector;
 * native Integration Sync runtime with deterministic lifecycle, retry-gating, recovery, fair per-provider FIFO scheduling, and atomic terminal Calendar/Integration completion coverage;
-* ICS-first Today, Week, and Upcoming timetable views in the existing parent School Space, scoped to a persisted user-selected group from bounded local normalized data;
+* ICS-first Today, Week, and Upcoming timetable views whose explicit parent School Space connection bindings and per-source groups prevent provider-wide or cross-account reads;
 * automated quality gates.
 
 Aether remains local-first.
@@ -114,11 +114,10 @@ There is no requirement for a cloud account to use the core product.
 
 # Current milestone state
 
-`INT-SYNC-002` is complete. Distinct same-provider connections now progress through
-a bounded FIFO without duplicate starvation, and every persisted sync start reaches
-one terminal event and truthful success, bounded failure/cancellation, stale, removed,
-or disabled outcome. Local commit failure rolls back the authoritative snapshot and
-records sanitized retryable `local_commit` state.
+`SCHOOL-SCOPE-002` is verified. Each active parent School Space now owns explicit
+connection bindings and per-source MyTimetable groups; all schedule reads derive
+their authority from that Space, while Brightspace remains calendar-only and is not
+projected into timetable lesson views.
 
 ## Product development milestones
 
@@ -186,6 +185,7 @@ records sanitized retryable `local_commit` state.
 | `CAL-ICS-SEC-001`    | Shared calendar security hardening     | `complete` | Feed-wide occurrence/property budgets and origin-associated redirect validators are enforced in shared CAL-ICS with cache-preserving failures. |
 | `CAL-SUB-ROTATE-001` | Generation-safe calendar replacement   | `complete` | Atomic credential rotation, durable generations, guarded runtime completion, cancellation follow-up, and cache-preserving first-sync failures are verified. |
 | `INT-SYNC-002`       | Fair Integration sync runtime           | `complete` | Same-provider connections use bounded FIFO scheduling, generation-aware dequeue, and one terminal path with rollback-safe local commit failure handling. |
+| `SCHOOL-SCOPE-002`   | Explicit School source scoping          | `complete` | Parent School Spaces authorize connection IDs and per-source groups; same provider/group labels cannot cross connection or Space boundaries. |
 
 ---
 
@@ -224,13 +224,13 @@ Public Beta is not considered complete until the external evidence requirements 
 
 | Check                                       | Last verified result | Verified date | Notes                                                                           |
 | ------------------------------------------- | -------------------- | ------------- | ------------------------------------------------------------------------------- |
-| `pnpm check`                                | Pass                 | 2026-08-29    | 100/100 frontend tests across 33 files; typecheck and lint pass.                |
-| `pnpm typecheck`                            | Pass                 | 2026-09-25    | No frontend contract change; strict TypeScript remains clean.                   |
+| `pnpm check`                                | Pass                 | 2026-09-25    | Equivalent gates pass: typecheck, lint, and 132/132 frontend tests across 37 files. |
+| `pnpm typecheck`                            | Pass                 | 2026-09-25    | Strict School source/group IPC contracts compile cleanly.                       |
 | `pnpm lint`                                 | Pass                 | 2026-09-25    | Frontend lint remains clean.                                                     |
 | `pnpm test`                                 | Pass                 | 2026-09-25    | 132/132 frontend tests across 37 files pass.                                    |
 | `pnpm build`                                | Pass                 | 2026-09-25    | Alpha 0.5.0 production frontend build passes.                                   |
 | `pnpm audit --audit-level high`             | Pass                 | 2026-08-29    | No known high-severity vulnerabilities reported.                                |
-| `cargo test`                                | Pass                 | 2026-09-25    | 196/196 all-feature Rust tests pass with sync fairness and terminal-state coverage. |
+| `cargo test`                                | Pass                 | 2026-09-25    | 202/202 all-feature Rust tests pass, including School source isolation and migration coverage. |
 | `cargo build --release`                     | Pass                 | 2026-08-29    | Optimized Aether 0.5.0 Windows executable builds and starts.                    |
 | `cargo fmt --check`                         | Pass                 | 2026-09-25    | Rust formatting clean.                                                          |
 | `cargo clippy --all-targets -- -D warnings` | Pass                 | 2026-09-25    | Relevant targets/features warning-free.                                         |
@@ -266,7 +266,7 @@ These blockers must NOT prevent unrelated local product development unless a tas
 
 No unresolved high-severity repository engineering risk is currently recorded in this snapshot.
 
-The remaining Aether 22 findings for Integration Sync scheduling (`INT-SYNC-002`) and School source association (`SCHOOL-SCOPE-002`) remain separately scoped candidates.
+All four high-severity Aether 22 School/Calendar blockers are now resolved: CAL-ICS resource/redirect hardening, generation-safe feed replacement, Integration Sync scheduling/terminalization, and explicit School source association.
 
 Previously resolved risks include:
 
@@ -274,6 +274,7 @@ Previously resolved risks include:
 * path-derived credential encryption;
 * inconsistent product version/maturity documentation.
 * subscribed-calendar replacement accepting stale prior-feed work.
+* provider/group-wide School timetable reads crossing connection and Space ownership.
 
 If new risks are identified, record only active risks here.
 

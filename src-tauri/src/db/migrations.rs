@@ -465,6 +465,69 @@ const MIGRATIONS: &[(&str, &str)] = &[
             CHECK(configuration_generation >= 1);
         ",
     ),
+    // Migration 018: explicit parent School Space ownership of calendar connections and
+    // per-source group selection. Legacy selection migrates only when ownership is
+    // unambiguous: exactly one subscribed MyTimetable connection exists.
+    (
+        "018_school_space_sources",
+        "
+        CREATE TABLE school_space_sources (
+            school_space_id TEXT NOT NULL REFERENCES spaces(id) ON DELETE CASCADE,
+            connection_id TEXT NOT NULL REFERENCES integrations(id) ON DELETE CASCADE,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+            PRIMARY KEY (school_space_id, connection_id)
+        );
+        CREATE INDEX idx_school_space_sources_connection
+            ON school_space_sources(connection_id, school_space_id);
+
+        CREATE TABLE school_space_source_groups (
+            school_space_id TEXT NOT NULL,
+            connection_id TEXT NOT NULL,
+            group_reference TEXT NOT NULL CHECK(length(trim(group_reference)) BETWEEN 1 AND 200),
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            PRIMARY KEY (school_space_id, connection_id, group_reference),
+            FOREIGN KEY (school_space_id, connection_id)
+                REFERENCES school_space_sources(school_space_id, connection_id)
+                ON DELETE CASCADE
+        );
+
+        INSERT INTO school_space_sources(school_space_id, connection_id)
+        SELECT s.id, i.id
+        FROM spaces s
+        JOIN integrations i ON i.provider_id='my_timetable'
+        JOIN subscribed_calendars sc ON sc.connection_id=i.id
+        WHERE s.template_type='school'
+          AND s.parent_space_id IS NULL
+          AND s.settings_json IS NOT NULL
+          AND json_valid(s.settings_json)
+          AND json_type(
+                CASE WHEN json_valid(s.settings_json) THEN s.settings_json ELSE '{}' END,
+                '$.schoolGroup'
+              )='text'
+          AND length(trim(json_extract(
+                CASE WHEN json_valid(s.settings_json) THEN s.settings_json ELSE '{}' END,
+                '$.schoolGroup'
+              ))) BETWEEN 1 AND 200
+          AND (SELECT count(*)
+               FROM integrations candidate
+               JOIN subscribed_calendars candidate_calendar
+                 ON candidate_calendar.connection_id=candidate.id
+               WHERE candidate.provider_id='my_timetable')=1;
+
+        INSERT INTO school_space_source_groups(school_space_id, connection_id, group_reference)
+        SELECT sources.school_space_id,
+               sources.connection_id,
+               trim(json_extract(
+                   CASE WHEN json_valid(spaces.settings_json) THEN spaces.settings_json ELSE '{}' END,
+                   '$.schoolGroup'
+               ))
+        FROM school_space_sources sources
+        JOIN spaces ON spaces.id=sources.school_space_id
+        JOIN integrations ON integrations.id=sources.connection_id
+        WHERE integrations.provider_id='my_timetable';
+        ",
+    ),
 ];
 
 pub fn known_names() -> impl Iterator<Item = &'static str> {
@@ -942,6 +1005,8 @@ mod tests {
         assert!(tables.contains(&"memory_items".to_string()));
         assert!(tables.contains(&"sources".to_string()));
         assert!(tables.contains(&"indexed_files".to_string()));
+        assert!(tables.contains(&"school_space_sources".to_string()));
+        assert!(tables.contains(&"school_space_source_groups".to_string()));
     }
 
     #[test]
@@ -1392,7 +1457,11 @@ mod tests {
         let conn = in_memory_db();
         let tx = conn.unchecked_transaction().unwrap();
         ensure_migrations_table(&tx).unwrap();
-        for (name, sql) in &MIGRATIONS[..MIGRATIONS.len() - 1] {
+        let migration_index = MIGRATIONS
+            .iter()
+            .position(|(name, _)| *name == "017_subscribed_calendar_generation")
+            .unwrap();
+        for (name, sql) in &MIGRATIONS[..migration_index] {
             apply_migration(&tx, name, sql).unwrap();
         }
         tx.execute(
@@ -1426,5 +1495,87 @@ mod tests {
             .unwrap(),
             1
         );
+    }
+
+    fn apply_before_school_sources(conn: &Connection) {
+        let tx = conn.unchecked_transaction().unwrap();
+        ensure_migrations_table(&tx).unwrap();
+        let migration_index = MIGRATIONS
+            .iter()
+            .position(|(name, _)| *name == "018_school_space_sources")
+            .unwrap();
+        for (name, sql) in &MIGRATIONS[..migration_index] {
+            apply_migration(&tx, name, sql).unwrap();
+        }
+        tx.commit().unwrap();
+    }
+
+    #[test]
+    fn school_source_upgrade_migrates_legacy_group_with_exactly_one_source() {
+        let conn = in_memory_db();
+        apply_before_school_sources(&conn);
+        conn.execute(
+            "INSERT INTO spaces(id,name,template_type,settings_json) VALUES ('school','School','school','{\"schoolGroup\":\"ADSAI-ZM-1.a\"}')",
+            [],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO integrations(id,provider_id,auth_type) VALUES ('mtt','my_timetable','ics_feed')",
+            [],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO subscribed_calendars(id,connection_id) VALUES ('calendar','mtt')",
+            [],
+        )
+        .unwrap();
+
+        run(&conn).unwrap();
+        let migrated: (String, String, String) = conn
+            .query_row(
+                "SELECT sources.school_space_id, sources.connection_id, groups.group_reference
+                 FROM school_space_sources sources
+                 JOIN school_space_source_groups groups
+                   ON groups.school_space_id=sources.school_space_id
+                  AND groups.connection_id=sources.connection_id",
+                [],
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)),
+            )
+            .unwrap();
+        assert_eq!(
+            migrated,
+            ("school".into(), "mtt".into(), "ADSAI-ZM-1.a".into())
+        );
+    }
+
+    #[test]
+    fn school_source_upgrade_requires_reselection_with_multiple_candidates() {
+        let conn = in_memory_db();
+        apply_before_school_sources(&conn);
+        conn.execute(
+            "INSERT INTO spaces(id,name,template_type,settings_json) VALUES ('school','School','school','{\"schoolGroup\":\"SAME\"}')",
+            [],
+        )
+        .unwrap();
+        for id in ["mtt-x", "mtt-y"] {
+            conn.execute(
+                "INSERT INTO integrations(id,provider_id,auth_type) VALUES (?1,'my_timetable','ics_feed')",
+                [id],
+            )
+            .unwrap();
+            conn.execute(
+                "INSERT INTO subscribed_calendars(id,connection_id) VALUES (?1 || '-calendar',?1)",
+                [id],
+            )
+            .unwrap();
+        }
+
+        run(&conn).unwrap();
+        let bindings: i64 = conn
+            .query_row("SELECT count(*) FROM school_space_sources", [], |row| {
+                row.get(0)
+            })
+            .unwrap();
+        assert_eq!(bindings, 0);
     }
 }

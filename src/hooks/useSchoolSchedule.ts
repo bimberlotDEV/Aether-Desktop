@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { getSchoolSchedule, setSchoolGroup } from '@/lib/db/tauri'
+import {
+  getSchoolSchedule,
+  setSchoolSourceAssociation,
+  setSchoolSourceGroups,
+} from '@/lib/db/tauri'
 import type { SchoolSchedule } from '@/lib/db/types'
 import { schoolScheduleRequest } from '@/lib/school/schedule'
 
@@ -33,26 +37,52 @@ export function useSchoolSchedule(spaceId: string, now: Date) {
 
   useEffect(() => void reload(), [reload])
 
-  const selectGroup = useCallback(
-    async (selectedGroup: string) => {
+  const update = useCallback(
+    async (mutation: () => Promise<void>) => {
       if (!isTauri) return
       setLoading(true)
       setError(null)
       try {
-        await setSchoolGroup(spaceId, selectedGroup)
+        await mutation()
         setData(await getSchoolSchedule(request))
       } catch (cause) {
         setError(
           cause instanceof Error && cause.message
             ? cause.message
-            : 'The School group could not be saved.',
+            : 'The School source configuration could not be saved.',
         )
       } finally {
         setLoading(false)
       }
     },
-    [request, spaceId],
+    [request],
   )
 
-  return { data, loading, error, isTauri, reload, selectGroup }
+  const setSourceAssociated = useCallback(
+    (connectionId: string, associated: boolean) =>
+      update(() => setSchoolSourceAssociation(spaceId, connectionId, associated)),
+    [spaceId, update],
+  )
+
+  const selectSourceGroup = useCallback(
+    (connectionId: string, selectedGroup: string | null) =>
+      update(() =>
+        setSchoolSourceGroups(
+          spaceId,
+          connectionId,
+          selectedGroup ? [selectedGroup] : [],
+        ),
+      ),
+    [spaceId, update],
+  )
+
+  return {
+    data,
+    loading,
+    error,
+    isTauri,
+    reload,
+    setSourceAssociated,
+    selectSourceGroup,
+  }
 }

@@ -5,53 +5,65 @@
 | Field | Value |
 | --- | --- |
 | Schema version | 3 |
-| Task ID | `INT-SYNC-002` |
-| Status | `complete` |
+| Task ID | `SCHOOL-SCOPE-002` |
+| Status | `self_review` |
 | Owner | Codex |
 | Last updated | 2026-09-25 |
-| Related milestone | Aether 26 — Integration Sync Runtime hardening |
+| Related milestone | Aether 27 — explicit School Space source scoping |
 | Classification | `planned_codex` |
-| Branch / worktree | `agent/integration-sync-002` |
+| Branch / worktree | `agent/school-scope-002` |
 
 ## Objective
 
-Guarantee fair same-provider synchronization and truthful terminal state for every started Integration sync without weakening generation safety or cached-data atomicity.
+Make each active parent School Space an explicit native-owned authorization boundary for subscribed calendar connections and per-source MyTimetable group selection, eliminating provider-wide and group-name-based cross-connection reads.
 
 ## Context
 
-- MyTimetable and Brightspace share the native provider-neutral Integration Sync runtime.
-- ADR-030 intentionally allows one active connection per provider, but the current runtime discards a distinct same-provider request as `Coalesced`.
-- A successful fetch/parse followed by a reconciliation or final Integration commit error currently leaves the connection in `syncing`.
-- Aether 25 introduced durable configuration generations and transaction-time stale-work rejection that this task must preserve.
+- Aether 24 through 26 are merged on `origin/master` and provide hardened subscribed-calendar ingestion, generation-safe replacement, and fair/truthful synchronization.
+- The existing School read model validates a parent School Space but then lists groups, sources, and events across every `my_timetable` connection.
+- Existing School Spaces persist one legacy `schoolGroup` string in `spaces.settings_json`; provider ID and group text are not ownership boundaries.
+- Brightspace is a calendar-only normalized source and must not be interpreted as timetable groups, courses, assignments, or deadlines.
 
 ## Success criteria
 
-- [ ] Same-connection requests coalesce while distinct same-provider connections enter one bounded FIFO and progress without another scheduler pass.
-- [ ] FIFO order is stable under repeated requests, stale/ineligible entries are skipped, and different providers remain isolated under the global semaphore.
-- [ ] Public request outcomes distinguish accepted/start-reserved, queued, same-connection coalesced, retry-deferred, and rejected work.
-- [ ] Queued entries capture generation and cannot become valid after replacement; replacement follow-up schedules the current generation exactly once.
-- [ ] Disconnect/disable removes queued work, running cancellation cannot commit late, and shutdown clears queues and terminalizes started work.
-- [ ] Every run whose running state was persisted emits exactly one terminal event and follows one truthful success/failure/stale/ineligible terminal path.
-- [ ] Commit/reconciliation failure rolls back the transaction, preserves cached events and validators, records sanitized `local_commit` failure metadata, and leaves the connection retryable.
-- [ ] Startup, periodic, resume, manual, replacement follow-up, retry, MyTimetable, Brightspace, and generation regressions pass.
-- [ ] Required focused and repository validation passes.
+- [x] Parent School Spaces persist explicit connection bindings with referential cleanup and independent per-source group selections.
+- [x] Every School schedule read begins from the requested active parent School Space and can return events only from its associated connection IDs.
+- [x] No association or no valid group selection returns zero timetable events with a truthful setup/reselection state; there is no provider-wide or all-group fallback.
+- [x] MyTimetable group discovery and validation are scoped to one associated connection, including when two connections expose the same group string.
+- [x] Multiple parent School Spaces can independently bind different or shared sources and update source/group configuration without mutating one another.
+- [x] Disabled associations remain visible with truthful cached/stale state, deletion removes bindings through foreign keys, and same-ID feed replacement preserves bindings.
+- [x] Brightspace can be explicitly associated and reports truthful source state but contributes no groups and no events to the timetable views.
+- [x] Existing legacy selections migrate only when exactly one MyTimetable connection exists; multiple candidates remain unassociated and require explicit choice.
+- [x] Subject child and non-School Spaces cannot own or query School source scope.
+- [x] The public School IPC remains minimal and exposes no URL, validator, credential, raw payload, configuration generation, or unrelated group list.
+- [x] Required focused and full validation passes.
 
 ## In scope
 
-- Integration Sync scheduling state, provider FIFO dispatch, lifecycle cancellation/shutdown, terminalization, request results, and runtime tests.
-- Minimal Integration repository completion guard changes required for disabled/deleted terminal truth.
-- Minimal frontend request-result schema extension.
-- ADR-030 clarification and current task records.
+- Additive normalized School source/group persistence and migration 018.
+- Rust School source configuration, scoped read model, lifecycle behavior, and repository/migration tests.
+- Typed Tauri commands and minimal TypeScript models/wrappers.
+- Focused School setup UI for source association and per-MyTimetable-source group selection.
+- School frontend tests and durable architecture/database/task records.
 
 ## Allowed paths
 
-- `src-tauri/src/integration_sync.rs`
-- `src-tauri/src/db/repositories/integrations.rs`
-- `src-tauri/src/my_timetable.rs` only if a shared-lifecycle regression requires correction
-- `src-tauri/src/brightspace.rs` only if a shared-lifecycle regression requires correction
+- `src-tauri/src/db/migrations.rs`
+- `src-tauri/src/db/repositories/school_schedule.rs`
+- `src-tauri/src/commands.rs`
+- `src-tauri/src/lib.rs`
+- `src-tauri/src/diagnostics.rs` only for the latest-schema expectation
 - `src/lib/db/types.ts`
+- `src/lib/db/tauri.ts`
 - `src/lib/db/tauri.test.ts`
-- `docs/decisions/030-integration-sync-runtime.md`
+- `src/hooks/useSchoolSchedule.ts`
+- `src/components/school/SchoolSchedule.tsx`
+- `src/components/school/SchoolSchedule.test.tsx`
+- `src/lib/school/schedule.ts` and tests only if source-state presentation requires a focused adjustment
+- `src-tauri/src/my_timetable.rs` and `src-tauri/src/brightspace.rs` only for lifecycle regression tests if repository coverage is insufficient
+- `docs/database.md`
+- `docs/decisions/031-school-source-scoping.md`
+- `.ai/ARCHITECTURE.md`
 - `.ai/HANDOFF.md`
 - `.ai/TODO.md`
 - `.ai/PROJECT_STATE.md`
@@ -60,44 +72,48 @@ Guarantee fair same-provider synchronization and truthful terminal state for eve
 
 ## Out of scope
 
-- School Space source scoping and `SCHOOL-SCOPE-002`.
-- Pulse, AI Router, AI calendar tools, Calendar Core semantic changes, provider-specific ingestion redesign, OAuth, or new integrations.
-- Broad scheduler frameworks, priority scheduling, background services, or queue-management UI.
+- Pulse, AI Router, AI calendar tools, Safe Actions, OAuth, courses, assignments, deadlines, or richer LMS semantics.
+- Integration Sync scheduling, CAL-ICS transport/parsing, subscribed-calendar replacement, credentials, or generic Calendar Core identity.
+- Injecting Brightspace general events into timetable Today/Week/Upcoming views.
+- School visual redesign beyond focused source/group setup and truthful states.
+- A generalized plugin schema or provider-defined School settings.
 
 ## Architecture constraints
 
-- Retain one active connection per provider and the existing global semaphore.
-- Use a deterministic in-memory FIFO per provider with at most one queued/running entry per connection.
-- Capture configuration generation at enqueue and revalidate current state before dispatch and commit.
-- Keep credentials, validators, provider payloads, and low-level database errors behind Rust.
-- Reconcile Calendar data and Integration success metadata in one transaction; rollback must preserve the prior snapshot.
-- Queue progress must be driven by terminal cleanup, not app focus or a later periodic scan.
+- Connection ID is the authoritative ownership boundary; provider ID is validation/presentation metadata only and is not duplicated in the binding table.
+- Use normalized `school_space_sources` and `school_space_source_groups` tables with explicit cascading foreign keys.
+- The group table is keyed by `(school_space_id, connection_id, group_reference)` so group text is meaningful only inside one bound source and the schema can support multiple selected groups later.
+- Query authorization is derived entirely in Rust from `school_space_id`; the schedule request accepts no provider, connection, or group authority.
+- Configuration mutations validate an active top-level School Space and an existing supported subscribed-calendar connection.
+- Keep cached ExternalEvents untouched; association removal changes only School ownership/configuration.
+- Retain current local-time, all-day, cancellation, overlap, stale/cache, and bounded-view behavior.
 
 ## Dependencies
 
-- Merged `CAL-SUB-ROTATE-001` / Aether 25 generation safeguards.
-- Existing Integration repository, CAL-ICS engine, shared subscribed-calendar providers, and ADR-027 through ADR-030.
-- No new dependency or migration.
+- Merged Aether 24 CAL-ICS hardening, Aether 25 generation-safe replacement, and Aether 26 Integration Sync hardening.
+- Existing Spaces, Integration, subscribed-calendar, ExternalEvent, School timetable, and typed IPC layers.
+- Accepted ADR-031.
+- No new dependency.
 
 ## Risks and safeguards
 
-- **Queue starvation:** strict provider FIFO; duplicate active/queued requests never append or reorder an entry.
-- **Stale queued work:** store request-time generation and reject mismatches before marking running.
-- **Commit rollback followed by stuck state:** route commit errors to a fixed `local_commit` failure through the normal repository failure path.
-- **Cancellation races:** cancel running tokens, remove queued entries synchronously, and retain generation checks as the authoritative commit guard.
-- **Shutdown zombies:** clear ephemeral queues, cancellation-select semaphore waiters, drain active tasks, and persist terminal cancellation/interruption state.
-- **Sensitive errors:** expose only fixed request reasons and bounded failure codes/messages.
+- **Cross-connection leakage:** every event/group query joins the requested Space's persisted connection binding before considering provider or group text.
+- **Ambiguous legacy ownership:** migration binds only when the global MyTimetable candidate count is exactly one; zero or multiple candidates produce no binding.
+- **Stale group after source change:** removing a binding cascades its selected groups; adding another source starts with no selected group.
+- **Deleted or disabled source:** connection deletion cascades binding/event rows; disabled rows remain associated and visible without alternate-source fallback.
+- **Brightspace semantic inflation:** it may be associated and shown as a calendar source, but is excluded from group discovery and timetable event queries.
+- **Broad IPC exposure:** return only source identity/provider/display/status, association state, selected groups, scoped options, and the existing event projection; add no secret or sync-internal field.
 
 ## Rollback considerations
 
-The implementation and IPC enum extension are reversible on the task branch. Queue state is ephemeral and never migrated. Existing persisted connections, cached events, validators, and generations remain compatible. Failed authoritative transactions roll back before terminal failure metadata is written separately.
+Code and UI changes are reversible on the task branch. Migration 018 is append-only; its binding/group rows are isolated metadata and cascade with their owning Space or Integration. Cached ExternalEvents and credentials are not migrated or deleted. Earlier code safely ignores the new tables, though source ownership configured after upgrade would not be enforced by an older binary.
 
 ## Required validation
 
-- Focused Integration Sync scheduling, fairness, cancellation, generation, and commit-failure tests.
-- Focused Integration repository tests.
-- Focused subscribed-calendar, MyTimetable, Brightspace, and Aether 25 generation tests.
-- Frontend contract tests because the request-result schema changes.
+- Focused School repository source-scoping, same-group/different-connection, multiple-Space, lifecycle, child/non-School, and persistence tests.
+- Focused migration fresh/upgrade tests for unique and ambiguous legacy MyTimetable candidates.
+- Focused MyTimetable and Brightspace tests.
+- Focused School frontend and typed IPC tests.
 - `cargo test --manifest-path src-tauri/Cargo.toml`
 - `cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`
 - `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings`
@@ -106,6 +122,7 @@ The implementation and IPC enum extension are reversible on the task branch. Que
 - `pnpm test`
 - `pnpm build`
 - `git diff --check`
+- Focused desktop smoke steps recorded; automated native behavior remains the authoritative evidence if an interactive desktop session is unavailable.
 
 ## Independent review requirement
 
@@ -113,11 +130,11 @@ The implementation and IPC enum extension are reversible on the task branch. Que
 | --- | --- |
 | Required | No |
 | Reason | The repository workflow requires a distinct evidence-based self-review; no separate reviewer was requested. |
-| Reviewer scope | FIFO fairness, terminalization, rollback, cancellation, generation safety, and provider isolation. |
+| Reviewer scope | Connection-bound authorization, migration ambiguity, lifecycle cleanup, Brightspace semantics, IPC minimization, and multi-Space isolation. |
 
 ## Human decisions required
 
-None. The requested FIFO behavior and existing ADR-030 serialization boundary determine the design.
+None. The request explicitly chooses connection identity as the ownership boundary and permits deterministic one-candidate migration.
 
 ## Blocking decisions
 
@@ -127,35 +144,33 @@ None.
 
 | Check | State |
 | --- | --- |
-| Correct branch/worktree confirmed | Pass — `agent/integration-sync-002` rebased to merged Aether 25 `origin/master` |
-| `git status` inspected | Pass — clean before contract update |
+| Correct branch/worktree confirmed | Pass — `agent/school-scope-002` fast-forwarded to merged Aether 26 `origin/master` |
+| `git status` inspected | Pass — clean before contract/ADR updates |
 | User-owned changes identified | None |
-| Parallel task overlap checked | Pass — Aether 25 is merged; this branch owns the shared runtime serialization point |
-| Serialization points identified | Integration runtime state, terminal repository updates, request-result IPC contract, ADR-030 |
+| Parallel task overlap checked | Pass — Aether 24–26 are merged; this branch owns migration 018 and School IPC/read model |
+| Serialization points identified | Migration ordering, School IPC contract, School source configuration, ADR-031 |
 
 ## Readiness review
 
-Passed. The bounded objective, FIFO design, generation handling, terminal guarantee, failure mapping, scope, rollback, validation, and publication stop condition are explicit; implementation is in progress.
+Passed. The ownership model, schema, migration ambiguity rule, Brightspace boundary, IPC authority, UI scope, lifecycle semantics, rollback, validation, and stop condition are explicit. Implementation is in progress.
 
 ## Implementation log
 
-- 2026-09-25: Rebased the clean task branch to merged Aether 25 and completed the readiness gate.
-- Added one bounded FIFO per provider while preserving the global semaphore and per-connection single-flight.
-- Added generation/trigger/current-eligibility revalidation at dequeue, queue removal on disconnect/disable, and current-generation replacement follow-up handling.
-- Routed every persisted start through one terminal event; commit errors now record sanitized retryable `local_commit` after transaction rollback.
-- Added `Queued` to the typed request outcome and made lifecycle scheduling match the exact declared trigger.
-- Updated ADR-030. No migration, dependency, provider ingestion change, or broad UI change was added.
+- 2026-09-25: Fetched and fast-forwarded the clean task branch to merged Aether 26.
+- 2026-09-25: Inspected the School repository/UI, Spaces hierarchy/settings, Integration/subscribed-calendar lifecycle, ExternalEvents, migrations 012–017, provider connectors, and ADRs 028–030.
+- 2026-09-25: Accepted ADR-031 and completed the readiness gate.
+- Added migration 018, connection-bound repository reads/mutations, typed IPC, and focused source/group setup UI.
+- Added deterministic isolation, lifecycle, migration, restart, provider, and frontend regression coverage.
+- Completed full validation and a distinct final-diff/security/scope self-review; publication remains.
 
 ## Verification evidence
 
-- Focused Integration Sync tests: 17 passed.
-- Focused Integration repository tests: 7 passed.
+- Focused School repository tests: 13 passed.
+- Focused School source migration tests: 2 passed.
 - Focused MyTimetable tests: 22 passed.
 - Focused Brightspace tests: 4 passed.
-- Focused CAL-ICS tests: 21 passed.
-- Focused subscribed-calendar tests: 2 passed.
-- Focused generation tests: 9 passed.
-- `cargo test --manifest-path src-tauri/Cargo.toml`: 196 passed.
+- Focused School/frontend IPC tests: 34 passed across 3 files.
+- `cargo test --manifest-path src-tauri/Cargo.toml`: 202 passed.
 - `cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`: passed.
 - `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings`: passed.
 - `pnpm typecheck`: passed.
@@ -166,29 +181,28 @@ Passed. The bounded objective, FIFO design, generation handling, terminal guaran
 
 ## Acceptance evidence
 
-- FIFO tests prove A → B → C order, repeated A requests cannot move ahead of B/C, and explicit MyTimetable A/B and Brightspace A/B pairs queue rather than disappear.
-- Cross-provider tests prove MyTimetable and Brightspace can occupy separate global slots without sharing queue state.
-- Request tests prove `Accepted`, `Queued`, `Coalesced`, `Deferred`, and `Rejected` remain distinct and the public schema accepts `queued`.
-- Disconnect/disable tests prove queued work is removed and late running completion cannot overwrite disabled idle state.
-- Replacement tests prove stale queued generation is replaced by one current-generation request and existing running-generation safeguards remain green.
-- Fetch/parse-style failure, cancellation, rate-limit, and commit-failure tests prove the next FIFO entry progresses.
-- SQLite failure injection proves authoritative reconciliation, validators, and success timestamps roll back before bounded `local_commit` failure is persisted.
-- Shutdown tests prove running work is cancelled, terminalized once, leaves no persisted `syncing` state, and rejects later requests.
-- Trigger tests prove startup, resume, and periodic scans select only the matching declared mode.
+- AC1/AC2/AC3: migration tables plus the binding-first event query; no-association and invalid-selection tests return zero events.
+- AC4/AC5: same-group/different-connection, multiple-MTT-source, two-Space, source-change, and group-change tests prove identity and configuration isolation.
+- AC6: disabled, disconnected, deleted, replacement-generation, and restart tests prove lifecycle semantics and persistence.
+- AC7: combined Brightspace/MyTimetable test proves Brightspace has no groups and contributes no timetable event.
+- AC8: unique-candidate and ambiguous-candidate upgrade tests prove deterministic fail-closed migration.
+- AC9: non-School and subject-child tests reject read and configuration ownership.
+- AC10: the School source schema exposes bounded identity/presentation/status/group fields only; UI tests verify no feed URL text.
+- AC11: all focused and repository gates above pass.
 
 ## Self-review
 
-Passed. The complete diff is limited to the shared runtime, narrow Integration terminal guards, one typed IPC enum extension/test, ADR-030, and required control records. Provider serialization and the global concurrency cap remain intact. Each connection appears at most once across active/queued state, queue handoff is FIFO and terminal-driven, and stale/ineligible entries are skipped without blocking later work. Generation remains native/private and is checked at enqueue/dequeue/commit boundaries. Commit errors are sanitized before persistence/IPC, authoritative data and validators roll back atomically, and no secret/provider payload is exposed. Disabled/deleted connections reject late writes. Every path after a successful `mark_running` emits one terminal event. No migration, dependency, School scoping, Pulse, AI, Calendar semantic, or provider ingestion work entered scope.
+Passed. The changed-path list is task-owned and contains migration 018, the School repository/IPC/UI, necessary diagnostics and documentation, and task records only. The schedule read accepts only `school_space_id` and a bounded range; connection and group authority are derived in Rust. Every group lookup is connection-scoped and every event joins the Space binding plus that connection's selected group. Brightspace is excluded from timetable events. Disabled cached behavior is preserved; disconnected/deleted sources cannot return events; foreign keys clean up ownership; replacement retains the same connection ID. No credential, feed URL, validator, raw payload, configuration generation, or new dependency crosses the School IPC. Pulse, AI, richer LMS entities, sync scheduling, CAL-ICS, and credential storage remain untouched.
 
 ## Publication state
 
 | Field | Value |
 | --- | --- |
-| Commit | `e4d0baf` |
-| Remote branch | `origin/agent/integration-sync-002` |
-| Draft PR | [#62](https://github.com/bimberlotDEV/Aether-Desktop/pull/62) |
-| Exact-head CI | Pending |
+| Commit | `None` |
+| Remote branch | `None` |
+| Draft PR | `None` |
+| Exact-head CI | `None` |
 
 ## Stop condition
 
-Stop after all acceptance criteria are evidenced, required checks pass, the implementation is committed and pushed on `agent/integration-sync-002`, and an Aether 26 draft PR is open. Do not begin `SCHOOL-SCOPE-002`, Aether 27, Pulse, AI Router, or AI calendar work.
+Stop after all acceptance criteria are evidenced, required checks pass, required records are updated, the implementation is committed and pushed on `agent/school-scope-002`, and an Aether 27 draft PR is open. Do not begin Pulse, AI Router, AI calendar, or richer School/LMS work.

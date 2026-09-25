@@ -203,6 +203,16 @@ Provider-neutral renewable iCalendar feed metadata defined by ADR-029. Each row 
 
 The Integration row is the canonical owner of configuration generation. `subscribed_calendars` does not duplicate it, and creating a second metadata row for an existing connection is rejected so replacement cannot bypass the shared validated lifecycle.
 
+### school_space_sources
+
+Migration `018_school_space_sources` makes a parent School Space's calendar ownership explicit. Each row is keyed by `(school_space_id, connection_id)` and references both `spaces` and `integrations` with `ON DELETE CASCADE`. Provider ID is derived from the Integration and is not duplicated or treated as an ownership boundary. An index on `(connection_id, school_space_id)` supports connection lifecycle cleanup and lookup.
+
+### school_space_source_groups
+
+Selected timetable groups are normalized beneath a source binding and keyed by `(school_space_id, connection_id, group_reference)`. The composite foreign key cascades when the binding is removed. Group text is therefore meaningful only inside one Space/connection pair; identical cohort names on different connections do not merge.
+
+Migration 018 converts the legacy `spaces.settings_json.schoolGroup` value only when exactly one subscribed MyTimetable connection exists. Zero or multiple candidates create no binding and require explicit reselection. Cached ExternalEvents, feed credentials, validators, and sync state are untouched. Brightspace bindings are allowed for explicit calendar-source ownership/status, but they have no timetable groups and do not add general Brightspace events to the current timetable views.
+
 ## Workspace export
 
 Settings creates a versioned `.aether-backup` archive containing a consistent SQLite online-backup snapshot and the exact bytes of every managed Vault item. The snapshot removes `secrets`; linked external files are never read or copied. A strict manifest binds every payload to its size and SHA-256 digest.

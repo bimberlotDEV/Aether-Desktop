@@ -203,15 +203,30 @@ function UpcomingView({ events, now }: { events: ExternalEvent[]; now: Date }) {
 export function SchoolSchedule({ spaceId, now }: { spaceId: string; now?: Date }) {
   const [referenceNow] = useState(() => now ?? new Date())
   const [view, setView] = useState<SchoolView>('today')
-  const { data, loading, error, isTauri, reload, selectGroup } = useSchoolSchedule(
-    spaceId,
-    referenceNow,
+  const {
+    data,
+    loading,
+    error,
+    isTauri,
+    reload,
+    setSourceAssociated,
+    selectSourceGroup,
+  } = useSchoolSchedule(spaceId, referenceNow)
+  const associatedSources = useMemo(
+    () => data?.sources.filter((source) => source.associated) ?? [],
+    [data?.sources],
+  )
+  const hasTimetableSelection = associatedSources.some(
+    (source) =>
+      source.provider_id === 'my_timetable' &&
+      source.group_selection_valid &&
+      source.selected_groups.length > 0,
   )
   const freshness = useMemo(
-    () => scheduleFreshness(data?.sources ?? [], referenceNow),
-    [data?.sources, referenceNow],
+    () => scheduleFreshness(associatedSources, referenceNow),
+    [associatedSources, referenceNow],
   )
-  const latestSync = latestSuccessfulSync(data?.sources ?? [])
+  const latestSync = latestSuccessfulSync(associatedSources)
 
   const stateCopy = {
     fresh: 'Schedule is current from local synced data.',
@@ -220,9 +235,9 @@ export function SchoolSchedule({ spaceId, now }: { spaceId: string; now?: Date }
     error: 'The latest calendar sync failed. Showing any previously saved events.',
     disconnected:
       'School calendar is disconnected or disabled. Saved events may be out of date.',
-    unavailable: data?.sources.length
-      ? 'This calendar has not completed a successful sync yet.'
-      : 'No School calendar is connected.',
+    unavailable: associatedSources.length
+      ? 'An assigned source has not completed a successful sync yet.'
+      : 'No calendar source is assigned to this School Space.',
   }[freshness]
 
   return (
@@ -237,7 +252,7 @@ export function SchoolSchedule({ spaceId, now }: { spaceId: string; now?: Date }
             Your schedule
           </h2>
         </div>
-        {data?.selected_group ? (
+        {hasTimetableSelection ? (
           <div
             role="tablist"
             aria-label="School schedule view"
@@ -285,35 +300,114 @@ export function SchoolSchedule({ spaceId, now }: { spaceId: string; now?: Date }
         </div>
       ) : data ? (
         <>
-          <div className="flex flex-wrap items-end justify-between gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-secondary)] px-3 py-3">
+          <div className="space-y-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg-secondary)] px-3 py-3">
             <div>
-              <label
-                htmlFor="school-group"
-                className="text-xs font-medium text-[var(--color-text-primary)]"
-              >
-                School group
-              </label>
+              <p className="text-xs font-medium text-[var(--color-text-primary)]">
+                School calendar sources
+              </p>
               <p className="mt-0.5 text-xs text-[var(--color-text-tertiary)]">
-                Show events assigned to your group, including shared events and exams.
+                Assign only the connections this School Space may read.
               </p>
             </div>
-            <select
-              id="school-group"
-              aria-label="School group"
-              value={data.selected_group ?? ''}
-              disabled={data.group_options.length === 0}
-              onChange={(event) => {
-                if (event.target.value) void selectGroup(event.target.value)
-              }}
-              className="focus-ring min-w-48 rounded-md border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-2.5 py-1.5 text-sm text-[var(--color-text-primary)]"
-            >
-              <option value="">Select your group</option>
-              {data.group_options.map((group) => (
-                <option key={group} value={group}>
-                  {group}
-                </option>
-              ))}
-            </select>
+            {data.sources.length === 0 ? (
+              <p className="text-xs text-[var(--color-text-tertiary)]">
+                No MyTimetable or Brightspace connection is available.{' '}
+                <Link
+                  to="/settings"
+                  className="text-[var(--color-accent)] hover:underline"
+                >
+                  Open Connections
+                </Link>
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {data.sources.map((source, index) => {
+                  const providerName =
+                    source.provider_id === 'my_timetable' ? 'MyTimetable' : 'Brightspace'
+                  const sameProviderCount = data.sources.filter(
+                    (candidate) => candidate.provider_id === source.provider_id,
+                  ).length
+                  const sameProviderIndex =
+                    data.sources
+                      .filter((candidate) => candidate.provider_id === source.provider_id)
+                      .findIndex(
+                        (candidate) => candidate.connection_id === source.connection_id,
+                      ) + 1
+                  const label =
+                    sameProviderCount > 1
+                      ? `${providerName} connection ${sameProviderIndex}`
+                      : (source.display_name ?? providerName)
+                  const groupId = `school-group-${index}`
+                  return (
+                    <div
+                      key={source.connection_id}
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-3 py-2"
+                    >
+                      <label className="flex min-w-0 items-center gap-2 text-sm text-[var(--color-text-primary)]">
+                        <input
+                          type="checkbox"
+                          checked={source.associated}
+                          onChange={(event) =>
+                            void setSourceAssociated(
+                              source.connection_id,
+                              event.target.checked,
+                            )
+                          }
+                        />
+                        <span>
+                          <span className="font-medium">{label}</span>
+                          <span className="ml-2 text-xs text-[var(--color-text-tertiary)]">
+                            {!source.enabled
+                              ? 'Disabled'
+                              : source.connection_status === 'connected'
+                                ? 'Connected'
+                                : source.connection_status.replaceAll('_', ' ')}
+                          </span>
+                        </span>
+                      </label>
+                      {source.associated && source.provider_id === 'my_timetable' ? (
+                        <div>
+                          <label htmlFor={groupId} className="sr-only">
+                            Group for {label}
+                          </label>
+                          <select
+                            id={groupId}
+                            aria-label={`Group for ${label}`}
+                            value={
+                              source.group_selection_valid
+                                ? (source.selected_groups[0] ?? '')
+                                : ''
+                            }
+                            onChange={(event) =>
+                              void selectSourceGroup(
+                                source.connection_id,
+                                event.target.value || null,
+                              )
+                            }
+                            className="focus-ring min-w-48 rounded-md border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-2.5 py-1.5 text-sm text-[var(--color-text-primary)]"
+                          >
+                            <option value="">
+                              {source.group_selection_valid
+                                ? 'Select your group'
+                                : 'Reselect your group'}
+                            </option>
+                            {source.group_options.map((group) => (
+                              <option key={group} value={group}>
+                                {group}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      ) : source.associated ? (
+                        <p className="text-xs text-[var(--color-text-tertiary)]">
+                          Calendar-only; not shown as timetable lessons.
+                        </p>
+                      ) : null}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
           </div>
           <div
             className={cn(
@@ -336,7 +430,7 @@ export function SchoolSchedule({ spaceId, now }: { spaceId: string; now?: Date }
               </Link>
             )}
           </div>
-          {!data.selected_group ? (
+          {!hasTimetableSelection ? (
             <div className="rounded-xl border border-dashed border-[var(--color-border)] px-5 py-8 text-center">
               <CalendarDays
                 size={22}
@@ -344,13 +438,13 @@ export function SchoolSchedule({ spaceId, now }: { spaceId: string; now?: Date }
                 aria-hidden="true"
               />
               <p className="mt-2 text-sm font-medium text-[var(--color-text-primary)]">
-                Select your school group
+                Finish timetable setup
               </p>
               <p className="mx-auto mt-1 max-w-md text-xs text-[var(--color-text-tertiary)]">
-                Your timetable stays empty until you choose a group from locally synced
-                school events.
+                Assign a MyTimetable connection and choose a group from that source. Your
+                timetable remains empty until both are selected.
               </p>
-              {data.group_options.length === 0 ? (
+              {data.sources.length === 0 ? (
                 <Link
                   to="/settings"
                   className="mt-3 inline-block text-xs text-[var(--color-accent)] hover:underline"

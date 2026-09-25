@@ -26,6 +26,17 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-09-25 — `SCHOOL-SCOPE-002` — Connection-bound School Space schedules
+
+- **Type:** Security, feature, migration, UX, and test
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review
+- **Summary:** Added explicit parent School Space to calendar-connection ownership and per-source MyTimetable group selection. School reads now join the requested Space's bindings before events or groups, so identical provider/group labels cannot leak across connections or Spaces. Brightspace association is truthful configuration/status only for the timetable UI.
+- **Files:** Migration `018_school_space_sources`, School repository and IPC, focused School setup UI, typed frontend contracts/tests, ADR-031, database documentation, diagnostics schema expectation, and `.ai/*` task records.
+- **Verification:** Focused School repository (13), source migration (2), MyTimetable (22), Brightspace (4), and School/frontend IPC (34) tests; `cargo test` (202 tests), Rust formatting, strict Clippy, `pnpm typecheck`, `pnpm lint`, `pnpm test` (132 tests across 37 files), `pnpm build`, and `git diff --check` — Pass.
+- **Decisions/deviations:** Connection ID is the ownership boundary. Normalized source/group tables use cascading foreign keys; legacy `schoolGroup` migrates only with exactly one MyTimetable candidate. Disabled sources retain cached scoped data, disconnected/deleted sources return no events, and same-ID feed replacement preserves association. No dependency was added; ADR-031 is new.
+- **Follow-up:** None. Pulse, AI Router, AI calendar, courses, assignments, deadlines, and richer LMS semantics remain outside this task.
+
 ## 2026-09-25 — `INT-SYNC-002` — Fair and terminal Integration synchronization
 
 - **Type:** Security, fix, runtime, and test

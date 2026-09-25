@@ -154,7 +154,7 @@ This section defines direction, not automatic implementation authorization.
 | P0       | `SCHOOL-BSP-001`   | Connect Brightspace calendar data                  | Product / Integration              | `done`         | `CAL-CORE-001`, `CAL-ICS-001`, `INT-SYNC-001`, `SCHOOL-BSP-CAP-001` | Brightspace renewable ICS data synchronizes as general ExternalEvents without scraping credentials or pretending LMS API access exists. |
 | P0       | `CAL-SUB-ROTATE-001` | Make feed replacement generation-safe             | Security / Integration              | `done`         | `CAL-ICS-SEC-001`                                     | Durable configuration generations, atomic replacement, and guarded runtime completion prevent prior-feed work from mutating current state.                               |
 | P1       | `INT-SYNC-002`     | Harden Integration Sync scheduling and terminal state | Security / Runtime               | `done`         | `INT-SYNC-001`, `CAL-SUB-ROTATE-001`                  | Distinct same-provider connections progress through a fair bounded FIFO and every started run reaches one truthful terminal outcome.                                      |
-| P1       | `SCHOOL-SCOPE-002` | Review School source association hardening          | Security / Data                     | `candidate`    | `SCHOOL-SPACE-001`                                    | The separately scoped Aether 22 source-association finding is resolved without provider-specific UI coupling.                                                             |
+| P1       | `SCHOOL-SCOPE-002` | Implement explicit School Space source scoping      | Security / Data                     | `done`         | `SCHOOL-SPACE-001`, `CAL-SUB-ROTATE-001`, `INT-SYNC-002` | Parent School Spaces authorize explicit connection IDs; group discovery and timetable reads cannot cross connection or Space boundaries.                                  |
 | P0       | `SCHOOL-SPACE-001` | Add ICS-first School timetable views                | Product / UX                       | `done`         | `SCHOOL-MTT-001`                                      | The existing School parent Space surfaces local normalized MyTimetable events in truthful Today, Week, and Upcoming views, scoped to a persisted user-selected group. |
 | P0       | `PULSE-003`        | Add connected schedule/deadline relevance to Pulse | Product / UX / Data                | `candidate`    | `CAL-CORE-001`, at least one working school connector | Pulse surfaces today's real schedule and upcoming deadlines through deterministic local read models without provider-specific UI coupling or hidden AI.                  |
 | P1       | `AI-CAL-001`       | Add bounded AI calendar/school read tools          | Product / AI / Security            | `needs_design` | Calendar + school read models                         | Aether can answer bounded questions such as “what do I have tomorrow?” using explicit local tool results instead of sending unrestricted database context.               |
@@ -170,9 +170,9 @@ This section defines direction, not automatic implementation authorization.
 
 # Next recommended planned task
 
-There is no active planned task. `INT-SYNC-002` completed fair Integration Sync
-scheduling and terminal-state hardening. `SCHOOL-SCOPE-002` remains separately
-scoped; Pulse, AI, OAuth, and richer LMS entities remain outside the completed task.
+There is no active planned task. `SCHOOL-SCOPE-002` completes the four Aether 22
+high-severity School/Calendar blockers. Pulse, AI, OAuth, and richer LMS entities
+remain separate candidate or design work and were not started.
 
 ---
 

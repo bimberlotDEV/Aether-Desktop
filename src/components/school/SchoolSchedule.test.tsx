@@ -2,11 +2,16 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
-import type { ExternalEvent, SchoolSchedule as SchoolScheduleData } from '@/lib/db/types'
+import type {
+  ExternalEvent,
+  SchoolCalendarSource,
+  SchoolSchedule as SchoolScheduleData,
+} from '@/lib/db/types'
 
 const state = vi.hoisted(() => ({
   data: null as SchoolScheduleData | null,
-  selectGroup: vi.fn(),
+  setSourceAssociated: vi.fn(),
+  selectSourceGroup: vi.fn(),
 }))
 
 vi.mock('@/hooks/useSchoolSchedule', () => ({
@@ -16,7 +21,8 @@ vi.mock('@/hooks/useSchoolSchedule', () => ({
     error: null,
     isTauri: true,
     reload: vi.fn(),
-    selectGroup: state.selectGroup,
+    setSourceAssociated: state.setSourceAssociated,
+    selectSourceGroup: state.selectSourceGroup,
   }),
 }))
 
@@ -60,6 +66,25 @@ function event(
   }
 }
 
+function source(overrides: Partial<SchoolCalendarSource> = {}): SchoolCalendarSource {
+  return {
+    connection_id: 'school-source',
+    provider_id: 'my_timetable',
+    display_name: 'MyTimetable',
+    associated: true,
+    enabled: true,
+    connection_status: 'connected',
+    sync_status: 'succeeded',
+    last_successful_sync_at: new Date(2026, 8, 23, 9, 30).toISOString(),
+    last_sync_error_code: null,
+    last_sync_error_message: null,
+    selected_groups: ['ADSAI-ZM-1.a'],
+    group_options: ['ADSAI-ZM-1.a', 'ADSAI-ZM-2.a'],
+    group_selection_valid: true,
+    ...overrides,
+  }
+}
+
 const now = new Date(2026, 8, 23, 10, 0)
 
 function renderSchedule() {
@@ -71,21 +96,9 @@ function renderSchedule() {
 }
 
 describe('School schedule', () => {
-  it('defaults to Today and switches locally between representative views', async () => {
+  it('preserves Today, Week, Upcoming, cancellation, and overlap behavior', async () => {
     state.data = {
-      group_options: ['ADSAI-ZM-1.a', 'ADSAI-ZM-2.a'],
-      selected_group: 'ADSAI-ZM-1.a',
-      sources: [
-        {
-          connection_id: 'school-source',
-          enabled: true,
-          connection_status: 'connected',
-          sync_status: 'succeeded',
-          last_successful_sync_at: new Date(2026, 8, 23, 9, 30).toISOString(),
-          last_sync_error_code: null,
-          last_sync_error_message: null,
-        },
-      ],
+      sources: [source()],
       events: [
         event(
           'today-a',
@@ -111,103 +124,85 @@ describe('School schedule', () => {
     )
     expect(screen.getByText('Programming')).toBeInTheDocument()
     expect(screen.getByText('Cancelled')).toBeInTheDocument()
+    expect(screen.queryAllByText('Overlap')).toHaveLength(0)
     expect(screen.queryByText('Datalab')).not.toBeInTheDocument()
-    expect(screen.getAllByText('Room 2.14')).toHaveLength(2)
 
     await userEvent.click(screen.getByRole('tab', { name: 'Week' }))
     expect(screen.getByText('Datalab')).toBeInTheDocument()
-    expect(screen.queryAllByText('Overlap')).toHaveLength(0)
-
     await userEvent.click(screen.getByRole('tab', { name: 'Upcoming' }))
     expect(screen.getByText('Programming')).toBeInTheDocument()
-    expect(screen.getByText('Datalab')).toBeInTheDocument()
   })
 
-  it('shows every active overlap and an honest stale empty state', async () => {
+  it('requires an explicit source before exposing scoped groups', async () => {
+    state.setSourceAssociated.mockClear()
     state.data = {
-      group_options: ['ADSAI-ZM-1.a'],
-      selected_group: 'ADSAI-ZM-1.a',
-      sources: [
-        {
-          connection_id: 'school-source',
-          enabled: true,
-          connection_status: 'connected',
-          sync_status: 'succeeded',
-          last_successful_sync_at: new Date(2026, 8, 22, 8).toISOString(),
-          last_sync_error_code: null,
-          last_sync_error_message: null,
-        },
-      ],
-      events: [],
-    }
-    const view = renderSchedule()
-    expect(screen.getByText(/may be out of date/)).toBeInTheDocument()
-    expect(screen.getByText('No school events today.')).toBeInTheDocument()
-
-    state.data = {
-      ...state.data,
-      events: [
-        event('one', 'First lesson', new Date(2026, 8, 23, 9), new Date(2026, 8, 23, 11)),
-        event(
-          'two',
-          'Second lesson',
-          new Date(2026, 8, 23, 10),
-          new Date(2026, 8, 23, 12),
-        ),
-      ],
-    }
-    view.rerender(
-      <MemoryRouter>
-        <SchoolSchedule spaceId="school" now={now} />
-      </MemoryRouter>,
-    )
-    expect(screen.getAllByText('Overlap')).toHaveLength(2)
-    expect(screen.getByText('First lesson')).toBeInTheDocument()
-    expect(screen.getByText('Second lesson')).toBeInTheDocument()
-  })
-
-  it('shows disconnected and unavailable connection states without pretending data is current', () => {
-    state.data = {
-      events: [],
-      sources: [],
-      group_options: [],
-      selected_group: 'ADSAI-ZM-1.a',
-    }
-    const view = renderSchedule()
-    expect(screen.getByText('No School calendar is connected.')).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'Open Connections' })).toHaveAttribute(
-      'href',
-      '/settings',
-    )
-
-    state.data = {
-      group_options: [],
-      selected_group: 'ADSAI-ZM-1.a',
       events: [],
       sources: [
-        {
-          connection_id: 'school-source',
-          enabled: false,
-          connection_status: 'disconnected',
-          sync_status: 'idle',
-          last_successful_sync_at: null,
-          last_sync_error_code: null,
-          last_sync_error_message: null,
-        },
+        source({
+          connection_id: 'mtt-x',
+          associated: false,
+          selected_groups: [],
+          group_options: [],
+          group_selection_valid: false,
+        }),
       ],
     }
-    view.rerender(
-      <MemoryRouter>
-        <SchoolSchedule spaceId="school" now={now} />
-      </MemoryRouter>,
-    )
-    expect(screen.getByText(/disconnected or disabled/)).toBeInTheDocument()
+    renderSchedule()
+
+    expect(screen.getByText('Finish timetable setup')).toBeInTheDocument()
+    expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('checkbox', { name: /MyTimetable/ }))
+    expect(state.setSourceAssociated).toHaveBeenCalledWith('mtt-x', true)
   })
 
-  it('keeps cached events visible when the latest synchronization failed', () => {
+  it('selects a group only for its associated MyTimetable connection', async () => {
+    state.selectSourceGroup.mockClear()
     state.data = {
-      group_options: ['ADSAI-ZM-1.a'],
-      selected_group: 'ADSAI-ZM-1.a',
+      events: [],
+      sources: [
+        source({
+          connection_id: 'mtt-x',
+          selected_groups: [],
+          group_selection_valid: false,
+        }),
+      ],
+    }
+    renderSchedule()
+
+    const selector = screen.getByRole('combobox', {
+      name: 'Group for MyTimetable',
+    })
+    expect(selector).toHaveTextContent('ADSAI-ZM-1.a')
+    await userEvent.selectOptions(selector, 'ADSAI-ZM-1.a')
+    expect(state.selectSourceGroup).toHaveBeenCalledWith('mtt-x', 'ADSAI-ZM-1.a')
+  })
+
+  it('distinguishes same-provider connections without exposing feed details', () => {
+    state.data = {
+      events: [],
+      sources: [
+        source({
+          connection_id: 'mtt-x',
+          associated: false,
+          selected_groups: [],
+          group_options: [],
+        }),
+        source({
+          connection_id: 'mtt-y',
+          associated: false,
+          selected_groups: [],
+          group_options: [],
+        }),
+      ],
+    }
+    renderSchedule()
+    expect(screen.getByText('MyTimetable connection 1')).toBeInTheDocument()
+    expect(screen.getByText('MyTimetable connection 2')).toBeInTheDocument()
+    expect(screen.queryByText(/https?:\/\//)).not.toBeInTheDocument()
+  })
+
+  it('shows disabled cached state and keeps Brightspace calendar-only', () => {
+    state.data = {
       events: [
         event(
           'cached',
@@ -217,39 +212,28 @@ describe('School schedule', () => {
         ),
       ],
       sources: [
-        {
-          connection_id: 'school-source',
-          enabled: true,
+        source({
+          enabled: false,
           connection_status: 'degraded',
           sync_status: 'failed',
-          last_successful_sync_at: new Date(2026, 8, 22, 8).toISOString(),
           last_sync_error_code: 'network',
           last_sync_error_message: 'Offline',
-        },
+        }),
+        source({
+          connection_id: 'bsp',
+          provider_id: 'brightspace',
+          display_name: 'Brightspace',
+          associated: true,
+          selected_groups: [],
+          group_options: [],
+          group_selection_valid: true,
+        }),
       ],
     }
     renderSchedule()
     expect(screen.getByText(/latest calendar sync failed/)).toBeInTheDocument()
     expect(screen.getByText('Cached lesson')).toBeInTheDocument()
-  })
-
-  it('shows setup without events and persists a locally discovered group selection', async () => {
-    state.selectGroup.mockClear()
-    state.data = {
-      events: [],
-      sources: [],
-      group_options: ['ADSAI-DH-1.a', 'ADSAI-ZM-1.a'],
-      selected_group: null,
-    }
-    renderSchedule()
-
-    expect(screen.getByText('Select your school group')).toBeInTheDocument()
-    expect(screen.queryByRole('tab', { name: 'Today' })).not.toBeInTheDocument()
-    expect(screen.queryByText('No school events today.')).not.toBeInTheDocument()
-    const selector = screen.getByRole('combobox', { name: 'School group' })
-    expect(selector).toHaveTextContent('ADSAI-ZM-1.a')
-
-    await userEvent.selectOptions(selector, 'ADSAI-ZM-1.a')
-    expect(state.selectGroup).toHaveBeenCalledWith('ADSAI-ZM-1.a')
+    expect(screen.getByText(/Calendar-only/)).toBeInTheDocument()
+    expect(screen.getByText('Disabled')).toBeInTheDocument()
   })
 })

@@ -83,10 +83,7 @@ mod tests {
                 "updaterConfigured",
             ]
         );
-        assert_eq!(
-            value["databaseSchema"],
-            "017_subscribed_calendar_generation"
-        );
+        assert_eq!(value["databaseSchema"], "018_school_space_sources");
         assert_eq!(value["databaseIntegrity"], "ok");
         assert_eq!(
             value["platform"],

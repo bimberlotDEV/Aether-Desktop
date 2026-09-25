@@ -4,39 +4,30 @@
 | --- | --- |
 | Schema version | 2 |
 | Session date | 2026-09-25 |
-| Active task | `INT-SYNC-002` |
+| Active task | `SCHOOL-SCOPE-002` |
 | Agent | Codex |
-| State | published |
+| State | verified; publication pending |
 
 ## Current work
 
-Aether 26 Integration Sync Runtime hardening is implemented and verified on
-`agent/integration-sync-002`. Provider serialization remains. Each provider has a
-bounded FIFO containing each distinct connection at most once; same-connection
-duplicates coalesce, while distinct same-provider requests return `queued` and
-advance directly after terminal cleanup.
+Aether 27 explicit School source scoping is implemented and verified on
+`agent/school-scope-002`. Migration 018 adds normalized Space→connection bindings
+and per-source group rows. Rust derives all schedule authority from an active parent
+School Space; same provider/group labels cannot cross connections or Spaces.
 
-Queued entries capture configuration generation and revalidate generation,
-provider, enabled/connection state, trigger mode, and retry eligibility before
-dispatch. Disconnect/disable removes queued work, replacement swaps stale queued
-work for one current-generation follow-up, cancellation/shutdown terminalize
-persisted runs, and late disabled/deleted writes are rejected.
+Disabled sources retain scoped cached data with truthful state. Disconnected or
+deleted sources return no events, deletion cascades bindings, and same-connection
+feed replacement preserves them. Brightspace can be associated but remains
+calendar-only and is not projected into timetable views.
 
-Commit/reconciliation failure rolls back the authoritative transaction, preserves
-the prior snapshot and validators, records sanitized retryable `local_commit`
-failure metadata, and emits one terminal event. Startup, resume, and periodic
-scheduling now select only connections declaring the matching trigger.
-
-Focused suites pass: Integration Sync 17, Integration repository 7, MyTimetable 22,
-Brightspace 4, CAL-ICS 21, subscribed-calendar 2, and generation-filtered 9. Full
-validation passes: 196 Rust tests, 132 frontend tests across 37 files, production
-frontend build, Rust formatting, strict Clippy, TypeScript, lint, and diff check.
-No migration or dependency was added; ADR-030 was amended.
-
-Implementation commit `e4d0baf` is pushed to
-`origin/agent/integration-sync-002`, and draft PR #62 is open.
+Focused suites pass: School repository 13, source migration 2, MyTimetable 22,
+Brightspace 4, and School/frontend IPC 34. Full validation passes: 202 Rust tests,
+132 frontend tests across 37 files, production frontend build, Rust formatting,
+strict Clippy, TypeScript, lint, and diff check. No dependency was added; ADR-031
+records the durable boundary.
 
 ## Exact resume point
 
-Wait for review/CI on draft PR #62. `SCHOOL-SCOPE-002` remains the release blocker
-and must not be started in this task.
+Publish the verified task-owned paths with `scripts/publish-task.ps1`, record the
+implementation commit and draft PR, then stop. Do not begin Pulse, AI, or richer
+LMS semantics.
