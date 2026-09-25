@@ -824,6 +824,9 @@ export const AiMessageSchema = z.object({
   model: z.string().nullable(),
   routing_mode: z.enum(['auto', 'manual']).nullable(),
   route_reason: z.string().nullable(),
+  route_policy_mode: z.enum(['local_only', 'cloud_only', 'automatic']).nullable(),
+  execution_location: z.enum(['on_device', 'cloud', 'remote_private']).nullable(),
+  runtime_id: z.string().nullable(),
   created_at: z.string(),
   updated_at: z.string(),
 })
@@ -862,6 +865,21 @@ export const AiProviderStatusSchema = z.object({
   status: z.enum(['configured', 'missing', 'unavailable']),
 })
 export type AiProviderStatus = z.infer<typeof AiProviderStatusSchema>
+
+export const AiRoutingSettingsSchema = z.object({
+  mode: z.enum(['local_only', 'cloud_only', 'automatic']),
+  preferredLocalRuntime: z.string().nullable(),
+  preferredLocalModel: z.string().nullable(),
+  preferredCloudProvider: z.enum(['deepseek', 'openai']).nullable(),
+  preferredCloudModel: z.string().nullable(),
+  automaticCloudFallback: z.enum(['never', 'prompt_only', 'ask_when_needed']),
+  cloudDisclosurePolicy: z.enum([
+    'always_ask',
+    'ask_for_aether_data',
+    'allow_explicit_attachments',
+  ]),
+})
+export type AiRoutingSettings = z.infer<typeof AiRoutingSettingsSchema>
 
 export const AiResolvedContextItemSchema = z.object({
   attachmentId: z.string(),

@@ -131,6 +131,10 @@ impl ProviderError {
             message: message.into(),
         }
     }
+
+    pub(crate) fn public(code: &'static str, message: impl Into<String>) -> Self {
+        Self::new(code, message)
+    }
 }
 
 #[derive(Debug, Clone)]

@@ -67,6 +67,7 @@ SQLite / native capabilities / external providers
 11. Workspace archives use SQLite backup semantics, omit credentials, verify every payload, include only Aether-managed Vault bytes, and restore only through preview, one-time approval, staging, restart, and rollback-safe replacement.
 12. Public Windows delivery uses separate Authenticode and updater-signature trust roots. Release configuration is generated only in a protected manual workflow; Rust owns fixed-endpoint update checks, pending signed artifacts, explicit installation approval, and restart.
 13. First-run state is initialized in Rust. Empty workspaces receive onboarding, meaningful upgraded workspaces bypass it, and optional Source/AI setup reuses existing native authorization and credential boundaries.
+14. AI routing, data-egress privacy, and future tool authorization are separate Rust-owned authorities. A closed provider-neutral backend registry produces one immutable Local only, Cloud only, or Automatic route before serialization and never switches backend or locality after dispatch.
 
 ## UI and design constraints
 
@@ -123,6 +124,7 @@ SQLite / native capabilities / external providers
 | `ADR-028` | Normalize provider-owned external calendar occurrences with stable provider identity, native authoritative reconciliation, and read-only bounded IPC.                                         | Accepted                | `docs/decisions/028-calendar-core.md`                |
 | `ADR-029` | Ingest renewable iCalendar subscriptions through a native, bounded HTTPS/parser/recurrence engine while retaining URLs only in DPAPI secrets and leaving sync runtime ownership separate. | Accepted | `docs/decisions/029-ics-subscription-ingestion.md` |
 | `ADR-031` | Bind each parent School Space to explicit Integration connection IDs and scope MyTimetable group selection and timetable reads per bound source. | Accepted | `docs/decisions/031-school-source-scoping.md` |
+| `ADR-032` | Route AI through a closed provider-neutral backend contract with native locality, deterministic Local/Cloud/Automatic policy, separate disclosure authority, and content-free provenance. | Accepted | `docs/decisions/032-ai-router-phase-1.md` |
 | `ADR-027` | Persist provider-neutral integration lifecycle metadata locally and retain only opaque native credential references; connectors, transport, and provider payloads remain outside the generic core. | Accepted | `docs/decisions/027-integration-core.md` |
 
 ## Architecture change protocol

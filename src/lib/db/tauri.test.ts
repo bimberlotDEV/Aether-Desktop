@@ -54,6 +54,8 @@ import {
   executeAction,
   cancelAction,
   listAiProviderStatuses,
+  getAiRoutingSettings,
+  setAiRoutingSettings,
   setAiProviderApiKey,
   testAiProviderConnection,
   parseAiActionProposals,
@@ -531,6 +533,23 @@ describe('Tauri database boundary', () => {
       messageId: 'message-1',
       index: 0,
     })
+  })
+
+  it('uses dedicated typed commands for AI routing settings', async () => {
+    const settings = {
+      mode: 'automatic' as const,
+      preferredLocalRuntime: null,
+      preferredLocalModel: null,
+      preferredCloudProvider: 'openai' as const,
+      preferredCloudModel: 'gpt-5-mini',
+      automaticCloudFallback: 'ask_when_needed' as const,
+      cloudDisclosurePolicy: 'ask_for_aether_data' as const,
+    }
+    await getAiRoutingSettings()
+    await setAiRoutingSettings(settings)
+
+    expect(invoke).toHaveBeenNthCalledWith(1, 'ai_get_routing_settings')
+    expect(invoke).toHaveBeenNthCalledWith(2, 'ai_set_routing_settings', { settings })
   })
 
   it('passes explicit Memory scope and content through typed boundaries', async () => {

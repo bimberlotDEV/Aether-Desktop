@@ -1,6 +1,10 @@
+pub mod backend;
+pub mod capabilities;
 pub mod context;
 pub mod credentials;
+pub mod privacy;
 pub mod proposals;
 pub mod provider;
 pub mod routing;
 pub mod runtime;
+pub mod settings;

@@ -7,6 +7,7 @@ import type {
   AiResolvedContextItem,
   AiProvider,
   AiProviderStatus,
+  AiRoutingSettings,
 } from '@/lib/db/types'
 import * as db from '@/lib/db/tauri'
 
@@ -31,6 +32,15 @@ function upsertMessage(messages: AiMessage[], next: AiMessage) {
 
 export function useAiSettings() {
   const [statuses, setStatuses] = useState<AiProviderStatus[]>([])
+  const [routingSettings, setRoutingSettings] = useState<AiRoutingSettings>({
+    mode: 'automatic',
+    preferredLocalRuntime: null,
+    preferredLocalModel: null,
+    preferredCloudProvider: null,
+    preferredCloudModel: null,
+    automaticCloudFallback: 'ask_when_needed',
+    cloudDisclosurePolicy: 'ask_for_aether_data',
+  })
   const [loading, setLoading] = useState(isTauri)
   const [error, setError] = useState<string | null>(null)
 
@@ -39,7 +49,12 @@ export function useAiSettings() {
     setLoading(true)
     setError(null)
     try {
-      setStatuses(await db.listAiProviderStatuses())
+      const [nextStatuses, nextRoutingSettings] = await Promise.all([
+        db.listAiProviderStatuses(),
+        db.getAiRoutingSettings(),
+      ])
+      setStatuses(nextStatuses)
+      setRoutingSettings(nextRoutingSettings)
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not read AI settings.')
     } finally {
@@ -82,8 +97,29 @@ export function useAiSettings() {
     }
   }, [])
 
+  const updateRouting = useCallback(async (next: AiRoutingSettings) => {
+    setError(null)
+    try {
+      setRoutingSettings(await db.setAiRoutingSettings(next))
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Could not save AI routing.')
+      throw cause
+    }
+  }, [])
+
   const status = statuses.some((item) => item.configured) ? 'configured' : 'missing'
-  return { status, statuses, loading, error, save, remove, test, isTauri }
+  return {
+    status,
+    statuses,
+    routingSettings,
+    loading,
+    error,
+    save,
+    remove,
+    test,
+    updateRouting,
+    isTauri,
+  }
 }
 
 export function useAiConversations(spaceId?: string) {
@@ -112,7 +148,7 @@ export function useAiConversations(spaceId?: string) {
   }, [load])
 
   const create = useCallback(
-    async (model = 'deepseek-v4-flash') => {
+    async (model = 'auto') => {
       const conversation = await db.createAiConversation({ spaceId, model })
       notifyConversations()
       return conversation
@@ -226,6 +262,9 @@ export function useAiConversation(conversationId: string | null) {
             model: null,
             routing_mode: null,
             route_reason: null,
+            route_policy_mode: null,
+            execution_location: null,
+            runtime_id: null,
             created_at: now,
             updated_at: now,
           },

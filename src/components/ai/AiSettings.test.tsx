@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
   save: vi.fn(),
   remove: vi.fn(),
   test: vi.fn(),
+  updateRouting: vi.fn(),
   useAiSettings: vi.fn(),
 }))
 
@@ -18,6 +19,7 @@ describe('AI settings', () => {
     mocks.save.mockReset().mockResolvedValue(undefined)
     mocks.remove.mockReset().mockResolvedValue(undefined)
     mocks.test.mockReset().mockResolvedValue('Connection successful.')
+    mocks.updateRouting.mockReset().mockResolvedValue(undefined)
     mocks.useAiSettings.mockReturnValue({
       status: 'configured',
       statuses: [
@@ -26,10 +28,20 @@ describe('AI settings', () => {
       ],
       loading: false,
       error: null,
+      routingSettings: {
+        mode: 'automatic',
+        preferredLocalRuntime: null,
+        preferredLocalModel: null,
+        preferredCloudProvider: null,
+        preferredCloudModel: null,
+        automaticCloudFallback: 'ask_when_needed',
+        cloudDisclosurePolicy: 'ask_for_aether_data',
+      },
       isTauri: true,
       save: mocks.save,
       remove: mocks.remove,
       test: mocks.test,
+      updateRouting: mocks.updateRouting,
     })
   })
 
@@ -51,5 +63,24 @@ describe('AI settings', () => {
     await user.click(screen.getByRole('button', { name: 'Remove DeepSeek key' }))
     await user.click(screen.getAllByRole('button', { name: 'Remove DeepSeek key' })[1])
     expect(mocks.remove).toHaveBeenCalledWith('deepseek')
+  })
+
+  it('shows truthful routing, local-runtime, and privacy controls', async () => {
+    const user = userEvent.setup()
+    render(<AiSettings />)
+
+    expect(screen.getByText(/no local runtime is configured or available/i)).toBeVisible()
+    expect(screen.getByText(/eligible local model first/i)).toBeVisible()
+    await user.selectOptions(screen.getByLabelText('AI routing mode'), 'local_only')
+    expect(mocks.updateRouting).toHaveBeenCalledWith(
+      expect.objectContaining({ mode: 'local_only' }),
+    )
+    await user.selectOptions(
+      screen.getByLabelText('Cloud disclosure policy'),
+      'allow_explicit_attachments',
+    )
+    expect(mocks.updateRouting).toHaveBeenCalledWith(
+      expect.objectContaining({ cloudDisclosurePolicy: 'allow_explicit_attachments' }),
+    )
   })
 })
