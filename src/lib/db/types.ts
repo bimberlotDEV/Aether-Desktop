@@ -412,48 +412,85 @@ export const PulseTaskSchema = z.object({
   spaceName: z.string().nullable(),
   dueDate: LocalDateSchema,
   priority: TaskPrioritySchema,
+  category: z.enum(['overdue', 'today', 'soon']),
   destination: z.string(),
 })
 export type PulseTask = z.infer<typeof PulseTaskSchema>
 
-export const PulseSpaceSchema = z.object({
+export const PulseContinuityItemSchema = z.object({
   id: z.string(),
   name: z.string(),
   reason: z.string(),
   lastWorkedAt: z.string(),
   destination: z.string(),
 })
-export type PulseSpace = z.infer<typeof PulseSpaceSchema>
+export type PulseContinuityItem = z.infer<typeof PulseContinuityItemSchema>
 
-export const PulseFileSchema = z.object({
+export const PulseEventSchema = z.object({
   id: z.string(),
+  sourceId: z.string(),
+  sourceLabel: z.string(),
+  sourceType: z.enum(['school_calendar', 'calendar']),
   title: z.string(),
-  detail: z.string(),
-  spaceId: z.string().nullable(),
-  spaceName: z.string().nullable(),
-  detectedAt: z.string(),
-  destination: z.string(),
-})
-export type PulseFile = z.infer<typeof PulseFileSchema>
+  timeKind: z.enum(['timed', 'all_day']),
+  startAt: z.string().nullable(),
+  endAt: z.string().nullable(),
+  startDate: LocalDateSchema.nullable(),
+  endDate: LocalDateSchema.nullable(),
+  location: z.string().nullable(),
+  cancelled: z.boolean(),
+}).strict()
+export type PulseEvent = z.infer<typeof PulseEventSchema>
 
-export const PulseSuggestionSchema = z.object({
-  title: z.string(),
-  detail: z.string(),
-  destination: z.string(),
-  sourceType: z.enum(['task', 'space', 'file', 'empty']),
-  sourceId: z.string().nullable(),
+export const PulseConflictSchema = z.object({
+  id: z.string(),
+  first: PulseEventSchema,
+  second: PulseEventSchema,
+})
+
+export const PulseTrustItemSchema = z.object({
+  sourceId: z.string(),
+  sourceLabel: z.string(),
+  providerLabel: z.string(),
+  enabled: z.boolean(),
+  state: z.enum([
+    'fresh',
+    'stale',
+    'syncing',
+    'disabled',
+    'disconnected',
+    'degraded',
+    'never_synced',
+  ]),
+  freshness: z.enum(['fresh', 'stale', 'never_synced']),
+  lastSuccessfulSyncAt: z.string().nullable(),
+  lastAttemptedAt: z.string().nullable(),
+  errorCategory: z
+    .enum(['authorization', 'rate_limited', 'network', 'invalid_data', 'sync_error'])
+    .nullable(),
+  showingCachedData: z.boolean(),
+}).strict()
+
+export const PulseSectionIssueSchema = z.object({
+  section: z.string(),
+  state: z.literal('degraded'),
+  message: z.string(),
 })
 
 export const PulseSnapshotSchema = z.object({
-  today: LocalDateSchema,
-  overdue: z.array(PulseTaskSchema),
-  dueToday: z.array(PulseTaskSchema),
-  upcoming: z.array(PulseTaskSchema),
-  continueSpaces: z.array(PulseSpaceSchema),
-  newFiles: z.array(PulseFileSchema),
-  recentActivity: z.array(ActivityItemSchema),
-  suggestedNextStep: PulseSuggestionSchema,
-})
+  generatedAt: z.string(),
+  localDate: LocalDateSchema,
+  now: z.array(PulseEventSchema).max(30),
+  next: PulseEventSchema.nullable(),
+  today: z.array(PulseEventSchema).max(30),
+  upcoming: z.array(PulseEventSchema).max(30),
+  tasks: z.array(PulseTaskSchema).max(20),
+  conflicts: z.array(PulseConflictSchema).max(10),
+  continuity: z.array(PulseContinuityItemSchema).max(5),
+  trust: z.array(PulseTrustItemSchema),
+  academicDeadlinesAvailable: z.literal(false),
+  issues: z.array(PulseSectionIssueSchema),
+}).strict()
 export type PulseSnapshot = z.infer<typeof PulseSnapshotSchema>
 
 export const ActionRequestSchema = z.discriminatedUnion('type', [

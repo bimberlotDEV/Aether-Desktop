@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { PulseSnapshot } from '@/lib/db/types'
+import type { PulseEvent, PulseSnapshot } from '@/lib/db/types'
 
 const reload = vi.fn().mockResolvedValue(undefined)
 let pulseState: {
@@ -17,62 +17,74 @@ vi.mock('@/hooks/usePulse', () => ({ usePulse: () => pulseState }))
 
 import { Pulse } from '@/routes/Pulse'
 
+const current: PulseEvent = {
+  id: 'class',
+  sourceId: 'mtt',
+  sourceLabel: 'Study timetable',
+  sourceType: 'school_calendar',
+  title: 'Data systems',
+  timeKind: 'timed',
+  startAt: '2026-09-26T10:00:00Z',
+  endAt: '2026-09-26T11:00:00Z',
+  startDate: null,
+  endDate: null,
+  location: 'B2.14',
+  cancelled: false,
+}
+
+const next: PulseEvent = {
+  ...current,
+  id: 'lab',
+  title: 'Studio lab',
+  startAt: '2026-09-26T12:00:00Z',
+  endAt: '2026-09-26T13:00:00Z',
+}
+
 const snapshot: PulseSnapshot = {
-  today: '2026-08-27',
-  overdue: [
+  generatedAt: '2026-09-26T10:30:00Z',
+  localDate: '2026-09-26',
+  now: [current],
+  next,
+  today: [current, next],
+  upcoming: [{ ...next, id: 'tomorrow', title: 'Tomorrow seminar', startAt: '2026-09-27T08:00:00Z' }],
+  tasks: [
     {
       id: 'late',
       title: 'Send invoice',
       spaceId: 'work',
       spaceName: 'Work',
-      dueDate: '2026-08-26',
+      dueDate: '2026-09-25',
       priority: 'high',
+      category: 'overdue',
       destination: '/tasks',
     },
   ],
-  dueToday: [],
-  upcoming: [],
-  continueSpaces: [
+  conflicts: [{ id: 'class:lab', first: current, second: next }],
+  continuity: [
     {
       id: 'work',
       name: 'Work',
       reason: 'Recent Note work',
-      lastWorkedAt: '2026-08-27 10:00:00',
+      lastWorkedAt: '2026-09-26 10:00:00',
       destination: '/spaces/work',
     },
   ],
-  newFiles: [
+  trust: [
     {
-      id: 'file',
-      title: 'brief.pdf',
-      detail: 'Work files · briefs/brief.pdf',
-      spaceId: 'work',
-      spaceName: 'Work',
-      detectedAt: '2026-08-27 09:00:00',
-      destination: '/sources',
+      sourceId: 'mtt',
+      sourceLabel: 'Study timetable',
+      providerLabel: 'MyTimetable',
+      enabled: true,
+      state: 'stale',
+      freshness: 'stale',
+      lastSuccessfulSyncAt: '2026-09-26T06:00:00Z',
+      lastAttemptedAt: '2026-09-26T06:00:00Z',
+      errorCategory: null,
+      showingCachedData: true,
     },
   ],
-  recentActivity: [
-    {
-      id: 'activity',
-      eventType: 'note_edited',
-      title: 'Edited note Plan',
-      detail: null,
-      spaceId: 'work',
-      spaceName: 'Work',
-      entityType: 'note',
-      entityId: 'note',
-      destination: '/spaces/work/notes',
-      createdAt: '2026-08-27 08:00:00',
-    },
-  ],
-  suggestedNextStep: {
-    title: 'Continue Send invoice',
-    detail: 'This open Task is overdue',
-    destination: '/tasks',
-    sourceType: 'task',
-    sourceId: 'late',
-  },
+  academicDeadlinesAvailable: false,
+  issues: [],
 }
 
 function Location() {
@@ -97,28 +109,61 @@ function renderPulse() {
   )
 }
 
-describe('Pulse 2.0', () => {
+describe('connected Pulse 2.0', () => {
   beforeEach(() => {
     reload.mockClear()
     pulseState = { data: snapshot, loading: false, error: null, isDesktop: true, reload }
   })
 
-  it('shows factual daily sections and navigates the grounded suggestion', async () => {
+  it('renders now, next, schedule, tasks, conflicts, continuity, and trust', async () => {
     const user = userEvent.setup()
     renderPulse()
 
-    expect(screen.getByText('Today')).toBeInTheDocument()
+    expect(screen.getByText('Now')).toBeInTheDocument()
+    expect(screen.getAllByText('Data systems').length).toBeGreaterThan(0)
+    expect(screen.getAllByText('Studio lab').length).toBeGreaterThan(0)
     expect(screen.getByText('Send invoice')).toBeInTheDocument()
+    expect(screen.getByText(/Data systems overlaps Studio lab/)).toBeInTheDocument()
     expect(screen.getByText('Recent Note work')).toBeInTheDocument()
-    expect(screen.getByText('Work files · briefs/brief.pdf')).toBeInTheDocument()
-    expect(screen.getByText('Edited note Plan')).toBeInTheDocument()
-    expect(screen.getByText('This open Task is overdue')).toBeInTheDocument()
-    expect(
-      screen.getByText(/attach only the Notes, Tasks, files, or Memory/i),
-    ).toBeInTheDocument()
+    expect(screen.getByText(/Stale · showing cached data/)).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: 'Continue' }))
+    await user.click(screen.getByRole('button', { name: 'Open Tasks' }))
     expect(screen.getByTestId('location')).toHaveTextContent('/tasks')
+  })
+
+  it('shows one intentional empty overview without fake records', () => {
+    pulseState = {
+      ...pulseState,
+      data: {
+        ...snapshot,
+        now: [],
+        next: null,
+        today: [],
+        upcoming: [],
+        tasks: [],
+        conflicts: [],
+        continuity: [],
+        trust: [],
+      },
+    }
+    renderPulse()
+    expect(screen.getByText(/Nothing needs your attention/)).toBeInTheDocument()
+    expect(screen.getByText(/No timed event is happening now/)).toBeInTheDocument()
+  })
+
+  it('surfaces sanitized section degradation while retaining available data', () => {
+    pulseState = {
+      ...pulseState,
+      data: {
+        ...snapshot,
+        issues: [
+          { section: 'schedule', state: 'degraded', message: 'schedule is temporarily unavailable' },
+        ],
+      },
+    }
+    renderPulse()
+    expect(screen.getByRole('status')).toHaveTextContent('schedule is temporarily unavailable')
+    expect(screen.getByText('Send invoice')).toBeInTheDocument()
   })
 
   it('never fabricates persisted state in browser mode', () => {
@@ -126,6 +171,12 @@ describe('Pulse 2.0', () => {
     renderPulse()
     expect(screen.getByText(/installed app/i)).toBeInTheDocument()
     expect(screen.queryByText('Send invoice')).not.toBeInTheDocument()
+  })
+
+  it('shows an intentional loading state', () => {
+    pulseState = { data: null, loading: true, error: null, isDesktop: true, reload }
+    renderPulse()
+    expect(screen.getByRole('status')).toHaveTextContent(/Building today’s local snapshot/)
   })
 
   it('surfaces read errors and offers a retry', async () => {

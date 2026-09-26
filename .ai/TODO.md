@@ -157,7 +157,7 @@ This section defines direction, not automatic implementation authorization.
 | P1       | `INT-SYNC-002`     | Harden Integration Sync scheduling and terminal state | Security / Runtime               | `done`         | `INT-SYNC-001`, `CAL-SUB-ROTATE-001`                  | Distinct same-provider connections progress through a fair bounded FIFO and every started run reaches one truthful terminal outcome.                                      |
 | P1       | `SCHOOL-SCOPE-002` | Implement explicit School Space source scoping      | Security / Data                     | `done`         | `SCHOOL-SPACE-001`, `CAL-SUB-ROTATE-001`, `INT-SYNC-002` | Parent School Spaces authorize explicit connection IDs; group discovery and timetable reads cannot cross connection or Space boundaries.                                  |
 | P0       | `SCHOOL-SPACE-001` | Add ICS-first School timetable views                | Product / UX                       | `done`         | `SCHOOL-MTT-001`                                      | The existing School parent Space surfaces local normalized MyTimetable events in truthful Today, Week, and Upcoming views, scoped to a persisted user-selected group. |
-| P0       | `PULSE-003`        | Add connected schedule/deadline relevance to Pulse | Product / UX / Data                | `candidate`    | `CAL-CORE-001`, at least one working school connector | Pulse surfaces today's real schedule and upcoming deadlines through deterministic local read models without provider-specific UI coupling or hidden AI.                  |
+| P0       | `PULSE-003`        | Add connected schedule/deadline relevance to Pulse | Product / UX / Data                | `done`         | `CAL-CORE-001`, `SCHOOL-SCOPE-002`, `SCHOOL-BSP-REMOVE-001` | Pulse surfaces today's real schedule, due Tasks, conflicts, continuity, and source trust through one minimized deterministic native snapshot without inferred academic deadlines or hidden AI. |
 | P1       | `AI-CAL-001`       | Add bounded AI calendar/school read tools          | Product / AI / Security            | `needs_design` | Calendar + school read models                         | Aether can answer bounded questions such as “what do I have tomorrow?” using explicit local tool results instead of sending unrestricted database context.               |
 | P1       | `ACTION-CAL-001`   | Add Safe Actions for approved scheduling mutations | Product / Security / AI            | `needs_design` | `AI-CAL-001`, calendar mutation design                | Aether may propose a study/task scheduling change, show its consequence, require approval, execute once, and audit the result.                                           |
 | P1       | `GITHUB-INT-001`   | Add GitHub development integration                 | Product / Integration              | `candidate`    | `INT-CORE-001`                                        | Users can connect GitHub and surface bounded repository, issue, PR, build, and activity information without making Aether dependent on GitHub.                           |
@@ -171,9 +171,9 @@ This section defines direction, not automatic implementation authorization.
 
 # Next recommended planned task
 
-There is no active planned task. `SCHOOL-SCOPE-002` completes the four Aether 22
-high-severity School/Calendar blockers. Pulse, AI, OAuth, and richer LMS entities
-remain separate candidate or design work and were not started.
+There is no active planned task. `PULSE-003` is complete on `agent/pulse-003` and
+awaits draft-PR review. AI calendar tools, academic Deadline persistence, GitHub,
+OAuth, and automation remain separate candidate or design work.
 
 ---
 

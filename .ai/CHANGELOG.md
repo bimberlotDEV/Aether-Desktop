@@ -26,6 +26,18 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-09-26 — `PULSE-003` — Connected native Pulse snapshot
+
+- **Type:** Feature, architecture, privacy, UX, test, and docs
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review
+- **Summary:** Evolved Pulse into one bounded native snapshot for Now, Next, Today, Upcoming, open due Tasks, schedule conflicts, Continuity, and truthful source trust. MyTimetable data is resolved only through persisted School Space connection/group authorization, and optional section failures degrade independently.
+- **Files:** Native Pulse repository/read model, strict Pulse IPC schemas/wrapper, focused Pulse route/styles/tests, ADR-019 extension, and `.ai/*` records.
+- **Verification:** Focused native Pulse (11), frontend Pulse/IPC (32), School isolation (13), and MyTimetable-filtered (23) tests; full `cargo test` (225) and `pnpm test` (140 across 37 files); typecheck, lint, production build, Rust formatting, strict Clippy, and diff check — Pass.
+- **Decisions/deviations:** Migration: none. Dependencies: none. ADR-019 was extended rather than adding a new ADR. Freshness is native-owned with one two-hour threshold. Cached disabled/disconnected/degraded/stale events remain visible with truthful trust state. Academic deadlines remain unavailable and are never inferred from calendar text.
+- **Follow-up:** `AI-CAL-001` and any normalized academic Deadline domain remain separate planned work.
+- **Publication:** Implementation commit `96af188` is pushed to `origin/agent/pulse-003`; draft PR [#66](https://github.com/bimberlotDEV/Aether-Desktop/pull/66) is open.
+
 ## 2026-09-26 — `SCHOOL-BSP-REMOVE-001` — Brightspace integration retired
 
 - **Type:** Product, security, refactor, UX, test, and docs
