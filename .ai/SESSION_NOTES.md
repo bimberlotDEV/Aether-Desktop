@@ -6,7 +6,7 @@
 | Session date | 2026-09-26 |
 | Active task | `PULSE-003` |
 | Agent | Codex |
-| State | complete; publication pending |
+| State | complete; draft PR open |
 
 ## Current work
 
@@ -28,6 +28,6 @@ minimization, bounds, network, Brightspace, and scope review passed.
 
 ## Exact resume point
 
-Stage only the 13 task-owned paths, commit with the approved conventional message,
-publish through `scripts/publish-task.ps1`, record commit/PR details in the task
-records, push that records commit if separate, and stop when the draft PR is open.
+Implementation commit `96af188` is pushed to `origin/agent/pulse-003` and draft PR
+#66 is open. Commit and push these publication-record updates, then stop without
+beginning AI-CAL, academic Deadline persistence, or unrelated integration work.

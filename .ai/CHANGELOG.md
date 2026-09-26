@@ -36,6 +36,7 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Verification:** Focused native Pulse (11), frontend Pulse/IPC (32), School isolation (13), and MyTimetable-filtered (23) tests; full `cargo test` (225) and `pnpm test` (140 across 37 files); typecheck, lint, production build, Rust formatting, strict Clippy, and diff check — Pass.
 - **Decisions/deviations:** Migration: none. Dependencies: none. ADR-019 was extended rather than adding a new ADR. Freshness is native-owned with one two-hour threshold. Cached disabled/disconnected/degraded/stale events remain visible with truthful trust state. Academic deadlines remain unavailable and are never inferred from calendar text.
 - **Follow-up:** `AI-CAL-001` and any normalized academic Deadline domain remain separate planned work.
+- **Publication:** Implementation commit `96af188` is pushed to `origin/agent/pulse-003`; draft PR [#66](https://github.com/bimberlotDEV/Aether-Desktop/pull/66) is open.
 
 ## 2026-09-26 — `SCHOOL-BSP-REMOVE-001` — Brightspace integration retired
 

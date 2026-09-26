@@ -175,7 +175,7 @@ Passed. The final diff is limited to the Pulse repository/read model, strict Pul
 
 ## Publication state
 
-Implementation is verified locally. Commit/push/draft-PR details are recorded after publication.
+Published implementation commit `96af188` (`feat(pulse): add connected native snapshot`) to `origin/agent/pulse-003`; draft PR [#66](https://github.com/bimberlotDEV/Aether-Desktop/pull/66) is open. The post-commit hook could not fork its helper process, but `scripts/publish-task.ps1` completed the explicit push and draft-PR creation successfully.
 
 ## Stop condition
 
