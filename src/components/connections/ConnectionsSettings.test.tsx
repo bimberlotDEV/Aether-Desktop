@@ -9,21 +9,16 @@ const mocks = vi.hoisted(() => ({
   load: vi.fn(),
   refresh: vi.fn(),
   disconnectCalendar: vi.fn(),
+  removeUnsupportedCalendar: vi.fn(),
   validateMyTimetable: vi.fn(),
   connectMyTimetable: vi.fn(),
   replaceMyTimetableLink: vi.fn(),
-  validateBrightspace: vi.fn(),
-  connectBrightspace: vi.fn(),
-  replaceBrightspaceLink: vi.fn(),
 }))
 vi.mock('@/hooks/useConnections', () => ({ useConnections: mocks.useConnections }))
 vi.mock('@/lib/db/tauri', () => ({
   validateMyTimetable: mocks.validateMyTimetable,
   connectMyTimetable: mocks.connectMyTimetable,
   replaceMyTimetableLink: mocks.replaceMyTimetableLink,
-  validateBrightspace: mocks.validateBrightspace,
-  connectBrightspace: mocks.connectBrightspace,
-  replaceBrightspaceLink: mocks.replaceBrightspaceLink,
 }))
 
 import { ConnectionsSettings } from '@/components/connections/ConnectionsSettings'
@@ -68,6 +63,7 @@ function renderWith(overrides = {}) {
     setEnabled: mocks.setEnabled,
     refresh: mocks.refresh,
     disconnectCalendar: mocks.disconnectCalendar,
+    removeUnsupportedCalendar: mocks.removeUnsupportedCalendar,
     ...overrides,
   })
   return render(<ConnectionsSettings />)
@@ -79,6 +75,7 @@ describe('Connections settings', () => {
     mocks.load.mockReset()
     mocks.refresh.mockReset()
     mocks.disconnectCalendar.mockReset()
+    mocks.removeUnsupportedCalendar.mockReset()
     const validation = {
       usable: true,
       event_count: 1,
@@ -92,9 +89,6 @@ describe('Connections settings', () => {
     mocks.validateMyTimetable.mockReset().mockResolvedValue(validation)
     mocks.connectMyTimetable.mockReset().mockResolvedValue(undefined)
     mocks.replaceMyTimetableLink.mockReset().mockResolvedValue(undefined)
-    mocks.validateBrightspace.mockReset().mockResolvedValue(validation)
-    mocks.connectBrightspace.mockReset().mockResolvedValue(undefined)
-    mocks.replaceBrightspaceLink.mockReset().mockResolvedValue(undefined)
   })
 
   it('presents only persisted metadata, with safe errors and capability distinction', () => {
@@ -267,38 +261,28 @@ describe('Connections settings', () => {
     expect(screen.getByRole('button', { name: 'Refresh now' })).toBeDisabled()
   })
 
-  it('presents Brightspace as calendar-only and connects only after safe validation details', async () => {
+  it('does not advertise Brightspace and offers generic cleanup for a legacy row', async () => {
     const user = userEvent.setup()
-    mocks.validateBrightspace.mockResolvedValueOnce({
-      usable: true,
-      event_count: 12,
-      error_code: null,
-      display_name: 'My Brightspace calendar',
-      covered_start: '2026-09-01',
-      covered_end: '2026-12-31',
-      public_host: 'learn.example.edu',
-      warnings: [],
-    })
-    renderWith({ connections: [] })
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true)
+    const legacy = {
+      ...connection,
+      provider_id: 'brightspace',
+      auth_type: 'ics_feed' as const,
+      connection_status: 'unsupported' as const,
+    }
+    renderWith({ connections: [legacy] })
 
-    await user.click(screen.getAllByRole('button', { name: 'Connect calendar' })[1])
     expect(
-      screen.getByRole('dialog', { name: 'Connect Brightspace' }),
-    ).toBeInTheDocument()
-    expect(screen.getByText(/imports calendar events only/i)).toBeInTheDocument()
-    const input = screen.getByRole('textbox', { name: 'Calendar subscription link' })
-    await user.type(input, 'https://learn.example.edu/calendar.ics?token=private')
-    await user.click(screen.getByRole('button', { name: 'Validate calendar link' }))
-
-    expect(await screen.findByText('My Brightspace calendar')).toBeInTheDocument()
-    expect(screen.getByText('learn.example.edu')).toBeInTheDocument()
-    expect(screen.getByText('12')).toBeInTheDocument()
-    expect(mocks.connectBrightspace).not.toHaveBeenCalled()
-
-    await user.click(screen.getByRole('button', { name: 'Connect Brightspace' }))
-    expect(mocks.connectBrightspace).toHaveBeenCalledWith(
-      'https://learn.example.edu/calendar.ics?token=private',
-    )
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      screen.queryByRole('button', { name: 'Connect Brightspace' }),
+    ).not.toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: 'Connect calendar' })).toHaveLength(1)
+    expect(screen.queryByRole('button', { name: 'Refresh now' })).not.toBeInTheDocument()
+    expect(screen.queryByText('Advertised capabilities')).not.toBeInTheDocument()
+    expect(screen.queryByRole('checkbox', { name: 'Enabled' })).not.toBeInTheDocument()
+    expect(screen.getByText(/no longer supported/i)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Remove connection' }))
+    expect(confirm).toHaveBeenCalled()
+    expect(mocks.removeUnsupportedCalendar).toHaveBeenCalledWith(legacy)
+    confirm.mockRestore()
   })
 })

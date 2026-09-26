@@ -5,164 +5,178 @@
 | Field | Value |
 | --- | --- |
 | Schema version | 3 |
-| Task ID | `AI-ROUTER-001` |
+| Task ID | `SCHOOL-BSP-REMOVE-001` |
 | Status | `complete` |
 | Owner | Codex |
 | Last updated | 2026-09-25 |
-| Related milestone | Aether 28 — AI Router Phase 1 |
+| Related milestone | Aether 30 — remove the Brightspace integration |
 | Classification | `planned_codex` |
-| Branch / worktree | `agent/ai-router` |
+| Branch / worktree | `agent/remove-brightspace` |
 
 ## Objective
 
-Replace the cloud-specific AI route selector with a Rust-owned provider-neutral backend contract, deterministic Local only / Cloud only / Automatic routing, native privacy/disclosure policy, typed routing settings, and richer content-free provenance while preserving DeepSeek/OpenAI streaming, cancellation, credentials, proposal parsing, and Safe Actions separation.
+Remove Brightspace as an advertised, connectable, synchronizable, or School-associated provider while preserving provider-neutral subscribed-calendar infrastructure and allowing legacy Brightspace rows and credentials to be safely inspected and removed.
+
+## Context
+
+- The shipped Brightspace connector exposes only renewable ICS calendar data, while the intended product requires rich courses, assignments, deadlines, and materials.
+- Rich Brightspace APIs require institution-managed application authorization and are not presently a universal self-service integration.
+- MyTimetable, CAL-ICS, subscribed-calendar replacement, DPAPI secrets, Integration Sync, ExternalEvent, Calendar Core, and normalized School source scoping are shared infrastructure and remain authoritative.
+- Existing databases may contain `provider_id = 'brightspace'`, encrypted feed credentials, cached ExternalEvents, and School source bindings.
 
 ## Success criteria
 
-- [ ] DeepSeek and OpenAI implement one closed `ModelBackend` contract and retain fixed official endpoints, classified errors, streaming, and cancellation.
-- [ ] `LocalOnly`, `CloudOnly`, and `Automatic` are deterministic; Local only truthfully fails because no local backend exists; no route changes after dispatch.
-- [ ] Typed capabilities, task profile, context budget, environment, tool-scope placeholder, privacy snapshot, route request, immutable route decision, closed reasons, and typed failures are native-owned.
-- [ ] Prompt/history and explicitly attached Aether context are classified natively; prohibited data cannot be cloud-serialized; sensitive disclosure and one-time approval foundations are enforced.
-- [ ] Typed AI routing settings round-trip through dedicated commands and never expose or store credentials in `app_settings`.
-- [ ] Migration 019 adds bounded route/disclosure provenance without rewriting historical content; legacy route semantics map deterministically.
-- [ ] AI Settings exposes truthful routing/privacy controls and no-local-runtime state; responses show locality-aware provenance without raw decision JSON or hashes.
-- [ ] Existing proposals and Safe Actions remain separate; no tools, local runtime, vision, embeddings, or provider fallback after dispatch are added.
-- [ ] Required focused and full validation passes; no School/Calendar/Integration Sync path changes.
+- [x] Brightspace is absent from provider catalog/setup UI, typed setup wrappers, native provider commands, and active runtime dispatch.
+- [x] Generic creation rejects the retired Brightspace provider ID, while MyTimetable setup and refresh remain operational.
+- [x] Legacy Brightspace rows remain readable without startup failure, never dispatch sync, and can be removed through a provider-neutral unsupported-connection cleanup path that removes credentials and cascaded data.
+- [x] School source discovery and association accept only MyTimetable; legacy Brightspace bindings/events never enter School timetable presentation or event queries.
+- [x] Shared CAL-ICS, subscribed-calendar, DPAPI, redirect/SSRF, validator, replacement-generation, Integration Sync, ExternalEvent, Calendar Core, and `school_space_sources` infrastructure remain intact.
+- [x] Current-state documentation records intentional removal and parked rich support; historical changelog and ADR records remain historical.
+- [x] Required focused and full validation passes, followed by final diff review; draft PR publication is the remaining mechanical step.
 
-## In scope / allowed paths
+## In scope
 
-- `src-tauri/src/ai/**`
-- AI-specific portions of `src-tauri/src/commands.rs` and command registration in `src-tauri/src/lib.rs`
-- `src-tauri/src/db/migrations.rs`
-- `src-tauri/src/db/repositories/conversations.rs` and `settings.rs`
-- `src-tauri/src/diagnostics.rs` only for the latest-schema expectation
-- AI-specific schemas/wrappers/hooks/components/routes/tests under `src/`
-- `docs/decisions/021-ai-provider-routing.md`, new ADR-032, `docs/database.md`
+- Provider catalog, Connections setup/action presentation, frontend wrappers/types/tests.
+- Native Brightspace module/command removal and closed runtime dispatch update.
+- Small provider-neutral legacy cleanup command/service plus creation denylist for the retired ID.
+- School source query/association restriction and regression tests.
+- Current-state/task documentation and truthful retirement notes.
+
+## Allowed paths
+
+- `src-tauri/src/brightspace.rs` (delete)
+- `src-tauri/src/lib.rs`
+- `src-tauri/src/commands.rs`
+- `src-tauri/src/integration_sync.rs`
+- `src-tauri/src/subscribed_calendar_provider.rs`
+- `src-tauri/src/db/repositories/integrations.rs`
+- `src-tauri/src/db/repositories/school_schedule.rs`
+- `src/hooks/useConnections.ts`
+- `src/lib/db/tauri.ts`
+- `src/lib/db/types.ts`
+- `src/lib/integrations/presentation.ts` and focused tests
+- `src/components/connections/ConnectionsSettings.tsx` and focused tests
+- `src/components/school/SchoolSchedule.tsx` and focused tests
+- `docs/database.md`
+- `docs/decisions/031-school-source-scoping.md` only to mark the historical Brightspace clause superseded by this task
 - `.ai/ARCHITECTURE.md`, `.ai/HANDOFF.md`, `.ai/TODO.md`, `.ai/PROJECT_STATE.md`, `.ai/SESSION_NOTES.md`, `.ai/CHANGELOG.md`
-- publication scripts only through their existing interfaces
 
 ## Out of scope
 
-- Ollama, llama.cpp, packaged runtimes, remote-private runtime implementations, discovery outside the closed registry, arbitrary endpoints, vision behavior, embeddings, context compression, native AI tools, calendar/task tools, and model tool execution.
-- School, Calendar, MyTimetable, Brightspace, Integration Sync, Pulse, or unrelated UI redesign/refactoring.
-- Reusing Safe Actions tokens for disclosure approval or allowing the model/frontend to lower native classification or authorize execution.
+- Changes to MyTimetable behavior, generic calendar ingestion, Calendar Core identity, sync scheduling semantics, DPAPI, redirect/SSRF policy, validators, or replacement generations.
+- Database migration or automatic deletion of legacy rows, credentials, cached events, or historical records.
+- A replacement LMS connector, OAuth, courses, assignments, deadlines, materials, Pulse, AI, or Safe Actions.
+- Rewriting historical changelog entries, historical ADR rationale, Git history, or unrelated UI.
 
 ## Architecture constraints
 
-- ADR-032 is the binding successor/extension to ADR-021 for routing, locality, disclosure, and provenance; ADR-021 remains binding for fixed endpoints and Safe Actions separation.
-- Registry order is stable and closed. Filtering order is registered, enabled, routing locality, health/availability, capabilities, context capacity, privacy, approval, preference, then registry order.
-- The route decision is created before request serialization and is not mutated after dispatch. A provider failure never chooses another backend/locality.
-- `ExecutionLocation` is security-relevant. DeepSeek/OpenAI are Cloud; Phase 1 registers no OnDevice or RemotePrivate backend.
-- Missing capability metadata is unsupported and unknown context capacity is conservative.
-- Native classification floors are prompt/history = Personal; explicit Note/Task/Memory/Vault context = Sensitive; credentials and unbounded/raw sources = Prohibited.
-- `CloudOnly` is standing consent only for ordinary prompt/history sent to its selected cloud backend. Sensitive Aether context follows disclosure policy and approval requirements.
-- `ToolScope` is an empty/future-compatible authorization contract only; it grants no execution ability.
-- Migration 019 is append-only and stores only IDs, enums, reason/capability summaries, disclosure categories, and approval metadata—never prompt/context/tool bodies, credentials, or raw provider errors.
+- `my_timetable` remains the sole active School timetable provider.
+- Runtime provider dispatch stays closed; a persisted unregistered provider is rejected before work starts.
+- Legacy cleanup is provider-neutral and limited to unsupported subscribed-calendar records; it cancels runtime work, deletes the native secret, and then deletes the owning Integration so existing foreign-key lifecycle cleanup applies.
+- The public Integration schema continues to accept string provider IDs so legacy/unknown rows remain readable.
+- No migration: retention until explicit user cleanup is safer and smaller than mutating or deleting sensitive legacy state during upgrade.
 
 ## Dependencies
 
-- Existing ADR-011 context isolation, ADR-021 provider routing/proposals, DPAPI credential store, cancellable streaming runtime, conversation repository, app settings repository, and Safe Actions.
+- Existing Integration Core, CAL-ICS, subscribed-calendar provider, DPAPI credential repository, Integration Sync Runtime, Calendar Core, MyTimetable, and School source scoping.
 - No new dependency.
 
 ## Risks and safeguards
 
-- **Data egress:** native classification, cloud policy, and approval are checked before backend request construction; prohibited data is rejected.
-- **Hidden recipient change:** one immutable route is persisted and dispatched; no post-selection fallback exists.
-- **Legacy behavior regression:** legacy conversation provider/model fields are mapped deterministically and adapters reuse current request/SSE logic.
-- **Nondeterminism:** router accepts an ordered candidate slice and never depends on map iteration, races, scores, or model output.
-- **Sensitive provenance:** persisted JSON is generated from typed snapshots and tested not to contain request bodies.
-- **Settings corruption:** dedicated commands validate closed enums/identifiers; credentials remain only in the secure credential store.
+- **Legacy credential orphaning:** cleanup resolves the existing private credential key, removes it first, and deletes the Integration only after secret removal succeeds.
+- **Accidental legacy sync:** runtime handler registration excludes the retired provider and focused startup/manual-request tests prove rejection.
+- **School leakage:** source listing and association accept only MyTimetable; event SQL already requires MyTimetable and receives regression coverage with persisted legacy rows/bindings.
+- **Shared-infrastructure regression:** shared modules are retained and their focused/full suites are required.
+- **Recreation through generic IPC:** Integration creation explicitly rejects retired provider IDs without changing generic provider-neutral persistence.
 
 ## Rollback considerations
 
-Code/UI changes are reversible on the task branch. Migration 019 is append-only and nullable; older binaries ignore the added columns/settings. New routing settings have safe defaults when absent. Historical messages are not rewritten.
+Code/UI changes are reversible on the task branch. No migration or automatic data mutation occurs. Users retain legacy state until explicit cleanup, and rollback can again interpret those records through the historical provider code if required.
 
 ## Required validation
 
-- Focused router, privacy/approval, backend adapter, provenance/migration, settings, streaming/cancellation, provider, proposal/Safe Actions, and frontend AI tests.
+- Focused Integration repository, Integration Sync, unsupported subscribed-calendar cleanup, MyTimetable, School repository/UI, Connections/presentation/typed IPC, CAL-ICS, subscribed-calendar, and Calendar Core tests.
 - `cargo test --manifest-path src-tauri/Cargo.toml`
 - `cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`
 - `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings`
-- `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build`
+- `pnpm typecheck`
+- `pnpm lint`
+- `pnpm test`
+- `pnpm build`
 - `git diff --check`
-- Focused desktop smoke steps recorded; automated native evidence is authoritative if interactive provider credentials are unavailable.
+- Final diff review confirming shared ICS/MyTimetable infrastructure is intact.
 
 ## Independent review requirement
 
 | Field | Value |
 | --- | --- |
 | Required | No |
-| Reason | The user did not request a separate agent/reviewer; workflow requires a distinct evidence-based self-review. |
-| Reviewer scope | Routing determinism, privacy/approval boundaries, provenance redaction, migration compatibility, backend regression, and forbidden-path review. |
+| Reason | Repository workflow requires a distinct evidence-based self-review; no separate reviewer was requested. |
+| Reviewer scope | Runtime dispatch closure, legacy cleanup/credential ordering, School isolation, MyTimetable preservation, current documentation truth, and scope discipline. |
 
-## Human decisions / blockers
+## Human decisions required
 
-None. The supplied task explicitly defines the modes, defaults, consent boundary, exclusions, validation, branch, and publication outcome.
+None. The request explicitly chooses removal, retention of shared infrastructure, smallest safe legacy compatibility, no automatic reinterpretation, and draft-PR publication.
+
+## Blocking decisions
+
+None.
 
 ## Worktree / ownership gate
 
 | Check | State |
 | --- | --- |
-| Correct branch/worktree | Pass — clean `agent/ai-router` at merged Aether 27 head |
-| User-owned changes | None |
-| Parallel overlap | None identified |
-| Serialization points | Migration 019, AI registry/IPC/settings, conversation provenance, ADR-032 |
+| Correct branch/worktree confirmed | Pass — clean `agent/remove-brightspace` at merged `origin/master` commit `1999a51` |
+| `git status` inspected | Pass — clean before contract updates |
+| User-owned changes identified | None |
+| Parallel task overlap checked | Pass — prior School scoping task is merged; no PR exists for this branch |
+| Serialization points identified | Provider registry/commands, Integration runtime dispatch, generic connection cleanup, School source policy, current state docs |
 
 ## Readiness review
 
-Passed. The objective, security authorities, consent behavior, compatibility mapping, schema strategy, allowed/forbidden paths, rollback, validation, publication, and stop condition are explicit. Production implementation may begin.
+Passed. Removal boundaries, legacy-data behavior, credential cleanup ordering, no-migration decision, School isolation, shared-infrastructure preservation, validation, rollback, publication, and stop condition are explicit. Production implementation may begin.
 
 ## Implementation log
 
-- 2026-09-25: Bootstrapped repository controls, confirmed clean `agent/ai-router`, inspected the existing AI provider/router/context/conversation/settings boundaries and ADR-021, accepted ADR-032, and passed the readiness gate.
-- Added the closed provider-neutral backend/capability contracts, deterministic three-mode router, native privacy/disclosure settings, approval-token foundation, migration 019 provenance, and focused AI settings/provenance UI.
-- Preserved fixed DeepSeek/OpenAI adapters, DPAPI credentials, request shaping, streaming, cancellation, proposal parsing, Safe Actions separation, and explicit Space context resolution.
-- Completed full validation and a distinct final-diff/security/scope self-review. Publication remains the only pending stop-condition item.
+- 2026-09-25: Read the approved request and mandatory control documents; confirmed the clean task branch at merged Aether 27.
+- 2026-09-25: Classified repository references into production removal, current-state update, and historical/shared retention categories.
+- 2026-09-26: Removed the provider module, command/setup wrappers, runtime registration, catalog entry, capability presentation, and School association path.
+- 2026-09-26: Added generic unsupported-calendar cleanup, retired-ID creation rejection, legacy startup/sync/credential/cascade/School regression coverage, and truthful current-state documentation.
+- 2026-09-26: Completed focused/full validation and a distinct final-diff, security, shared-infrastructure, and scope review.
+- 2026-09-26: Merged the latest `origin/master`, resolved the four task-record conflicts while preserving the completed AI Router records, and revalidated the combined tree.
 
 ## Verification evidence
 
-- Focused native AI backend/router/privacy/settings/context/provider/proposal/runtime tests are included in the final native suite.
-- Focused AI Settings/View/hooks/typed IPC tests: 34 passed across 4 files after the no-local-runtime regression case.
-- `cargo test --manifest-path src-tauri/Cargo.toml`: 216 passed.
-- `pnpm test`: 136 passed across 37 files.
-- `pnpm typecheck`: passed.
-- `pnpm lint`: passed.
-- `pnpm build`: passed.
-- `cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`: passed.
-- `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings`: passed.
-- `git diff --check`: passed.
+- Integration repository retired-ID/legacy-read test: 1 passed.
+- Unsupported subscribed-calendar cleanup tests: 2 passed.
+- MyTimetable tests: 22 passed.
+- CAL-ICS tests: 21 passed.
+- Integration Sync Runtime tests: 18 passed.
+- School repository tests: 13 passed.
+- Calendar Core repository tests: 3 passed.
+- Focused Connections, presentation, School, and typed IPC tests: 46 passed across 4 files.
+- `cargo test --manifest-path src-tauri/Cargo.toml`: 202 passed.
+- `pnpm test`: 133 passed across 37 files.
+- `pnpm typecheck`, `pnpm lint`, `pnpm build`, Rust formatting, strict Clippy, and `git diff --check`: passed.
+- Post-merge combined tree: 216 Rust tests and 137 frontend tests across 37 files passed; typecheck, lint, production build, Rust formatting, strict Clippy, and staged diff check also passed.
 
 ## Acceptance evidence
 
-- Backend/compatibility: DeepSeek and OpenAI use one `ModelBackend`; current fixed endpoints, provider-specific shaping, classified errors, streaming, cancellation, credentials, and connection tests remain behind their adapters.
-- Modes/determinism: ordered native candidates implement Local only, Cloud only, and Automatic local-first policy; no local backend is fabricated; offline, fallback, capability, context, privacy, approval, provider, and model failures are typed.
-- Privacy/approval: native floors classify prompt/history as Personal and explicit/current-or-historical Aether context as Sensitive; Prohibited cannot select cloud; opaque five-minute one-time approvals bind request, backend, model, data inventory, and future tool-result inventory.
-- Settings/provenance: dedicated typed commands own validated settings; migration 019 adds content-free route/disclosure fields and deterministic legacy mapping; raw JSON/hashes remain off IPC.
-- UI: Settings exposes modes, fallback/disclosure policy, preferred cloud model, and truthful no-local-runtime copy; response provenance renders policy → locality → provider/model.
-- Scope: no School, Calendar, MyTimetable, Brightspace, Integration Sync, tool execution, local runtime, vision, embedding, dependency, or arbitrary endpoint change exists.
+- AC1: provider file and Tauri commands are deleted; frontend catalog/setup/wrappers contain no active Brightspace path.
+- AC2: retired provider IDs are rejected case-insensitively by generic creation; all 22 MyTimetable tests and active setup/refresh frontend tests pass.
+- AC3: legacy rows deserialize, manual/startup runtime requests reject before work, and generic cleanup removes the encrypted secret plus subscribed-calendar, ExternalEvent, and School-binding dependents.
+- AC4: School discovery, association, public schema, and UI now accept only MyTimetable; a seeded legacy binding/event remains invisible.
+- AC5: shared CAL-ICS, subscribed-calendar replacement, credential, Integration Sync, Calendar Core, ExternalEvent, and normalized School tables remain present and green.
+- AC6: no migration was added; current docs record intentional retirement and the institution-authorization gate while historical ADR/changelog evidence remains.
 
 ## Self-review
 
-Passed. The final changed-path list is limited to AI routing/backend/privacy/settings, AI-specific IPC/persistence/UI/tests, migration diagnostics, ADR/database/architecture documentation, and task records. The router consumes a stable ordered registry and never mutates or reselects a decision after backend dispatch. Local only does not read cloud credentials and the UI no longer uses cloud-key status as local eligibility. Explicit legacy provider conversations map to Cloud only under the default Automatic setting; an explicit Local-only setting still overrides them. Request/context bodies, credentials, approval hashes, raw provider errors, and raw route/disclosure JSON do not cross provenance IPC or appear in staged content. No new dependency was added. Interactive cloud-provider smoke was not run because no owner API keys were supplied; deterministic adapter tests and the existing connection-test path are the evidence, with manual steps recorded for completion.
+Passed. The final diff is limited to the provider/runtime/Connections/School removal, provider-neutral legacy cleanup, regression tests, and current task/documentation records. No generic parser, fetcher, redirect/SSRF rule, validator, generation guard, sync scheduling policy, ExternalEvent identity, Calendar Core contract, DPAPI implementation, migration, or MyTimetable behavior was removed or weakened. Cleanup cancels in-flight work, refuses supported connections, removes the native secret before deleting the Integration, and relies on existing foreign-key cascades. Remaining production `brightspace` text is only the explicit retired-ID creation guard; other source references are compatibility tests. Historical docs remain intentionally historical. No Pulse, AI, replacement LMS, dependency, or unrelated change was introduced.
 
 ## Publication state
 
-| Field | Value |
-| --- | --- |
-| Implementation commit | `11233f7` (`feat(ai): add provider-neutral routing foundation`) |
-| Remote branch | `origin/agent/ai-router` |
-| Draft PR | [#64](https://github.com/bimberlotDEV/Aether-Desktop/pull/64) |
-| Exact-head CI | Pending after publication; all required local validation passed. |
-
-## Manual desktop smoke steps
-
-1. Open Settings → AI and verify Automatic, Cloud only, and Local only copy plus the no-local-runtime message.
-2. With no local runtime, select Local only and verify AI send remains unavailable/truthful without depending on cloud-key state.
-3. Select Cloud only, configure/test one existing provider key, send a prompt, cancel one stream, and verify completed/cancelled messages show Cloud provenance.
-4. Select Automatic, send an ordinary prompt, and verify `Automatic → Cloud` provenance because Phase 1 has no local candidate.
-5. Attach a Note under the default `Ask for Aether data` policy and verify dispatch is blocked with an approval-required message; select `Allow explicit attachments`, resend, and verify only displayed context is included.
-6. Restart Aether and verify routing settings and message provenance persist. Real-provider execution requires owner-supplied keys and was not run in this session.
+Published implementation commit `57ca726` (`refactor(integrations): retire Brightspace connector`) to `origin/agent/remove-brightspace`; draft PR [#65](https://github.com/bimberlotDEV/Aether-Desktop/pull/65) is open. The post-commit hook could not fork its helper process, but `scripts/publish-task.ps1` completed its explicit push and PR creation successfully.
 
 ## Stop condition
 
-Stop after the acceptance criteria are evidenced, required checks pass, self-review confirms no forbidden paths/secrets/unrelated changes, records are updated, the implementation is committed and pushed on `agent/ai-router`, and an Aether 28 draft PR is open.
+Stop after all acceptance criteria are evidenced, required checks pass, task records are updated, the implementation is committed and pushed on `agent/remove-brightspace`, and a draft PR is open. Do not begin a replacement LMS, Pulse, AI, or unrelated integration work.

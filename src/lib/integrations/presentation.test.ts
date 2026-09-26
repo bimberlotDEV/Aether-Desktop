@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   connectionStatusDetails,
   displayProviderId,
+  isUnsupportedCalendarConnection,
   providerCatalog,
   safeErrorSummary,
 } from '@/lib/integrations/presentation'
@@ -37,23 +38,21 @@ describe('integration presentation helpers', () => {
     ).toBe('Request to [redacted] failed with [redacted].')
   })
 
-  it('marks only the two approved ICS providers as available for setup', () => {
-    expect(providerCatalog).toHaveLength(4)
+  it('advertises only MyTimetable calendar setup and classifies legacy ICS rows', () => {
+    expect(providerCatalog).toHaveLength(3)
     expect(
       providerCatalog.find((provider) => provider.id === 'my_timetable')?.setupSupported,
     ).toBe(true)
     expect(
       providerCatalog
-        .filter(
-          (provider) => provider.id !== 'my_timetable' && provider.id !== 'brightspace',
-        )
+        .filter((provider) => provider.id !== 'my_timetable')
         .every((provider) => !provider.setupSupported),
     ).toBe(true)
-    expect(
-      providerCatalog.find((provider) => provider.id === 'brightspace')?.setupSupported,
-    ).toBe(true)
-    expect(
-      providerCatalog.find((provider) => provider.id === 'brightspace')?.description,
-    ).toMatch(/Calendar-only/)
+    expect(providerCatalog.map((provider) => String(provider.id))).not.toContain(
+      'brightspace',
+    )
+    expect(isUnsupportedCalendarConnection('brightspace', 'ics_feed')).toBe(true)
+    expect(isUnsupportedCalendarConnection('my_timetable', 'ics_feed')).toBe(false)
+    expect(isUnsupportedCalendarConnection('calendar_ics', 'ics_feed')).toBe(false)
   })
 })

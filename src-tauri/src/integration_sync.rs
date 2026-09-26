@@ -24,7 +24,6 @@ use tokio_util::sync::CancellationToken;
 
 const PROVIDER_ICS: &str = "calendar_ics";
 const PROVIDER_MY_TIMETABLE: &str = "my_timetable";
-const PROVIDER_BRIGHTSPACE: &str = "brightspace";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum IcsNormalization {
@@ -37,10 +36,14 @@ fn ics_handler(provider: &str, auth_type: &str) -> Option<IcsNormalization> {
         return None;
     }
     match provider {
-        PROVIDER_ICS | PROVIDER_BRIGHTSPACE => Some(IcsNormalization::Default),
+        PROVIDER_ICS => Some(IcsNormalization::Default),
         PROVIDER_MY_TIMETABLE => Some(IcsNormalization::MyTimetable),
         _ => None,
     }
+}
+
+pub(crate) fn supports(provider: &str, auth_type: &str) -> bool {
+    ics_handler(provider, auth_type).is_some()
 }
 const PERIODIC_SECONDS: u64 = 15 * 60;
 const TIMEOUT_SECONDS: u64 = 30;
@@ -986,14 +989,15 @@ mod tests {
     #[test]
     fn closed_ics_registry_requires_an_approved_provider_and_auth_pair() {
         assert_eq!(
-            ics_handler(PROVIDER_BRIGHTSPACE, "ics_feed"),
+            ics_handler(PROVIDER_ICS, "ics_feed"),
             Some(IcsNormalization::Default)
         );
         assert_eq!(
             ics_handler(PROVIDER_MY_TIMETABLE, "ics_feed"),
             Some(IcsNormalization::MyTimetable)
         );
-        assert_eq!(ics_handler(PROVIDER_BRIGHTSPACE, "oauth"), None);
+        assert_eq!(ics_handler(PROVIDER_ICS, "oauth"), None);
+        assert_eq!(ics_handler("brightspace", "ics_feed"), None);
         assert_eq!(ics_handler("unregistered", "ics_feed"), None);
     }
 
@@ -1070,6 +1074,19 @@ mod tests {
                 )
                 .unwrap();
             }
+            id
+        }
+
+        fn legacy_integration(&self, provider: &str) -> String {
+            let id = uuid::Uuid::now_v7().to_string();
+            self.conn
+                .lock()
+                .unwrap()
+                .execute(
+                    "INSERT INTO integrations(id,provider_id,enabled,auth_type,sync_modes_json,connection_status) VALUES (?1,?2,1,'ics_feed','[\"manual\",\"app_start\"]','connected')",
+                    rusqlite::params![id, provider],
+                )
+                .unwrap();
             id
         }
 
@@ -1422,25 +1439,25 @@ mod tests {
         let host = FakeRuntimeHost::new(HandlerMode::Controlled);
         let runtime = IntegrationSyncRuntime::new(host.clone());
         let timetable = host.integration_for_provider(PROVIDER_MY_TIMETABLE, None);
-        let brightspace = host.integration_for_provider(PROVIDER_BRIGHTSPACE, None);
+        let generic = host.integration_for_provider(PROVIDER_ICS, None);
 
         assert!(matches!(
             runtime.request(timetable.clone(), SyncTrigger::Manual),
             SyncRequestResult::Accepted
         ));
         assert!(matches!(
-            runtime.request(brightspace.clone(), SyncTrigger::Manual),
+            runtime.request(generic.clone(), SyncTrigger::Manual),
             SyncRequestResult::Accepted
         ));
         host.wait_for_starts(2).await;
         assert_eq!(runtime.status().running_count, 2);
         host.release(&timetable);
-        host.release(&brightspace);
+        host.release(&generic);
     }
 
     #[tokio::test]
-    async fn timetable_and_brightspace_each_queue_distinct_connections() {
-        for provider in [PROVIDER_MY_TIMETABLE, PROVIDER_BRIGHTSPACE] {
+    async fn supported_calendar_providers_each_queue_distinct_connections() {
+        for provider in [PROVIDER_MY_TIMETABLE, PROVIDER_ICS] {
             let host = FakeRuntimeHost::new(HandlerMode::Controlled);
             let runtime = IntegrationSyncRuntime::new(host.clone());
             let first = host.integration_for_provider(provider, None);
@@ -1463,6 +1480,21 @@ mod tests {
             );
             host.release(&second);
         }
+    }
+
+    #[tokio::test]
+    async fn legacy_brightspace_is_rejected_for_manual_and_startup_sync() {
+        let host = FakeRuntimeHost::new(HandlerMode::Success);
+        let runtime = IntegrationSyncRuntime::new(host.clone());
+        let legacy = host.legacy_integration("brightspace");
+
+        assert!(matches!(
+            runtime.request(legacy, SyncTrigger::Manual),
+            SyncRequestResult::Rejected { reason } if reason == "Provider is unsupported"
+        ));
+        runtime.start();
+        sleep(TokioDuration::from_millis(25)).await;
+        assert!(host.started_order.lock().unwrap().is_empty());
     }
 
     #[tokio::test]

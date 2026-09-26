@@ -1098,6 +1098,19 @@ pub fn request_integration_sync(
 }
 
 #[tauri::command]
+pub fn remove_unsupported_calendar_connection(
+    db: State<Database>,
+    runtime: State<crate::integration_sync::IntegrationSyncRuntime>,
+    connection_id: String,
+) -> Result<bool, String> {
+    crate::subscribed_calendar_provider::remove_unsupported_connection(
+        &db,
+        &runtime,
+        &connection_id,
+    )
+}
+
+#[tauri::command]
 pub fn get_integration_sync_runtime_status(
     runtime: State<crate::integration_sync::IntegrationSyncRuntime>,
 ) -> crate::integration_sync::RuntimeStatus {

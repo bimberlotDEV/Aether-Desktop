@@ -77,13 +77,27 @@ export function useConnections() {
       setUpdatingId(integration.id)
       setError(null)
       try {
-        if (integration.provider_id === 'brightspace') {
-          await db.disconnectBrightspace(integration.id)
-        } else if (integration.provider_id === 'my_timetable') {
+        if (integration.provider_id === 'my_timetable') {
           await db.disconnectMyTimetable(integration.id)
         } else {
           throw new Error('This calendar connection is not supported.')
         }
+        await load()
+      } catch (cause) {
+        setError(errorMessage(cause))
+      } finally {
+        setUpdatingId(null)
+      }
+    },
+    [load],
+  )
+
+  const removeUnsupportedCalendar = useCallback(
+    async (integration: Integration) => {
+      setUpdatingId(integration.id)
+      setError(null)
+      try {
+        await db.removeUnsupportedCalendarConnection(integration.id)
         await load()
       } catch (cause) {
         setError(errorMessage(cause))
@@ -104,5 +118,6 @@ export function useConnections() {
     setEnabled,
     refresh,
     disconnectCalendar,
+    removeUnsupportedCalendar,
   }
 }

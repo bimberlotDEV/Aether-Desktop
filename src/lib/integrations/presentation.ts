@@ -58,13 +58,6 @@ export const providerCatalog = [
     setupSupported: true,
   },
   {
-    id: 'brightspace',
-    name: 'Brightspace',
-    category: 'Learning platform calendar',
-    description: 'Calendar-only; no courses, assignments, or materials',
-    setupSupported: true,
-  },
-  {
     id: 'github',
     name: 'GitHub',
     category: 'Development',
@@ -80,10 +73,18 @@ export const providerCatalog = [
   },
 ] as const
 
-export type CalendarProviderId = 'my_timetable' | 'brightspace'
+export type CalendarProviderId = 'my_timetable'
 
 export function isCalendarProvider(providerId: string): providerId is CalendarProviderId {
-  return providerId === 'my_timetable' || providerId === 'brightspace'
+  return providerId === 'my_timetable'
+}
+
+export function isUnsupportedCalendarConnection(providerId: string, authType: string) {
+  return (
+    authType === 'ics_feed' &&
+    providerId !== 'my_timetable' &&
+    providerId !== 'calendar_ics'
+  )
 }
 
 export function calendarProviderDetails(providerId: CalendarProviderId) {

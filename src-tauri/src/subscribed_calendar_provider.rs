@@ -322,3 +322,150 @@ pub(crate) fn disconnect_persisted_connection(
         .map_err(|_| format!("{} connection could not be removed", config.name))
         .map(|count| count == 1)
 }
+
+pub fn remove_unsupported_connection(
+    db: &Database,
+    runtime: &IntegrationSyncRuntime,
+    connection_id: &str,
+) -> Result<bool, String> {
+    runtime.cancel_connection(connection_id);
+    remove_unsupported_persisted_connection(db, connection_id)
+}
+
+fn remove_unsupported_persisted_connection(
+    db: &Database,
+    connection_id: &str,
+) -> Result<bool, String> {
+    let record = {
+        let conn = db
+            .conn
+            .lock()
+            .map_err(|_| "Local connection state is unavailable".to_string())?;
+        integrations::sync_runtime_record(&conn, connection_id)?
+    };
+    let Some(record) = record else {
+        return Ok(false);
+    };
+    if record.integration.auth_type != "ics_feed"
+        || crate::integration_sync::supports(
+            &record.integration.provider_id,
+            &record.integration.auth_type,
+        )
+    {
+        return Err("Only unsupported calendar connections can be removed here".into());
+    }
+    let key = record
+        .credential_key
+        .ok_or_else(|| "Unsupported calendar connection has no credential reference".to_string())?;
+    credentials::remove(db, &key)
+        .map_err(|_| "Calendar subscription secret could not be removed".to_string())?;
+    let conn = db
+        .conn
+        .lock()
+        .map_err(|_| "Local connection state is unavailable".to_string())?;
+    conn.execute("DELETE FROM integrations WHERE id=?1", [connection_id])
+        .map_err(|_| "Unsupported calendar connection could not be removed".to_string())
+        .map(|count| count == 1)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ai::credentials::{self, SecretCrypto};
+
+    struct TestCrypto;
+
+    impl SecretCrypto for TestCrypto {
+        fn encrypt(&self, data: &[u8]) -> Result<Vec<u8>, String> {
+            Ok(data.to_vec())
+        }
+
+        fn decrypt(&self, data: &[u8]) -> Result<Vec<u8>, String> {
+            Ok(data.to_vec())
+        }
+    }
+
+    fn db() -> Database {
+        Database::open(
+            tempfile::tempdir().unwrap().path().join("aether.db"),
+            Box::new(TestCrypto),
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn unsupported_legacy_calendar_cleanup_removes_secret_and_cascaded_data() {
+        let db = db();
+        let key = "integration:legacy:credential";
+        {
+            let conn = db.conn.lock().unwrap();
+            conn.execute(
+                "INSERT INTO integrations(id,provider_id,enabled,auth_type,credential_key,connection_status) VALUES ('legacy','brightspace',1,'ics_feed',?1,'connected')",
+                [key],
+            )
+            .unwrap();
+            conn.execute(
+                "INSERT INTO subscribed_calendars(id,connection_id) VALUES ('legacy-calendar','legacy')",
+                [],
+            )
+            .unwrap();
+            conn.execute(
+                "INSERT INTO spaces(id,name,template_type) VALUES ('school','School','school')",
+                [],
+            )
+            .unwrap();
+            conn.execute(
+                "INSERT INTO school_space_sources(school_space_id,connection_id) VALUES ('school','legacy')",
+                [],
+            )
+            .unwrap();
+            conn.execute(
+                "INSERT INTO external_events(id,connection_id,external_id,occurrence_id,title,time_kind,start_at_utc,end_at_utc,timezone,event_kind,status,ingestion_provenance,source_version,content_hash,first_seen_at,last_seen_at,synchronized_at) VALUES ('legacy-event','legacy','event','','Legacy','timed','2026-09-25T08:00:00Z','2026-09-25T09:00:00Z','Europe/Berlin','general','active','ics','1','hash','2026-09-25T00:00:00Z','2026-09-25T00:00:00Z','2026-09-25T00:00:00Z')",
+                [],
+            )
+            .unwrap();
+        }
+        credentials::store(&db, key, "https://example.edu/private.ics").unwrap();
+
+        assert!(remove_unsupported_persisted_connection(&db, "legacy").unwrap());
+        assert_eq!(credentials::get(&db, key).unwrap(), None);
+        let conn = db.conn.lock().unwrap();
+        assert!(integrations::get_by_id(&conn, "legacy").unwrap().is_none());
+        let remaining: i64 = conn
+            .query_row(
+                "SELECT count(*) FROM external_events WHERE connection_id='legacy'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(remaining, 0);
+        let bindings: i64 = conn
+            .query_row(
+                "SELECT count(*) FROM school_space_sources WHERE connection_id='legacy'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(bindings, 0);
+    }
+
+    #[test]
+    fn unsupported_cleanup_refuses_supported_my_timetable_connection() {
+        let db = db();
+        db.conn
+            .lock()
+            .unwrap()
+            .execute(
+                "INSERT INTO integrations(id,provider_id,enabled,auth_type,credential_key,connection_status) VALUES ('mtt','my_timetable',1,'ics_feed','integration:mtt:credential','connected')",
+                [],
+            )
+            .unwrap();
+        assert_eq!(
+            remove_unsupported_persisted_connection(&db, "mtt").unwrap_err(),
+            "Only unsupported calendar connections can be removed here"
+        );
+        assert!(integrations::get_by_id(&db.conn.lock().unwrap(), "mtt")
+            .unwrap()
+            .is_some());
+    }
+}

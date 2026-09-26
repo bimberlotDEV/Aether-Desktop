@@ -130,7 +130,7 @@ export const SchoolScheduleRequestSchema = z
 export type SchoolScheduleRequest = z.input<typeof SchoolScheduleRequestSchema>
 export const SchoolCalendarSourceSchema = z.object({
   connection_id: z.string(),
-  provider_id: z.enum(['my_timetable', 'brightspace']),
+  provider_id: z.literal('my_timetable'),
   display_name: z.string().nullable(),
   associated: z.boolean(),
   enabled: z.boolean(),

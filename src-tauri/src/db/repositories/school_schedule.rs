@@ -5,7 +5,6 @@ use serde::{Deserialize, Serialize};
 use super::external_events::ExternalEvent;
 
 const MY_TIMETABLE_PROVIDER_ID: &str = "my_timetable";
-const BRIGHTSPACE_PROVIDER_ID: &str = "brightspace";
 const EVENT_COLUMNS: &str = "e.id, e.connection_id, e.external_id, e.occurrence_id, e.title, e.description, e.time_kind, e.start_at_utc, e.end_at_utc, e.start_date, e.end_date, e.timezone, e.location, e.course_reference, e.group_references_json, e.event_kind, e.status, e.source_url, e.ingestion_provenance, e.source_version, e.content_hash, e.first_seen_at, e.last_seen_at, e.synchronized_at, e.created_at, e.updated_at";
 
 #[derive(Debug, Clone, Deserialize)]
@@ -168,32 +167,25 @@ fn sources(conn: &Connection, school_space_id: &str) -> Result<Vec<SchoolCalenda
              JOIN subscribed_calendars sc ON sc.connection_id=i.id
              LEFT JOIN school_space_sources binding
                ON binding.connection_id=i.id AND binding.school_space_id=?1
-             WHERE i.provider_id IN (?2, ?3)
+             WHERE i.provider_id=?2
              ORDER BY i.provider_id, i.created_at, i.id",
         )
         .map_err(|error| format!("School calendar source query error: {error}"))?;
     let rows = statement
-        .query_map(
-            params![
-                school_space_id,
-                MY_TIMETABLE_PROVIDER_ID,
-                BRIGHTSPACE_PROVIDER_ID
-            ],
-            |row| {
-                Ok((
-                    row.get::<_, String>(0)?,
-                    row.get::<_, String>(1)?,
-                    row.get::<_, Option<String>>(2)?,
-                    row.get::<_, bool>(3)?,
-                    row.get::<_, bool>(4)?,
-                    row.get::<_, String>(5)?,
-                    row.get::<_, String>(6)?,
-                    row.get::<_, Option<String>>(7)?,
-                    row.get::<_, Option<String>>(8)?,
-                    row.get::<_, Option<String>>(9)?,
-                ))
-            },
-        )
+        .query_map(params![school_space_id, MY_TIMETABLE_PROVIDER_ID], |row| {
+            Ok((
+                row.get::<_, String>(0)?,
+                row.get::<_, String>(1)?,
+                row.get::<_, Option<String>>(2)?,
+                row.get::<_, bool>(3)?,
+                row.get::<_, bool>(4)?,
+                row.get::<_, String>(5)?,
+                row.get::<_, String>(6)?,
+                row.get::<_, Option<String>>(7)?,
+                row.get::<_, Option<String>>(8)?,
+                row.get::<_, Option<String>>(9)?,
+            ))
+        })
         .map_err(|error| format!("School calendar source query error: {error}"))?
         .collect::<Result<Vec<_>, _>>()
         .map_err(|error| format!("School calendar source row error: {error}"))?;
@@ -309,12 +301,8 @@ fn ensure_supported_source(conn: &Connection, connection_id: &str) -> Result<Str
         "SELECT i.provider_id
          FROM integrations i
          JOIN subscribed_calendars sc ON sc.connection_id=i.id
-         WHERE i.id=?1 AND i.provider_id IN (?2, ?3)",
-        params![
-            connection_id.trim(),
-            MY_TIMETABLE_PROVIDER_ID,
-            BRIGHTSPACE_PROVIDER_ID
-        ],
+         WHERE i.id=?1 AND i.provider_id=?2",
+        params![connection_id.trim(), MY_TIMETABLE_PROVIDER_ID],
         |row| row.get(0),
     )
     .map_err(|error| match error {
@@ -649,22 +637,24 @@ mod tests {
     }
 
     #[test]
-    fn brightspace_association_has_no_groups_and_adds_no_timetable_events() {
+    fn legacy_brightspace_binding_is_hidden_and_adds_no_timetable_events() {
         let conn = db();
         timed(&conn, "brightspace-general", "bsp", &[]);
         timed(&conn, "mtt-lesson", "mtt-x", &["A"]);
-        set_source_association(&conn, "school-a", "bsp", true).unwrap();
+        conn.execute(
+            "INSERT INTO school_space_sources(school_space_id,connection_id) VALUES ('school-a','bsp')",
+            [],
+        )
+        .unwrap();
         associate(&conn, "school-a", "mtt-x", "A");
         let result = get(&conn, &request("school-a")).unwrap();
         assert_eq!(result.events.len(), 1);
         assert_eq!(result.events[0].id, "mtt-lesson");
-        let source = result
+        assert!(result
             .sources
             .iter()
-            .find(|source| source.connection_id == "bsp")
-            .unwrap();
-        assert!(source.associated);
-        assert!(source.group_options.is_empty());
+            .all(|source| source.connection_id != "bsp"));
+        assert!(set_source_association(&conn, "school-a", "bsp", true).is_err());
         assert!(set_selected_groups(&conn, "school-a", "bsp", &["fake".into()]).is_err());
     }
 

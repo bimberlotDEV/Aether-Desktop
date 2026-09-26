@@ -311,7 +311,7 @@ export function SchoolSchedule({ spaceId, now }: { spaceId: string; now?: Date }
             </div>
             {data.sources.length === 0 ? (
               <p className="text-xs text-[var(--color-text-tertiary)]">
-                No MyTimetable or Brightspace connection is available.{' '}
+                No MyTimetable connection is available.{' '}
                 <Link
                   to="/settings"
                   className="text-[var(--color-accent)] hover:underline"
@@ -322,8 +322,7 @@ export function SchoolSchedule({ spaceId, now }: { spaceId: string; now?: Date }
             ) : (
               <div className="space-y-2">
                 {data.sources.map((source, index) => {
-                  const providerName =
-                    source.provider_id === 'my_timetable' ? 'MyTimetable' : 'Brightspace'
+                  const providerName = 'MyTimetable'
                   const sameProviderCount = data.sources.filter(
                     (candidate) => candidate.provider_id === source.provider_id,
                   ).length
@@ -365,7 +364,7 @@ export function SchoolSchedule({ spaceId, now }: { spaceId: string; now?: Date }
                           </span>
                         </span>
                       </label>
-                      {source.associated && source.provider_id === 'my_timetable' ? (
+                      {source.associated ? (
                         <div>
                           <label htmlFor={groupId} className="sr-only">
                             Group for {label}
@@ -398,10 +397,6 @@ export function SchoolSchedule({ spaceId, now }: { spaceId: string; now?: Date }
                             ))}
                           </select>
                         </div>
-                      ) : source.associated ? (
-                        <p className="text-xs text-[var(--color-text-tertiary)]">
-                          Calendar-only; not shown as timetable lessons.
-                        </p>
                       ) : null}
                     </div>
                   )
