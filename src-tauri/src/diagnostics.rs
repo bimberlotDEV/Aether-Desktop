@@ -83,7 +83,7 @@ mod tests {
                 "updaterConfigured",
             ]
         );
-        assert_eq!(value["databaseSchema"], "018_school_space_sources");
+        assert_eq!(value["databaseSchema"], "019_ai_router_provenance");
         assert_eq!(value["databaseIntegrity"], "ok");
         assert_eq!(
             value["platform"],

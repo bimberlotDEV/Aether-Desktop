@@ -143,6 +143,7 @@ Passed. Removal boundaries, legacy-data behavior, credential cleanup ordering, n
 - 2026-09-26: Removed the provider module, command/setup wrappers, runtime registration, catalog entry, capability presentation, and School association path.
 - 2026-09-26: Added generic unsupported-calendar cleanup, retired-ID creation rejection, legacy startup/sync/credential/cascade/School regression coverage, and truthful current-state documentation.
 - 2026-09-26: Completed focused/full validation and a distinct final-diff, security, shared-infrastructure, and scope review.
+- 2026-09-26: Merged the latest `origin/master`, resolved the four task-record conflicts while preserving the completed AI Router records, and revalidated the combined tree.
 
 ## Verification evidence
 
@@ -157,6 +158,7 @@ Passed. Removal boundaries, legacy-data behavior, credential cleanup ordering, n
 - `cargo test --manifest-path src-tauri/Cargo.toml`: 202 passed.
 - `pnpm test`: 133 passed across 37 files.
 - `pnpm typecheck`, `pnpm lint`, `pnpm build`, Rust formatting, strict Clippy, and `git diff --check`: passed.
+- Post-merge combined tree: 216 Rust tests and 137 frontend tests across 37 files passed; typecheck, lint, production build, Rust formatting, strict Clippy, and staged diff check also passed.
 
 ## Acceptance evidence
 

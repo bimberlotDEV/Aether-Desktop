@@ -40,8 +40,25 @@ function userMessage(id: string, content: string): AiMessage {
     model: null,
     routing_mode: null,
     route_reason: null,
+    route_policy_mode: null,
+    execution_location: null,
+    runtime_id: null,
     created_at: '2026-08-11T00:00:00Z',
     updated_at: '2026-08-11T00:00:00Z',
+  }
+}
+
+function routedAssistant(): AiMessage {
+  return {
+    ...userMessage('assistant-1', 'Cloud answer'),
+    role: 'assistant',
+    provider: 'openai',
+    model: 'gpt-5-mini',
+    routing_mode: 'auto',
+    route_reason: 'Automatic used cloud because no eligible local runtime is configured.',
+    route_policy_mode: 'automatic',
+    execution_location: 'cloud',
+    runtime_id: 'openai',
   }
 }
 
@@ -67,6 +84,7 @@ describe('AiView message scrolling', () => {
       conversations: [conversation],
       loading: false,
       error: null,
+      routingSettings: { mode: 'automatic' },
       create: vi.fn(),
       rename: vi.fn(),
       archive: vi.fn(),
@@ -129,5 +147,32 @@ describe('AiView message scrolling', () => {
     await screen.findByText('Second prompt')
     await waitFor(() => expect(Element.prototype.scrollIntoView).toHaveBeenCalled())
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+  })
+
+  it('renders locality-aware route provenance without raw policy data', async () => {
+    messages = [userMessage('message-1', 'Question'), routedAssistant()]
+    render(<AiView />)
+
+    expect(
+      await screen.findByText('Automatic → Cloud · OpenAI · GPT-5 mini', {
+        exact: false,
+      }),
+    ).toBeVisible()
+    expect(screen.queryByText(/request hash/i)).not.toBeInTheDocument()
+  })
+
+  it('reports the no-local-runtime state independently of cloud credentials', async () => {
+    hookMocks.useAiSettings.mockReturnValue({
+      status: 'configured',
+      statuses: [{ provider: 'openai', configured: true, status: 'configured' }],
+      routingSettings: { mode: 'local_only' },
+      loading: false,
+      error: null,
+      isTauri: true,
+    })
+    render(<AiView />)
+
+    expect(await screen.findByText(/no local runtime is configured/i)).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Send message' })).toBeDisabled()
   })
 })

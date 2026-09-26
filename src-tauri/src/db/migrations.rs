@@ -528,6 +528,35 @@ const MIGRATIONS: &[(&str, &str)] = &[
         WHERE integrations.provider_id='my_timetable';
         ",
     ),
+    // Migration 019: richer, content-free AI route and disclosure provenance.
+    // Existing response content remains untouched; legacy route metadata maps
+    // deterministically to the new policy vocabulary.
+    (
+        "019_ai_router_provenance",
+        "
+        ALTER TABLE ai_messages ADD COLUMN route_policy_mode TEXT;
+        ALTER TABLE ai_messages ADD COLUMN execution_location TEXT;
+        ALTER TABLE ai_messages ADD COLUMN runtime_id TEXT;
+        ALTER TABLE ai_messages ADD COLUMN route_decision_json TEXT;
+        ALTER TABLE ai_messages ADD COLUMN disclosure_json TEXT;
+
+        UPDATE ai_messages
+        SET route_policy_mode = CASE
+                WHEN routing_mode='auto' OR provider='auto' THEN 'automatic'
+                WHEN provider IN ('deepseek','openai') THEN 'cloud_only'
+                ELSE NULL
+            END,
+            execution_location = CASE
+                WHEN provider IN ('deepseek','openai') THEN 'cloud'
+                ELSE NULL
+            END,
+            runtime_id = CASE
+                WHEN provider IN ('deepseek','openai') THEN provider
+                ELSE NULL
+            END
+        WHERE route_policy_mode IS NULL;
+        ",
+    ),
 ];
 
 pub fn known_names() -> impl Iterator<Item = &'static str> {
@@ -1277,6 +1306,56 @@ mod tests {
             )
             .unwrap();
         assert_eq!(row, ("preserve me".to_string(), None, None, None, None));
+    }
+
+    #[test]
+    fn ai_router_provenance_maps_legacy_routes_without_rewriting_content() {
+        let conn = in_memory_db();
+        let migration_019 = MIGRATIONS
+            .iter()
+            .position(|(name, _)| *name == "019_ai_router_provenance")
+            .unwrap();
+        let tx = conn.unchecked_transaction().unwrap();
+        ensure_migrations_table(&tx).unwrap();
+        for (name, sql) in &MIGRATIONS[..migration_019] {
+            apply_migration(&tx, name, sql).unwrap();
+        }
+        tx.execute(
+            "INSERT INTO ai_conversations (id,title,provider,model) VALUES ('auto','Auto','auto','auto'),('cloud','Cloud','openai','gpt-5-mini')",
+            [],
+        )
+        .unwrap();
+        tx.execute(
+            "INSERT INTO ai_messages (id,conversation_id,role,content,status,provider,model,routing_mode) VALUES ('a','auto','assistant','keep auto','complete','deepseek','deepseek-v4-flash','auto'),('c','cloud','assistant','keep cloud','complete','openai','gpt-5-mini','manual')",
+            [],
+        )
+        .unwrap();
+        tx.commit().unwrap();
+        run(&conn).unwrap();
+        let auto: (String, String, String, String) = conn
+            .query_row(
+                "SELECT content,route_policy_mode,execution_location,runtime_id FROM ai_messages WHERE id='a'",
+                [],
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?)),
+            )
+            .unwrap();
+        assert_eq!(
+            auto,
+            (
+                "keep auto".into(),
+                "automatic".into(),
+                "cloud".into(),
+                "deepseek".into()
+            )
+        );
+        let cloud: (String, String) = conn
+            .query_row(
+                "SELECT content,route_policy_mode FROM ai_messages WHERE id='c'",
+                [],
+                |row| Ok((row.get(0)?, row.get(1)?)),
+            )
+            .unwrap();
+        assert_eq!(cloud, ("keep cloud".into(), "cloud_only".into()));
     }
 
     #[test]

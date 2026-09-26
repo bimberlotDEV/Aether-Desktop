@@ -23,6 +23,7 @@ import type {
   AiModel,
   AiProvider,
   AiProviderStatus,
+  AiRoutingSettings,
   AiResolvedContextItem,
   AiStreamEvent,
   MemoryFilter,
@@ -501,6 +502,14 @@ export async function listAiProviders(): Promise<AiProvider[]> {
 }
 export async function listAiProviderStatuses(): Promise<AiProviderStatus[]> {
   return invoke('ai_list_provider_statuses')
+}
+export async function getAiRoutingSettings(): Promise<AiRoutingSettings> {
+  return invoke('ai_get_routing_settings')
+}
+export async function setAiRoutingSettings(
+  settings: AiRoutingSettings,
+): Promise<AiRoutingSettings> {
+  return invoke('ai_set_routing_settings', { settings })
 }
 export async function setAiProviderApiKey(
   provider: AiProvider['id'],

@@ -25,11 +25,14 @@ Focused suites pass: retired-ID/legacy read 1, unsupported cleanup 2, MyTimetabl
 22, CAL-ICS 21, Integration Sync 18, School repository 13, Calendar Core 3, and
 frontend/IPC 46. Full validation passes: 202 Rust tests, 133 frontend tests across
 37 files, production build, TypeScript, lint, Rust formatting, strict Clippy, and
-diff check. No migration, dependency, Pulse, AI, or replacement LMS work was added.
+diff check. After merging the latest `master`, the combined tree also passes 216
+Rust tests and 137 frontend tests across 37 files plus all of the same static,
+build, formatting, Clippy, and diff gates. The merge preserves the completed AI
+Router work without adding Pulse or replacement LMS scope.
 
 ## Exact resume point
 
 Implementation commit `57ca726` is pushed to `origin/agent/remove-brightspace` and
-draft PR #65 is open. The post-commit helper could not fork, but the required
-publication script's explicit push and PR creation succeeded. The task is complete;
-stop without beginning replacement LMS, Pulse, AI, or unrelated work.
+draft PR #65 is open. The latest `origin/master` is merged locally and its task-
+record conflicts are resolved; publish the merge resolution, then stop without
+beginning replacement LMS, Pulse, AI, or unrelated work.

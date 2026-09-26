@@ -30,6 +30,15 @@ pub struct AiMessage {
     pub model: Option<String>,
     pub routing_mode: Option<String>,
     pub route_reason: Option<String>,
+    pub route_policy_mode: Option<String>,
+    pub execution_location: Option<String>,
+    pub runtime_id: Option<String>,
+    #[serde(skip_serializing)]
+    #[allow(dead_code)]
+    pub route_decision_json: Option<String>,
+    #[serde(skip_serializing)]
+    #[allow(dead_code)]
+    pub disclosure_json: Option<String>,
     pub created_at: String,
     pub updated_at: String,
 }
@@ -39,6 +48,11 @@ pub struct AiRouteProvenance<'a> {
     pub model: &'a str,
     pub routing_mode: &'a str,
     pub route_reason: &'a str,
+    pub route_policy_mode: &'a str,
+    pub execution_location: &'a str,
+    pub runtime_id: &'a str,
+    pub route_decision_json: &'a str,
+    pub disclosure_json: &'a str,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -272,7 +286,8 @@ pub fn get_message(conn: &Connection, id: &str) -> Result<Option<AiMessage>, Str
         .prepare(
             "SELECT id, conversation_id, role, content, status, provider_message_id,
                     error_code, metadata_json, provider, model, routing_mode, route_reason,
-                    created_at, updated_at
+                    route_policy_mode, execution_location, runtime_id, route_decision_json,
+                    disclosure_json, created_at, updated_at
              FROM ai_messages WHERE id = ?1",
         )
         .map_err(|e| format!("Query error: {}", e))?;
@@ -291,8 +306,13 @@ pub fn get_message(conn: &Connection, id: &str) -> Result<Option<AiMessage>, Str
             model: row.get(9)?,
             routing_mode: row.get(10)?,
             route_reason: row.get(11)?,
-            created_at: row.get(12)?,
-            updated_at: row.get(13)?,
+            route_policy_mode: row.get(12)?,
+            execution_location: row.get(13)?,
+            runtime_id: row.get(14)?,
+            route_decision_json: row.get(15)?,
+            disclosure_json: row.get(16)?,
+            created_at: row.get(17)?,
+            updated_at: row.get(18)?,
         })
     });
 
@@ -310,11 +330,13 @@ pub fn list_messages(
 ) -> Result<Vec<AiMessage>, String> {
     let sql = "SELECT id, conversation_id, role, content, status, provider_message_id,
                       error_code, metadata_json, provider, model, routing_mode, route_reason,
-                      created_at, updated_at
+                      route_policy_mode, execution_location, runtime_id, route_decision_json,
+                      disclosure_json, created_at, updated_at
                FROM (
                  SELECT id, conversation_id, role, content, status, provider_message_id,
                         error_code, metadata_json, provider, model, routing_mode, route_reason,
-                        created_at, updated_at
+                        route_policy_mode, execution_location, runtime_id, route_decision_json,
+                        disclosure_json, created_at, updated_at
                  FROM ai_messages WHERE conversation_id = ?1
                  ORDER BY created_at DESC LIMIT ?2
                ) ORDER BY created_at ASC";
@@ -339,8 +361,13 @@ pub fn list_messages(
                 model: row.get(9)?,
                 routing_mode: row.get(10)?,
                 route_reason: row.get(11)?,
-                created_at: row.get(12)?,
-                updated_at: row.get(13)?,
+                route_policy_mode: row.get(12)?,
+                execution_location: row.get(13)?,
+                runtime_id: row.get(14)?,
+                route_decision_json: row.get(15)?,
+                disclosure_json: row.get(16)?,
+                created_at: row.get(17)?,
+                updated_at: row.get(18)?,
             })
         })
         .map_err(|e| format!("Query error: {}", e))?;
@@ -365,7 +392,9 @@ pub fn finish_message(
     conn.execute(
         "UPDATE ai_messages SET content = ?1, status = ?2, error_code = ?3,
          metadata_json = ?4, provider = ?5, model = ?6, routing_mode = ?7,
-         route_reason = ?8, updated_at = ?9 WHERE id = ?10",
+         route_reason = ?8, route_policy_mode = ?9, execution_location = ?10,
+         runtime_id = ?11, route_decision_json = ?12, disclosure_json = ?13,
+         updated_at = ?14 WHERE id = ?15",
         params![
             content,
             status,
@@ -375,6 +404,11 @@ pub fn finish_message(
             route.map(|value| value.model),
             route.map(|value| value.routing_mode),
             route.map(|value| value.route_reason),
+            route.map(|value| value.route_policy_mode),
+            route.map(|value| value.execution_location),
+            route.map(|value| value.runtime_id),
+            route.map(|value| value.route_decision_json),
+            route.map(|value| value.disclosure_json),
             now,
             id
         ],
@@ -498,6 +532,8 @@ mod tests {
                 role TEXT NOT NULL, content TEXT DEFAULT '', status TEXT DEFAULT 'complete',
                 provider_message_id TEXT, error_code TEXT, metadata_json TEXT,
                 provider TEXT, model TEXT, routing_mode TEXT, route_reason TEXT,
+                route_policy_mode TEXT, execution_location TEXT, runtime_id TEXT,
+                route_decision_json TEXT, disclosure_json TEXT,
                 created_at TEXT, updated_at TEXT
             );
             CREATE TABLE ai_context_items (

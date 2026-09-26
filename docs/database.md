@@ -154,6 +154,14 @@ Explicit user-authored durable context, governed by ADR-012.
 
 Indexes: `space_id`, `category`, `updated_at`. A cleanup trigger removes polymorphic AI context attachments when an item is deleted. Content is sent externally only after explicit attachment and Rust scope validation.
 
+### ai_messages routing provenance
+
+Migration `019_ai_router_provenance` extends the existing nullable provider/model provenance with `route_policy_mode`, `execution_location`, `runtime_id`, `route_decision_json`, and `disclosure_json`. Historical response content is not rewritten. Legacy Auto responses map to `automatic`; explicit DeepSeek/OpenAI responses map to `cloud_only`; known cloud providers map to `cloud` execution.
+
+The JSON columns contain only native decision IDs, closed reason codes, bounded capability summaries, data-class/category summaries, and approval metadata. They must never contain prompts, context bodies, full tool results, credentials, or raw provider errors. Raw decision/disclosure JSON is intentionally omitted from message IPC; the UI receives only bounded presentation fields such as route policy, provider/model, locality, and presentation reason.
+
+AI routing preferences use dedicated native commands over allowlisted `app_settings` keys (`ai.routing.*` and `ai.privacy.cloud_disclosure_policy`). Provider API keys and future runtime secrets remain in the secure native credential store and are never stored in `app_settings`.
+
 ## Migrations
 
 ### integrations

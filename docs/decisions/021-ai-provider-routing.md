@@ -3,6 +3,7 @@
 - **Status:** Accepted
 - **Date:** 2026-08-27
 - **Task:** `AI-EVOL-001`
+- **Extended by:** ADR-032 for Local only / Cloud only / Automatic routing, execution locality, privacy disclosure, and richer provenance
 
 ## Context
 

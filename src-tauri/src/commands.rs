@@ -1,12 +1,16 @@
 #![allow(clippy::too_many_arguments)]
 
 use crate::actions::{self, ActionRuntime, OpenTarget};
+use crate::ai::backend;
+use crate::ai::capabilities::{self, ReasoningTier, StructuredOutputSupport, ToolCallingSupport};
 use crate::ai::context;
 use crate::ai::credentials;
+use crate::ai::privacy;
 use crate::ai::proposals;
 use crate::ai::provider::{self, ChatCompletionRequest, ChatMessage, ProviderConfig};
 use crate::ai::routing;
 use crate::ai::runtime::AiRuntime;
+use crate::ai::settings::{self as ai_settings, AiRoutingSettings};
 use crate::backup;
 use crate::calendar_ics::{self, FetchResult, IcsValidation};
 use crate::context::{self as local_context, ContextRuntime};
@@ -1787,6 +1791,19 @@ pub fn ai_list_provider_statuses(db: State<Database>) -> Result<Vec<ProviderStat
 }
 
 #[tauri::command]
+pub fn ai_get_routing_settings(db: State<Database>) -> Result<AiRoutingSettings, String> {
+    with_conn(&db.conn, ai_settings::get)
+}
+
+#[tauri::command]
+pub fn ai_set_routing_settings(
+    db: State<Database>,
+    settings: AiRoutingSettings,
+) -> Result<AiRoutingSettings, String> {
+    with_conn(&db.conn, |conn| ai_settings::set(conn, &settings))
+}
+
+#[tauri::command]
 pub fn ai_set_provider_api_key(
     db: State<Database>,
     provider: String,
@@ -1821,11 +1838,20 @@ pub async fn ai_test_provider_connection(
         .ok_or_else(|| "No API key configured for this provider.".to_string())?;
     let config =
         ProviderConfig::for_route(&provider, key, &model).map_err(|error| error.message)?;
-    provider::create_provider(config)
-        .map_err(|error| error.message)?
-        .test_connection()
+    let backend = backend::create_backend(config).map_err(|error| error.message)?;
+    if !backend
+        .discover_models()
         .await
-        .map_err(|error| error.message)?;
+        .map_err(|error| error.message)?
+        .iter()
+        .any(|candidate| candidate.id == model)
+    {
+        return Err("The configured model is no longer available.".into());
+    }
+    if backend.descriptor().id != provider {
+        return Err("The AI backend descriptor did not match the requested provider.".into());
+    }
+    let _health = backend.health().await.map_err(|error| error.message)?;
     Ok("Connection successful".to_string())
 }
 
@@ -2006,31 +2032,6 @@ pub async fn ai_stream_message(
     if conversation.archived_at.is_some() {
         return Err("Restore this conversation before sending a message.".to_string());
     }
-    let route = if conversation.provider == "auto" {
-        let deepseek_configured = credentials::get_provider_key(&db, "deepseek")?.is_some();
-        let openai_configured = credentials::get_provider_key(&db, "openai")?.is_some();
-        routing::select_route(
-            "auto",
-            "auto",
-            &mode,
-            deepseek_configured,
-            openai_configured,
-        )?
-    } else {
-        routing::select_route(
-            &conversation.provider,
-            &conversation.model,
-            &mode,
-            false,
-            false,
-        )?
-    };
-    let key = credentials::get_provider_key(&db, &route.provider)?.ok_or_else(|| {
-        format!(
-            "No API key configured for {}. Configure it in Settings first.",
-            route.provider
-        )
-    })?;
     let retry_user = if let Some(message_id) = retry_user_message_id.as_deref() {
         let message = with_conn(&db.conn, |conn| {
             repositories::conversations::get_message(conn, message_id)?
@@ -2044,9 +2045,135 @@ pub async fn ai_stream_message(
     } else {
         None
     };
-    let config = ProviderConfig::for_route(&route.provider, key, &route.model)
+    let (has_explicit_context, estimated_chars) = with_conn(&db.conn, |conn| {
+        let attachments = repositories::conversations::list_context_items(conn, &conversation_id)?;
+        let resolved = context::resolve_all(conn, conversation.space_id.as_deref(), &attachments)?;
+        let history = repositories::conversations::list_messages(conn, &conversation_id, Some(50))?;
+        let history_chars: usize = history
+            .iter()
+            .filter(|message| message.status == "complete")
+            .map(|message| message.content.chars().count())
+            .sum();
+        let history_contains_aether_context = history.iter().any(|message| {
+            message
+                .metadata_json
+                .as_deref()
+                .and_then(|metadata| serde_json::from_str::<serde_json::Value>(metadata).ok())
+                .and_then(|metadata| {
+                    metadata
+                        .get("contextCount")
+                        .and_then(serde_json::Value::as_u64)
+                })
+                .is_some_and(|count| count > 0)
+        });
+        let context_chars: usize = resolved
+            .iter()
+            .map(|item| item.title.chars().count() + item.detail.chars().count())
+            .sum();
+        Ok((
+            !resolved.is_empty() || history_contains_aether_context,
+            history_chars + context_chars + content.chars().count(),
+        ))
+    })?;
+    let settings = with_conn(&db.conn, ai_settings::get)?;
+    let effective_mode = routing::effective_mode(settings.mode, &conversation.provider);
+    let mut preferences = routing::preferences(&settings);
+    if conversation.provider != "auto" {
+        preferences.preferred_cloud_provider = Some(conversation.provider.clone());
+        preferences.preferred_cloud_model = Some(conversation.model.clone());
+    } else if preferences.preferred_cloud_provider.is_none() {
+        let product_preference = match mode.as_str() {
+            "create_tasks" | "propose_actions" => ("openai", "gpt-5-mini"),
+            "plan" => ("deepseek", "deepseek-v4-pro"),
+            _ => ("deepseek", "deepseek-v4-flash"),
+        };
+        preferences.preferred_cloud_provider = Some(product_preference.0.into());
+        preferences.preferred_cloud_model = Some(product_preference.1.into());
+    }
+    let categories = privacy::classify(has_explicit_context);
+    let data_policy = privacy::snapshot(
+        categories,
+        effective_mode,
+        settings.cloud_disclosure_policy,
+        false,
+    );
+    let requirements = routing::CapabilityRequirements {
+        text_generation: true,
+        streaming: true,
+        tool_calling: ToolCallingSupport::None,
+        structured_output: if ["create_tasks", "propose_actions"].contains(&mode.as_str()) {
+            StructuredOutputSupport::JsonObject
+        } else {
+            StructuredOutputSupport::None
+        },
+        vision: false,
+        minimum_reasoning_tier: if mode == "plan" {
+            ReasoningTier::Advanced
+        } else {
+            ReasoningTier::Basic
+        },
+    };
+    let route_request = routing::RouteRequest {
+        request_id: request_id.clone(),
+        routing_mode: effective_mode,
+        task_profile: routing::TaskProfile {
+            response_mode: mode.clone(),
+            reasoning_tier: requirements.minimum_reasoning_tier,
+            latency_preference: if mode == "plan" {
+                routing::LatencyPreference::Quality
+            } else {
+                routing::LatencyPreference::Balanced
+            },
+            requires_tools: false,
+            requires_structured_output: requirements.structured_output
+                != StructuredOutputSupport::None,
+            requires_vision: false,
+        },
+        capability_requirements: requirements,
+        context_budget: routing::ContextBudget {
+            // Until provider tokenizers are available, count each Unicode scalar as
+            // one token. This intentionally overestimates ordinary prose instead of
+            // silently dispatching context that may exceed a model window.
+            estimated_input_tokens: estimated_chars.try_into().unwrap_or(u32::MAX),
+            reserved_output_tokens: 4_096,
+            reserved_tool_tokens: 0,
+            measurement: routing::TokenMeasurement::Estimated,
+        },
+        data_policy,
+        tool_scope: routing::ToolScope::default(),
+        preferences,
+        environment: routing::EnvironmentSnapshot { offline: false },
+    };
+    let mut candidates = Vec::new();
+    for descriptor in capabilities::cloud_backend_descriptors() {
+        let configured = effective_mode != ai_settings::RoutingMode::LocalOnly
+            && credentials::get_provider_key(&db, &descriptor.id)?.is_some();
+        for model in descriptor.models {
+            candidates.push(routing::RouteCandidate {
+                backend_id: descriptor.id.clone(),
+                model_id: model.id,
+                registered: true,
+                enabled: configured,
+                available: configured,
+                capabilities: model.capabilities,
+            });
+        }
+    }
+    let route = routing::select_route(
+        &route_request,
+        &candidates,
+        settings.cloud_disclosure_policy,
+    )
+    .map_err(|failure| failure.message)?;
+    let key = credentials::get_provider_key(&db, &route.backend_id)?.ok_or_else(|| {
+        format!(
+            "No API key configured for {}. Configure it in Settings first.",
+            route.backend_id
+        )
+    })?;
+    let config = ProviderConfig::for_route(&route.backend_id, key, &route.model_id)
         .map_err(|error| error.message)?;
-    let provider = provider::create_provider(config).map_err(|error| error.message)?;
+    let backend = backend::create_backend(config).map_err(|error| error.message)?;
     let cancellation = runtime.start(&request_id)?;
     let _request_guard = AiRequestGuard {
         runtime: &runtime,
@@ -2148,7 +2275,7 @@ pub async fn ai_stream_message(
         });
     }
     let request = ChatCompletionRequest {
-        model: route.model.clone(),
+        model: route.model_id.clone(),
         messages: chat_messages,
         temperature: None,
         max_tokens: None,
@@ -2157,8 +2284,8 @@ pub async fn ai_stream_message(
         thinking: None,
     };
     let collected = std::sync::Mutex::new(String::new());
-    let result = provider
-        .stream_chat(&request, cancellation, &|delta| {
+    let result = backend
+        .stream_turn(&request, cancellation, &|delta| {
             collected
                 .lock()
                 .map_err(|_| "AI response buffer is unavailable.".to_string())?
@@ -2171,11 +2298,33 @@ pub async fn ai_stream_message(
     let final_content = collected
         .into_inner()
         .map_err(|_| "AI response buffer is unavailable.".to_string())?;
+    let route_decision_json = serde_json::to_string(&route)
+        .map_err(|error| format!("AI route provenance error: {error}"))?;
+    let disclosure_json = serde_json::to_string(&route_request.data_policy)
+        .map_err(|error| format!("AI disclosure provenance error: {error}"))?;
+    let route_policy_mode = serde_json::to_string(&route.routing_mode)
+        .unwrap_or_else(|_| "\"automatic\"".into())
+        .trim_matches('"')
+        .to_string();
+    let execution_location = serde_json::to_string(&route.execution_location)
+        .unwrap_or_else(|_| "\"cloud\"".into())
+        .trim_matches('"')
+        .to_string();
+    let legacy_routing_mode = if route.routing_mode == ai_settings::RoutingMode::Automatic {
+        "auto"
+    } else {
+        "manual"
+    };
     let provenance = repositories::conversations::AiRouteProvenance {
-        provider: &route.provider,
-        model: &route.model,
-        routing_mode: &route.routing_mode,
-        route_reason: &route.reason,
+        provider: &route.backend_id,
+        model: &route.model_id,
+        routing_mode: legacy_routing_mode,
+        route_reason: &route.presentation_reason,
+        route_policy_mode: &route_policy_mode,
+        execution_location: &execution_location,
+        runtime_id: &route.backend_id,
+        route_decision_json: &route_decision_json,
+        disclosure_json: &disclosure_json,
     };
 
     let terminal = match result {

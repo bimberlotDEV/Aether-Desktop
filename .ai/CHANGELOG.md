@@ -33,9 +33,21 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Reviewed by:** Codex self-review
 - **Summary:** Removed Brightspace from active provider setup, native commands, runtime dispatch, capabilities, and School source presentation. Legacy rows remain readable but cannot sync or be recreated; a provider-neutral cleanup path removes their encrypted credential and cascaded local data safely.
 - **Files:** Deleted `src-tauri/src/brightspace.rs`; updated Integration/runtime/subscribed-calendar/School native layers, Connections and School frontend contracts/UI/tests, database/ADR notes, and `.ai/*` records.
-- **Verification:** Focused retired-ID/legacy read (1), unsupported cleanup (2), MyTimetable (22), CAL-ICS (21), Integration Sync (18), School repository (13), Calendar Core (3), and frontend/IPC (46) tests; full `cargo test` (202), `pnpm test` (133 across 37 files), typecheck, lint, production build, Rust formatting, strict Clippy, and diff check — Pass.
+- **Verification:** Focused retired-ID/legacy read (1), unsupported cleanup (2), MyTimetable (22), CAL-ICS (21), Integration Sync (18), School repository (13), Calendar Core (3), and frontend/IPC (46) tests; pre-merge full `cargo test` (202) and `pnpm test` (133 across 37 files) — Pass. After merging the latest `master`, full `cargo test` (216), `pnpm test` (137 across 37 files), typecheck, lint, production build, Rust formatting, strict Clippy, and diff check — Pass.
 - **Decisions/deviations:** No migration, dependency, or new ADR. Legacy state is retained until explicit cleanup, never reinterpreted, and excluded from runtime and School authority. ADR-031 is annotated as historical where it discussed Brightspace association; shared ICS/MyTimetable infrastructure is unchanged.
 - **Follow-up:** Rich Brightspace support is parked until institution-managed official API authorization is available and a new explicit task is approved.
+
+## 2026-09-25 — `AI-ROUTER-001` — Provider-neutral deterministic AI Router Phase 1
+
+- **Type:** Feature, architecture, privacy, migration, UX, and test
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review
+- **Summary:** Added one closed provider-neutral backend/capability contract for DeepSeek/OpenAI, deterministic Local only / Cloud only / Automatic routing, native data classification and disclosure settings, conservative context budgets, a separate one-time disclosure-approval foundation, and locality-aware response provenance. Local only truthfully reports that no runtime exists; no backend/locality switch occurs after dispatch.
+- **Files:** `src-tauri/src/ai/`, AI command/repository/migration 019 boundaries, typed AI IPC/hooks/settings/view tests, ADR-032, database/architecture documentation, and `.ai/*` task records.
+- **Verification:** Focused native AI tests and 34 focused frontend/IPC tests; `cargo test` (216), `pnpm test` (136 across 37 files), TypeScript, lint, production build, Rust format, strict Clippy, and diff checks — Pass.
+- **Decisions/deviations:** ADR-032 extends rather than replaces ADR-021. No dependency, local runtime, tools, calendar behavior, arbitrary endpoint, vision, or embedding was added. The approval token boundary is native and fully tested; a dedicated approval-prompt UI remains later work, so default sensitive Aether context fails truthfully unless policy explicitly permits attached context.
+- **Follow-up:** `LOCAL-LLM-001`, `AI-CAL-001` native tool foundation, tool-enabled router integration, and optional packaged runtime.
+- **Publication:** Implementation commit `11233f7` is pushed to `origin/agent/ai-router`; draft PR [#64](https://github.com/bimberlotDEV/Aether-Desktop/pull/64) is open.
 
 ## 2026-09-25 — `SCHOOL-SCOPE-002` — Connection-bound School Space schedules
 
