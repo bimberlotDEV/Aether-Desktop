@@ -10,6 +10,8 @@ use super::{
     settings::{AiRoutingSettings, AutomaticCloudFallback, RoutingMode},
 };
 
+pub use super::tools::ToolScope;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum TokenMeasurement {
@@ -56,12 +58,6 @@ pub struct TaskProfile {
     pub requires_vision: bool,
 }
 
-#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ToolScope {
-    pub allowed_tool_ids: Vec<String>,
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RoutingPreferences {
@@ -87,6 +83,7 @@ pub struct RouteRequest {
     pub capability_requirements: CapabilityRequirements,
     pub context_budget: ContextBudget,
     pub data_policy: DataPolicySnapshot,
+    #[serde(skip_deserializing, default)]
     pub tool_scope: ToolScope,
     pub preferences: RoutingPreferences,
     pub environment: EnvironmentSnapshot,

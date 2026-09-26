@@ -125,6 +125,7 @@ SQLite / native capabilities / external providers
 | `ADR-029` | Ingest renewable iCalendar subscriptions through a native, bounded HTTPS/parser/recurrence engine while retaining URLs only in DPAPI secrets and leaving sync runtime ownership separate. | Accepted | `docs/decisions/029-ics-subscription-ingestion.md` |
 | `ADR-031` | Bind each parent School Space to explicit Integration connection IDs and scope MyTimetable group selection and timetable reads per bound source. | Accepted | `docs/decisions/031-school-source-scoping.md` |
 | `ADR-032` | Route AI through a closed provider-neutral backend contract with native locality, deterministic Local/Cloud/Automatic policy, separate disclosure authority, and content-free provenance. | Accepted | `docs/decisions/032-ai-router-phase-1.md` |
+| `ADR-033` | Expose AI-readable local data only through a closed Rust tool registry with typed native scope, strict schemas, minimized Sensitive projections, and hard execution/result bounds. | Accepted | `docs/decisions/033-native-read-only-ai-tools.md` |
 ## Architecture change protocol
 
 1. Codex records the problem, constraints, options, and decision ID.
