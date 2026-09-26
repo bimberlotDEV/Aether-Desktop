@@ -26,6 +26,18 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-09-26 — `AI-NATIVE-TOOLS-001` — Closed native read-only AI tool foundation
+
+- **Type:** Feature, architecture, security, privacy, test, and docs
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review
+- **Summary:** Added a Rust-owned registry containing exactly `calendar.get_events`, `calendar.get_next_event`, `tasks.get_due`, and `tasks.get_open`. Strict arguments, typed native School/Task scope, bounded local SQL projections, versioned minimized outputs, Sensitive classification, a 64 KiB result ceiling, and sanitized typed errors fail closed without exposing a frontend execution command or model tool loop.
+- **Files:** `src-tauri/src/ai/tools/`, focused School Calendar and Task projections, AI routing `ToolScope`, ADR-033, architecture docs, and `.ai/*` control records.
+- **Verification:** Focused native tool tests 10/10; full `cargo test` 235/235; `pnpm test` 139/139 across 37 files; typecheck, lint, production build, Rust formatting, strict Clippy, and diff check — Pass.
+- **Decisions/deviations:** No migration or dependency change. Calendar authorization is parent-School-Space plus persisted MyTimetable connection/group binding and exact UTC/local-date scope. Caller oversize requests are rejected rather than clamped. `school.get_deadlines` is explicitly superseded until a normalized Deadline domain exists; no ICS/event deadline inference was added.
+- **Follow-up:** `AI-TOOL-ROUTER-001` — tool-enabled AI Router integration. Write tools remain separate Safe Actions work.
+- **Publication:** Implementation commit `e259ef2` is pushed to `origin/agent/ai-native-tools`; draft PR [#68](https://github.com/bimberlotDEV/Aether-Desktop/pull/68) is open.
+
 ## 2026-09-26 — `REPO-HEALTH-032` — Repository health and cleanup audit
 
 - **Type:** Refactor, fix, security, test, docs, and process

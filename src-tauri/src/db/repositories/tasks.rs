@@ -25,6 +25,17 @@ pub struct Task {
     pub updated_at: String,
 }
 
+#[allow(dead_code)] // Consumed by the native AI tool foundation before router integration.
+#[derive(Debug, Clone, Serialize, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct AiTaskProjection {
+    pub id: String,
+    pub title: String,
+    pub due_date: Option<String>,
+    pub status: String,
+    pub priority: String,
+}
+
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct TaskInput {
@@ -384,6 +395,83 @@ pub fn list_attention(
         .map_err(|error| format!("Task attention error: {}", error))?;
     rows.collect::<Result<Vec<_>, _>>()
         .map_err(|error| format!("Task attention row error: {}", error))
+}
+
+#[allow(dead_code)] // Consumed by the native AI tool foundation before router integration.
+pub fn list_ai_due(
+    conn: &Connection,
+    start_date: &str,
+    end_date: &str,
+    limit: u32,
+) -> Result<Vec<AiTaskProjection>, String> {
+    validate_date(start_date, "AI due-task start date")?;
+    validate_date(end_date, "AI due-task end date")?;
+    if start_date >= end_date {
+        return Err("AI due-task range end must be after start".into());
+    }
+    if !(1..=50).contains(&limit) {
+        return Err("AI Task result limit must be between 1 and 50".into());
+    }
+    let mut statement = conn
+        .prepare(
+            "SELECT t.id, t.title, t.due_date, t.status, t.priority
+             FROM tasks t
+             LEFT JOIN spaces s ON s.id=t.space_id
+             WHERE t.archived_at IS NULL AND t.status!='done' AND t.due_date IS NOT NULL
+               AND t.due_date>=?1 AND t.due_date<?2
+               AND (t.space_id IS NULL OR s.archived_at IS NULL)
+             ORDER BY t.due_date,
+               CASE t.priority WHEN 'high' THEN 0 WHEN 'medium' THEN 1 WHEN 'low' THEN 2 ELSE 3 END,
+               t.created_at, t.id
+             LIMIT ?3",
+        )
+        .map_err(|error| format!("AI due-task projection error: {error}"))?;
+    let rows = statement
+        .query_map(params![start_date, end_date, limit], |row| {
+            Ok(AiTaskProjection {
+                id: row.get(0)?,
+                title: row.get(1)?,
+                due_date: row.get(2)?,
+                status: row.get(3)?,
+                priority: row.get(4)?,
+            })
+        })
+        .map_err(|error| format!("AI due-task projection error: {error}"))?;
+    rows.collect::<Result<Vec<_>, _>>()
+        .map_err(|error| format!("AI due-task projection row error: {error}"))
+}
+
+#[allow(dead_code)] // Consumed by the native AI tool foundation before router integration.
+pub fn list_ai_open(conn: &Connection, limit: u32) -> Result<Vec<AiTaskProjection>, String> {
+    if !(1..=50).contains(&limit) {
+        return Err("AI Task result limit must be between 1 and 50".into());
+    }
+    let mut statement = conn
+        .prepare(
+            "SELECT t.id, t.title, t.due_date, t.status, t.priority
+             FROM tasks t
+             LEFT JOIN spaces s ON s.id=t.space_id
+             WHERE t.archived_at IS NULL AND t.status!='done'
+               AND (t.space_id IS NULL OR s.archived_at IS NULL)
+             ORDER BY CASE WHEN t.due_date IS NULL THEN 1 ELSE 0 END, t.due_date,
+               CASE t.priority WHEN 'high' THEN 0 WHEN 'medium' THEN 1 WHEN 'low' THEN 2 ELSE 3 END,
+               t.created_at, t.id
+             LIMIT ?1",
+        )
+        .map_err(|error| format!("AI open-task projection error: {error}"))?;
+    let rows = statement
+        .query_map([limit], |row| {
+            Ok(AiTaskProjection {
+                id: row.get(0)?,
+                title: row.get(1)?,
+                due_date: row.get(2)?,
+                status: row.get(3)?,
+                priority: row.get(4)?,
+            })
+        })
+        .map_err(|error| format!("AI open-task projection error: {error}"))?;
+    rows.collect::<Result<Vec<_>, _>>()
+        .map_err(|error| format!("AI open-task projection row error: {error}"))
 }
 
 pub fn archive(conn: &Connection, id: &str) -> Result<bool, String> {

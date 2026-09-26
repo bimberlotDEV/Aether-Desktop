@@ -4,30 +4,26 @@
 | -------------- | ----------------------------- |
 | Schema version | 2                             |
 | Session date   | 2026-09-26                    |
-| Active task    | `REPO-HEALTH-032`             |
+| Active task    | `AI-NATIVE-TOOLS-001`         |
 | Agent          | Codex                         |
 | State          | complete; draft PR open       |
 
 ## Current work
 
-Aether 32 completed a repository-wide, evidence-based health audit. Active IPC now
-matches production callers, Integration and School projections expose only
-presentation fields, Pulse rejects unsupported legacy calendar providers, and
-verified dead commands/read models/schemas are removed. Shared ICS, MyTimetable,
-persisted compatibility, and historical migration/ADR evidence remain intact.
+The closed Rust-owned read-only AI tool foundation is implemented for Calendar
+events/next event and Tasks due/open. Strict native schemas, typed authorization,
+minimized local projections, Sensitive privacy metadata, deterministic errors,
+and hard 31-day/50-item/64-KiB limits are verified.
 
-One unused frontend updater package was removed. Vitest was patched from 4.1.10 to
-4.1.11 to resolve its moderate path-traversal advisory; the moderate-level audit is
-clean. No migration, new ADR, product feature, provider, AI tool, or local runtime
-was added.
-
-Validation is complete: focused native Pulse 12, School 13, Integration 8,
-MyTimetable 21, migrations 18, and AI routing 7; focused frontend 47; full Rust 225
-and frontend 139 across 37 files. Typecheck, lint, build, formatting, strict Clippy,
-dependency audit, IPC parity, and final scope/security/compatibility review pass.
+No model tool loop, router integration, frontend command, write tool, local model,
+academic Deadline inference, Brightspace behavior, migration, or dependency is
+authorized.
 
 ## Exact resume point
 
-Implementation commit `578c43d` is pushed on `agent/repo-health-cleanup` and draft
-PR #67 is open. Commit and push these publication-record updates, then stop without
-beginning backlog feature work.
+Validation and self-review pass: focused tools 10/10, full Rust 235/235, frontend
+139/139 across 37 files, typecheck, lint, build, formatting, strict Clippy, and
+diff check. Implementation commit `e259ef2` is pushed on
+`agent/ai-native-tools`, and draft PR #68 is open. Record this publication update
+in a final docs commit, then stop. The exact next task is `AI-TOOL-ROUTER-001`;
+do not begin it here.

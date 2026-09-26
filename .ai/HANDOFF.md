@@ -2,114 +2,133 @@
 
 ## Contract metadata
 
-| Field             | Value                                           |
-| ----------------- | ----------------------------------------------- |
-| Schema version    | 3                                               |
-| Task ID           | `REPO-HEALTH-032`                               |
-| Status            | `complete`                                      |
-| Owner             | Codex                                           |
-| Last updated      | 2026-09-26                                      |
-| Related milestone | Aether 32 — repository health and cleanup audit |
-| Classification    | `planned_codex`                                 |
-| Branch / worktree | `agent/repo-health-cleanup`                     |
+| Field             | Value                                                    |
+| ----------------- | -------------------------------------------------------- |
+| Schema version    | 3                                                        |
+| Task ID           | `AI-NATIVE-TOOLS-001`                                    |
+| Status            | `complete`                                               |
+| Owner             | Codex                                                    |
+| Last updated      | 2026-09-26                                               |
+| Related milestone | Aether 33 — native read-only AI tool foundation          |
+| Classification    | `planned_codex`                                          |
+| Branch / worktree | `agent/ai-native-tools` / `A:\Aether Desktop`            |
 
 ## Objective
 
-Audit the merged post-PULSE-003 repository for verified dead or stale code, contract and documentation drift, unsafe or unbounded behavior, migration inconsistency, unnecessary direct dependencies, and regressions; apply only safe evidence-backed cleanup and publish a validated draft PR.
+Create a Rust-owned, closed, read-only AI tool registry for
+`calendar.get_events`, `calendar.get_next_event`, `tasks.get_due`, and
+`tasks.get_open`, with strict arguments, native authorization, minimized typed
+outputs, deterministic sanitized errors, Sensitive privacy classification, and
+hard query/result-size bounds. Do not connect tools to model execution yet.
 
 ## Context
 
-- `origin/master` at `53b790c` contains merged Brightspace retirement, AI Router phase 1, and PULSE-003.
-- This is a cross-repository health task, not feature work or authorization for architectural redesign.
-- Brightspace is retired; historical records may remain when clearly historical, while shared ICS infrastructure and MyTimetable must remain operational.
-- The owner supplied the complete audit areas, exclusions, validation matrix, smoke plan, publication requirements, and stop condition.
+- `origin/master` at `4da949f` contains the merged repository-health baseline,
+  provider-neutral AI Router, Calendar Core, explicit School source scoping,
+  Pulse, Tasks, Continuity, and Safe Actions.
+- ADR-032 deliberately left `ToolScope` as a non-executing placeholder. This
+  task replaces that placeholder with the first closed native authorization
+  contract while preserving the existing router's no-tools behavior.
+- Calendar reads must reuse the current parent-School-Space authorization and
+  MyTimetable group isolation. Task reads use local normalized Tasks only.
+- `school.get_deadlines` is superseded: no Deadline tool may exist until Aether
+  has a reviewed normalized Deadline domain. Events, ICS text, and
+  MyTimetable data are never deadline inference inputs.
 
 ## Success criteria
 
-- [ ] All requested repository domains, ADRs, migrations, dependency manifests, trust boundaries, test structure, and current control records are inspected and findings are classified as Fix now, Safe cleanup, Follow-up, or False positive / intentional.
-- [ ] Verified active Brightspace behavior and misleading fixtures/copy are absent; retained references are historical or generic/shared, and MyTimetable/shared ICS behavior remains intact.
-- [ ] High-confidence dead production code, stale contracts, duplicated active logic, unsafe leakage, and practical unbounded overview reads found in scope are removed or corrected without speculative refactoring.
-- [ ] Frontend/backend IPC, provider registry, Calendar/School/Pulse projections, AI routing/privacy/provenance, and local domain lifecycle boundaries remain internally consistent.
-- [ ] Migration numbering, fresh initialization, supported upgrade coverage, foreign keys, and schema documentation are consistent without rewriting historical migrations.
-- [ ] Clearly unused direct dependencies are removed; risky upgrades and architectural issues are recorded as follow-up rather than broadened into this task.
-- [ ] Required focused and full validation passes, the final diff is self-reviewed against every acceptance criterion, and repository records accurately describe current state.
-- [ ] Task-owned changes are committed and pushed on `agent/repo-health-cleanup`, and a draft PR is open.
+- [x] A closed `NativeToolId` registry contains exactly the four approved read tools and rejects unknown IDs.
+- [x] Every descriptor has a stable public name, description, strict input/output schema, output version, execution type, Sensitive privacy class, required scope, and hard result limits.
+- [x] A typed native `ToolScope` authorizes only closed tool IDs plus bounded Calendar/Task read grants; models cannot select connections, providers, groups, SQL, tables, URLs, or paths.
+- [x] All inputs reject unknown fields, malformed values, invalid limits, inverted ranges, and windows over 31 days.
+- [x] Calendar tools read only the current authorized parent School Space's persisted MyTimetable/group projection, exclude cancelled/removed events, order deterministically, and return at most 50 minimized records.
+- [x] Task tools read bounded SQL projections only, exclude archived/completed Tasks, preserve deterministic due/open ordering, and return at most 50 minimized records.
+- [x] Every result is typed/versioned, Sensitive by native policy, and serialized below the 64 KiB hard ceiling; failures use a closed sanitized taxonomy.
+- [x] No write tool, arbitrary query/filesystem/provider path, frontend execution command, provider fetch, model tool loop, local model, academic deadline inference, or Brightspace behavior is added.
+- [x] Existing AI Router behavior remains unchanged and all required focused/full validation passes.
+- [x] Task-owned work is committed, pushed, and represented by a draft PR.
 
 ## In scope
 
-- Repository-wide evidence-based health inspection across Rust, React/TypeScript, migrations, dependencies, tests, docs, ADRs, and `.ai` records.
-- Brightspace retirement; Integration Core/provider catalog/subscribed-calendar/MyTimetable/sync/credentials; Calendar/School/Pulse; AI routing/privacy/approval/provenance; Tasks/Continuity/Notes/Vault; frontend/Rust cleanup; security, bounds, and errors.
-- Safe deletion or correction that directly satisfies the owner's cleanup rules.
-- Focused regression tests required by verified fixes and concise current documentation/record corrections.
+- `src-tauri/src/ai/tools/` (registry, scope, validation, projections, execution, errors, tests).
+- Minimal AI module/routing changes needed to replace the empty `ToolScope` placeholder without enabling routing execution.
+- Small reusable native repository projection functions for bounded School Calendar and Task reads when needed.
+- ADR-033 plus current AI architecture/project records and tests.
 
 ## Allowed paths
 
-- Any tracked repository path when a verified audit finding requires a safe change and the path is recorded in the implementation log.
-- Dependency lockfiles only when a direct dependency is proven unused and removed from its manifest.
-- `src-tauri/src/db/migrations.rs` may be changed only by appending a new migration for a verified current schema defect; historical migrations must not be rewritten.
-- `.ai/HANDOFF.md`, `.ai/PROJECT_STATE.md`, `.ai/TODO.md`, `.ai/SESSION_NOTES.md`, `.ai/CHANGELOG.md`, architecture/database/current feature docs, and ADR status annotations as required for factual consistency.
+- `src-tauri/src/ai/**`
+- `src-tauri/src/db/repositories/{school_schedule,tasks}.rs`
+- `src-tauri/src/db/repositories/mod.rs` only if a focused module registration is required.
+- `docs/decisions/033-native-read-only-ai-tools.md`, `docs/decisions/README.md`, `docs/architecture.md`, `.ai/ARCHITECTURE.md`
+- `.ai/{HANDOFF,PROJECT_STATE,TODO,SESSION_NOTES,CHANGELOG}.md`
+- Test-only files directly covering the approved behavior.
 
 ## Out of scope
 
-- AI tools, local LLM support, finance, mobile, OAuth, new integrations/providers, new product features, academic Deadline invention, or Pulse redesign.
-- Broad style-only refactors, speculative abstractions, major dependency upgrades, migration squashing/rewriting, or opportunistic adjacent work.
-- Removing compatibility required for persisted user data, shared ICS infrastructure, or historical records that remain clearly marked as historical/retired.
-- Live external-service requirements or destructive manipulation of owner data.
+- Model/router tool-call execution, tool loops, local LLM/runtime work, or provider adapter changes.
+- Tauri/frontend tool execution commands or a tool console.
+- Write/mutation/Safe Action tools, shell/filesystem/network/provider tools, arbitrary SQL, or raw repository access.
+- Academic Deadline/Assignment/Course/Material tools or inference from ICS/event content.
+- Brightspace, CAL-ICS parsing/sync, MyTimetable sync, Pulse UI, Integration runtime, routing selection changes, migrations, or dependencies.
 
 ## Architecture constraints
 
-- Preserve frontend → typed invoke wrapper → Tauri command → Rust service/repository → SQLite/filesystem/provider boundaries.
-- Preserve native secret custody, minimal IPC, Safe Actions separation, explicit School connection/group authorization, provider-neutral normalized models, and deterministic local product behavior.
-- Prefer deletion of proven dead code over compatibility shims, but retain persisted-data compatibility and append-only migrations.
-- Every production change must map to a verified finding and use the smallest reasonable correction.
-- No durable architecture boundary may change without revising this contract and adding/updating an ADR first.
+- Native code owns tool identity, descriptors, argument parsing, authorization,
+  execution, privacy metadata, output projection, and limits.
+- Execution reads only the provided local SQLite connection and cannot perform
+  network or recursive model work.
+- Calendar authorization starts from an opaque parent School Space ID resolved
+  by trusted native coordination; repository queries derive connection/group
+  access from persisted bindings and never accept those identities as tool args.
+- Bounds must exist in SQL/repository reads, not only after loading records.
+- Existing router calls continue to use `ToolScope::none()`/default and declare
+  no tool requirement.
 
 ## Dependencies
 
-- Merged Aether 31 / PULSE-003 on `origin/master` at `53b790c`.
-- Existing Brightspace retirement, AI Router, Integration/Calendar/School, Pulse, Safe Actions, and local-domain implementations and tests.
-- No new dependency is expected.
+- Merged `AI-ROUTER-001`, `CAL-CORE-001`, `SCHOOL-SCOPE-002`, `PULSE-003`, and Tasks domain.
+- Existing `serde`, `serde_json`, `chrono`, and `rusqlite`; no new dependency is expected.
 
 ## Risks and safeguards
 
-- **Repository-wide scope:** maintain a categorized findings checklist and change only verified issues; do not convert audit observations into speculative rewrites.
-- **Persisted compatibility:** trace callers, IPC, migrations, and upgrade tests before deleting types/commands/schema behavior.
-- **Security/privacy:** inspect flows and serialized projections manually; do not infer safety from string search alone.
-- **Provider regressions:** retain shared ICS and run provider registry, MyTimetable, Calendar/School, and Pulse regressions after cleanup.
-- **AI regressions:** preserve native routing/privacy/provenance and run routing/cancellation/Safe Actions coverage without adding tools or local backends.
-- **Documentation history:** correct current claims and mark historical decisions retired/superseded rather than rewriting history.
-- **Dependency removal:** verify direct usage across code/build/scripts and rebuild both stacks before removal is accepted.
+- **Authorization leakage:** derive Calendar source/group access only through persisted School bindings and test identical groups across connections/Spaces.
+- **Over-broad data:** select dedicated DTO columns; test serialized projections for prohibited fields.
+- **Unbounded work:** enforce 31-day/50-item/64-KiB ceilings and SQL limits; reject rather than silently clamp caller values.
+- **Router behavior drift:** keep execution internal and preserve default empty scope plus existing routing regression tests.
+- **Error leakage:** map repository/native failures to closed codes and static sanitized messages.
 
 ## Rollback considerations
 
-Changes are isolated on the task branch and should be decomposed into reviewable cleanup and record commits where useful. No destructive data operation is authorized. A new migration is strongly disfavored; if unavoidable it must be append-only, independently tested for fresh and upgrade paths, and documented before publication.
+The change is additive Rust code plus documentation and a compatible typed
+replacement for an unused placeholder. No migration, persisted data mutation,
+frontend contract, or dependency change is planned. Reverting the task commit
+restores the previous no-tools foundation.
 
 ## Required validation
 
-- Focused tests for every changed production area and regressions covering verified fixes.
-- Fresh database initialization and existing supported migration-upgrade tests.
-- Provider registry/Brightspace-retirement sanity, MyTimetable, Pulse, and AI routing regressions.
+- Focused registry, strict-argument, Calendar, Task, scope/privacy, projection, and size-cap tests.
+- Pulse/School Calendar projection regressions and AI Router regressions.
 - `cargo test --manifest-path src-tauri/Cargo.toml`
 - `cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`
 - `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings`
-- `pnpm test`
-- `pnpm typecheck`
-- `pnpm lint`
-- `pnpm build`
+- `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm build`
 - `git diff --check`
-- Owner smoke plan recorded for startup, Connections, MyTimetable, School, Pulse, Tasks, Notes, Search, cloud AI/cancellation, Safe Actions, restart persistence, disconnected sources, Brightspace absence, and console/native errors.
+- Final diff review for scope escalation, arbitrary invocation, raw exposure,
+  write capability, bounds, privacy drift, and deadline/Brightspace absence.
 
 ## Independent review requirement
 
-| Field          | Value                                                                                                                                        |
-| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| Required       | No                                                                                                                                           |
-| Reason         | The owner requested a full audit and the repository workflow requires a distinct evidence-based self-review, not a separate agent/session.   |
-| Reviewer scope | Final diff, deletion safety, persisted compatibility, trust boundaries, bounds, migrations, dependencies, docs, tests, and scope discipline. |
+| Field          | Value                                                                                         |
+| -------------- | --------------------------------------------------------------------------------------------- |
+| Required       | No                                                                                            |
+| Reason         | The owner requires a distinct final self-review; no separate agent/session was requested.     |
+| Reviewer scope | Closed registry, scope isolation, projections, bounds, errors, router regression, final diff. |
 
 ## Human decisions required
 
-None at readiness. The owner explicitly bounded permitted fixes, exclusions, validation, and publication. Any newly discovered architectural decision or destructive/persisted-data choice will block that finding and be recorded for owner direction rather than assumed.
+None at readiness. The owner supplied exact tool IDs, security/privacy policy,
+bounds, exclusions, validation, publication, and stop condition.
 
 ## Blocking decisions
 
@@ -117,85 +136,63 @@ None.
 
 ## Worktree / ownership gate
 
-| Check                             | State                                                                                                                                               |
-| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Correct branch/worktree confirmed | Pass — `agent/repo-health-cleanup`                                                                                                                  |
-| Latest master confirmed           | Pass — fetched `origin/master`; HEAD equals `53b790c`, merged PULSE-003                                                                             |
-| `git status` inspected            | Pass — clean before contract update; apparent `Cargo.toml` modification had an identical blob hash and was a stale stat entry                       |
-| User-owned changes identified     | None                                                                                                                                                |
-| Parallel task overlap checked     | Pass — latest required work is merged on master; this branch owns the repository-health audit                                                       |
-| Serialization points identified   | Migrations, central IPC, provider registry/runtime, AI routing/privacy, Pulse/School read models, dependency manifests, and current control records |
+| Check                             | State                                                                                  |
+| --------------------------------- | -------------------------------------------------------------------------------------- |
+| Correct branch/worktree confirmed | Pass — `agent/ai-native-tools` / `A:\Aether Desktop`                                   |
+| Latest master confirmed           | Pass — fast-forwarded to merged PR #67, `origin/master` at `4da949f`                    |
+| `git status` inspected            | Pass — clean before task-contract creation                                             |
+| User-owned changes identified     | None                                                                                   |
+| Parallel task overlap checked     | Pass — no open task owns this branch or the native AI-tool boundary                    |
+| Serialization points identified   | AI routing `ToolScope`, School authorization projection, Task projection, AI ADR/docs  |
 
 ## Readiness review
 
-Passed. The task has a stable ID, exact merged base, bounded audit/fix rule, explicit exclusions, success criteria, dependencies, risks, rollback, validation, publication, and stop condition. Production audit and evidence-backed cleanup may begin.
-
-## Findings checklist
-
-### Fix now
-
-- **Retired-provider leakage:** Pulse event and trust queries accepted any subscribed-calendar provider except Brightspace. They now require the supported `my_timetable` provider and explicit School bindings/groups; a legacy unsupported-provider regression proves fail-closed behavior.
-- **Over-broad Integration IPC:** normal connection reads serialized configuration, validators, cursors, credential lifecycle metadata, execution scope, and database timestamps. These fields remain available to native services but are skipped at the serialization boundary and absent from the strict frontend schema.
-- **Over-broad School IPC:** School schedule events reused the complete persisted ExternalEvent record. The read now selects and serializes a dedicated presentation projection only.
-- **Dependency security:** Vitest 4.1.10 and its mocker had a moderate path-traversal advisory. The test-only dependency is updated to 4.1.11; `pnpm audit --audit-level moderate` reports no known vulnerabilities.
-- **Current documentation drift:** README and architecture/database documentation described superseded product and boundary details. Current docs now identify connected Pulse, AI routing, retired Brightspace, supported MyTimetable/ICS behavior, minimized IPC, and backup compatibility accurately.
-
-### Safe cleanup
-
-- Removed 21 registered but unused Tauri commands and their TypeScript wrappers: broad settings/profile/Space/entity getters, generic Integration/ExternalEvent/subscribed-calendar creation/read/status endpoints, provider catalog/model listing, and unused conversation/context endpoints.
-- Removed the now-unreachable generic ExternalEvent range read model, stale MyTimetable profile endpoint, redundant ICS validation wrapper, three repository helpers used only by removed endpoints, and their obsolete tests/schemas/imports.
-- Removed unused frontend `@tauri-apps/plugin-updater`; native updater ownership remains unchanged.
-- Removed a duplicate ADR-027 index row and resolved `DEBT-003` through the focused architecture-document audit.
-
-### Follow-up
-
-- None required by verified repository health. Product additions and architectural expansion remain governed by the existing backlog and are outside this audit.
-
-### False positive / intentional
-
-- The legacy native SQLite-only export remains registered despite no current UI caller because ADR-014/ADR-022 explicitly retain it for compatibility.
-- Shared CAL-ICS, subscribed-calendar persistence/runtime, legacy Brightspace rows, and Brightspace regression fixtures remain required for MyTimetable operation, safe cleanup, migration history, and retirement guarantees; no active Brightspace provider path remains.
-- AI privacy approval scaffolding and explicit message-deletion repository code retain documented dead-code annotations for an approved future UI boundary; this audit did not authorize AI tools or new disclosure UX.
-- Core-domain list reads serve dedicated user-requested screens or low-cardinality configuration, while overview/search/Calendar/Pulse reads are bounded. No additional practical unbounded overview read was verified.
-- Historical ADRs, migrations, and changelog entries preserve their original Brightspace and architecture context rather than rewriting history.
+Passed. The contract has a stable task ID, exact baseline, bounded objective,
+observable acceptance criteria, allowed paths, explicit exclusions, dependencies,
+risks, rollback, validation, publication, and stop condition. ADR-033 records the
+durable native authorization/execution boundary before production implementation.
 
 ## Implementation log
 
-- 2026-09-26: Read the owner request and mandatory control documents; fetched `origin/master`, verified the apparent `Cargo.toml` edit contained no content difference, fast-forwarded to merged PULSE-003 `53b790c`, created the clean requested branch, and completed the readiness gate.
-- 2026-09-26: Audited every ADR and migration plus targeted active Rust/TypeScript domains, IPC parity, manifests, tests, security boundaries, query bounds, and current documentation.
-- 2026-09-26: Minimized Integration and School serialization, closed unsupported-provider Pulse reads, deleted verified dead IPC/read-model code, removed one unused dependency, patched the Vitest advisory, and corrected current documentation/control records without adding a migration or architecture decision.
-- 2026-09-26: Completed focused regressions, full frontend/native validation, dependency audit, and final scope/security/compatibility self-review.
+- 2026-09-26: Read the owner request and mandatory control documents, verified
+  PR #67 merged, fast-forwarded the clean requested branch to `origin/master`,
+  classified the task as `planned_codex`, and completed the readiness gate.
+- 2026-09-26: Implemented the closed registry, strict descriptors/arguments,
+  typed ToolScope, bounded School Calendar and Task projections, native Sensitive
+  result metadata, sanitized errors, 64 KiB enforcement, and focused tests.
+- 2026-09-26: Corrected next-event behavior to exclude ongoing/all-day events
+  like Pulse, bounded overdue Tasks to the native due grant, preserved explicit
+  local-date semantics for all-day reads, and completed validation/self-review.
 
 ## Verification evidence
 
-- Focused native: Pulse 12/12, School 13/13, Integration 8/8, MyTimetable 21/21, migrations 18/18, AI routing 7/7.
-- Focused frontend IPC/Connections/School: 47/47 across four files.
-- Full native: 225/225; full frontend: 139/139 across 37 files.
-- TypeScript typecheck, Oxlint, Vite production build, Rust formatting, strict Clippy, and moderate-level dependency audit pass.
+- Focused native tool foundation: 10/10 tests.
+- Full native: 235/235 tests, including existing AI Router, Pulse, School,
+  Calendar, MyTimetable, migrations, and Safe Actions regressions.
+- Full frontend: 139/139 tests across 37 files.
+- `pnpm typecheck`, `pnpm lint`, `pnpm build`, Rust formatting, strict all-target
+  Clippy, and `git diff --check`: Pass.
+- Migration: none. Dependency changes: none. Frontend/Tauri command changes: none.
 
-### Owner smoke plan
+## Self-review outcome
 
-Automated evidence is complete. A release-candidate desktop smoke should verify: cold startup; Connections display; MyTimetable connect/refresh/disconnect; School source/group selection and timetable views; Pulse schedule/tasks/conflicts/trust; Task lifecycle; Note create/autosave/search; Universal Search; Cloud only and Automatic AI routing; stream cancellation; Safe Action preview/approve/cancel; restart persistence; disabled/disconnected source truthfulness; absence of Brightspace setup/sync/School content; and no unexpected webview-console or native errors.
+`complete`. The final changed-path and
+diff review found no unrelated files, write SQL/tool IDs, provider/network/filesystem
+execution, frontend invoke surface, model loop, raw descriptions/source URLs/config,
+unbounded query/result path, privacy downgrade, Brightspace behavior, or academic
+deadline inference. Calendar authorization remains parent-School-Space plus exact
+persisted connection/group joins; Task output is a dedicated body-free projection.
+Every acceptance criterion above maps to focused tests or the recorded full gates.
 
-## Acceptance evidence
+## Publication
 
-- Requested audit domains and every ADR/migration were inspected; findings are classified above.
-- Brightspace is absent from active provider/School/Pulse behavior while cleanup, historical, migration, and regression references remain intentionally intact.
-- IPC parity is exact after deletion. The sole unused TypeScript wrapper is the documented legacy backup-export compatibility path.
-- No migration was required: numbering remains sequential through 019, and all 18 fresh/idempotent/supported-upgrade migration tests pass.
-- No production dependency was added. One unused frontend package was removed and one vulnerable test-only package received a patch update.
-- Security review confirms credentials, feed URLs, validators, cursors, hashes, provenance, external IDs, and persistence timestamps do not cross the cleaned presentation boundaries.
-
-## Self-review
-
-- Inspected the final diff for scope, caller deletion safety, IPC registration/wrapper parity, persistence compatibility, provider authorization, serialization minimization, migration immutability, dependency intent, and documentation accuracy.
-- No unrelated feature, schema, migration, provider, AI tool, local runtime, or visual change was introduced.
-- The retained compatibility/dead-code exceptions are explicit in the findings and supported by ADRs or current comments.
-
-## Publication state
-
-Implementation commit `578c43d` is pushed on `agent/repo-health-cleanup`; draft PR [#67](https://github.com/bimberlotDEV/Aether-Desktop/pull/67) is open. Publication records are finalized in the follow-up commit.
+- Implementation commit: `e259ef2`
+- Branch: `agent/ai-native-tools`
+- Draft PR: [#68](https://github.com/bimberlotDEV/Aether-Desktop/pull/68)
+- Publication-record commit: recorded separately after PR creation
 
 ## Stop condition
 
-Stop when requested audit coverage is evidenced; safe verified fixes and records are complete; all required focused/full checks pass; the repository is clean; task-owned commits are pushed on `agent/repo-health-cleanup`; and a draft PR is open. Do not begin AI tools, finance, mobile, local LLM, or another integration.
+Stop after the four read tools and their native foundation meet the acceptance
+criteria, validation and self-review pass, project records are updated, and a
+draft PR is open. Do not begin tool-enabled AI Router integration.

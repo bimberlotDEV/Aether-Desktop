@@ -52,6 +52,33 @@ pub struct SchoolSchedule {
     pub sources: Vec<SchoolCalendarSource>,
 }
 
+#[allow(dead_code)] // Consumed by the native AI tool foundation before router integration.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AiCalendarEventProjection {
+    pub id: String,
+    pub title: String,
+    pub time_kind: String,
+    pub start_at: Option<String>,
+    pub end_at: Option<String>,
+    pub start_date: Option<String>,
+    pub end_date: Option<String>,
+    pub location: Option<String>,
+    pub source_label: String,
+}
+
+#[allow(dead_code)] // Consumed by the native AI tool foundation before router integration.
+pub struct AiCalendarProjectionRequest<'a> {
+    pub school_space_id: &'a str,
+    pub start_utc: &'a str,
+    pub end_utc: &'a str,
+    pub start_date: &'a str,
+    pub end_date: &'a str,
+    pub include_all_day: bool,
+    pub timed_first: bool,
+    pub starts_at_or_after: bool,
+    pub limit: u32,
+}
+
 fn utc(value: &str, field: &str) -> Result<String, String> {
     let parsed = DateTime::parse_from_rfc3339(value)
         .map_err(|_| format!("School schedule {field} must be an RFC3339 UTC instant"))?;
@@ -283,6 +310,94 @@ pub fn get(conn: &Connection, request: &SchoolScheduleRequest) -> Result<SchoolS
         .map_err(|error| format!("School event row error: {error}"))?;
 
     Ok(SchoolSchedule { events, sources })
+}
+
+/// Returns the minimized Calendar projection used by native AI read tools. Authorization is
+/// derived exclusively from the parent School Space and its persisted connection/group bindings.
+/// Provider, connection, and group identities are deliberately not caller-controlled inputs.
+#[allow(dead_code)] // Consumed by the native AI tool foundation before router integration.
+pub fn list_ai_calendar_events(
+    conn: &Connection,
+    request: &AiCalendarProjectionRequest<'_>,
+) -> Result<Vec<AiCalendarEventProjection>, String> {
+    let school_space_id = ensure_parent_school(conn, request.school_space_id)?;
+    let start_utc = utc(request.start_utc, "AI tool UTC start")?;
+    let end_utc = utc(request.end_utc, "AI tool UTC end")?;
+    let start_date = date(request.start_date, "AI tool start date")?;
+    let end_date = date(request.end_date, "AI tool end date")?;
+    if start_utc >= end_utc || start_date >= end_date {
+        return Err("AI Calendar range end must be after start".into());
+    }
+    if !(1..=50).contains(&request.limit) {
+        return Err("AI Calendar result limit must be between 1 and 50".into());
+    }
+
+    let order = if request.timed_first {
+        "CASE WHEN e.time_kind='timed' THEN 0 ELSE 1 END,
+         CASE WHEN e.time_kind='all_day' THEN e.start_date || 'T00:00:00Z' ELSE e.start_at_utc END,
+         CASE WHEN e.time_kind='all_day' THEN e.end_date || 'T00:00:00Z' ELSE e.end_at_utc END,
+         e.id"
+    } else {
+        "CASE WHEN e.time_kind='all_day' THEN e.start_date || 'T00:00:00Z' ELSE e.start_at_utc END,
+         CASE WHEN e.time_kind='all_day' THEN e.end_date || 'T00:00:00Z' ELSE e.end_at_utc END,
+         e.id"
+    };
+    let sql = format!(
+        "SELECT DISTINCT e.id, e.title, e.time_kind, e.start_at_utc, e.end_at_utc,
+                e.start_date, e.end_date, e.location,
+                coalesce(nullif(trim(sc.display_name), ''), 'MyTimetable')
+         FROM school_space_sources binding
+         JOIN integrations i ON i.id=binding.connection_id
+         JOIN subscribed_calendars sc ON sc.connection_id=i.id
+         JOIN external_events e ON e.connection_id=binding.connection_id
+         JOIN json_each(e.group_references_json) event_group
+         JOIN school_space_source_groups selected_group
+           ON selected_group.school_space_id=binding.school_space_id
+          AND selected_group.connection_id=binding.connection_id
+          AND selected_group.group_reference=CAST(event_group.value AS TEXT)
+         WHERE binding.school_space_id=?1
+           AND i.provider_id='my_timetable'
+           AND i.connection_status!='disconnected'
+           AND e.status='active'
+           AND json_type(e.group_references_json)='array'
+           AND ((e.time_kind='timed' AND e.start_at_utc<?3
+                  AND ((?7 AND e.start_at_utc>=?2) OR (NOT ?7 AND e.end_at_utc>?2)))
+             OR (?6 AND e.time_kind='all_day' AND e.start_date<?5 AND e.end_date>?4))
+         ORDER BY {order}
+         LIMIT ?8"
+    );
+    let mut statement = conn
+        .prepare(&sql)
+        .map_err(|error| format!("AI Calendar projection error: {error}"))?;
+    let rows = statement
+        .query_map(
+            params![
+                school_space_id,
+                start_utc,
+                end_utc,
+                start_date,
+                end_date,
+                request.include_all_day,
+                request.starts_at_or_after,
+                request.limit
+            ],
+            |row| {
+                Ok(AiCalendarEventProjection {
+                    id: row.get(0)?,
+                    title: row.get(1)?,
+                    time_kind: row.get(2)?,
+                    start_at: row.get(3)?,
+                    end_at: row.get(4)?,
+                    start_date: row.get(5)?,
+                    end_date: row.get(6)?,
+                    location: row.get(7)?,
+                    source_label: row.get(8)?,
+                })
+            },
+        )
+        .map_err(|error| format!("AI Calendar projection error: {error}"))?;
+    rows.collect::<Result<Vec<_>, _>>()
+        .map_err(|error| format!("AI Calendar projection row error: {error}"))
 }
 
 fn ensure_supported_source(conn: &Connection, connection_id: &str) -> Result<String, String> {
