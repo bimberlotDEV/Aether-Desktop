@@ -12,7 +12,6 @@ use crate::ai::routing;
 use crate::ai::runtime::AiRuntime;
 use crate::ai::settings::{self as ai_settings, AiRoutingSettings};
 use crate::backup;
-use crate::calendar_ics::{self, FetchResult, IcsValidation};
 use crate::context::{self as local_context, ContextRuntime};
 use crate::db::repositories::{self, with_conn};
 use crate::db::Database;
@@ -365,37 +364,7 @@ pub fn set_setting(
     })
 }
 
-#[tauri::command]
-pub fn delete_setting(db: State<Database>, key: String) -> Result<bool, String> {
-    with_conn(&db.conn, |conn| repositories::settings::delete(conn, &key))
-}
-
-#[tauri::command]
-pub fn list_settings(db: State<Database>) -> Result<Vec<serde_json::Value>, String> {
-    with_conn(&db.conn, |conn| {
-        Ok(repositories::settings::list(conn)?
-            .iter()
-            .map(json_setting)
-            .collect())
-    })
-}
-
 // ─── User Profile ───────────────────────────────────────
-
-#[tauri::command]
-pub fn get_profile(db: State<Database>) -> Result<Option<serde_json::Value>, String> {
-    with_conn(&db.conn, |conn| {
-        Ok(repositories::profile::get(conn)?.map(|p| json_profile(&p)))
-    })
-}
-
-#[tauri::command]
-pub fn create_profile(db: State<Database>) -> Result<serde_json::Value, String> {
-    let id = Uuid::now_v7().to_string();
-    with_conn(&db.conn, |conn| {
-        Ok(json_profile(&repositories::profile::create(conn, &id)?))
-    })
-}
 
 #[tauri::command]
 pub fn initialize_profile(db: State<Database>) -> Result<serde_json::Value, String> {
@@ -426,37 +395,6 @@ pub fn update_profile(
 }
 
 // ─── Spaces ─────────────────────────────────────────────
-
-#[tauri::command]
-pub fn create_space(
-    db: State<Database>,
-    name: String,
-    description: Option<String>,
-    icon: Option<String>,
-    accent: Option<String>,
-    template_type: Option<String>,
-    parent_space_id: Option<String>,
-) -> Result<serde_json::Value, String> {
-    let space = repositories::spaces::Space {
-        id: Uuid::now_v7().to_string(),
-        name,
-        description,
-        icon,
-        accent,
-        template_type,
-        favourite: false,
-        archived_at: None,
-        sort_order: 0,
-        settings_json: None,
-        parent_space_id,
-        last_opened_at: None,
-        created_at: String::new(),
-        updated_at: String::new(),
-    };
-    with_conn(&db.conn, |conn| {
-        Ok(json_space(&repositories::spaces::create(conn, &space)?))
-    })
-}
 
 #[tauri::command]
 pub fn create_space_with_modules(
@@ -627,19 +565,6 @@ pub fn list_top_level_spaces(db: State<Database>) -> Result<Vec<serde_json::Valu
 }
 
 #[tauri::command]
-pub fn list_child_spaces(
-    db: State<Database>,
-    parent_id: String,
-) -> Result<Vec<serde_json::Value>, String> {
-    with_conn(&db.conn, |conn| {
-        Ok(repositories::spaces::list_by_parent(conn, &parent_id)?
-            .iter()
-            .map(json_space)
-            .collect())
-    })
-}
-
-#[tauri::command]
 pub fn update_space(
     db: State<Database>,
     id: String,
@@ -674,19 +599,6 @@ pub fn set_space_modules(
     let refs: Vec<&str> = module_types.iter().map(|s| s.as_str()).collect();
     with_conn(&db.conn, |conn| {
         Ok(repositories::spaces::set_modules(conn, &space_id, &refs)?
-            .iter()
-            .map(json_module)
-            .collect())
-    })
-}
-
-#[tauri::command]
-pub fn get_space_modules(
-    db: State<Database>,
-    space_id: String,
-) -> Result<Vec<serde_json::Value>, String> {
-    with_conn(&db.conn, |conn| {
-        Ok(repositories::spaces::list_modules(conn, &space_id)?
             .iter()
             .map(json_module)
             .collect())
@@ -819,16 +731,6 @@ pub async fn import_vault_item(
         vault_storage::discard_import(prepared.managed_directory.as_deref());
     }
     result
-}
-
-#[tauri::command]
-pub fn get_vault_item(
-    db: State<Database>,
-    id: String,
-) -> Result<Option<serde_json::Value>, String> {
-    with_conn(&db.conn, |conn| {
-        Ok(repositories::vault::get_by_id(conn, &id)?.map(|item| json_vault_item(&item)))
-    })
 }
 
 #[tauri::command]
@@ -991,17 +893,6 @@ pub fn get_space_continuity(
 
 // ─── Integrations ───────────────────────────────────────
 
-// Provider-owned calendar records cross IPC only through bounded reads.
-#[tauri::command]
-pub fn list_external_events(
-    db: State<Database>,
-    range: repositories::external_events::ExternalEventRange,
-) -> Result<Vec<repositories::external_events::ExternalEvent>, String> {
-    with_conn(&db.conn, |conn| {
-        repositories::external_events::list_range(conn, &range)
-    })
-}
-
 #[tauri::command]
 pub fn get_school_schedule(
     db: State<Database>,
@@ -1043,26 +934,6 @@ pub fn set_school_source_groups(
             &connection_id,
             &selected_groups,
         )
-    })
-}
-
-#[tauri::command]
-pub fn create_integration(
-    db: State<Database>,
-    input: repositories::integrations::IntegrationCreateInput,
-) -> Result<repositories::integrations::Integration, String> {
-    with_conn(&db.conn, |conn| {
-        repositories::integrations::create(conn, &input)
-    })
-}
-
-#[tauri::command]
-pub fn get_integration(
-    db: State<Database>,
-    id: String,
-) -> Result<Option<repositories::integrations::Integration>, String> {
-    with_conn(&db.conn, |conn| {
-        repositories::integrations::get_by_id(conn, &id)
     })
 }
 
@@ -1110,51 +981,6 @@ pub fn remove_unsupported_calendar_connection(
     )
 }
 
-#[tauri::command]
-pub fn get_integration_sync_runtime_status(
-    runtime: State<crate::integration_sync::IntegrationSyncRuntime>,
-) -> crate::integration_sync::RuntimeStatus {
-    runtime.status()
-}
-
-// Feed URLs are accepted only by this explicit configuration boundary and are never returned.
-#[tauri::command]
-pub fn configure_subscribed_calendar(
-    db: State<Database>,
-    input: repositories::subscribed_calendars::SubscribedCalendarInput,
-) -> Result<repositories::subscribed_calendars::SubscribedCalendar, String> {
-    let subscription = with_conn(&db.conn, |conn| {
-        repositories::subscribed_calendars::create(conn, &input)
-    })?;
-    let key = with_conn(&db.conn, |conn| {
-        repositories::subscribed_calendars::credential_key(conn, &subscription.connection_id)
-    })?;
-    credentials::store(&db, &key, &input.feed_url)
-        .map_err(|_| "Calendar subscription secret could not be stored".to_string())?;
-    Ok(subscription)
-}
-
-#[tauri::command]
-pub async fn validate_subscribed_calendar_url(feed_url: String) -> Result<IcsValidation, String> {
-    match calendar_ics::fetch(&feed_url, None).await? {
-        FetchResult::NotModified => {
-            Err("Calendar feed validation needs a complete response".into())
-        }
-        FetchResult::RateLimited { .. } => {
-            Err("Calendar provider temporarily limited validation".into())
-        }
-        FetchResult::Complete {
-            bytes,
-            etag,
-            last_modified,
-            ..
-        } => {
-            let _conditional_metadata = (etag.as_deref(), last_modified.as_deref());
-            Ok(calendar_ics::validate(&bytes))
-        }
-    }
-}
-
 // ─── Tasks ──────────────────────────────────────────────
 
 #[tauri::command]
@@ -1185,16 +1011,6 @@ pub fn create_task(
             .commit()
             .map_err(|error| format!("Task transaction commit error: {}", error))?;
         Ok(value)
-    })
-}
-
-#[tauri::command]
-pub fn get_task(db: State<Database>, id: String) -> Result<Option<serde_json::Value>, String> {
-    with_conn(&db.conn, |conn| {
-        repositories::tasks::get_by_id(conn, &id)?
-            .map(serde_json::to_value)
-            .transpose()
-            .map_err(|error| format!("Task serialization error: {}", error))
     })
 }
 
@@ -1340,16 +1156,6 @@ pub fn create_memory(
             .commit()
             .map_err(|error| format!("Memory transaction commit error: {}", error))?;
         Ok(value)
-    })
-}
-
-#[tauri::command]
-pub fn get_memory(db: State<Database>, id: String) -> Result<Option<serde_json::Value>, String> {
-    with_conn(&db.conn, |conn| {
-        repositories::memory::get_by_id(conn, &id)?
-            .map(serde_json::to_value)
-            .transpose()
-            .map_err(|error| format!("Memory serialization error: {}", error))
     })
 }
 
@@ -1714,11 +1520,6 @@ fn provider_status(db: &Database, provider_name: &str) -> ProviderStatus {
 }
 
 #[tauri::command]
-pub fn ai_list_models() -> Result<Vec<provider::ModelInfo>, String> {
-    Ok(provider::model_catalog())
-}
-
-#[tauri::command]
 pub fn ai_parse_action_proposals(
     db: State<Database>,
     conversation_id: String,
@@ -1775,11 +1576,6 @@ fn stored_ai_proposals(
         );
     }
     proposals::parse(&message.content, conversation.space_id.as_deref())
-}
-
-#[tauri::command]
-pub fn ai_list_providers() -> Result<Vec<provider::ProviderInfo>, String> {
-    Ok(provider::provider_catalog())
 }
 
 #[tauri::command]
@@ -1899,17 +1695,6 @@ pub fn ai_create_conversation(
             &model,
         )?;
         serde_json::to_value(conv).map_err(|e| format!("Serialize error: {}", e))
-    })
-}
-
-#[tauri::command]
-pub fn ai_get_conversation(
-    db: State<Database>,
-    id: String,
-) -> Result<Option<serde_json::Value>, String> {
-    with_conn(&db.conn, |conn| {
-        let conv = repositories::conversations::get_conversation(conn, &id)?;
-        Ok(conv.map(|c| serde_json::to_value(c).unwrap()))
     })
 }
 
@@ -2477,13 +2262,6 @@ pub fn ai_list_context(
 pub fn ai_remove_context(db: State<Database>, id: String) -> Result<bool, String> {
     with_conn(&db.conn, |conn| {
         repositories::conversations::remove_context_item(conn, &id)
-    })
-}
-
-#[tauri::command]
-pub fn ai_clear_context(db: State<Database>, conversation_id: String) -> Result<usize, String> {
-    with_conn(&db.conn, |conn| {
-        repositories::conversations::clear_context(conn, &conversation_id)
     })
 }
 

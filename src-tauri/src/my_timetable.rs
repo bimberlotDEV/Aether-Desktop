@@ -6,7 +6,6 @@ use crate::{
     integration_sync::IntegrationSyncRuntime,
     subscribed_calendar_provider::{self, ProviderConfig},
 };
-use serde::Serialize;
 #[cfg(test)]
 use std::future::Future;
 use tauri::State;
@@ -16,24 +15,8 @@ const CONFIG: ProviderConfig = ProviderConfig {
     id: PROVIDER_ID,
     name: "MyTimetable",
 };
+#[cfg(test)]
 const CAPABILITIES: &[&str] = subscribed_calendar_provider::CAPABILITIES;
-
-#[derive(Debug, Clone, Serialize)]
-pub struct ProviderProfile {
-    pub id: &'static str,
-    pub name: &'static str,
-    pub capabilities: Vec<&'static str>,
-    pub auth_type: &'static str,
-}
-
-pub fn profile() -> ProviderProfile {
-    ProviderProfile {
-        id: PROVIDER_ID,
-        name: "MyTimetable",
-        capabilities: CAPABILITIES.to_vec(),
-        auth_type: "ics_feed",
-    }
-}
 
 pub fn classify(categories: &[String]) -> String {
     let normalized = categories
@@ -156,10 +139,6 @@ fn disconnect_persisted_connection(db: &Database, connection_id: &str) -> Result
     subscribed_calendar_provider::disconnect_persisted_connection(CONFIG, db, connection_id)
 }
 
-#[tauri::command]
-pub fn my_timetable_profile() -> ProviderProfile {
-    profile()
-}
 #[tauri::command]
 pub async fn my_timetable_validate(url: String) -> Result<IcsValidation, String> {
     candidate(&url)?;
@@ -478,18 +457,6 @@ mod tests {
             public_host: None,
             warnings: vec![],
         }
-    }
-
-    #[test]
-    fn profile_is_read_only_and_manual_only() {
-        let value = profile();
-        assert_eq!(value.id, PROVIDER_ID);
-        assert_eq!(value.auth_type, "ics_feed");
-        assert_eq!(value.capabilities, vec!["calendar_read", "manual_refresh"]);
-        assert!(!value.capabilities.iter().any(|v| matches!(
-            *v,
-            "oauth" | "account_profile" | "external_write" | "webhook" | "api"
-        )));
     }
 
     #[test]

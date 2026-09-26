@@ -280,18 +280,16 @@ fn list_events(
     let mut statement = conn
         .prepare(
             "SELECT DISTINCT e.id, e.connection_id,
-                    coalesce(nullif(trim(sc.display_name), ''),
-                      CASE WHEN i.provider_id='my_timetable' THEN 'MyTimetable' ELSE 'Calendar' END),
-                    CASE WHEN i.provider_id='my_timetable' THEN 'school_calendar' ELSE 'calendar' END,
+                    coalesce(nullif(trim(sc.display_name), ''), 'MyTimetable'),
+                    'school_calendar',
                     e.title, e.time_kind, e.start_at_utc, e.end_at_utc,
                     e.start_date, e.end_date, e.location, e.status
              FROM external_events e
              JOIN integrations i ON i.id=e.connection_id
              LEFT JOIN subscribed_calendars sc ON sc.connection_id=i.id
              WHERE e.status!='removed'
-               AND i.provider_id!='brightspace'
-               AND (
-                 (i.provider_id='my_timetable' AND EXISTS (
+               AND i.provider_id='my_timetable'
+               AND EXISTS (
                    SELECT 1
                    FROM school_space_sources binding
                    JOIN spaces school ON school.id=binding.school_space_id
@@ -304,9 +302,7 @@ fn list_events(
                      AND school.parent_space_id IS NULL
                      AND school.archived_at IS NULL
                      AND selected.group_reference=CAST(event_group.value AS TEXT)
-                 ))
-                 OR i.provider_id!='my_timetable'
-               )
+                 )
                AND ((e.time_kind='timed' AND e.start_at_utc<?2 AND e.end_at_utc>?1)
                  OR (e.time_kind='all_day' AND e.start_date<?4 AND e.end_date>?3))
              ORDER BY
@@ -423,23 +419,22 @@ fn list_trust(conn: &Connection, now: DateTime<Utc>) -> Result<Vec<PulseTrustIte
     let mut statement = conn
         .prepare(
             "SELECT DISTINCT i.id,
-                    coalesce(nullif(trim(sc.display_name), ''),
-                      CASE WHEN i.provider_id='my_timetable' THEN 'MyTimetable' ELSE 'Calendar' END),
-                    CASE WHEN i.provider_id='my_timetable' THEN 'MyTimetable' ELSE 'Calendar' END,
+                    coalesce(nullif(trim(sc.display_name), ''), 'MyTimetable'),
+                    'MyTimetable',
                     i.enabled, i.connection_status, i.sync_status,
                     i.last_successful_sync_at, i.last_attempted_at, i.last_sync_error_code,
                     EXISTS(SELECT 1 FROM external_events e WHERE e.connection_id=i.id AND e.status!='removed')
              FROM integrations i
              JOIN subscribed_calendars sc ON sc.connection_id=i.id
-             WHERE i.provider_id!='brightspace'
-               AND (i.provider_id!='my_timetable' OR EXISTS (
+             WHERE i.provider_id='my_timetable'
+               AND EXISTS (
                  SELECT 1 FROM school_space_sources binding
                  JOIN spaces school ON school.id=binding.school_space_id
                  WHERE binding.connection_id=i.id
                    AND school.template_type='school'
                    AND school.parent_space_id IS NULL
                    AND school.archived_at IS NULL
-               ))
+               )
              ORDER BY 2 COLLATE NOCASE, i.id",
         )
         .map_err(|error| format!("Pulse trust projection error: {error}"))?;
@@ -793,6 +788,46 @@ mod tests {
                 .unwrap()
                 .cancelled
         );
+    }
+
+    #[test]
+    fn unsupported_legacy_calendar_provider_never_enters_pulse() {
+        let connection = database();
+        connection
+            .execute(
+                "INSERT INTO integrations(id,provider_id,auth_type,connection_status,sync_status) VALUES ('legacy','retired_calendar','ics_feed','connected','succeeded')",
+                [],
+            )
+            .unwrap();
+        connection
+            .execute(
+                "INSERT INTO subscribed_calendars(id,connection_id,display_name) VALUES ('legacy-calendar','legacy','Legacy calendar')",
+                [],
+            )
+            .unwrap();
+        event(
+            &connection,
+            "legacy-event",
+            "legacy",
+            "IGNORED",
+            "2026-09-26T10:00:00Z",
+            "2026-09-26T11:00:00Z",
+            "active",
+        );
+
+        let snapshot = get_at(
+            &connection,
+            SnapshotClock::utc("2026-09-26T10:30:00Z", "2026-09-26"),
+        )
+        .unwrap();
+        assert!(snapshot
+            .today
+            .iter()
+            .all(|event| event.id != "legacy-event"));
+        assert!(snapshot
+            .trust
+            .iter()
+            .all(|source| source.source_id != "legacy"));
     }
 
     #[test]

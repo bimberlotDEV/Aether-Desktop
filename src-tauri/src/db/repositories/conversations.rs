@@ -497,14 +497,6 @@ pub fn remove_context_item(conn: &Connection, id: &str) -> Result<bool, String> 
     Ok(deleted > 0)
 }
 
-pub fn clear_context(conn: &Connection, conversation_id: &str) -> Result<usize, String> {
-    conn.execute(
-        "DELETE FROM ai_context_items WHERE conversation_id = ?1",
-        params![conversation_id],
-    )
-    .map_err(|e| format!("Clear context error: {}", e))
-}
-
 // ─── Tests ───────────────────────────────────────────────
 
 #[cfg(test)]
@@ -656,10 +648,6 @@ mod tests {
         remove_context_item(&conn, &items[0].id).unwrap();
         let remaining = list_context_items(&conn, &conv.id).unwrap();
         assert_eq!(remaining.len(), 1);
-
-        clear_context(&conn, &conv.id).unwrap();
-        let empty = list_context_items(&conn, &conv.id).unwrap();
-        assert_eq!(empty.len(), 0);
     }
 
     #[test]

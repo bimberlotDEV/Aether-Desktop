@@ -168,6 +168,8 @@ AI routing preferences use dedicated native commands over allowlisted `app_setti
 
 Provider-neutral local connection and synchronization metadata, defined by ADR-027. The table does not store a credential value: credential_key is an internal opaque key used only by Rust to address the DPAPI-protected secrets table, and is never returned over IPC.
 
+The normal Integration IPC projection is deliberately narrower than this persistence model: it exposes only connection identity, provider/auth presentation metadata, enabled state, capabilities, bounded status/error fields, and sync timestamps. Configuration JSON, validators, cursors, credential lifecycle metadata, execution scope, and database audit timestamps remain native-only.
+
 | Column group | Notes |
 |---|---|
 | Identity and lifecycle | UUIDv7 id, bounded provider_id, enabled, native-only subscribed-calendar configuration generation, created_at, updated_at |
@@ -194,6 +196,8 @@ Normalized provider-owned calendar occurrences defined by ADR-028. Identity is `
 | All-day semantics | Date-only start/end with exclusive end date; UTC fields are absent |
 
 Removed records are tombstones, not deletions. Only a complete authoritative native reconciliation window can mark a previously seen occurrence removed. Raw provider payloads, feed URLs, credentials, tokens, and secret metadata are not columns in this table.
+
+There is no generic ExternalEvent IPC listing. School reads return a bounded, School-authorized projection containing only local event ID, title, time kind, timed/date boundaries, location, and status. Provider identity, external identifiers, descriptions, group references, deep links, hashes, provenance, versions, and persistence timestamps remain inside the native boundary.
 
 Migration `015_external_event_groups` adds `group_references_json` as a validated JSON array so one occurrence can belong to multiple cohorts without encoding provider rules in Calendar or School UI. Existing cached rows are retained with an empty array. The migration clears only MyTimetable HTTP validators and sync eligibility, causing its next enabled synchronization to retrieve a complete feed and populate structured group metadata without deleting the cache.
 

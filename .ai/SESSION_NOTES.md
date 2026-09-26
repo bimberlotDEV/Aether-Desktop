@@ -1,33 +1,33 @@
 # Session Notes
 
-| Field | Value |
-| --- | --- |
-| Schema version | 2 |
-| Session date | 2026-09-26 |
-| Active task | `PULSE-003` |
-| Agent | Codex |
-| State | complete; draft PR open |
+| Field          | Value                         |
+| -------------- | ----------------------------- |
+| Schema version | 2                             |
+| Session date   | 2026-09-26                    |
+| Active task    | `REPO-HEALTH-032`             |
+| Agent          | Codex                         |
+| State          | complete; draft PR open       |
 
 ## Current work
 
-Aether 31 implements one bounded native Pulse snapshot for Now, Next, Today,
-Upcoming, open due Tasks, schedule conflicts, Continuity, and source trust. The
-snapshot captures one clock, resolves MyTimetable through persisted School Space
-connection/group authority, degrades optional sections independently, and exposes
-only minimized presentation-safe data.
+Aether 32 completed a repository-wide, evidence-based health audit. Active IPC now
+matches production callers, Integration and School projections expose only
+presentation fields, Pulse rejects unsupported legacy calendar providers, and
+verified dead commands/read models/schemas are removed. Shared ICS, MyTimetable,
+persisted compatibility, and historical migration/ADR evidence remain intact.
 
-Academic deadlines remain explicitly unavailable because no normalized Deadline
-domain exists. No migration, dependency, provider request, AI tool, Brightspace
-behavior, or mutation path was introduced.
+One unused frontend updater package was removed. Vitest was patched from 4.1.10 to
+4.1.11 to resolve its moderate path-traversal advisory; the moderate-level audit is
+clean. No migration, new ADR, product feature, provider, AI tool, or local runtime
+was added.
 
-Validation is complete: 11 focused native Pulse tests, 32 focused frontend/IPC
-tests, 13 School isolation tests, 23 MyTimetable-filtered tests, 225 full Rust tests,
-and 140 full frontend tests across 37 files pass. Typecheck, lint, build, Rust
-formatting, strict Clippy, and diff check pass. The final authorization,
-minimization, bounds, network, Brightspace, and scope review passed.
+Validation is complete: focused native Pulse 12, School 13, Integration 8,
+MyTimetable 21, migrations 18, and AI routing 7; focused frontend 47; full Rust 225
+and frontend 139 across 37 files. Typecheck, lint, build, formatting, strict Clippy,
+dependency audit, IPC parity, and final scope/security/compatibility review pass.
 
 ## Exact resume point
 
-Implementation commit `96af188` is pushed to `origin/agent/pulse-003` and draft PR
-#66 is open. Commit and push these publication-record updates, then stop without
-beginning AI-CAL, academic Deadline persistence, or unrelated integration work.
+Implementation commit `578c43d` is pushed on `agent/repo-health-cleanup` and draft
+PR #67 is open. Commit and push these publication-record updates, then stop without
+beginning backlog feature work.

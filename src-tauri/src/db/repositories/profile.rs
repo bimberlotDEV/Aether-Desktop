@@ -32,18 +32,6 @@ pub fn get(conn: &Connection) -> Result<Option<UserProfile>, String> {
     }
 }
 
-pub fn create(conn: &Connection, id: &str) -> Result<UserProfile, String> {
-    // Only one local profile is allowed
-    if get(conn)?.is_some() {
-        return Err("A local profile already exists".to_string());
-    }
-
-    conn.execute("INSERT INTO user_profile (id) VALUES (?1)", params![id])
-        .map_err(|e| format!("Profile create error: {}", e))?;
-
-    get(conn)?.ok_or_else(|| "Profile not found after create".to_string())
-}
-
 /// Initialize the singleton profile without mistaking an upgraded workspace for a
 /// brand-new installation. Earlier Aether versions shipped the profile table but never
 /// created a row, so persisted domain data is the authoritative legacy signal.
@@ -142,8 +130,8 @@ mod tests {
         // No profile initially
         assert!(get(&conn).unwrap().is_none());
 
-        // Create
-        let p = create(&conn, "test-uuid-1").unwrap();
+        // Initialize
+        let p = initialize(&conn, "test-uuid-1").unwrap();
         assert_eq!(p.id, "test-uuid-1");
         assert!(!p.onboarding_completed);
         assert!(p.display_name.is_none());
@@ -154,9 +142,6 @@ mod tests {
             .unwrap();
         assert_eq!(p.display_name.as_deref(), Some("Bim"));
         assert!(p.onboarding_completed);
-
-        // Only one profile exists
-        assert!(create(&conn, "test-uuid-2").is_err());
     }
 
     #[test]

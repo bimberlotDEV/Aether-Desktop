@@ -20,7 +20,6 @@ import type {
   AiConversation,
   AiMessage,
   AiMode,
-  AiModel,
   AiProvider,
   AiProviderStatus,
   AiRoutingSettings,
@@ -48,27 +47,16 @@ import type {
   AiActionDraft,
   ActionResult,
   Integration,
-  IntegrationCreateInput,
-  ExternalEvent,
-  ExternalEventRange,
   SchoolSchedule,
   SchoolScheduleRequest,
-  SubscribedCalendar,
-  SubscribedCalendarInput,
   IcsValidation,
 } from './types'
 import {
   BetaDiagnosticReportSchema,
-  ExternalEventRangeSchema,
-  ExternalEventSchema,
   SchoolScheduleRequestSchema,
   SchoolScheduleSchema,
-  IntegrationCreateInputSchema,
   IntegrationSchema,
   IntegrationSyncRequestResultSchema,
-  IntegrationSyncRuntimeStatusSchema,
-  SubscribedCalendarSchema,
-  SubscribedCalendarInputSchema,
   IcsValidationSchema,
   PulseSnapshotSchema,
 } from './types'
@@ -179,20 +167,7 @@ export async function setSetting(
 ): Promise<void> {
   return invoke('set_setting', { key, value, valueType })
 }
-export async function deleteSetting(key: string): Promise<boolean> {
-  return invoke('delete_setting', { key })
-}
-export async function listSettings(): Promise<AppSetting[]> {
-  return invoke('list_settings')
-}
-
 // ─── User Profile ────────────────────────────────────────
-export async function getProfile(): Promise<UserProfile | null> {
-  return invoke('get_profile')
-}
-export async function createProfile(): Promise<UserProfile> {
-  return invoke('create_profile')
-}
 export async function initializeProfile(): Promise<UserProfile> {
   return invoke('initialize_profile')
 }
@@ -205,24 +180,6 @@ export async function updateProfile(
 }
 
 // ─── Spaces ──────────────────────────────────────────────
-export async function createSpace(params: {
-  name: string
-  description?: string
-  icon?: string
-  accent?: string
-  templateType?: string
-  parentSpaceId?: string
-}): Promise<Space> {
-  return invoke('create_space', {
-    name: params.name,
-    description: params.description ?? null,
-    icon: params.icon ?? null,
-    accent: params.accent ?? null,
-    templateType: params.templateType ?? null,
-    parentSpaceId: params.parentSpaceId ?? null,
-  })
-}
-
 export async function createSpaceWithModules(params: {
   name: string
   description?: string
@@ -273,10 +230,6 @@ export async function listTopLevelSpaces(): Promise<Space[]> {
   return invoke('list_top_level_spaces')
 }
 
-export async function listChildSpaces(parentId: string): Promise<Space[]> {
-  return invoke('list_child_spaces', { parentId })
-}
-
 export async function updateSpace(
   id: string,
   params: {
@@ -304,10 +257,6 @@ export async function setSpaceModules(
   moduleTypes: string[],
 ): Promise<ModuleInstance[]> {
   return invoke('set_space_modules', { spaceId, moduleTypes })
-}
-
-export async function getSpaceModules(spaceId: string): Promise<ModuleInstance[]> {
-  return invoke('get_space_modules', { spaceId })
 }
 
 export async function archiveSpace(id: string): Promise<boolean> {
@@ -403,9 +352,6 @@ export async function duplicateNote(id: string): Promise<Note> {
 export async function createTask(input: TaskInput): Promise<Task> {
   return invoke('create_task', { input })
 }
-export async function getTask(id: string): Promise<Task | null> {
-  return invoke('get_task', { id })
-}
 export async function listTasks(filter?: TaskFilter): Promise<Task[]> {
   return invoke('list_tasks', { filter: filter ?? null })
 }
@@ -439,9 +385,6 @@ export async function importVaultItem(input: VaultImportInput): Promise<VaultIte
     tags: input.tags,
   })
 }
-export async function getVaultItem(id: string): Promise<VaultItem | null> {
-  return invoke('get_vault_item', { id })
-}
 export async function listVaultItems(filter?: VaultFilter): Promise<VaultItem[]> {
   return invoke('list_vault_items', { filter: filter ?? null })
 }
@@ -465,9 +408,6 @@ export async function revealVaultItem(id: string): Promise<void> {
 export async function createMemory(input: MemoryInput): Promise<MemoryItem> {
   return invoke('create_memory', { input })
 }
-export async function getMemory(id: string): Promise<MemoryItem | null> {
-  return invoke('get_memory', { id })
-}
 export async function listMemory(filter?: MemoryFilter): Promise<MemoryItem[]> {
   return invoke('list_memory', { filter: filter ?? null })
 }
@@ -482,9 +422,6 @@ export async function deleteMemory(id: string): Promise<boolean> {
 }
 
 // ─── AI ─────────────────────────────────────────────────
-export async function listAiModels(): Promise<AiModel[]> {
-  return invoke('ai_list_models')
-}
 export async function parseAiActionProposals(
   conversationId: string,
   messageId: string,
@@ -497,9 +434,6 @@ export async function previewAiActionProposal(
   index: number,
 ): Promise<ActionPreview> {
   return invoke('ai_preview_action_proposal', { conversationId, messageId, index })
-}
-export async function listAiProviders(): Promise<AiProvider[]> {
-  return invoke('ai_list_providers')
 }
 export async function listAiProviderStatuses(): Promise<AiProviderStatus[]> {
   return invoke('ai_list_provider_statuses')
@@ -541,9 +475,6 @@ export async function createAiConversation(params: {
     provider: params.provider ?? null,
     model: params.model ?? null,
   })
-}
-export async function getAiConversation(id: string): Promise<AiConversation | null> {
-  return invoke('ai_get_conversation', { id })
 }
 export async function listAiConversations(
   spaceId?: string,
@@ -613,10 +544,6 @@ export async function resolveAiContext(
 export async function removeAiContext(id: string): Promise<boolean> {
   return invoke('ai_remove_context', { id })
 }
-export async function clearAiContext(conversationId: string): Promise<number> {
-  return invoke('ai_clear_context', { conversationId })
-}
-
 // ─── Activity ────────────────────────────────────────────
 export async function listActivity(params?: {
   spaceId?: string
@@ -633,15 +560,6 @@ export async function getSpaceContinuity(spaceId: string): Promise<SpaceContinui
 }
 
 // ─── Integrations ────────────────────────────────────────
-export async function listExternalEvents(
-  range: ExternalEventRange,
-): Promise<ExternalEvent[]> {
-  const parsed = ExternalEventRangeSchema.parse(range)
-  return ExternalEventSchema.array().parse(
-    await invoke('list_external_events', { range: parsed }),
-  )
-}
-
 export async function getSchoolSchedule(
   request: SchoolScheduleRequest,
 ): Promise<SchoolSchedule> {
@@ -667,18 +585,6 @@ export async function setSchoolSourceGroups(
   await invoke('set_school_source_groups', { spaceId, connectionId, selectedGroups })
 }
 
-export async function createIntegration(
-  input: IntegrationCreateInput,
-): Promise<Integration> {
-  const parsed = IntegrationCreateInputSchema.parse(input)
-  return IntegrationSchema.parse(await invoke('create_integration', { input: parsed }))
-}
-
-export async function getIntegration(id: string): Promise<Integration | null> {
-  const result = await invoke<unknown>('get_integration', { id })
-  return result === null ? null : IntegrationSchema.parse(result)
-}
-
 export async function listIntegrations(): Promise<Integration[]> {
   return IntegrationSchema.array().parse(await invoke('list_integrations'))
 }
@@ -697,28 +603,6 @@ export async function requestIntegrationSync(connectionId: string) {
   )
 }
 
-export async function getIntegrationSyncRuntimeStatus() {
-  return IntegrationSyncRuntimeStatusSchema.parse(
-    await invoke('get_integration_sync_runtime_status'),
-  )
-}
-
-export async function configureSubscribedCalendar(
-  input: SubscribedCalendarInput,
-): Promise<SubscribedCalendar> {
-  const parsed = SubscribedCalendarInputSchema.parse(input)
-  return SubscribedCalendarSchema.parse(
-    await invoke('configure_subscribed_calendar', { input: parsed }),
-  )
-}
-
-export async function validateSubscribedCalendarUrl(
-  feedUrl: string,
-): Promise<IcsValidation> {
-  return IcsValidationSchema.parse(
-    await invoke('validate_subscribed_calendar_url', { feedUrl }),
-  )
-}
 export async function validateMyTimetable(url: string): Promise<IcsValidation> {
   return IcsValidationSchema.parse(await invoke('my_timetable_validate', { url }))
 }

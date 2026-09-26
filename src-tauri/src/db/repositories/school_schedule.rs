@@ -2,10 +2,8 @@ use chrono::{DateTime, NaiveDate, Utc};
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
 
-use super::external_events::ExternalEvent;
-
 const MY_TIMETABLE_PROVIDER_ID: &str = "my_timetable";
-const EVENT_COLUMNS: &str = "e.id, e.connection_id, e.external_id, e.occurrence_id, e.title, e.description, e.time_kind, e.start_at_utc, e.end_at_utc, e.start_date, e.end_date, e.timezone, e.location, e.course_reference, e.group_references_json, e.event_kind, e.status, e.source_url, e.ingestion_provenance, e.source_version, e.content_hash, e.first_seen_at, e.last_seen_at, e.synchronized_at, e.created_at, e.updated_at";
+const EVENT_COLUMNS: &str = "e.id, e.title, e.time_kind, e.start_at_utc, e.end_at_utc, e.start_date, e.end_date, e.location, e.status";
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -36,8 +34,21 @@ pub struct SchoolCalendarSource {
 }
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
+pub struct SchoolScheduleEvent {
+    pub id: String,
+    pub title: String,
+    pub time_kind: String,
+    pub start_at_utc: Option<String>,
+    pub end_at_utc: Option<String>,
+    pub start_date: Option<String>,
+    pub end_date: Option<String>,
+    pub location: Option<String>,
+    pub status: String,
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq)]
 pub struct SchoolSchedule {
-    pub events: Vec<ExternalEvent>,
+    pub events: Vec<SchoolScheduleEvent>,
     pub sources: Vec<SchoolCalendarSource>,
 }
 
@@ -58,39 +69,17 @@ fn date(value: &str, field: &str) -> Result<String, String> {
     Ok(value.to_string())
 }
 
-fn event_row(row: &rusqlite::Row) -> rusqlite::Result<ExternalEvent> {
-    let occurrence: String = row.get(3)?;
-    let groups_json: String = row.get(14)?;
-    let group_references = serde_json::from_str(&groups_json).map_err(|error| {
-        rusqlite::Error::FromSqlConversionFailure(14, rusqlite::types::Type::Text, Box::new(error))
-    })?;
-    Ok(ExternalEvent {
+fn event_row(row: &rusqlite::Row) -> rusqlite::Result<SchoolScheduleEvent> {
+    Ok(SchoolScheduleEvent {
         id: row.get(0)?,
-        connection_id: row.get(1)?,
-        external_id: row.get(2)?,
-        occurrence_id: (!occurrence.is_empty()).then_some(occurrence),
-        title: row.get(4)?,
-        description: row.get(5)?,
-        time_kind: row.get(6)?,
-        start_at_utc: row.get(7)?,
-        end_at_utc: row.get(8)?,
-        start_date: row.get(9)?,
-        end_date: row.get(10)?,
-        timezone: row.get(11)?,
-        location: row.get(12)?,
-        course_reference: row.get(13)?,
-        group_references,
-        event_kind: row.get(15)?,
-        status: row.get(16)?,
-        source_url: row.get(17)?,
-        ingestion_provenance: row.get(18)?,
-        source_version: row.get(19)?,
-        content_hash: row.get(20)?,
-        first_seen_at: row.get(21)?,
-        last_seen_at: row.get(22)?,
-        synchronized_at: row.get(23)?,
-        created_at: row.get(24)?,
-        updated_at: row.get(25)?,
+        title: row.get(1)?,
+        time_kind: row.get(2)?,
+        start_at_utc: row.get(3)?,
+        end_at_utc: row.get(4)?,
+        start_date: row.get(5)?,
+        end_date: row.get(6)?,
+        location: row.get(7)?,
+        status: row.get(8)?,
     })
 }
 
@@ -656,6 +645,29 @@ mod tests {
             .all(|source| source.connection_id != "bsp"));
         assert!(set_source_association(&conn, "school-a", "bsp", true).is_err());
         assert!(set_selected_groups(&conn, "school-a", "bsp", &["fake".into()]).is_err());
+        let serialized = serde_json::to_value(&result.events[0]).unwrap();
+        let object = serialized.as_object().unwrap();
+        for private_field in [
+            "connection_id",
+            "external_id",
+            "occurrence_id",
+            "description",
+            "timezone",
+            "course_reference",
+            "group_references",
+            "event_kind",
+            "source_url",
+            "ingestion_provenance",
+            "source_version",
+            "content_hash",
+            "first_seen_at",
+            "last_seen_at",
+            "synchronized_at",
+            "created_at",
+            "updated_at",
+        ] {
+            assert!(!object.contains_key(private_field), "{private_field}");
+        }
     }
 
     #[test]

@@ -26,6 +26,18 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-09-26 — `REPO-HEALTH-032` — Repository health and cleanup audit
+
+- **Type:** Refactor, fix, security, test, docs, and process
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review
+- **Summary:** Removed verified dead IPC/read-model code, minimized Integration and School serialization, restricted Pulse to supported MyTimetable School sources, removed an unused frontend dependency, patched a test dependency advisory, and reconciled current documentation with the merged product.
+- **Files:** Native commands/repositories/provider seams, strict TypeScript IPC contracts/tests, dependency manifests, README/architecture/database docs, and `.ai/*` control records.
+- **Verification:** Focused native Pulse (12), School (13), Integration (8), MyTimetable (21), migration (18), and AI routing (7) tests; focused frontend (47); full `cargo test` (225) and `pnpm test` (139 across 37 files); typecheck, lint, production build, Rust formatting, strict Clippy, moderate-level dependency audit, IPC parity, and diff check — Pass.
+- **Decisions/deviations:** No migration or ADR was required. Historical/compatibility references and shared ICS infrastructure were retained. The legacy backup export remains intentionally callable for compatibility. Vitest received only the advisory-fixing 4.1.11 patch.
+- **Follow-up:** None from verified repository health; existing separately designed backlog items remain unchanged.
+- **Publication:** Implementation commit `578c43d` is pushed to `origin/agent/repo-health-cleanup`; draft PR [#67](https://github.com/bimberlotDEV/Aether-Desktop/pull/67) is open.
+
 ## 2026-09-26 — `PULSE-003` — Connected native Pulse snapshot
 
 - **Type:** Feature, architecture, privacy, UX, test, and docs

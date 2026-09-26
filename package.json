@@ -23,7 +23,6 @@
     "@tailwindcss/vite": "^4.3.3",
     "@tauri-apps/api": "^2.11.1",
     "@tauri-apps/plugin-dialog": "^2.7.2",
-    "@tauri-apps/plugin-updater": "2.10.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.25.0",
     "react": "^19.2.7",
@@ -48,6 +47,6 @@
     "prettier": "^3.9.6",
     "typescript": "~6.0.3",
     "vite": "^8.1.5",
-    "vitest": "^4.1.10"
+    "vitest": "^4.1.11"
   }
 }
