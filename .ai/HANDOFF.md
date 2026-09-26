@@ -194,7 +194,7 @@ Automated evidence is complete. A release-candidate desktop smoke should verify:
 
 ## Publication state
 
-Implementation is verified and ready for publication on `agent/repo-health-cleanup`; draft PR metadata is recorded after publication.
+Implementation commit `578c43d` is pushed on `agent/repo-health-cleanup`; draft PR [#67](https://github.com/bimberlotDEV/Aether-Desktop/pull/67) is open. Publication records are finalized in the follow-up commit.
 
 ## Stop condition
 

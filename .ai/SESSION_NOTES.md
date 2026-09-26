@@ -6,7 +6,7 @@
 | Session date   | 2026-09-26                    |
 | Active task    | `REPO-HEALTH-032`             |
 | Agent          | Codex                         |
-| State          | complete; publication pending |
+| State          | complete; draft PR open       |
 
 ## Current work
 
@@ -28,5 +28,6 @@ dependency audit, IPC parity, and final scope/security/compatibility review pass
 
 ## Exact resume point
 
-Publish the verified task on `agent/repo-health-cleanup`, record the implementation
-commit and draft PR, then stop without beginning backlog feature work.
+Implementation commit `578c43d` is pushed on `agent/repo-health-cleanup` and draft
+PR #67 is open. Commit and push these publication-record updates, then stop without
+beginning backlog feature work.
