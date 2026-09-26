@@ -1976,6 +1976,47 @@
     line-height: 1.55;
   }
 
+  .aether-pulse-trust-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 8px;
+  }
+
+  .aether-pulse-trust-item {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 9px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 10px;
+    color: var(--color-text-tertiary);
+  }
+
+  .aether-pulse-trust-item > span {
+    min-width: 0;
+  }
+
+  .aether-pulse-trust-item strong,
+  .aether-pulse-trust-item small {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .aether-pulse-trust-item strong {
+    color: var(--color-text-primary);
+    font-size: var(--text-sm);
+    font-weight: 580;
+  }
+
+  .aether-pulse-trust-item small {
+    margin-top: 2px;
+    color: var(--color-text-tertiary);
+    font-size: var(--text-xs);
+  }
+
   .aether-action-disclosure {
     display: flex;
     min-height: 96px;

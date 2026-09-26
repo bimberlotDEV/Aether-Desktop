@@ -275,6 +275,20 @@ describe('Tauri database boundary', () => {
   })
 
   it('loads Pulse through one read-only command without frontend scope input', async () => {
+    invoke.mockResolvedValueOnce({
+      generatedAt: '2026-09-26T10:00:00Z',
+      localDate: '2026-09-26',
+      now: [],
+      next: null,
+      today: [],
+      upcoming: [],
+      tasks: [],
+      conflicts: [],
+      continuity: [],
+      trust: [],
+      academicDeadlinesAvailable: false,
+      issues: [],
+    })
     await getPulse()
     expect(invoke).toHaveBeenCalledWith('get_pulse')
   })

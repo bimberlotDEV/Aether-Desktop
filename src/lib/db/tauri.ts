@@ -70,6 +70,7 @@ import {
   SubscribedCalendarSchema,
   SubscribedCalendarInputSchema,
   IcsValidationSchema,
+  PulseSnapshotSchema,
 } from './types'
 
 // ─── Native desktop ─────────────────────────────────────
@@ -117,7 +118,7 @@ export async function approveWorkspaceRestore(token: string): Promise<void> {
   return invoke('approve_workspace_restore', { token })
 }
 export async function getPulse(): Promise<PulseSnapshot> {
-  return invoke('get_pulse')
+  return PulseSnapshotSchema.parse(await invoke('get_pulse'))
 }
 export async function previewAction(request: ActionRequest): Promise<ActionPreview> {
   return invoke('preview_action', { request })

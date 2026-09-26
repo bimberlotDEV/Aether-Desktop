@@ -5,97 +5,102 @@
 | Field | Value |
 | --- | --- |
 | Schema version | 3 |
-| Task ID | `SCHOOL-BSP-REMOVE-001` |
+| Task ID | `PULSE-003` |
 | Status | `complete` |
 | Owner | Codex |
-| Last updated | 2026-09-25 |
-| Related milestone | Aether 30 — remove the Brightspace integration |
+| Last updated | 2026-09-26 |
+| Related milestone | Aether 31 — connected Pulse 2.0 |
 | Classification | `planned_codex` |
-| Branch / worktree | `agent/remove-brightspace` |
+| Branch / worktree | `agent/pulse-003` |
 
 ## Objective
 
-Remove Brightspace as an advertised, connectable, synchronizable, or School-associated provider while preserving provider-neutral subscribed-calendar infrastructure and allowing legacy Brightspace rows and credentials to be safely inspected and removed.
+Extend Pulse into one coherent, bounded, local-first native snapshot covering current and next schedule, today and near-term events, open due Tasks, conflicts, Continuity, and truthful source trust without provider fetching, frontend aggregation, inferred academic deadlines, or broadened School authorization.
 
 ## Context
 
-- The shipped Brightspace connector exposes only renewable ICS calendar data, while the intended product requires rich courses, assignments, deadlines, and materials.
-- Rich Brightspace APIs require institution-managed application authorization and are not presently a universal self-service integration.
-- MyTimetable, CAL-ICS, subscribed-calendar replacement, DPAPI secrets, Integration Sync, ExternalEvent, Calendar Core, and normalized School source scoping are shared infrastructure and remain authoritative.
-- Existing databases may contain `provider_id = 'brightspace'`, encrypted feed credentials, cached ExternalEvents, and School source bindings.
+- Pulse already uses one Rust-owned `get_pulse` command for deterministic local Tasks, Spaces, Source metadata, Activity, and a suggested next step.
+- Calendar Core persists normalized timed/all-day occurrences. MyTimetable is the sole active School calendar provider.
+- School authorization is connection-bound through `school_space_sources` plus selected groups; provider/group labels are not authority.
+- Brightspace is intentionally retired. No course, assignment, or academic Deadline domain exists.
+- The approved request requires minimized presentation projections, one captured logical `now`, bounded native queries, section-level degradation, and a focused desktop-first UI.
 
 ## Success criteria
 
-- [x] Brightspace is absent from provider catalog/setup UI, typed setup wrappers, native provider commands, and active runtime dispatch.
-- [x] Generic creation rejects the retired Brightspace provider ID, while MyTimetable setup and refresh remain operational.
-- [x] Legacy Brightspace rows remain readable without startup failure, never dispatch sync, and can be removed through a provider-neutral unsupported-connection cleanup path that removes credentials and cascaded data.
-- [x] School source discovery and association accept only MyTimetable; legacy Brightspace bindings/events never enter School timetable presentation or event queries.
-- [x] Shared CAL-ICS, subscribed-calendar, DPAPI, redirect/SSRF, validator, replacement-generation, Integration Sync, ExternalEvent, Calendar Core, and `school_space_sources` infrastructure remain intact.
-- [x] Current-state documentation records intentional removal and parked rich support; historical changelog and ADR records remain historical.
-- [x] Required focused and full validation passes, followed by final diff review; draft PR publication is the remaining mechanical step.
+- [x] One read-only `get_pulse` invoke returns the complete bounded snapshot; React does not assemble Calendar, School, Tasks, Integrations, or Continuity independently.
+- [x] Native `now`, `next`, `today`, and seven-day `upcoming` event projections obey half-open interval, cancellation, all-day, deterministic ordering, and hard-cap rules.
+- [x] Native Tasks projection contains only open overdue/due-today/due-soon Tasks, deterministically ordered and capped at 20; no academic deadline inference exists.
+- [x] Timed conflicts exclude cancelled/all-day/self/touching items, de-duplicate pairs, order deterministically, and cap at 10.
+- [x] Continuity is a safe bounded projection capped at 5 and does not prevent the rest of Pulse from loading when empty or unavailable.
+- [x] Trust is computed in Rust from relevant authorized Integration state, uses one centralized two-hour freshness policy, exposes only sanitized status/freshness fields, and labels cached disabled/disconnected/degraded data truthfully.
+- [x] MyTimetable rows enter Pulse only through persisted School Space connection/group authorization; isolation tests prove no cross-Space/connection/group leakage.
+- [x] Calendar and Integration projections omit descriptions, provider payloads/config, URLs, credentials, hashes, retry internals, and raw errors.
+- [x] Pulse performs no provider network work; Brightspace, AI calendar tools, and new Deadline/Assignment persistence remain absent.
+- [x] Focused and full required validation passes, final-diff review is complete, records are updated, and a draft PR is open.
 
 ## In scope
 
-- Provider catalog, Connections setup/action presentation, frontend wrappers/types/tests.
-- Native Brightspace module/command removal and closed runtime dispatch update.
-- Small provider-neutral legacy cleanup command/service plus creation denylist for the retired ID.
-- School source query/association restriction and regression tests.
-- Current-state/task documentation and truthful retirement notes.
+- Rust Pulse snapshot/service repository and focused reusable minimized event/trust projection modules where justified.
+- Existing `get_pulse` command/registration only as needed for the evolved response.
+- Strict frontend Pulse schemas, invoke parsing, hook, route/components, semantic styles, and tests.
+- Focused Calendar/School/Integration/Tasks/Continuity/Pulse regression tests.
+- Pulse architecture/current-state/task documentation and one ADR update/new ADR if the durable native projection boundary warrants it.
 
 ## Allowed paths
 
-- `src-tauri/src/brightspace.rs` (delete)
-- `src-tauri/src/lib.rs`
-- `src-tauri/src/commands.rs`
-- `src-tauri/src/integration_sync.rs`
-- `src-tauri/src/subscribed_calendar_provider.rs`
-- `src-tauri/src/db/repositories/integrations.rs`
-- `src-tauri/src/db/repositories/school_schedule.rs`
-- `src/hooks/useConnections.ts`
-- `src/lib/db/tauri.ts`
-- `src/lib/db/types.ts`
-- `src/lib/integrations/presentation.ts` and focused tests
-- `src/components/connections/ConnectionsSettings.tsx` and focused tests
-- `src/components/school/SchoolSchedule.tsx` and focused tests
-- `docs/database.md`
-- `docs/decisions/031-school-source-scoping.md` only to mark the historical Brightspace clause superseded by this task
-- `.ai/ARCHITECTURE.md`, `.ai/HANDOFF.md`, `.ai/TODO.md`, `.ai/PROJECT_STATE.md`, `.ai/SESSION_NOTES.md`, `.ai/CHANGELOG.md`
+- `src-tauri/src/db/repositories/pulse.rs`
+- New focused modules under `src-tauri/src/db/repositories/` for minimized Pulse projections if needed
+- `src-tauri/src/db/repositories/mod.rs`
+- `src-tauri/src/commands.rs`, `src-tauri/src/lib.rs` only if the command contract requires registration changes
+- `src/lib/db/types.ts`, `src/lib/db/tauri.ts` and focused tests
+- `src/hooks/usePulse.ts` and focused tests if added
+- `src/routes/Pulse.tsx`, `src/routes/Pulse.test.tsx`
+- `src/styles/index.css` using existing semantic tokens/patterns
+- `docs/decisions/019-deterministic-pulse.md` or one successor ADR
+- `.ai/HANDOFF.md`, `.ai/TODO.md`, `.ai/PROJECT_STATE.md`, `.ai/SESSION_NOTES.md`, `.ai/CHANGELOG.md`
 
 ## Out of scope
 
-- Changes to MyTimetable behavior, generic calendar ingestion, Calendar Core identity, sync scheduling semantics, DPAPI, redirect/SSRF policy, validators, or replacement generations.
-- Database migration or automatic deletion of legacy rows, credentials, cached events, or historical records.
-- A replacement LMS connector, OAuth, courses, assignments, deadlines, materials, Pulse, AI, or Safe Actions.
-- Rewriting historical changelog entries, historical ADR rationale, Git history, or unrelated UI.
+- Provider network requests, sync scheduler/parser/fetcher changes, MyTimetable connector changes, credential handling, Calendar reconciliation, or generic Integration lifecycle changes.
+- Brightspace reintroduction, OAuth, another provider, Course/Assignment/Deadline/CourseContent persistence, or academic-deadline inference from calendar text.
+- AI tools, AI Router changes, Safe Actions, task mutations, calendar mutations, broad tracking, or raw Activity exposure.
+- Fuzzy event merging, title/description heuristics, speculative moved-event history, or arbitrary frontend source/connection/group scope.
+- Database migrations and new dependencies unless implementation evidence proves one is unavoidable and the contract is revised before proceeding.
 
 ## Architecture constraints
 
-- `my_timetable` remains the sole active School timetable provider.
-- Runtime provider dispatch stays closed; a persisted unregistered provider is rejected before work starts.
-- Legacy cleanup is provider-neutral and limited to unsupported subscribed-calendar records; it cancels runtime work, deletes the native secret, and then deletes the owning Integration so existing foreign-key lifecycle cleanup applies.
-- The public Integration schema continues to accept string provider IDs so legacy/unknown rows remain readable.
-- No migration: retention until explicit user cleanup is safer and smaller than mutating or deleting sensitive legacy state during upgrade.
+- Capture a single UTC instant and derived local date/window at snapshot start.
+- Preserve half-open semantics: active `start <= now < end`; overlap `A.start < B.end && B.start < A.end`.
+- MyTimetable authorization is resolved only by native joins through active parent School Spaces, bound connection IDs, and selected groups. No provider-wide fallback.
+- Minimized event projection contains only local ID, safe source identity/label, title, timing/all-day fields, optional location, cancellation state, and proven status.
+- Minimized trust projection contains only safe source identity/label, enabled/connection/sync presentation, useful sync timestamps, sanitized category, freshness, and cached-data truth.
+- Native SQL/service logic enforces caps: Today 30, Upcoming 30, Tasks 20, Conflicts 10, Continuity 5, relevant trust sources only.
+- Optional section failures become sanitized degraded section state where safe; no SQL/provider error reaches React.
+- No persistence change is expected. Migration: none.
 
 ## Dependencies
 
-- Existing Integration Core, CAL-ICS, subscribed-calendar provider, DPAPI credential repository, Integration Sync Runtime, Calendar Core, MyTimetable, and School source scoping.
+- `PULSE-002`, `CONT-001`, `CAL-CORE-001`, `SCHOOL-MTT-001`, `SCHOOL-SPACE-001`, `SCHOOL-SCOPE-002`, `INT-CORE-001`, and `SCHOOL-BSP-REMOVE-001` are complete.
 - No new dependency.
 
 ## Risks and safeguards
 
-- **Legacy credential orphaning:** cleanup resolves the existing private credential key, removes it first, and deletes the Integration only after secret removal succeeds.
-- **Accidental legacy sync:** runtime handler registration excludes the retired provider and focused startup/manual-request tests prove rejection.
-- **School leakage:** source listing and association accept only MyTimetable; event SQL already requires MyTimetable and receives regression coverage with persisted legacy rows/bindings.
-- **Shared-infrastructure regression:** shared modules are retained and their focused/full suites are required.
-- **Recreation through generic IPC:** Integration creation explicitly rejects retired provider IDs without changing generic provider-neutral persistence.
+- **School data leakage:** authorize MyTimetable with explicit connection and group joins; test two Spaces, two connections, and identical group labels.
+- **Privacy regression:** use dedicated serialized projections rather than `ExternalEvent` or `Integration`; serialization tests reject forbidden fields.
+- **Time errors:** inject/capture one instant in tests and cover exact boundaries, midnight, local-date grouping, touching intervals, and DST-capable chrono conversions.
+- **Unbounded overview reads:** hard limits live in SQL/service logic; conflict candidates use a bounded seven-day event set.
+- **Misleading cache state:** trust remains visible for relevant bound sources and explicitly distinguishes disabled, disconnected, degraded, syncing, never-synced, stale, and fresh.
+- **Broad failure:** section queries are isolated and return bounded sanitized degradation metadata while independent sections continue.
 
 ## Rollback considerations
 
-Code/UI changes are reversible on the task branch. No migration or automatic data mutation occurs. Users retain legacy state until explicit cleanup, and rollback can again interpret those records through the historical provider code if required.
+The change is read-only and adds no migration or dependency. Rollback restores the prior Pulse response/UI with no data cleanup. Existing Calendar, School, Tasks, Integration, and Continuity persistence remains unchanged.
 
 ## Required validation
 
-- Focused Integration repository, Integration Sync, unsupported subscribed-calendar cleanup, MyTimetable, School repository/UI, Connections/presentation/typed IPC, CAL-ICS, subscribed-calendar, and Calendar Core tests.
+- Focused Rust Pulse/event projection/School isolation/Integration trust/Tasks/Continuity tests.
+- Focused frontend Pulse, hook/IPC/schema tests.
+- Existing School/MyTimetable regression tests.
 - `cargo test --manifest-path src-tauri/Cargo.toml`
 - `cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`
 - `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings`
@@ -104,19 +109,19 @@ Code/UI changes are reversible on the task branch. No migration or automatic dat
 - `pnpm test`
 - `pnpm build`
 - `git diff --check`
-- Final diff review confirming shared ICS/MyTimetable infrastructure is intact.
+- Manual smoke plan recorded for owner execution.
 
 ## Independent review requirement
 
 | Field | Value |
 | --- | --- |
 | Required | No |
-| Reason | Repository workflow requires a distinct evidence-based self-review; no separate reviewer was requested. |
-| Reviewer scope | Runtime dispatch closure, legacy cleanup/credential ordering, School isolation, MyTimetable preservation, current documentation truth, and scope discipline. |
+| Reason | The owner requested implementation and publication; repository workflow requires a distinct evidence-based self-review but not a separate agent/session. |
+| Reviewer scope | Authorization, minimization, time semantics, bounds, trust truthfulness, partial degradation, Brightspace absence, and no provider fetching. |
 
 ## Human decisions required
 
-None. The request explicitly chooses removal, retention of shared infrastructure, smallest safe legacy compatibility, no automatic reinterpretation, and draft-PR publication.
+None. The supplied task specifies the architecture, semantics, caps, exclusions, validation, and publication outcome.
 
 ## Blocking decisions
 
@@ -126,57 +131,52 @@ None.
 
 | Check | State |
 | --- | --- |
-| Correct branch/worktree confirmed | Pass — clean `agent/remove-brightspace` at merged `origin/master` commit `1999a51` |
+| Correct branch/worktree confirmed | Pass — stale missing worktree registration pruned; clean `agent/pulse-003` at `origin/master` commit `64f572e` |
+| Latest master confirmed | Pass — fetched `origin/master`; worktree HEAD is identical |
 | `git status` inspected | Pass — clean before contract updates |
 | User-owned changes identified | None |
-| Parallel task overlap checked | Pass — prior School scoping task is merged; no PR exists for this branch |
-| Serialization points identified | Provider registry/commands, Integration runtime dispatch, generic connection cleanup, School source policy, current state docs |
+| Parallel task overlap checked | Pass — requested branch had only a prunable missing checkout; no active Pulse implementation work found |
+| Serialization points identified | Pulse IPC/type contract, native read model, School authorization joins, semantic Pulse styles, current-state docs |
 
 ## Readiness review
 
-Passed. Removal boundaries, legacy-data behavior, credential cleanup ordering, no-migration decision, School isolation, shared-infrastructure preservation, validation, rollback, publication, and stop condition are explicit. Production implementation may begin.
+Passed. Goal, observable behavior, minimized projections, School authority, time/conflict/task/trust/continuity semantics, caps, partial failure, privacy exclusions, validation, rollback, documentation, publication, and stop condition are explicit. Production implementation may begin.
 
 ## Implementation log
 
-- 2026-09-25: Read the approved request and mandatory control documents; confirmed the clean task branch at merged Aether 27.
-- 2026-09-25: Classified repository references into production removal, current-state update, and historical/shared retention categories.
-- 2026-09-26: Removed the provider module, command/setup wrappers, runtime registration, catalog entry, capability presentation, and School association path.
-- 2026-09-26: Added generic unsupported-calendar cleanup, retired-ID creation rejection, legacy startup/sync/credential/cascade/School regression coverage, and truthful current-state documentation.
-- 2026-09-26: Completed focused/full validation and a distinct final-diff, security, shared-infrastructure, and scope review.
-- 2026-09-26: Merged the latest `origin/master`, resolved the four task-record conflicts while preserving the completed AI Router records, and revalidated the combined tree.
+- 2026-09-26: Read the approved request and mandatory control documents; fetched `origin/master`, confirmed exact base `64f572e`, pruned a stale missing worktree registration, and attached the clean requested branch.
+- 2026-09-26: Inspected Pulse/Continuity/Calendar/Integration/School architecture and current implementation; confirmed no migration or new dependency is required.
+- 2026-09-26: Implemented the minimized one-command snapshot, focused Pulse UI, strict frontend validation, source trust, conflict detection, section degradation, and regression coverage.
+- 2026-09-26: Completed focused/full validation and the authorization, minimization, bounds, provider-fetch, Brightspace, and scope self-review.
 
 ## Verification evidence
 
-- Integration repository retired-ID/legacy-read test: 1 passed.
-- Unsupported subscribed-calendar cleanup tests: 2 passed.
-- MyTimetable tests: 22 passed.
-- CAL-ICS tests: 21 passed.
-- Integration Sync Runtime tests: 18 passed.
-- School repository tests: 13 passed.
-- Calendar Core repository tests: 3 passed.
-- Focused Connections, presentation, School, and typed IPC tests: 46 passed across 4 files.
-- `cargo test --manifest-path src-tauri/Cargo.toml`: 202 passed.
-- `pnpm test`: 133 passed across 37 files.
-- `pnpm typecheck`, `pnpm lint`, `pnpm build`, Rust formatting, strict Clippy, and `git diff --check`: passed.
-- Post-merge combined tree: 216 Rust tests and 137 frontend tests across 37 files passed; typecheck, lint, production build, Rust formatting, strict Clippy, and staged diff check also passed.
+- Native Pulse tests: 11 passed.
+- Focused frontend Pulse/typed IPC tests: 32 passed across 2 files.
+- Existing School source isolation tests: 13 passed.
+- Existing MyTimetable-filtered tests: 23 passed.
+- `cargo test --manifest-path src-tauri/Cargo.toml`: 225 passed.
+- `pnpm test`: 140 passed across 37 files.
+- Typecheck, lint, production build, Rust formatting, strict Clippy, and `git diff --check`: passed.
 
 ## Acceptance evidence
 
-- AC1: provider file and Tauri commands are deleted; frontend catalog/setup/wrappers contain no active Brightspace path.
-- AC2: retired provider IDs are rejected case-insensitively by generic creation; all 22 MyTimetable tests and active setup/refresh frontend tests pass.
-- AC3: legacy rows deserialize, manual/startup runtime requests reject before work, and generic cleanup removes the encrypted secret plus subscribed-calendar, ExternalEvent, and School-binding dependents.
-- AC4: School discovery, association, public schema, and UI now accept only MyTimetable; a seeded legacy binding/event remains invisible.
-- AC5: shared CAL-ICS, subscribed-calendar replacement, credential, Integration Sync, Calendar Core, ExternalEvent, and normalized School tables remain present and green.
-- AC6: no migration was added; current docs record intentional retirement and the institution-authorization gate while historical ADR/changelog evidence remains.
+- AC1: `get_pulse` remains the single no-argument invoke and its strict response contains every rendered section.
+- AC2: one captured native clock drives local-day UTC boundaries, Now/Next, seven-day windows, and DST-aware tests.
+- AC3: SQL caps and stable ordering enforce Today 30, Upcoming 30, Tasks 20, Continuity 5; conflict candidates are bounded at 128 and results at 10.
+- AC4: MyTimetable SQL joins explicit active parent School bindings, selected groups, and event groups; identical unauthorized group data is excluded.
+- AC5: serialized projection tests prove broad Calendar/Integration fields are absent; source errors are categorized and section failures are sanitized.
+- AC6: cached disabled/disconnected/degraded/stale data remains truthful through native trust state; freshness uses one two-hour constant.
+- AC7: academic deadlines remain explicitly unavailable; no migration, network path, AI tool, Brightspace behavior, or dependency was added.
 
 ## Self-review
 
-Passed. The final diff is limited to the provider/runtime/Connections/School removal, provider-neutral legacy cleanup, regression tests, and current task/documentation records. No generic parser, fetcher, redirect/SSRF rule, validator, generation guard, sync scheduling policy, ExternalEvent identity, Calendar Core contract, DPAPI implementation, migration, or MyTimetable behavior was removed or weakened. Cleanup cancels in-flight work, refuses supported connections, removes the native secret before deleting the Integration, and relies on existing foreign-key cascades. Remaining production `brightspace` text is only the explicit retired-ID creation guard; other source references are compatibility tests. Historical docs remain intentionally historical. No Pulse, AI, replacement LMS, dependency, or unrelated change was introduced.
+Passed. The final diff is limited to the Pulse repository/read model, strict Pulse IPC response parsing, focused route/styles/tests, the existing Pulse ADR extension, and required task records. Event authorization is native and connection/group-bound for MyTimetable. All reads are bounded; cancellation, all-day, active, next, overlap, touching, cross-midnight, local-day, and DST behavior are covered. The response exposes no description, URL, credential, provider configuration, hash, raw error, or provider payload. `pulse.rs` contains no fetch/runtime dispatch. Brightspace appears only in the explicit retired-provider SQL exclusion and documentation assertions. No unrelated persistence, sync, AI, Safe Actions, routing, or provider behavior changed.
 
 ## Publication state
 
-Published implementation commit `57ca726` (`refactor(integrations): retire Brightspace connector`) to `origin/agent/remove-brightspace`; draft PR [#65](https://github.com/bimberlotDEV/Aether-Desktop/pull/65) is open. The post-commit hook could not fork its helper process, but `scripts/publish-task.ps1` completed its explicit push and PR creation successfully.
+Implementation is verified locally. Commit/push/draft-PR details are recorded after publication.
 
 ## Stop condition
 
-Stop after all acceptance criteria are evidenced, required checks pass, task records are updated, the implementation is committed and pushed on `agent/remove-brightspace`, and a draft PR is open. Do not begin a replacement LMS, Pulse, AI, or unrelated integration work.
+Stop when acceptance criteria are evidenced, all required checks pass, the final diff has been reviewed for authorization/minimization/bounds/network/Brightspace regressions, records are updated, commits are pushed on `agent/pulse-003`, and an Aether 31 draft PR is open. Do not begin AI-CAL, tool-enabled AI Router, academic Deadline persistence, or another integration.

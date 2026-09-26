@@ -77,7 +77,7 @@ The current verified product foundation includes:
 * Universal Search;
 * deterministic Continuity;
 * meaningful Activity;
-* Pulse 2.0;
+* connected Pulse 2.0 with one bounded native schedule, Tasks, conflicts, Continuity, and source-trust snapshot;
 * Safe Actions;
 * DeepSeek/OpenAI provider support;
 * provider-neutral deterministic Local only / Cloud only / Automatic AI routing with native privacy settings and content-free route provenance;
@@ -114,7 +114,9 @@ There is no requirement for a cloud account to use the core product.
 
 # Current milestone state
 
-`AI-ROUTER-001` and `SCHOOL-BSP-REMOVE-001` are verified. DeepSeek and OpenAI share
+`PULSE-003`, `AI-ROUTER-001`, and `SCHOOL-BSP-REMOVE-001` are verified. Pulse now
+composes minimized authorized Calendar/School projections, due Tasks, conflicts,
+Continuity, and native-owned freshness through one local read command. DeepSeek and OpenAI share
 a provider-neutral backend contract with Rust-owned deterministic routing, privacy,
 settings, budgets, and provenance. The calendar-only Brightspace connector is
 retired; MyTimetable remains the sole School timetable authority, while generic
@@ -192,6 +194,7 @@ native secret and dependent cached data.
 | `SCHOOL-SCOPE-002`   | Explicit School source scoping          | `complete` | Parent School Spaces authorize connection IDs and per-source groups; same provider/group labels cannot cross connection or Space boundaries. |
 | `AI-ROUTER-001`      | Provider-neutral AI Router Phase 1       | `complete` | Local/Cloud/Automatic routing, native disclosure policy/settings, and immutable provenance preserve DeepSeek/OpenAI behavior without adding tools or a local runtime. |
 | `SCHOOL-BSP-REMOVE-001` | Retire Brightspace integration        | `complete` | Brightspace is no longer advertised, connectable, synchronizable, or School-associated; legacy rows remain readable and explicitly removable. |
+| `PULSE-003`          | Connected Pulse snapshot              | `complete` | One bounded native snapshot presents Now, Next, Today, Upcoming, due Tasks, conflicts, Continuity, and truthful source trust without provider fetching, inferred deadlines, or broadened School scope. |
 
 ---
 
@@ -203,7 +206,7 @@ Current repository product version:
 0.5.0
 ```
 
-Current verified repository quality snapshot includes the completed AI-ROUTER-001 and SCHOOL-BSP-REMOVE-001 work on 0.5.0.
+Current verified repository quality snapshot includes the completed PULSE-003, AI-ROUTER-001, and SCHOOL-BSP-REMOVE-001 work on 0.5.0.
 
 The product remains Alpha.
 
@@ -230,13 +233,13 @@ Public Beta is not considered complete until the external evidence requirements 
 
 | Check                                       | Last verified result | Verified date | Notes                                                                           |
 | ------------------------------------------- | -------------------- | ------------- | ------------------------------------------------------------------------------- |
-| `pnpm check`                                | Pass                 | 2026-09-26    | Equivalent gates pass: typecheck, lint, and 137/137 frontend tests across 37 files. |
+| `pnpm check`                                | Pass                 | 2026-09-26    | Equivalent gates pass: typecheck, lint, and 140/140 frontend tests across 37 files. |
 | `pnpm typecheck`                            | Pass                 | 2026-09-26    | Strict frontend and IPC contracts compile cleanly.                              |
 | `pnpm lint`                                 | Pass                 | 2026-09-26    | Frontend lint remains clean.                                                     |
-| `pnpm test`                                 | Pass                 | 2026-09-26    | 137/137 frontend tests across 37 files pass.                                    |
+| `pnpm test`                                 | Pass                 | 2026-09-26    | 140/140 frontend tests across 37 files pass.                                    |
 | `pnpm build`                                | Pass                 | 2026-09-26    | Alpha 0.5.0 production frontend build passes.                                   |
 | `pnpm audit --audit-level high`             | Pass                 | 2026-08-29    | No known high-severity vulnerabilities reported.                                |
-| `cargo test`                                | Pass                 | 2026-09-26    | 216/216 Rust tests pass, including AI routing/privacy/backend/settings/provenance and existing School/Calendar regressions. |
+| `cargo test`                                | Pass                 | 2026-09-26    | 225/225 Rust tests pass, including Pulse boundaries/minimization, School isolation, MyTimetable, and existing AI/Calendar regressions. |
 | `cargo build --release`                     | Pass                 | 2026-08-29    | Optimized Aether 0.5.0 Windows executable builds and starts.                    |
 | `cargo fmt --check`                         | Pass                 | 2026-09-26    | Rust formatting clean.                                                          |
 | `cargo clippy --all-targets -- -D warnings` | Pass                 | 2026-09-26    | Relevant targets/features warning-free.                                         |
@@ -430,7 +433,7 @@ Potential slices include:
 3. external calendar event model (CAL-CORE-001 complete)
 4. MyTimetable integration (SCHOOL-MTT-001 complete)
 5. School Calendar (SCHOOL-SPACE-001 ICS-first timetable complete)
-6. Pulse calendar/deadline integration
+6. Pulse calendar integration (PULSE-003 complete; normalized academic deadlines remain unavailable)
 7. GitHub integration
 8. automation integration
 9. additional personal modules

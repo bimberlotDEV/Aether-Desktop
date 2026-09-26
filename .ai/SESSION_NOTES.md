@@ -4,35 +4,30 @@
 | --- | --- |
 | Schema version | 2 |
 | Session date | 2026-09-26 |
-| Active task | `SCHOOL-BSP-REMOVE-001` |
+| Active task | `PULSE-003` |
 | Agent | Codex |
-| State | complete; draft PR open |
+| State | complete; publication pending |
 
 ## Current work
 
-Aether 30 removes the calendar-only Brightspace connector because it cannot satisfy
-the intended rich LMS product requirement without institution-managed application
-authorization. The clean task branch is `agent/remove-brightspace` at merged Aether
-27. The ready contract preserves all generic ICS/calendar/sync/credential machinery
-and MyTimetable behavior.
+Aether 31 implements one bounded native Pulse snapshot for Now, Next, Today,
+Upcoming, open due Tasks, schedule conflicts, Continuity, and source trust. The
+snapshot captures one clock, resolves MyTimetable through persisted School Space
+connection/group authority, degrades optional sections independently, and exposes
+only minimized presentation-safe data.
 
-Legacy Brightspace rows are not migrated or reinterpreted. They remain readable,
-are rejected by active runtime dispatch, are excluded from School sources/events,
-and can be explicitly removed through a provider-neutral unsupported subscribed-
-calendar cleanup path with credential deletion and existing cascade semantics.
+Academic deadlines remain explicitly unavailable because no normalized Deadline
+domain exists. No migration, dependency, provider request, AI tool, Brightspace
+behavior, or mutation path was introduced.
 
-Focused suites pass: retired-ID/legacy read 1, unsupported cleanup 2, MyTimetable
-22, CAL-ICS 21, Integration Sync 18, School repository 13, Calendar Core 3, and
-frontend/IPC 46. Full validation passes: 202 Rust tests, 133 frontend tests across
-37 files, production build, TypeScript, lint, Rust formatting, strict Clippy, and
-diff check. After merging the latest `master`, the combined tree also passes 216
-Rust tests and 137 frontend tests across 37 files plus all of the same static,
-build, formatting, Clippy, and diff gates. The merge preserves the completed AI
-Router work without adding Pulse or replacement LMS scope.
+Validation is complete: 11 focused native Pulse tests, 32 focused frontend/IPC
+tests, 13 School isolation tests, 23 MyTimetable-filtered tests, 225 full Rust tests,
+and 140 full frontend tests across 37 files pass. Typecheck, lint, build, Rust
+formatting, strict Clippy, and diff check pass. The final authorization,
+minimization, bounds, network, Brightspace, and scope review passed.
 
 ## Exact resume point
 
-Implementation commit `57ca726` is pushed to `origin/agent/remove-brightspace` and
-draft PR #65 is open. The latest `origin/master` is merged locally and its task-
-record conflicts are resolved; publish the merge resolution, then stop without
-beginning replacement LMS, Pulse, AI, or unrelated work.
+Stage only the 13 task-owned paths, commit with the approved conventional message,
+publish through `scripts/publish-task.ps1`, record commit/PR details in the task
+records, push that records commit if separate, and stop when the draft PR is open.
