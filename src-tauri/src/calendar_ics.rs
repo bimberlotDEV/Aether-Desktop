@@ -600,10 +600,6 @@ where
     }
     Ok(output)
 }
-pub fn validate(bytes: &[u8]) -> IcsValidation {
-    validate_with_host(bytes, None)
-}
-
 pub fn validate_with_host(bytes: &[u8], public_host: Option<String>) -> IcsValidation {
     let parsed: Result<Vec<_>, _> = IcalParser::new(BufReader::new(bytes)).collect();
     let Ok(calendars) = parsed else {

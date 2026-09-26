@@ -16,17 +16,18 @@ Aether combines Spaces, Markdown Notes, Tasks, Pulse, Vault, explicit Memory, au
 - Explicit local folder Sources with bounded, metadata-only indexing and revocable access
 - `Ctrl+K` Universal Search across commands and permitted local workspace domains with deterministic ranking
 - Deterministic per-Space continuity and a curated local Activity timeline for resuming real work
-- Pulse 2.0 with explainable Today, Continue, New, Recent, and user-controlled Ask Aether entry points
+- Connected Pulse with bounded schedule, due Tasks, conflicts, Continuity, source trust, and user-controlled Ask Aether entry points
 - Safe Actions for previewed, explicitly approved Task/Note creation and bounded single-file operations inside authorized Sources
 - Explicit global or Space Memory that the user may attach to AI
-- DeepSeek and OpenAI chat with cancellable streaming, persisted conversations, explicit model choice, transparent Auto routing, visible context, and separately approved Task/Note proposals
+- DeepSeek and OpenAI chat with cancellable streaming, persisted conversations, deterministic Local only / Cloud only / Automatic routing, visible provenance and context, and separately approved Task/Note proposals
+- Read-only MyTimetable synchronization for explicitly bound School Spaces; the former Brightspace calendar connector is retired
 - Windows tray lifecycle, `Ctrl+Shift+Space`, notifications, and restored window state
 - Sanitized workspace database export from Settings
 - User-reviewed, content-free beta diagnostics with no automatic submission
 
 ## Privacy and data
 
-Workspace data is stored in SQLite at `%APPDATA%/com.aether.desktop/aether.db`. There is no account or telemetry. AI is opt-in: only a prompt and context items explicitly attached to a conversation are sent to the provider shown on each response. DeepSeek and OpenAI API keys are separately encrypted for the current Windows user with DPAPI. Auto selects only a configured provider, explains its route, and never silently retries through another provider.
+Workspace data is stored in SQLite at `%APPDATA%/com.aether.desktop/aether.db`. There is no account or telemetry. AI routing is native-owned: Local only fails truthfully because no local runtime is installed, Cloud only uses the selected configured provider, and Automatic is local-first without silently switching backend or locality after dispatch. Cloud disclosure policy is separate from routing, and DeepSeek/OpenAI API keys are separately encrypted for the current Windows user with DPAPI.
 
 Complete `.aether-backup` archives contain the sanitized workspace database plus every file managed by Aether Vault. API credentials are never exported, and linked files remain external because Aether does not own them. Settings verifies an archive before showing its contents; restore requires a separate confirmation, creates a complete local safety backup, and restarts into a rollback-safe workspace replacement.
 

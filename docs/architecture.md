@@ -31,12 +31,14 @@ The webview is untrusted relative to native resources. It never executes SQL, re
 | Pulse relevance    | Bounded deterministic Rust read model                   | Pulse                                     |
 | Safe Actions       | Typed Rust proposal runtime plus existing repositories  | Actions                                   |
 | First-run profile  | SQLite profile repository and existing trusted domains  | Onboarding gate, Settings tour            |
+| Integrations       | Provider-neutral SQLite lifecycle plus native sync       | Connections                               |
+| Calendar / School  | Normalized events plus explicit Space/source authority   | School, Pulse                             |
 
 ## Data and concurrency
 
 SQLite is bundled with `rusqlite`; versioned migrations are append-only. The live connection uses WAL, foreign keys, and normal synchronization. A single mutex protects the connection. Credential encryption deliberately operates outside re-entrant database locking. Note autosave is serialized and revision-aware; AI streams have explicit cancellation and terminal persistence.
 
-Workspace export uses SQLite's online backup API while holding the connection boundary. It writes a sibling partial database, removes the `secrets` table, verifies integrity, and finalizes with rollback protection for an existing destination. See ADR-014.
+Portable workspace archives use SQLite online-backup semantics, exclude credentials and linked external files, include verified Aether-managed Vault bytes, and restore only through preview, one-time approval, staging, restart, and rollback-safe replacement. The older SQLite-only export remains available for compatibility. See ADR-014 and ADR-022.
 
 Context Sources store an explicitly authorized canonical root and relative child metadata. Scans run outside the UI thread, do not follow symlinks or Windows reparse points, enforce depth/file limits, and never read contents or mutate files. Snapshot application is transactional; truncated scans cannot mark unseen files removed. See ADR-016.
 
@@ -44,11 +46,13 @@ Universal Search uses one typed Rust repository and command. Notes content is re
 
 Continuity composes bounded active Notes, open Tasks, present Source-file metadata, the latest active conversation, and curated Activity for exactly one active Space. Suggested next steps use a fixed local priority rather than generated prose. Domain commands own a closed meaningful event vocabulary with quiet-window deduplication; the webview cannot submit arbitrary events or receive raw metadata JSON. Activity and Space detail are lazy route chunks. See ADR-018.
 
-Pulse composes a single read-only snapshot from dated open Tasks, recently worked active Spaces, new present Source metadata, and curated Activity. Relevance and the suggested next step follow a fixed, factual priority; Pulse performs no AI call or mutation. See ADR-019.
+Pulse composes one bounded read-only native snapshot from authorized School/Calendar occurrences, open due Tasks, deterministic conflicts, Continuity, and relevant Integration trust state. One captured clock drives half-open timing and local-day semantics; optional sections degrade independently. React receives minimized projections and performs no domain fan-out, provider request, AI call, or mutation. See ADR-019.
 
 Safe Actions uses a closed Rust request enum and keeps each validated proposal in process behind a short-lived opaque token. Approval supplies only that token, which is consumed before revalidation and execution. Database writes and their curated Activity audit are transactional; reversible file writes roll back on audit failure. Filesystem actions canonicalize one explicitly authorized Source, require indexed input files, reject traversal, symlink escape, missing parents, directories, and existing destinations, and never expose absolute roots over IPC. There is no shell, delete, arbitrary executable, cross-Source transfer, or model-owned approval. See ADR-020.
 
-AI providers are a closed Rust registry with fixed official DeepSeek and OpenAI endpoints. Credentials are separately DPAPI-protected; Auto chooses a configured route deterministically before disclosure and never performs silent cross-provider fallback. Each assistant response stores its resolved provider, model, routing mode, and human-readable reason. AI Action JSON is re-read from the persisted assistant message, strictly parsed into Task/Note drafts, bound to the conversation Space and message origin, and previewed through Safe Actions one item at a time. See ADR-021.
+AI providers are a closed Rust registry with fixed official DeepSeek and OpenAI endpoints behind one provider-neutral backend contract. Native routing resolves Local only, Cloud only, or Automatic exactly once before dispatch; locality never changes mid-request, unavailable local execution is truthful, and cloud disclosure remains a separate policy/approval authority. Responses persist content-free route provenance plus provider/model/locality presentation fields. AI Action JSON is re-read from the persisted assistant message, strictly parsed into Task/Note drafts, bound to the conversation Space and message origin, and previewed through Safe Actions one item at a time. See ADR-021 and ADR-032.
+
+Integration persistence owns provider-neutral connection and synchronization lifecycle, while native connectors own provider transport and credential use. MyTimetable is the only supported School timetable connector and uses the shared bounded CAL-ICS and Integration Sync infrastructure. The former Brightspace connector is retired: legacy rows remain readable only for explicit cleanup and cannot sync, enter Pulse/School reads, or be newly associated. School schedules require explicit parent-Space connection bindings and per-source group selections, and cross IPC only as minimized presentation events. See ADR-027 through ADR-031.
 
 First-run initialization is idempotent and Rust-owned. A missing profile beside any meaningful persisted Space, Note, Task, Vault item, Memory, conversation, or Source is treated as an upgrade and marked complete without changing domain rows. Only an empty workspace receives onboarding. The frontend then composes existing transactional Space creation, explicit Source authorization, DPAPI provider configuration, and the normal Pulse shell; interrupted setup resumes an existing top-level Space rather than duplicating it. See ADR-024.
 
@@ -57,11 +61,13 @@ First-run initialization is idempotent and Rust-owned. A missing profile beside 
 - Tauri CSP restricts scripts to the application and capabilities expose only required native actions.
 - DeepSeek and OpenAI credentials are separately protected with Windows DPAPI and never returned to the frontend.
 - AI context is user-selected, bounded, and Space-isolated in Rust.
+- AI routing and cloud-disclosure authorization are separate native decisions; raw decision JSON, prompts, credentials, and provider errors never cross presentation IPC.
 - Linked Vault files are never deleted; managed deletion is containment-checked and recoverable during the operation.
 - Database exports exclude secrets and disclose that Vault file bytes are out of scope.
 - Source roots are explicit and revocable; indexed child APIs expose relative metadata only and are not attached to AI.
 - Continuity is deterministic and Space-bound; it exposes structured facts and presentation-safe Activity without sending data to DeepSeek.
 - Pulse is local and explainable; archived scopes, removed Source files, raw metadata, and absolute Source roots are excluded.
+- Integration credentials, feed URLs, validators, cursors, provider payload identifiers, hashes, provenance, and database timestamps remain native-only; Calendar/School/Pulse expose consumer-specific bounded projections.
 - Safe Actions require a visible consequence review and explicit user approval; one-time execution remains inside the narrow validated Rust capability boundary.
 - There is no telemetry, account backend, embedded signing secret, hidden update check, or frontend-controlled installer. Signed public builds may use the fixed Stable GitHub feed through the Rust-owned updater boundary.
 - Beta diagnostics are composed in Rust from a closed metadata-only schema, displayed before copying, and never include domain data, counts, paths, logs, identifiers or secrets. Aether has no diagnostic submission endpoint.

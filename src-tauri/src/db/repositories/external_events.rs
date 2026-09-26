@@ -1,11 +1,10 @@
-#![allow(dead_code)] // Reconciliation is intentionally native-connector-only until a provider task uses it.
-
 use chrono::{DateTime, NaiveDate, Utc};
-use rusqlite::{params, Connection};
-use serde::{Deserialize, Serialize};
+use rusqlite::params;
+#[cfg(test)]
+use rusqlite::Connection;
+use serde::Deserialize;
 use uuid::Uuid;
 
-const EVENT_COLUMNS: &str = "id, connection_id, external_id, occurrence_id, title, description, time_kind, start_at_utc, end_at_utc, start_date, end_date, timezone, location, course_reference, group_references_json, event_kind, status, source_url, ingestion_provenance, source_version, content_hash, first_seen_at, last_seen_at, synchronized_at, created_at, updated_at";
 type NormalizedEvent = (
     String,
     String,
@@ -28,36 +27,6 @@ type NormalizedEvent = (
     String,
     String,
 );
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct ExternalEvent {
-    pub id: String,
-    pub connection_id: String,
-    pub external_id: String,
-    pub occurrence_id: Option<String>,
-    pub title: String,
-    pub description: Option<String>,
-    pub time_kind: String,
-    pub start_at_utc: Option<String>,
-    pub end_at_utc: Option<String>,
-    pub start_date: Option<String>,
-    pub end_date: Option<String>,
-    pub timezone: String,
-    pub location: Option<String>,
-    pub course_reference: Option<String>,
-    pub group_references: Vec<String>,
-    pub event_kind: String,
-    pub status: String,
-    pub source_url: Option<String>,
-    pub ingestion_provenance: String,
-    pub source_version: String,
-    pub content_hash: String,
-    pub first_seen_at: String,
-    pub last_seen_at: String,
-    pub synchronized_at: String,
-    pub created_at: String,
-    pub updated_at: String,
-}
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -85,18 +54,9 @@ pub struct ExternalEventInput {
     pub content_hash: String,
 }
 
-#[derive(Debug, Clone, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct ExternalEventRange {
-    pub connection_id: Option<String>,
-    pub start: String,
-    pub end: String,
-    pub include_removed: Option<bool>,
-    pub limit: Option<u32>,
-}
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ReconciliationMode {
+    #[cfg(test)]
     ObservedOnly,
     Authoritative,
 }
@@ -145,41 +105,6 @@ fn url(value: &Option<String>) -> Result<Option<String>, String> {
         return Err("External event source URL must use HTTPS".to_string());
     }
     Ok(Some(value))
-}
-fn row(row: &rusqlite::Row) -> rusqlite::Result<ExternalEvent> {
-    let occurrence: String = row.get(3)?;
-    let groups_json: String = row.get(14)?;
-    let group_references = serde_json::from_str(&groups_json).map_err(|error| {
-        rusqlite::Error::FromSqlConversionFailure(14, rusqlite::types::Type::Text, Box::new(error))
-    })?;
-    Ok(ExternalEvent {
-        id: row.get(0)?,
-        connection_id: row.get(1)?,
-        external_id: row.get(2)?,
-        occurrence_id: (!occurrence.is_empty()).then_some(occurrence),
-        title: row.get(4)?,
-        description: row.get(5)?,
-        time_kind: row.get(6)?,
-        start_at_utc: row.get(7)?,
-        end_at_utc: row.get(8)?,
-        start_date: row.get(9)?,
-        end_date: row.get(10)?,
-        timezone: row.get(11)?,
-        location: row.get(12)?,
-        course_reference: row.get(13)?,
-        group_references,
-        event_kind: row.get(15)?,
-        status: row.get(16)?,
-        source_url: row.get(17)?,
-        ingestion_provenance: row.get(18)?,
-        source_version: row.get(19)?,
-        content_hash: row.get(20)?,
-        first_seen_at: row.get(21)?,
-        last_seen_at: row.get(22)?,
-        synchronized_at: row.get(23)?,
-        created_at: row.get(24)?,
-        updated_at: row.get(25)?,
-    })
 }
 fn normalized(input: &ExternalEventInput) -> Result<NormalizedEvent, String> {
     let connection = bounded(&input.connection_id, "connection ID", 64)?;
@@ -287,6 +212,7 @@ fn normalized(input: &ExternalEventInput) -> Result<NormalizedEvent, String> {
     ))
 }
 
+#[cfg(test)]
 pub fn reconcile(
     conn: &mut Connection,
     connection_id: &str,
@@ -347,34 +273,6 @@ pub fn reconcile_in_transaction(
         transaction.execute("UPDATE external_events SET status='removed', updated_at=datetime('now') WHERE connection_id=?1 AND status!='removed' AND last_seen_at<?4 AND ((time_kind='timed' AND start_at_utc>=?2 AND start_at_utc<?3) OR (time_kind='all_day' AND start_date>=substr(?2,1,10) AND start_date<substr(?3,1,10)))", params![connection_id.trim(),start,end,synchronized_at]).map_err(|error| format!("External event tombstone error: {error}"))?;
     }
     Ok(())
-}
-
-pub fn list_range(
-    conn: &Connection,
-    range: &ExternalEventRange,
-) -> Result<Vec<ExternalEvent>, String> {
-    let start = utc(&range.start, "range start")?;
-    let end = utc(&range.end, "range end")?;
-    if start >= end {
-        return Err("External event range end must be after start".to_string());
-    }
-    let limit = range.limit.unwrap_or(100).clamp(1, 500);
-    let mut statement = conn.prepare(&format!("SELECT {EVENT_COLUMNS} FROM external_events WHERE (?1 IS NULL OR connection_id=?1) AND (?2 OR status!='removed') AND ((time_kind='timed' AND start_at_utc<?4 AND end_at_utc>?3) OR (time_kind='all_day' AND start_date<substr(?4,1,10) AND end_date>substr(?3,1,10))) ORDER BY COALESCE(start_at_utc, start_date), id LIMIT ?5")).map_err(|error| format!("External event query error: {error}"))?;
-    let events = statement
-        .query_map(
-            params![
-                range.connection_id,
-                range.include_removed.unwrap_or(false),
-                start,
-                end,
-                limit
-            ],
-            row,
-        )
-        .map_err(|error| format!("External event query error: {error}"))?
-        .collect::<Result<Vec<_>, _>>()
-        .map_err(|error| format!("External event row error: {error}"))?;
-    Ok(events)
 }
 
 #[cfg(test)]
@@ -445,18 +343,17 @@ mod tests {
                 .unwrap(),
             1
         );
-        let values = list_range(
-            &c,
-            &ExternalEventRange {
-                connection_id: Some("c".into()),
-                start: "2026-10-25T00:00:00Z".into(),
-                end: "2026-10-26T00:00:00Z".into(),
-                include_removed: None,
-                limit: Some(10),
-            },
-        )
-        .unwrap();
-        assert_eq!(values[0].group_references, vec!["ADSAI-ZM-1.a"]);
+        let groups: String = c
+            .query_row(
+                "SELECT group_references_json FROM external_events WHERE connection_id='c'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(
+            serde_json::from_str::<Vec<String>>(&groups).unwrap(),
+            vec!["ADSAI-ZM-1.a"]
+        );
     }
     #[test]
     fn authoritative_only_tombstones_and_reappearance_reactivates() {

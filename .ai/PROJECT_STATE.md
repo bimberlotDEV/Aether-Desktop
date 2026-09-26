@@ -7,7 +7,7 @@
 | Field                   | Value                              |
 | ----------------------- | ---------------------------------- |
 | Schema version          | 2                                  |
-| Last updated            | 2026-09-25                         |
+| Last updated            | 2026-09-26                         |
 | Updated by              | Codex                              |
 | Repository              | `bimberlotDEV/Aether-Desktop`      |
 | Product maturity        | Alpha                              |
@@ -195,6 +195,7 @@ native secret and dependent cached data.
 | `AI-ROUTER-001`      | Provider-neutral AI Router Phase 1       | `complete` | Local/Cloud/Automatic routing, native disclosure policy/settings, and immutable provenance preserve DeepSeek/OpenAI behavior without adding tools or a local runtime. |
 | `SCHOOL-BSP-REMOVE-001` | Retire Brightspace integration        | `complete` | Brightspace is no longer advertised, connectable, synchronizable, or School-associated; legacy rows remain readable and explicitly removable. |
 | `PULSE-003`          | Connected Pulse snapshot              | `complete` | One bounded native snapshot presents Now, Next, Today, Upcoming, due Tasks, conflicts, Continuity, and truthful source trust without provider fetching, inferred deadlines, or broadened School scope. |
+| `REPO-HEALTH-032`    | Repository health and cleanup audit   | `complete` | Dead IPC/read-model code and an unused dependency are removed; active Integration/School/Pulse boundaries are minimized and fail closed; migrations, dependencies, docs, and full validation are verified. |
 
 ---
 
@@ -206,7 +207,7 @@ Current repository product version:
 0.5.0
 ```
 
-Current verified repository quality snapshot includes the completed PULSE-003, AI-ROUTER-001, and SCHOOL-BSP-REMOVE-001 work on 0.5.0.
+Current verified repository quality snapshot includes the completed REPO-HEALTH-032 audit over PULSE-003, AI-ROUTER-001, and SCHOOL-BSP-REMOVE-001 on 0.5.0. Active IPC is caller-backed and presentation-minimized; Brightspace remains retired.
 
 The product remains Alpha.
 
@@ -233,12 +234,12 @@ Public Beta is not considered complete until the external evidence requirements 
 
 | Check                                       | Last verified result | Verified date | Notes                                                                           |
 | ------------------------------------------- | -------------------- | ------------- | ------------------------------------------------------------------------------- |
-| `pnpm check`                                | Pass                 | 2026-09-26    | Equivalent gates pass: typecheck, lint, and 140/140 frontend tests across 37 files. |
+| `pnpm check`                                | Pass                 | 2026-09-26    | Equivalent gates pass: typecheck, lint, and 139/139 frontend tests across 37 files. |
 | `pnpm typecheck`                            | Pass                 | 2026-09-26    | Strict frontend and IPC contracts compile cleanly.                              |
 | `pnpm lint`                                 | Pass                 | 2026-09-26    | Frontend lint remains clean.                                                     |
-| `pnpm test`                                 | Pass                 | 2026-09-26    | 140/140 frontend tests across 37 files pass.                                    |
+| `pnpm test`                                 | Pass                 | 2026-09-26    | 139/139 frontend tests across 37 files pass.                                    |
 | `pnpm build`                                | Pass                 | 2026-09-26    | Alpha 0.5.0 production frontend build passes.                                   |
-| `pnpm audit --audit-level high`             | Pass                 | 2026-08-29    | No known high-severity vulnerabilities reported.                                |
+| `pnpm audit --audit-level moderate`         | Pass                 | 2026-09-26    | No known vulnerabilities after the Vitest 4.1.11 security patch.                |
 | `cargo test`                                | Pass                 | 2026-09-26    | 225/225 Rust tests pass, including Pulse boundaries/minimization, School isolation, MyTimetable, and existing AI/Calendar regressions. |
 | `cargo build --release`                     | Pass                 | 2026-08-29    | Optimized Aether 0.5.0 Windows executable builds and starts.                    |
 | `cargo fmt --check`                         | Pass                 | 2026-09-26    | Rust formatting clean.                                                          |

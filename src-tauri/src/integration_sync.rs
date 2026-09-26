@@ -76,6 +76,7 @@ pub enum SyncRequestResult {
     Deferred { eligible_at: String },
     Rejected { reason: String },
 }
+#[cfg(test)]
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RuntimeStatus {
@@ -510,6 +511,7 @@ impl IntegrationSyncRuntime {
             host,
         }
     }
+    #[cfg(test)]
     pub fn status(&self) -> RuntimeStatus {
         let state = self.inner.state.lock().expect("sync state poisoned");
         RuntimeStatus {

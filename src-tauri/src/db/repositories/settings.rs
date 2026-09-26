@@ -49,32 +49,6 @@ pub fn delete(conn: &Connection, key: &str) -> Result<bool, String> {
     Ok(count > 0)
 }
 
-pub fn list(conn: &Connection) -> Result<Vec<AppSetting>, String> {
-    let mut stmt = conn
-        .prepare(
-            "SELECT key, value, value_type, created_at, updated_at FROM app_settings ORDER BY key",
-        )
-        .map_err(|e| format!("Settings list error: {}", e))?;
-
-    let rows = stmt
-        .query_map([], |row| {
-            Ok(AppSetting {
-                key: row.get(0)?,
-                value: row.get(1)?,
-                value_type: row.get(2)?,
-                created_at: row.get(3)?,
-                updated_at: row.get(4)?,
-            })
-        })
-        .map_err(|e| format!("Settings list error: {}", e))?;
-
-    let mut settings = Vec::new();
-    for row in rows {
-        settings.push(row.map_err(|e| format!("Settings row error: {}", e))?);
-    }
-    Ok(settings)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -101,10 +75,13 @@ mod tests {
         let s = get(&conn, "theme").unwrap().unwrap();
         assert_eq!(s.value, "light");
 
-        // List
         set(&conn, "onboarding", "true", "bool").unwrap();
-        let list = list(&conn).unwrap();
-        assert_eq!(list.len(), 2);
+        assert_eq!(
+            conn.query_row("SELECT COUNT(*) FROM app_settings", [], |row| row
+                .get::<_, i64>(0))
+                .unwrap(),
+            2
+        );
 
         // Delete
         assert!(delete(&conn, "theme").unwrap());

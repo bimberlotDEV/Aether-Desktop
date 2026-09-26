@@ -188,11 +188,12 @@ mod tests {
             ..AiRoutingSettings::default()
         };
         assert_eq!(set(&conn, &settings).unwrap(), settings);
-        let keys: Vec<String> = repositories::settings::list(&conn)
+        let mut stmt = conn.prepare("SELECT key FROM app_settings").unwrap();
+        let keys: Vec<String> = stmt
+            .query_map([], |row| row.get(0))
             .unwrap()
-            .into_iter()
-            .map(|item| item.key)
-            .collect();
+            .collect::<Result<_, _>>()
+            .unwrap();
         assert!(keys
             .iter()
             .all(|key| !key.contains("credential") && !key.contains("api_key")));

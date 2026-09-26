@@ -16,7 +16,7 @@
 | Field                   | Value                                   |
 | ----------------------- | --------------------------------------- |
 | Schema version          | 2                                       |
-| Last updated            | 2026-09-20                              |
+| Last updated            | 2026-09-26                              |
 | Prioritized by          | Codex within the owner-approved roadmap |
 | Current product version | `0.5.0`                                 |
 | Product maturity        | Alpha                                   |
@@ -171,9 +171,9 @@ This section defines direction, not automatic implementation authorization.
 
 # Next recommended planned task
 
-There is no active planned task. `PULSE-003` is complete on `agent/pulse-003` and
-awaits draft-PR review. AI calendar tools, academic Deadline persistence, GitHub,
-OAuth, and automation remain separate candidate or design work.
+There is no active planned task after `REPO-HEALTH-032`. AI calendar tools,
+academic Deadline persistence, GitHub, OAuth, and automation remain separate
+candidate or design work.
 
 ---
 
@@ -261,7 +261,7 @@ Only unresolved technical debt belongs in this section.
 
 | Priority | ID         | Area              | Status      | Description                                                                                                                                          | Evidence / next action                              |
 | -------- | ---------- | ----------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------- |
-| P2       | `DEBT-003` | Architecture docs | `candidate` | Verify whether `docs/architecture.md` still contains obsolete duplicated bridge descriptions or other stale structure after later architecture work. | Perform focused documentation audit before editing. |
+No unresolved repository-health debt was verified by `REPO-HEALTH-032`.
 
 Resolved debt should not remain in the active debt queue.
 

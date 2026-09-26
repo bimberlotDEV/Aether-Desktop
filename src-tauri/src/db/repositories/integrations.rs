@@ -25,25 +25,36 @@ pub struct Integration {
     pub advertised_capabilities: Vec<String>,
     pub effective_capabilities: Vec<String>,
     pub auth_type: String,
+    #[serde(skip_serializing)]
     pub sync_modes: Vec<String>,
+    #[serde(skip_serializing)]
     pub sync_config: Value,
     pub connection_status: String,
     pub sync_status: String,
+    #[serde(skip_serializing)]
     pub disconnect_reason: Option<String>,
     pub last_attempted_at: Option<String>,
     pub last_successful_sync_at: Option<String>,
     pub next_allowed_sync_at: Option<String>,
     pub last_sync_error_code: Option<String>,
     pub last_sync_error_message: Option<String>,
+    #[serde(skip_serializing)]
     pub last_sync_etag: Option<String>,
+    #[serde(skip_serializing)]
     pub last_sync_last_modified: Option<String>,
+    #[serde(skip_serializing)]
     pub sync_cursor: Option<String>,
     pub rate_limit_remaining: Option<u32>,
     pub retry_after_at: Option<String>,
+    #[serde(skip_serializing)]
     pub credential_expires_at: Option<String>,
+    #[serde(skip_serializing)]
     pub credential_rotated_at: Option<String>,
+    #[serde(skip_serializing)]
     pub sync_execution_scope: String,
+    #[serde(skip_serializing)]
     pub created_at: String,
+    #[serde(skip_serializing)]
     pub updated_at: String,
 }
 
@@ -465,7 +476,7 @@ mod tests {
     }
 
     #[test]
-    fn persists_generic_metadata_without_exposing_credential_key() {
+    fn serializes_only_the_presentation_safe_integration_projection() {
         let conn = setup();
         let created = create(&conn, &input()).unwrap();
         assert_eq!(created.provider_id, "calendar");
@@ -477,9 +488,26 @@ mod tests {
             )
             .unwrap();
         assert_eq!(key, format!("integration:{}:credential", created.id));
-        assert!(!serde_json::to_string(&created)
-            .unwrap()
-            .contains("credential_key"));
+        let serialized = serde_json::to_value(&created).unwrap();
+        let object = serialized.as_object().unwrap();
+        for private_field in [
+            "credential_key",
+            "sync_modes",
+            "sync_config",
+            "disconnect_reason",
+            "last_sync_etag",
+            "last_sync_last_modified",
+            "sync_cursor",
+            "credential_expires_at",
+            "credential_rotated_at",
+            "sync_execution_scope",
+            "created_at",
+            "updated_at",
+        ] {
+            assert!(!object.contains_key(private_field), "{private_field}");
+        }
+        assert_eq!(serialized["provider_id"], "calendar");
+        assert_eq!(serialized["auth_type"], "oauth_authorization_code");
     }
 
     #[test]

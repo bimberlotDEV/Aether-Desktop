@@ -61,11 +61,9 @@ import {
   parseAiActionProposals,
   previewAiActionProposal,
   initializeProfile,
-  createIntegration,
   listIntegrations,
   requestIntegrationSync,
   removeUnsupportedCalendarConnection,
-  listExternalEvents,
   getSchoolSchedule,
   setSchoolSourceAssociation,
   setSchoolSourceGroups,
@@ -137,51 +135,10 @@ describe('Tauri database boundary', () => {
     expect(invoke).toHaveBeenCalledWith('initialize_profile')
   })
 
-  it('uses typed provider-neutral Integration Core commands without credential values', async () => {
-    invoke
-      .mockResolvedValueOnce({
-        id: 'integration-1',
-        provider_id: 'calendar',
-        enabled: true,
-        advertised_capabilities: ['events_read'],
-        effective_capabilities: [],
-        auth_type: 'oauth',
-        sync_modes: ['manual'],
-        sync_config: {},
-        connection_status: 'disconnected',
-        sync_status: 'idle',
-        disconnect_reason: null,
-        last_attempted_at: null,
-        last_successful_sync_at: null,
-        next_allowed_sync_at: null,
-        last_sync_error_code: null,
-        last_sync_error_message: null,
-        last_sync_etag: null,
-        last_sync_last_modified: null,
-        sync_cursor: null,
-        rate_limit_remaining: null,
-        retry_after_at: null,
-        credential_expires_at: null,
-        credential_rotated_at: null,
-        sync_execution_scope: 'desktop_running',
-        created_at: '2026-09-21',
-        updated_at: '2026-09-21',
-      })
-      .mockResolvedValueOnce([])
-    await createIntegration({
-      providerId: 'calendar',
-      authType: 'oauth',
-      advertisedCapabilities: ['events_read'],
-      syncModes: ['manual'],
-      syncConfig: {},
-    })
+  it('lists provider-neutral Integration summaries without accepting configuration', async () => {
+    invoke.mockResolvedValueOnce([])
     await listIntegrations()
-
-    expect(invoke).toHaveBeenNthCalledWith(1, 'create_integration', {
-      input: expect.objectContaining({ providerId: 'calendar', authType: 'oauth' }),
-    })
-    expect(invoke).toHaveBeenNthCalledWith(2, 'list_integrations')
-    expect(JSON.stringify(invoke.mock.calls[0])).not.toContain('credential')
+    expect(invoke).toHaveBeenCalledWith('list_integrations')
   })
 
   it('accepts the truthful queued Integration sync request outcome', async () => {
@@ -200,20 +157,6 @@ describe('Tauri database boundary', () => {
     await expect(removeUnsupportedCalendarConnection('legacy-1')).resolves.toBe(true)
     expect(invoke).toHaveBeenCalledWith('remove_unsupported_calendar_connection', {
       connectionId: 'legacy-1',
-    })
-  })
-
-  it('exposes external calendar records through a bounded read-only command', async () => {
-    invoke.mockResolvedValueOnce([])
-    await listExternalEvents({
-      connectionId: 'integration-1',
-      start: '2026-09-21T00:00:00Z',
-      end: '2026-09-22T00:00:00Z',
-      limit: 50,
-    })
-
-    expect(invoke).toHaveBeenCalledWith('list_external_events', {
-      range: expect.objectContaining({ connectionId: 'integration-1', limit: 50 }),
     })
   })
 
