@@ -36,6 +36,7 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Verification:** Focused native tool tests 10/10; full `cargo test` 235/235; `pnpm test` 139/139 across 37 files; typecheck, lint, production build, Rust formatting, strict Clippy, and diff check — Pass.
 - **Decisions/deviations:** No migration or dependency change. Calendar authorization is parent-School-Space plus persisted MyTimetable connection/group binding and exact UTC/local-date scope. Caller oversize requests are rejected rather than clamped. `school.get_deadlines` is explicitly superseded until a normalized Deadline domain exists; no ICS/event deadline inference was added.
 - **Follow-up:** `AI-TOOL-ROUTER-001` — tool-enabled AI Router integration. Write tools remain separate Safe Actions work.
+- **Publication:** Implementation commit `e259ef2` is pushed to `origin/agent/ai-native-tools`; draft PR [#68](https://github.com/bimberlotDEV/Aether-Desktop/pull/68) is open.
 
 ## 2026-09-26 — `REPO-HEALTH-032` — Repository health and cleanup audit
 

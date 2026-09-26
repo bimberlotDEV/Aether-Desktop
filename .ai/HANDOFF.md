@@ -6,7 +6,7 @@
 | ----------------- | -------------------------------------------------------- |
 | Schema version    | 3                                                        |
 | Task ID           | `AI-NATIVE-TOOLS-001`                                    |
-| Status            | `in_progress`                                            |
+| Status            | `complete`                                               |
 | Owner             | Codex                                                    |
 | Last updated      | 2026-09-26                                               |
 | Related milestone | Aether 33 — native read-only AI tool foundation          |
@@ -46,7 +46,7 @@ hard query/result-size bounds. Do not connect tools to model execution yet.
 - [x] Every result is typed/versioned, Sensitive by native policy, and serialized below the 64 KiB hard ceiling; failures use a closed sanitized taxonomy.
 - [x] No write tool, arbitrary query/filesystem/provider path, frontend execution command, provider fetch, model tool loop, local model, academic deadline inference, or Brightspace behavior is added.
 - [x] Existing AI Router behavior remains unchanged and all required focused/full validation passes.
-- [ ] Task-owned work is committed, pushed, and represented by a draft PR.
+- [x] Task-owned work is committed, pushed, and represented by a draft PR.
 
 ## In scope
 
@@ -176,13 +176,20 @@ durable native authorization/execution boundary before production implementation
 
 ## Self-review outcome
 
-`complete` for implementation; publication remains. The final changed-path and
+`complete`. The final changed-path and
 diff review found no unrelated files, write SQL/tool IDs, provider/network/filesystem
 execution, frontend invoke surface, model loop, raw descriptions/source URLs/config,
 unbounded query/result path, privacy downgrade, Brightspace behavior, or academic
 deadline inference. Calendar authorization remains parent-School-Space plus exact
 persisted connection/group joins; Task output is a dedicated body-free projection.
 Every acceptance criterion above maps to focused tests or the recorded full gates.
+
+## Publication
+
+- Implementation commit: `e259ef2`
+- Branch: `agent/ai-native-tools`
+- Draft PR: [#68](https://github.com/bimberlotDEV/Aether-Desktop/pull/68)
+- Publication-record commit: recorded separately after PR creation
 
 ## Stop condition
 
