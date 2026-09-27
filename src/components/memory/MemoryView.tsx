@@ -28,7 +28,7 @@ export function MemoryView({ spaceId, spaces }: { spaceId?: string; spaces: Spac
 
   return (
     <div className="h-full min-h-0 overflow-y-auto">
-      <div className="mx-auto w-full max-w-[1040px] px-8 py-8">
+      <div className="mx-auto w-full max-w-[1040px] px-5 py-8 sm:px-8">
         <PageHeader
           eyebrow="User controlled"
           icon={Brain}
@@ -45,7 +45,7 @@ export function MemoryView({ spaceId, spaces }: { spaceId?: string; spaces: Spac
             </Button>
           }
         />
-        <div className="mb-5 flex gap-2">
+        <div className="mb-5 flex flex-col gap-2 sm:flex-row">
           <label className="aether-field flex min-w-0 flex-1 items-center gap-2 px-3 py-2">
             <Search size={14} className="text-[var(--color-text-tertiary)]" />
             <span className="sr-only">Search Memory</span>
@@ -56,12 +56,12 @@ export function MemoryView({ spaceId, spaces }: { spaceId?: string; spaces: Spac
               className="w-full bg-transparent text-sm outline-none"
             />
           </label>
-          <label>
+          <label className="min-w-0">
             <span className="sr-only">Filter by category</span>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value as MemoryCategory | '')}
-              className="aether-field h-full px-3 text-sm"
+              className="aether-field h-10 w-full px-3 text-sm sm:w-auto"
             >
               <option value="">All categories</option>
               {Object.entries(labels).map(([value, label]) => (

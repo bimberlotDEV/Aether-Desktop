@@ -78,14 +78,14 @@ The visual standard is inspired by Linear, Raycast, Arc, Things, and Craft:
 * calm;
 * restrained;
 * premium;
-* neutral color palette with indigo accent;
+* graphite and cool neutral palette with a controlled indigo accent;
 * consistent spacing;
 * consistent typography;
 * consistent border radii;
 * dark/light/system theme support;
 * deliberate information hierarchy;
 * thoughtful empty states;
-* minimal visual noise;
+* minimal visual noise, with selective translucent depth and subtle ambient light;
 * visually cohesive desktop-first interaction patterns.
 
 Avoid unnecessary decoration.
@@ -98,9 +98,9 @@ Every UI decision should support clarity, hierarchy, usability, or product ident
 
 Do NOT:
 
-* use random gradients;
+* use random or high-contrast gradients;
 * use neon glows;
-* use excessive glassmorphism;
+* use excessive or nested glassmorphism;
 * add fake charts;
 * add lorem ipsum;
 * add dead buttons;

@@ -26,6 +26,17 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-09-27 — `VISUAL-SYSTEM-2` — Spatial interface modernization
+
+- **Type:** UX, architecture, test, and docs
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review
+- **Summary:** Introduced semantic light/dark depth, glass, ambient, motion, blur, and radius tokens; refined shared surfaces, status chips, skeletons, the floating navigation shell, Pulse hero and loading state, Search/dialog elevation, Connections badges, School control surfaces, and narrow Memory layout. Added accessible names for collapsed navigation.
+- **Files:** `src/styles/index.css`, `src/components/ui/AetherUI.tsx`, `src/components/Sidebar.tsx`, `src/routes/Pulse.tsx`, selected presentation components/tests, `docs/decisions/015-aether-interface-system.md`, and current control records.
+- **Verification:** Focused frontend 26/26; full frontend 144/144 across 38 files; Rust 247/247; typecheck, lint, frontend build, Rust format and strict Clippy, `git diff --check` — Pass. Browser preview reviewed in light/dark at narrow and 1280×800 widths.
+- **Decisions/deviations:** The owner's explicit direction superseded ADR-015's blanket glass/gradient ban with controlled, readable depth. No dependency, feature, route, persistence, IPC, or native behavior changed. Native-only populated School, Notes, and Pulse layouts were not visually inspected because the browser preview does not expose them and an AppData override is not a proven isolated profile.
+- **Follow-up:** Inspect populated native School, Notes, and Pulse layouts in an owner-controlled disposable desktop profile when available.
+
 ## 2026-09-27 — `FINAL-RELEASE-PASS-001` — Integrated release candidate validated
 
 - **Type:** Fix, security, test, release, UX, and docs

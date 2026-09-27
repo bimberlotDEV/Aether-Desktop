@@ -25,6 +25,7 @@ import {
   Page,
   PageHeader,
   SectionLabel,
+  Skeleton,
   StatusDot,
   Surface,
 } from '@/components/ui/AetherUI'
@@ -92,9 +93,16 @@ export function Pulse() {
           </div>
         </Surface>
       ) : loading ? (
-        <Surface className="aether-pulse-status" role="status" aria-live="polite">
+        <Surface
+          className="aether-pulse-status aether-pulse-loading"
+          role="status"
+          aria-live="polite"
+        >
           <Clock3 size={18} aria-hidden="true" />
-          <p>Building today’s local snapshot…</p>
+          <div className="aether-pulse-loading-copy">
+            <p>Building today’s local snapshot…</p>
+            <Skeleton className="aether-pulse-loading-line" />
+          </div>
         </Surface>
       ) : error ? (
         <Surface className="aether-pulse-status" role="alert">
@@ -119,7 +127,13 @@ export function Pulse() {
   )
 }
 
-function PulseContent({ data, onOpen }: { data: PulseSnapshot; onOpen: (path: string) => void }) {
+function PulseContent({
+  data,
+  onOpen,
+}: {
+  data: PulseSnapshot
+  onOpen: (path: string) => void
+}) {
   const hasAttention =
     data.now.length ||
     data.next ||
@@ -128,7 +142,7 @@ function PulseContent({ data, onOpen }: { data: PulseSnapshot; onOpen: (path: st
     data.continuity.length
 
   return (
-    <div className="space-y-5">
+    <div className="aether-pulse-content space-y-5">
       {data.issues.length ? (
         <Surface className="aether-pulse-status" role="status">
           <AlertTriangle size={17} aria-hidden="true" />
@@ -172,7 +186,7 @@ function PulseContent({ data, onOpen }: { data: PulseSnapshot; onOpen: (path: st
 
 function NowPanel({ events }: { events: PulseEvent[] }) {
   return (
-    <Surface className="aether-pulse-focus">
+    <Surface className="aether-pulse-focus" variant="highlighted">
       <SectionLabel meta={events.length > 1 ? `${events.length} overlapping` : 'Current'}>
         Now
       </SectionLabel>
@@ -193,7 +207,11 @@ function NextPanel({ event }: { event: PulseEvent | null }) {
   return (
     <Surface className="p-4">
       <SectionLabel meta="Next timed event">Next</SectionLabel>
-      {event ? <EventRow event={event} /> : <QuietState text="No timed event is coming up." />}
+      {event ? (
+        <EventRow event={event} />
+      ) : (
+        <QuietState text="No timed event is coming up." />
+      )}
     </Surface>
   )
 }
@@ -236,7 +254,13 @@ function UpcomingPanel({ events }: { events: PulseEvent[] }) {
   )
 }
 
-function EventRow({ event, showDate = false }: { event: PulseEvent; showDate?: boolean }) {
+function EventRow({
+  event,
+  showDate = false,
+}: {
+  event: PulseEvent
+  showDate?: boolean
+}) {
   const prefix = showDate ? `${eventDay(event)} · ` : ''
   return (
     <div className={`aether-pulse-row${event.cancelled ? ' opacity-60' : ''}`}>
@@ -253,10 +277,18 @@ function EventRow({ event, showDate = false }: { event: PulseEvent; showDate?: b
   )
 }
 
-function TasksPanel({ tasks, onOpen }: { tasks: PulseTask[]; onOpen: (path: string) => void }) {
+function TasksPanel({
+  tasks,
+  onOpen,
+}: {
+  tasks: PulseTask[]
+  onOpen: (path: string) => void
+}) {
   return (
     <Surface className="p-4">
-      <SectionLabel meta={tasks.length ? `${tasks.length} open` : 'Clear'}>Tasks</SectionLabel>
+      <SectionLabel meta={tasks.length ? `${tasks.length} open` : 'Clear'}>
+        Tasks
+      </SectionLabel>
       {tasks.length ? (
         <div className="aether-pulse-list">
           {tasks.map((task) => (
@@ -323,7 +355,9 @@ function ContinuityPanel({
 }) {
   return (
     <Surface className="p-4">
-      <SectionLabel meta={items.length ? `${items.length} recent` : 'Quiet'}>Continue</SectionLabel>
+      <SectionLabel meta={items.length ? `${items.length} recent` : 'Quiet'}>
+        Continue
+      </SectionLabel>
       {items.length ? (
         <div className="aether-pulse-list">
           {items.map((item) => (

@@ -1,6 +1,13 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { Layers } from 'lucide-react'
-import { Button, EmptyState, PageHeader } from '@/components/ui/AetherUI'
+import {
+  Button,
+  EmptyState,
+  PageHeader,
+  Skeleton,
+  StatusChip,
+  Surface,
+} from '@/components/ui/AetherUI'
 
 describe('Aether UI primitives', () => {
   it('keeps headings, actions, and empty-state controls semantic', () => {
@@ -35,5 +42,27 @@ describe('Aether UI primitives', () => {
 
     expect(onHeaderAction).toHaveBeenCalledOnce()
     expect(onEmptyAction).toHaveBeenCalledOnce()
+  })
+
+  it('exposes semantic surface, status, and loading variants', () => {
+    render(
+      <>
+        <Surface variant="glass" interactive data-testid="glass-panel">
+          Details
+        </Surface>
+        <StatusChip tone="warning">Sync delayed</StatusChip>
+        <Skeleton className="test-skeleton" />
+      </>,
+    )
+
+    expect(screen.getByTestId('glass-panel')).toHaveClass(
+      'aether-surface--glass',
+      'aether-surface--interactive',
+    )
+    expect(screen.getByText('Sync delayed')).toHaveClass('aether-status-chip--warning')
+    expect(document.querySelector('.test-skeleton')).toHaveAttribute(
+      'aria-hidden',
+      'true',
+    )
   })
 })

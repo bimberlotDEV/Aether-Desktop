@@ -23,7 +23,7 @@ import {
   type ConnectionStatusTone,
 } from '@/lib/integrations/presentation'
 import type { IcsValidation, Integration } from '@/lib/db/types'
-import { EmptyState, SectionLabel, Surface } from '@/components/ui/AetherUI'
+import { EmptyState, SectionLabel, StatusChip, Surface } from '@/components/ui/AetherUI'
 
 export function ConnectionsSettings() {
   const connections = useConnections()
@@ -418,18 +418,7 @@ function CapabilityList({
 }
 
 function StatusBadge({ label, tone }: { label: string; tone: ConnectionStatusTone }) {
-  const color = {
-    success: 'var(--color-success)',
-    accent: 'var(--color-accent)',
-    warning: 'var(--color-warning)',
-    danger: 'var(--color-danger)',
-    quiet: 'var(--color-text-tertiary)',
-  }[tone]
-  return (
-    <span className="aether-badge" style={{ color, borderColor: color }}>
-      {label}
-    </span>
-  )
+  return <StatusChip tone={tone === 'quiet' ? 'neutral' : tone}>{label}</StatusChip>
 }
 
 function ProviderCatalog({
