@@ -7,7 +7,7 @@
 | Field                   | Value                              |
 | ----------------------- | ---------------------------------- |
 | Schema version          | 2                                  |
-| Last updated            | 2026-09-26                         |
+| Last updated            | 2026-09-27                         |
 | Updated by              | Codex                              |
 | Repository              | `bimberlotDEV/Aether-Desktop`      |
 | Product maturity        | Alpha                              |
@@ -81,7 +81,7 @@ The current verified product foundation includes:
 * Safe Actions;
 * DeepSeek/OpenAI provider support;
 * provider-neutral deterministic Local only / Cloud only / Automatic AI routing with native privacy settings and content-free route provenance;
-* a closed native read-only AI tool registry for bounded authorized Calendar and local Task projections, not yet connected to model execution;
+* a bounded Rust-owned AI tool coordinator that connects the closed native read-only Calendar/Task registry to capable DeepSeek/OpenAI models with immutable routing, native authorization, explicit cloud disclosure approval, cancellation, and payload-free provenance;
 * persisted AI conversations;
 * approved AI Task/Note proposals;
 * Windows tray lifecycle;
@@ -115,14 +115,15 @@ There is no requirement for a cloud account to use the core product.
 
 # Current milestone state
 
-`AI-NATIVE-TOOLS-001`, `PULSE-003`, `AI-ROUTER-001`, and `SCHOOL-BSP-REMOVE-001` are verified. Pulse now
+`AI-TOOL-ROUTER-001`, `AI-NATIVE-TOOLS-001`, `PULSE-003`, `AI-ROUTER-001`, and `SCHOOL-BSP-REMOVE-001` are verified. Pulse now
 composes minimized authorized Calendar/School projections, due Tasks, conflicts,
 Continuity, and native-owned freshness through one local read command. DeepSeek and OpenAI share
 a provider-neutral backend contract with Rust-owned deterministic routing, privacy,
 settings, budgets, and provenance. The native tool foundation registers exactly
 four strict read-only Calendar/Task tools with native scope, Sensitive minimized
-results, and hard query/serialization bounds; the model/router execution loop
-remains intentionally absent. The calendar-only Brightspace connector is
+results, and hard query/serialization bounds. A bounded native coordinator now
+connects eligible models to those tools without route switching, frontend-owned
+scope, write capability, or unapproved cloud disclosure. The calendar-only Brightspace connector is
 retired; MyTimetable remains the sole School timetable authority, while generic
 CAL-ICS, subscribed-calendar, credential, Integration Sync, ExternalEvent, Calendar
 Core, and School source infrastructure remain intact. Legacy Brightspace rows remain
@@ -201,6 +202,7 @@ native secret and dependent cached data.
 | `PULSE-003`          | Connected Pulse snapshot              | `complete` | One bounded native snapshot presents Now, Next, Today, Upcoming, due Tasks, conflicts, Continuity, and truthful source trust without provider fetching, inferred deadlines, or broadened School scope. |
 | `REPO-HEALTH-032`    | Repository health and cleanup audit   | `complete` | Dead IPC/read-model code and an unused dependency are removed; active Integration/School/Pulse boundaries are minimized and fail closed; migrations, dependencies, docs, and full validation are verified. |
 | `AI-NATIVE-TOOLS-001` | Native read-only AI tool foundation  | `complete` | Four closed Calendar/Task tools enforce strict schemas, native School/Task scope, bounded minimized Sensitive results, and sanitized errors without adding model execution or write capability. |
+| `AI-TOOL-ROUTER-001` | Tool-enabled AI Router integration | `complete` | Eligible DeepSeek/OpenAI turns use one bounded native coordinator with immutable routing, strict scope validation, explicit one-time Sensitive-result disclosure, cancellation, and payload-free provenance. |
 
 ---
 
@@ -212,7 +214,7 @@ Current repository product version:
 0.5.0
 ```
 
-Current verified repository quality snapshot includes AI-NATIVE-TOOLS-001 over the completed REPO-HEALTH-032/PULSE-003/AI-ROUTER-001 baseline on 0.5.0. Native AI tools remain internal, read-only, bounded, and disconnected from model execution; active IPC is caller-backed and presentation-minimized, and Brightspace remains retired.
+Current verified repository quality snapshot includes AI-TOOL-ROUTER-001 over the completed AI-NATIVE-TOOLS-001/REPO-HEALTH-032/PULSE-003/AI-ROUTER-001 baseline on 0.5.0. Native AI tools remain read-only, bounded, Rust-authorized, and presentation-minimized; capable cloud models receive only scoped descriptors and approved serialized results, and Brightspace remains retired.
 
 The product remains Alpha.
 
@@ -239,16 +241,16 @@ Public Beta is not considered complete until the external evidence requirements 
 
 | Check                                       | Last verified result | Verified date | Notes                                                                           |
 | ------------------------------------------- | -------------------- | ------------- | ------------------------------------------------------------------------------- |
-| `pnpm check`                                | Pass                 | 2026-09-26    | Equivalent gates pass: typecheck, lint, and 139/139 frontend tests across 37 files. |
-| `pnpm typecheck`                            | Pass                 | 2026-09-26    | Strict frontend and IPC contracts compile cleanly.                              |
-| `pnpm lint`                                 | Pass                 | 2026-09-26    | Frontend lint remains clean.                                                     |
-| `pnpm test`                                 | Pass                 | 2026-09-26    | 139/139 frontend tests across 37 files pass.                                    |
-| `pnpm build`                                | Pass                 | 2026-09-26    | Alpha 0.5.0 production frontend build passes.                                   |
+| `pnpm check`                                | Pass                 | 2026-09-27    | Equivalent gates pass: typecheck, lint, and 141/141 frontend tests across 37 files. |
+| `pnpm typecheck`                            | Pass                 | 2026-09-27    | Strict frontend and IPC contracts compile cleanly.                              |
+| `pnpm lint`                                 | Pass                 | 2026-09-27    | Frontend lint remains clean.                                                     |
+| `pnpm test`                                 | Pass                 | 2026-09-27    | 141/141 frontend tests across 37 files pass.                                    |
+| `pnpm build`                                | Pass                 | 2026-09-27    | Alpha 0.5.0 production frontend build passes.                                   |
 | `pnpm audit --audit-level moderate`         | Pass                 | 2026-09-26    | No known vulnerabilities after the Vitest 4.1.11 security patch.                |
-| `cargo test`                                | Pass                 | 2026-09-26    | 235/235 Rust tests pass, including 10 native-tool registry/scope/projection/privacy/bound tests plus Pulse, School, MyTimetable, AI Router, and Calendar regressions. |
+| `cargo test`                                | Pass                 | 2026-09-27    | 247/247 Rust tests pass, including coordinator, adapter, disclosure, cancellation, provenance, native-tool, Pulse, School, MyTimetable, and Calendar regressions. |
 | `cargo build --release`                     | Pass                 | 2026-08-29    | Optimized Aether 0.5.0 Windows executable builds and starts.                    |
-| `cargo fmt --check`                         | Pass                 | 2026-09-26    | Rust formatting clean.                                                          |
-| `cargo clippy --all-targets -- -D warnings` | Pass                 | 2026-09-26    | Relevant targets/features warning-free.                                         |
+| `cargo fmt --check`                         | Pass                 | 2026-09-27    | Rust formatting clean.                                                          |
+| `cargo clippy --all-targets -- -D warnings` | Pass                 | 2026-09-27    | Relevant targets/features warning-free.                                         |
 | `pnpm tauri:build`                          | Pass                 | 2026-08-29    | Aether 0.5.0 x64 MSI and NSIS bundles build successfully.                       |
 | GitHub Actions                              | Pass                 | 2026-08-29    | Frontend quality/build and Rust validation pass on the recorded readiness head. |
 | Release startup smoke                       | Pass                 | 2026-08-29    | Optimized Aether 0.5.0 starts and exposes a responsive native window.           |

@@ -126,6 +126,7 @@ SQLite / native capabilities / external providers
 | `ADR-031` | Bind each parent School Space to explicit Integration connection IDs and scope MyTimetable group selection and timetable reads per bound source. | Accepted | `docs/decisions/031-school-source-scoping.md` |
 | `ADR-032` | Route AI through a closed provider-neutral backend contract with native locality, deterministic Local/Cloud/Automatic policy, separate disclosure authority, and content-free provenance. | Accepted | `docs/decisions/032-ai-router-phase-1.md` |
 | `ADR-033` | Expose AI-readable local data only through a closed Rust tool registry with typed native scope, strict schemas, minimized Sensitive projections, and hard execution/result bounds. | Accepted | `docs/decisions/033-native-read-only-ai-tools.md` |
+| `ADR-034` | Coordinate tool-enabled AI turns in Rust with an immutable route, normalized provider contract, native scope/budgets, explicit cloud-result disclosure approval, and payload-free provenance. | Accepted | `docs/decisions/034-tool-enabled-ai-router.md` |
 ## Architecture change protocol
 
 1. Codex records the problem, constraints, options, and decision ID.

@@ -3,7 +3,8 @@ use tokio_util::sync::CancellationToken;
 
 use super::{
     capabilities::{cloud_backend_descriptors, BackendDescriptor, ModelDescriptor},
-    provider::{self, ChatCompletionRequest, ProviderConfig, ProviderError},
+    model::{ModelTurnOutcome, ModelTurnRequest},
+    provider::{self, ProviderConfig, ProviderError},
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -18,10 +19,10 @@ pub trait ModelBackend: Send + Sync {
     async fn discover_models(&self) -> Result<Vec<ModelDescriptor>, ProviderError>;
     async fn stream_turn(
         &self,
-        request: &ChatCompletionRequest,
+        request: &ModelTurnRequest,
         cancellation: CancellationToken,
         on_delta: &(dyn Fn(String) -> Result<(), String> + Send + Sync),
-    ) -> Result<(), ProviderError>;
+    ) -> Result<ModelTurnOutcome, ProviderError>;
 }
 
 struct CloudBackendAdapter {
@@ -46,10 +47,10 @@ impl ModelBackend for CloudBackendAdapter {
 
     async fn stream_turn(
         &self,
-        request: &ChatCompletionRequest,
+        request: &ModelTurnRequest,
         cancellation: CancellationToken,
         on_delta: &(dyn Fn(String) -> Result<(), String> + Send + Sync),
-    ) -> Result<(), ProviderError> {
+    ) -> Result<ModelTurnOutcome, ProviderError> {
         self.provider
             .stream_chat(request, cancellation, on_delta)
             .await

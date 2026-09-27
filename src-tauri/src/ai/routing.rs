@@ -628,6 +628,26 @@ mod tests {
     }
 
     #[test]
+    fn tool_required_route_selects_only_registered_tool_capability() {
+        let mut value = request(RoutingMode::CloudOnly);
+        value.task_profile.requires_tools = true;
+        value.capability_requirements.tool_calling = ToolCallingSupport::Single;
+        let without_tools = candidate("deepseek", "no-tools", ExecutionLocation::Cloud);
+        let mut with_tools = candidate("openai", "gpt-5-mini", ExecutionLocation::Cloud);
+        with_tools.capabilities.tool_calling = ToolCallingSupport::Parallel;
+        value.preferences.preferred_cloud_provider = Some("deepseek".into());
+        value.preferences.preferred_cloud_model = Some("no-tools".into());
+        let selected = select_route(
+            &value,
+            &[without_tools, with_tools],
+            CloudDisclosurePolicy::AskForAetherData,
+        )
+        .unwrap();
+        assert_eq!(selected.backend_id, "openai");
+        assert_eq!(selected.model_id, "gpt-5-mini");
+    }
+
+    #[test]
     fn cloud_only_prefers_configured_model_and_automatic_is_local_first() {
         let candidates = [
             candidate("deepseek", "flash", ExecutionLocation::Cloud),

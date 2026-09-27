@@ -26,6 +26,18 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-09-27 — `AI-TOOL-ROUTER-001` — Bounded tool-enabled AI Router
+
+- **Type:** Feature, architecture, security, privacy, UX, test, and docs
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review
+- **Summary:** Connected eligible DeepSeek/OpenAI turns to the closed native Calendar/Task read-tool registry through one Rust-owned coordinator. One immutable route now covers normalized streamed tool requests, strict native scope validation, deterministic serial reads, explicit one-time Sensitive-result disclosure, cancellation, hard round/call/byte budgets, and payload-free provenance.
+- **Files:** `src-tauri/src/ai/`, focused AI command/runtime wiring, strict AI IPC/hooks/view approval flow, ADR-034, architecture documentation, and `.ai/*` control records.
+- **Verification:** Focused coordinator/provider/disclosure/native-tool and frontend AI/IPC tests; full `cargo test` (247/247) and `pnpm test` (141/141 across 37 files); typecheck, lint, production build, Rust formatting, strict Clippy, and diff check — Pass.
+- **Decisions/deviations:** No migration, dependency, write tool, provider fetch, route failover, or academic inference was added. Parallel provider requests are validated together and executed serially. Sensitive serialized results remain native until an exact one-time disclosure is approved.
+- **Follow-up:** `ACTION-CAL-001` remains separate `needs_design` Safe Actions work. No academic tool is authorized without a normalized Deadline domain.
+- **Publication:** Pending guarded task publication.
+
 ## 2026-09-26 — `AI-NATIVE-TOOLS-001` — Closed native read-only AI tool foundation
 
 - **Type:** Feature, architecture, security, privacy, test, and docs

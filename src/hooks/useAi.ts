@@ -178,6 +178,18 @@ export function useAiConversation(conversationId: string | null) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [activeRequestId, setActiveRequestId] = useState<string | null>(null)
+  const [activity, setActivity] = useState<{
+    phase: string
+    label: string
+  } | null>(null)
+  const [disclosure, setDisclosure] = useState<{
+    requestId: string
+    provider: 'deepseek' | 'openai'
+    model: string
+    categories: ('calendar' | 'tasks')[]
+    itemCount: number
+    reason: string
+  } | null>(null)
   const activeAssistantId = useRef<string | null>(null)
   const activeRequestIdRef = useRef<string | null>(null)
   const messageRevision = useRef(0)
@@ -244,6 +256,8 @@ export function useAiConversation(conversationId: string | null) {
       activeRequestIdRef.current = id
       messageRevision.current += 1
       setActiveRequestId(id)
+      setActivity(null)
+      setDisclosure(null)
       setError(null)
       if (optimisticUserMessageId) {
         const now = new Date().toISOString()
@@ -297,6 +311,14 @@ export function useAiConversation(conversationId: string | null) {
                     : message,
                 ),
               )
+            } else if (event.event === 'status') {
+              setActivity({ phase: event.data.phase, label: event.data.label })
+            } else if (event.event === 'awaiting_disclosure_approval') {
+              setDisclosure(event.data)
+              setActivity({
+                phase: 'awaiting_disclosure_approval',
+                label: 'Waiting for permission to share local context…',
+              })
             } else {
               const terminal =
                 event.event === 'failed'
@@ -304,6 +326,8 @@ export function useAiConversation(conversationId: string | null) {
                   : event.data.message
               setMessages((current) => upsertMessage(current, terminal))
               activeAssistantId.current = null
+              setActivity(null)
+              setDisclosure(null)
               if (event.event === 'failed') setError(event.data.message)
             }
           },
@@ -334,7 +358,17 @@ export function useAiConversation(conversationId: string | null) {
 
   const cancel = useCallback(async () => {
     if (activeRequestId) await db.cancelAiRequest(activeRequestId)
+    setDisclosure(null)
   }, [activeRequestId])
+
+  const approveDisclosure = useCallback(async () => {
+    if (!disclosure) return
+    const approved = await db.approveAiToolDisclosure(disclosure.requestId)
+    if (approved) {
+      setDisclosure(null)
+      setActivity({ phase: 'generating_after_tool', label: 'Continuing generation…' })
+    }
+  }, [disclosure])
 
   const attach = useCallback(
     async (entityType: 'note' | 'task' | 'vault' | 'memory', entityId: string) => {
@@ -359,9 +393,12 @@ export function useAiConversation(conversationId: string | null) {
     loading,
     error,
     streaming: activeRequestId !== null,
+    activity,
+    disclosure,
     load,
     send,
     cancel,
+    approveDisclosure,
     attach,
     detach,
     isTauri,

@@ -12,6 +12,8 @@ const mocks = vi.hoisted(() => {
     listAiContext: vi.fn(),
     resolveAiContext: vi.fn(),
     streamAiMessage: vi.fn(),
+    approveAiToolDisclosure: vi.fn(),
+    cancelAiRequest: vi.fn(),
   }
 })
 
@@ -54,6 +56,8 @@ describe('useAiConversation sending', () => {
     mocks.listAiMessages.mockResolvedValue([])
     mocks.listAiContext.mockResolvedValue([])
     mocks.resolveAiContext.mockResolvedValue([])
+    mocks.approveAiToolDisclosure.mockResolvedValue(true)
+    mocks.cancelAiRequest.mockResolvedValue(true)
     mocks.streamAiMessage.mockImplementation(
       async (
         _requestId: string,
@@ -196,5 +200,47 @@ describe('useAiConversation sending', () => {
     })
 
     expect(hook.result.current.messages).toEqual([assistantMessage])
+  })
+
+  it('surfaces friendly tool activity and requires explicit one-time disclosure approval', async () => {
+    const hook = renderHook(() => useAiConversation('conversation-1'))
+    await waitFor(() => expect(hook.result.current.loading).toBe(false))
+
+    act(() => {
+      void hook.result.current.send('What tasks are due soon?')
+    })
+    act(() => {
+      onStreamEvent?.({
+        event: 'status',
+        data: {
+          phase: 'tool_running',
+          label: 'Checking your tasks…',
+          toolId: 'tasks.get_due',
+        },
+      })
+      onStreamEvent?.({
+        event: 'awaiting_disclosure_approval',
+        data: {
+          requestId: 'request-approval',
+          provider: 'openai',
+          model: 'gpt-5-mini',
+          categories: ['tasks'],
+          itemCount: 3,
+          reason: 'Use the requested local context to answer this message.',
+        },
+      })
+    })
+
+    expect(hook.result.current.disclosure).toEqual(
+      expect.objectContaining({ requestId: 'request-approval', itemCount: 3 }),
+    )
+    expect(hook.result.current.activity?.label).toMatch(/waiting for permission/i)
+
+    await act(async () => {
+      await hook.result.current.approveDisclosure()
+    })
+    expect(mocks.approveAiToolDisclosure).toHaveBeenCalledWith('request-approval')
+    expect(hook.result.current.disclosure).toBeNull()
+    expect(hook.result.current.activity?.label).toBe('Continuing generation…')
   })
 })

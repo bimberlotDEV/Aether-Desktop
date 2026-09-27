@@ -27,6 +27,7 @@ import {
   streamAiMessage,
   addAiContext,
   cancelAiRequest,
+  approveAiToolDisclosure,
   createMemory,
   listMemory,
   updateMemory,
@@ -444,6 +445,7 @@ describe('Tauri database boundary', () => {
     await createAiConversation({ spaceId: 'space-1', model: 'deepseek-v4-pro' })
     await streamAiMessage('request-1', 'conversation-1', 'Summarise this', onEvent)
     await cancelAiRequest('request-1')
+    await approveAiToolDisclosure('request-1')
     await addAiContext('conversation-1', 'note', 'note-1')
 
     expect(invoke).toHaveBeenNthCalledWith(1, 'ai_create_conversation', {
@@ -467,7 +469,10 @@ describe('Tauri database boundary', () => {
     expect(invoke).toHaveBeenNthCalledWith(3, 'ai_cancel_request', {
       requestId: 'request-1',
     })
-    expect(invoke).toHaveBeenNthCalledWith(4, 'ai_add_context', {
+    expect(invoke).toHaveBeenNthCalledWith(4, 'ai_approve_tool_disclosure', {
+      requestId: 'request-1',
+    })
+    expect(invoke).toHaveBeenNthCalledWith(5, 'ai_add_context', {
       conversationId: 'conversation-1',
       entityType: 'note',
       entityId: 'note-1',

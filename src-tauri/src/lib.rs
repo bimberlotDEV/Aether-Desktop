@@ -20,6 +20,7 @@ use tauri::Manager;
 
 use crate::actions::ActionRuntime;
 use crate::ai::credentials::DpapiCrypto;
+use crate::ai::privacy::DisclosureWaitRuntime;
 use crate::ai::runtime::AiRuntime;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -95,6 +96,7 @@ pub fn run() {
             // Store database in Tauri state
             app.manage(database);
             app.manage(AiRuntime::default());
+            app.manage(DisclosureWaitRuntime::default());
             app.manage(ActionRuntime::default());
             app.manage(backup::RestoreRuntime::default());
             app.manage(updater::UpdateRuntime::new(updater_configured));
@@ -211,6 +213,7 @@ pub fn run() {
             commands::ai_list_messages,
             commands::ai_stream_message,
             commands::ai_cancel_request,
+            commands::ai_approve_tool_disclosure,
             commands::ai_add_context,
             commands::ai_list_context,
             commands::ai_remove_context,

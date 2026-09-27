@@ -132,6 +132,7 @@ fn default_true() -> bool {
     true
 }
 
+#[cfg(test)]
 pub fn execute_native_ai_tool_named(
     conn: &Connection,
     public_name: &str,
@@ -150,9 +151,7 @@ pub fn execute_native_ai_tool(
     scope: &ToolScope,
     context: ToolExecutionContext,
 ) -> Result<NativeToolResult, ToolError> {
-    if !scope.permits(tool_id) {
-        return Err(ToolError::unauthorized_scope());
-    }
+    validate_native_ai_tool_request(tool_id, &arguments, scope, context)?;
     let output = match tool_id {
         NativeToolId::CalendarGetEvents => calendar_get_events(conn, arguments, scope)?,
         NativeToolId::CalendarGetNextEvent => {
@@ -173,6 +172,79 @@ pub fn execute_native_ai_tool(
         return Err(ToolError::result_too_large());
     }
     Ok(result)
+}
+
+pub fn validate_native_ai_tool_request(
+    tool_id: NativeToolId,
+    arguments: &Value,
+    scope: &ToolScope,
+    context: ToolExecutionContext,
+) -> Result<(), ToolError> {
+    if !scope.permits(tool_id) {
+        return Err(ToolError::unauthorized_scope());
+    }
+    match tool_id {
+        NativeToolId::CalendarGetEvents => {
+            let arguments: CalendarGetEventsArguments = parse(arguments.clone())?;
+            let start_at = instant(&arguments.start_at)?;
+            let end_at = instant(&arguments.end_at)?;
+            validate_instant_window(start_at, end_at)?;
+            let start_date = date(&arguments.start_date)?;
+            let end_date = date(&arguments.end_date)?;
+            validate_date_window(start_date, end_date)?;
+            let grant = scope.calendar_grant()?;
+            if start_at < grant.start_at()
+                || end_at > grant.end_at()
+                || start_date < grant.start_date()
+                || end_date > grant.end_date()
+            {
+                return Err(ToolError::unauthorized_scope());
+            }
+            limit(arguments.limit, grant.max_results())?;
+        }
+        NativeToolId::CalendarGetNextEvent => {
+            let _: EmptyArguments = parse(arguments.clone())?;
+            scope.calendar_grant()?;
+        }
+        NativeToolId::TasksGetDue => {
+            let arguments: TasksGetDueArguments = parse(arguments.clone())?;
+            let (start, end) = match (
+                arguments.start_date.as_deref(),
+                arguments.end_date.as_deref(),
+            ) {
+                (Some(start), Some(end)) => (date(start)?, date(end)?),
+                (None, None) => (
+                    context.local_date,
+                    context
+                        .local_date
+                        .checked_add_days(Days::new(7))
+                        .ok_or_else(ToolError::invalid_arguments)?,
+                ),
+                _ => return Err(ToolError::invalid_arguments()),
+            };
+            validate_date_window(start, end)?;
+            let grant = scope.tasks_grant()?;
+            let (scope_start, scope_end) = grant
+                .due_window()
+                .ok_or_else(ToolError::unauthorized_scope)?;
+            if start < scope_start
+                || end > scope_end
+                || (arguments.include_overdue && !grant.allow_overdue())
+            {
+                return Err(ToolError::unauthorized_scope());
+            }
+            limit(arguments.limit, grant.max_results())?;
+        }
+        NativeToolId::TasksGetOpen => {
+            let arguments: TasksGetOpenArguments = parse(arguments.clone())?;
+            let grant = scope.tasks_grant()?;
+            if !grant.allow_open() {
+                return Err(ToolError::unauthorized_scope());
+            }
+            limit(arguments.limit, grant.max_results())?;
+        }
+    }
+    Ok(())
 }
 
 fn calendar_get_events(
