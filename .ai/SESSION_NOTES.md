@@ -6,7 +6,7 @@
 | Session date   | 2026-09-27                    |
 | Active task    | `AI-TOOL-ROUTER-001`          |
 | Agent          | Codex                         |
-| State          | complete; publication pending |
+| State          | complete; draft PR open       |
 
 ## Current work
 
@@ -17,7 +17,7 @@ cloud-result disclosure, cancellation, and payload-free provenance.
 
 ## Exact resume point
 
-Implementation and self-review are complete. Full validation passes: 247 Rust
-tests, 141 frontend tests across 37 files, typecheck, lint, production build,
-Rust formatting, strict Clippy, and diff check. Publish the task branch through
-`scripts/publish-task.ps1`, record the draft PR, then stop.
+Implementation, validation, self-review, and publication are complete. Commit
+`a99c61d` is pushed to `origin/agent/ai-tool-router`, and draft PR #69 is open.
+Stop here; write tools, academic inference, and release validation remain outside
+this task.

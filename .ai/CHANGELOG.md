@@ -36,7 +36,7 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Verification:** Focused coordinator/provider/disclosure/native-tool and frontend AI/IPC tests; full `cargo test` (247/247) and `pnpm test` (141/141 across 37 files); typecheck, lint, production build, Rust formatting, strict Clippy, and diff check — Pass.
 - **Decisions/deviations:** No migration, dependency, write tool, provider fetch, route failover, or academic inference was added. Parallel provider requests are validated together and executed serially. Sensitive serialized results remain native until an exact one-time disclosure is approved.
 - **Follow-up:** `ACTION-CAL-001` remains separate `needs_design` Safe Actions work. No academic tool is authorized without a normalized Deadline domain.
-- **Publication:** Pending guarded task publication.
+- **Publication:** Implementation commit `a99c61d` is pushed to `origin/agent/ai-tool-router`; draft PR [#69](https://github.com/bimberlotDEV/Aether-Desktop/pull/69) is open.
 
 ## 2026-09-26 — `AI-NATIVE-TOOLS-001` — Closed native read-only AI tool foundation
 

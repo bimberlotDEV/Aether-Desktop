@@ -33,7 +33,7 @@ remain authoritative.
 - [x] Streaming emits typed friendly tool/approval states and cancellation covers generation, tools, approval wait, and resumed generation.
 - [x] Bounded provenance records tool IDs/counts/rounds/classes/sizes/approval/failure phase without tool bodies or provider wire JSON.
 - [x] No write tool, academic deadline inference, provider fetch, arbitrary SQL/path/scope, migration, or provider switch is introduced.
-- [ ] Required focused/full validation and self-review pass; commit, push, and draft PR remain as publication steps.
+- [x] Required focused/full validation, self-review, commit, push, and draft PR complete successfully.
 
 ## In scope / allowed paths
 
@@ -136,3 +136,6 @@ Do not begin release validation or write-tool work.
 - Self-review found no route switching, write path, arbitrary SQL/path/scope,
   deadline inference, provider fetch, payload persistence, migration, dependency,
   or unrelated source change.
+- Publication: implementation commit `a99c61d` is pushed to
+  `origin/agent/ai-tool-router`; draft PR
+  [#69](https://github.com/bimberlotDEV/Aether-Desktop/pull/69) is open.
