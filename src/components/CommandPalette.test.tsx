@@ -60,6 +60,14 @@ describe('Universal Search palette', () => {
     expect(mocks.universalSearch).not.toHaveBeenCalled()
   })
 
+  it('describes AI navigation without claiming a specific provider', () => {
+    useCommandStore.setState({ query: 'Open AI' })
+    render(<CommandPalette />)
+
+    expect(screen.getByText('Start or continue an AI conversation')).toBeInTheDocument()
+    expect(screen.queryByText(/DeepSeek conversation/)).not.toBeInTheDocument()
+  })
+
   it('debounces desktop search, shows provenance, and opens a specific domain', async () => {
     Object.defineProperty(window, '__TAURI_INTERNALS__', {
       value: {},

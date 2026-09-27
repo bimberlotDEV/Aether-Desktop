@@ -4,6 +4,8 @@ All notable product changes are recorded here.
 
 ## Unreleased — Public beta readiness
 
+- Patched the locked Rust TLS stack for RUSTSEC-2026-0285 and completed the integrated 0.5.0 release-readiness validation across migrations, persistence, connected School/Calendar/Pulse behavior, AI privacy/tool bounds, Windows packaging, and dependency audits.
+- Made Universal Search provider-neutral now that both DeepSeek and OpenAI are supported.
 - Added a Rust-owned sanitized diagnostic report that exposes only version, schema, integrity, generic platform and native-capability state; users inspect it before copying and Aether never uploads it.
 - Added privacy-safe beta issue forms, an external Windows test matrix, severity/rollback guidance, known limitations and a manual evidence template for activation and retention signals.
 - Reconciled security and release documentation with the current 0.5.0 backup, AI, signing and updater architecture.
