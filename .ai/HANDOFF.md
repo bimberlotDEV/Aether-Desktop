@@ -139,3 +139,20 @@ Do not begin release validation or write-tool work.
 - Publication: implementation commit `a99c61d` is pushed to
   `origin/agent/ai-tool-router`; draft PR
   [#69](https://github.com/bimberlotDEV/Aether-Desktop/pull/69) is open.
+
+## Owner desktop smoke checklist
+
+Not run by Codex because it requires the owner's live provider credentials and
+interactive desktop confirmation. After installing or starting the branch build:
+
+1. Start Aether with a valid configured cloud provider.
+2. Ask a question requiring no tools and confirm ordinary streaming completes.
+3. Ask, “What is my next calendar event?” in an authorized parent School Space.
+4. Confirm the compact calendar-checking state appears.
+5. Confirm the disclosure approval appears before local calendar data is sent.
+6. Select **Approve once** and confirm the answer uses the correct authorized event.
+7. Ask, “What tasks are due soon?” and confirm bounded local Task use.
+8. Cancel a tool-enabled turn and confirm no later result or continuation appears.
+9. Restart Aether and confirm ordinary AI chat still works.
+10. Confirm the advertised registry contains no write tools.
+11. Confirm the model does not fabricate academic deadlines from event text.
