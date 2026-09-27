@@ -58,6 +58,7 @@ function NavGroup({ label, items }: { label: string; items: NavItem[] }) {
           <NavLink
             key={item.to}
             to={item.to}
+            aria-label={item.label}
             end={item.to === '/'}
             className={({ isActive }) =>
               cn('aether-nav-item focus-ring', isActive && 'aether-nav-item--active')
@@ -94,7 +95,11 @@ export function Sidebar() {
         </div>
       </div>
 
-      <button className="aether-command-trigger focus-ring" onClick={openCommandPalette}>
+      <button
+        className="aether-command-trigger focus-ring"
+        aria-label="Search Aether"
+        onClick={openCommandPalette}
+      >
         <Search size={14} strokeWidth={1.8} aria-hidden="true" />
         <span>Search Aether</span>
         <kbd>
@@ -110,6 +115,7 @@ export function Sidebar() {
       <div className="aether-sidebar-footer">
         <NavLink
           to="/settings"
+          aria-label="Settings"
           className={({ isActive }) =>
             cn('aether-nav-item focus-ring', isActive && 'aether-nav-item--active')
           }

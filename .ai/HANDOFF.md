@@ -1,5 +1,50 @@
 # Codex Task Contract
 
+## Active contract — VISUAL-SYSTEM-2
+
+| Field | Value |
+| --- | --- |
+| Task ID | `VISUAL-SYSTEM-2` |
+| Status | `self_review` |
+| Owner | Codex, one sequential implementation owner |
+| Classification | `planned_codex` |
+| Branch | `agent/visual-system-2` |
+| Date | 2026-09-27 |
+
+### Bounded goal and success
+
+Modernize the existing React interface into one premium, accessible light/dark visual system. Centralize semantic color, surface, depth, radius, blur, and motion tokens; evolve existing shared primitives; update shell/navigation, Pulse, and remaining major routes without changing domain behavior. Completion requires the pasted VISUAL-SYSTEM-2 visual criteria, a manual audit of its named surfaces/states and small windows, all named frontend and Rust gates, self-review, records, a pushed commit, and an open draft PR.
+
+### Scope and ownership
+
+- In scope: `src/styles/index.css`, visual-only React markup/classes in `src/components/**` and `src/routes/**`, focused presentation tests, ADR-015/current UI architecture text, and current `.ai` records.
+- Out of scope: persistence, IPC contracts, native services, new data/feature domains, integrations, AI behavior, migrations, and release publication or merge.
+- Preserve route semantics, keyboard interaction, source scoping, Pulse data, Safe Actions approval, and existing dark/light/system theme switching. Add no dependency unless unavoidable.
+- One owner edits shared CSS, shell, and primitives sequentially. No overlapping parallel work is authorized.
+
+### Design decision and risks
+
+The owner's new visual direction explicitly supersedes ADR-015's ban on gradients and glass. Amend ADR-015 to allow restrained ambient gradients and tiered glass while retaining its semantic primitives, readability, performance, and reduced-motion rules. Main risks are low contrast, nested blur cost, uneven route migration, small-window overflow, and unintended behavior changes. Use opaque contrast backing where text demands it, limit backdrop blur to high-value layers, and inspect the final diff for behavior drift.
+
+### Required validation and rollback
+
+Run focused frontend tests, full frontend and Rust suites, `pnpm typecheck`, `pnpm lint`, `pnpm build`, Rust format and Clippy checks, and `git diff --check`. Visually audit Pulse, Settings/Connections, School, Tasks, Notes, Search, AI, Vault, Sources, Memory, Activity, dialogs, loading/empty/error, light/dark, and a smaller desktop viewport. Changes are presentation-only and revertible by task commit; no data migration is needed.
+
+### Readiness and stop condition
+
+The owner supplied the detailed visual brief. `AGENTS.md`, `WORKFLOW.md`, current project state, architecture, ADR-015, and existing UI primitives were inspected. The branch is clean at the current baseline. The architecture conflict is resolved by the explicit owner direction and will be documented. Goal, scope, validation, risks, and rollback are defined; the task is ready for production edits. Stop when acceptance evidence and records are complete and a draft PR is open.
+
+### Verification and self-review evidence
+
+- Focused frontend tests: 26 passed across UI primitives, Pulse, Connections, School, and confirmation dialogs. Full frontend: 144 passed across 38 files. Full Rust: 247 passed.
+- `pnpm typecheck`, `pnpm lint`, `pnpm build`, Rust format check, strict Clippy, and `git diff --check` pass. No dependency or native code changes.
+- Dark/light browser preview and narrow/1280×800 audits covered Pulse, Settings, Connections, Tasks, Vault, AI, Sources, Memory, Activity, Spaces, Search, and a Space creation dialog. A narrow Memory search/filter squeeze was corrected. The browser preview cannot display native-only populated Pulse, School, or Notes content; existing focused tests cover those contracts, while native visual inspection remains a known limit.
+- Final diff review: presentation tokens and components, one School token reference correction, accessibility labels, responsive layout, tests, ADR-015 and current records only. No route, IPC, persistence, AI, sync, approval, or domain behavior changed. Glass blur is limited to shell navigation, overlays, and explicitly selected surfaces; skeleton animation honors reduced motion.
+
+---
+
+## Previous completed contract — FINAL-RELEASE-PASS-001
+
 ## Contract metadata
 
 | Field             | Value                                                   |

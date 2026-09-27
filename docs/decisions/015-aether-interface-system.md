@@ -1,5 +1,7 @@
 # ADR-015 — Aether interface system
 
+> **2026-09-27 VISUAL-SYSTEM-2 amendment:** The owner explicitly approved a restrained spatial glass direction. The former blanket prohibition on gradients, glow, and glass is superseded by the controlled tiers below. This remains the same internal semantic interface system.
+
 - **Status:** Accepted
 - **Date:** 2026-08-25
 - **Decision owner:** Codex, following the product owner's explicit makeover direction
@@ -19,9 +21,9 @@ Aether's functional Alpha UI uses consistent neutral tokens but reads as a colle
 Choose option 3. Aether will use:
 
 - a persistent navigation rail with a compact brand mark, grouped destinations, a visible command-palette affordance, and quiet local-status footer;
-- one application canvas with semantic surface levels (`canvas`, `base`, `raised`, `strong`) rather than undifferentiated black or white;
+- one application canvas with semantic surface levels (`canvas`, `base`, `raised`, `strong`, `glass`, `glass-strong`) rather than undifferentiated black or white;
 - consistent page headers, action hierarchy, fields, filters, panels, empty states, badges, and icon frames implemented as shared React primitives and semantic CSS tokens;
-- restrained indigo as the primary accent and cool cyan only as a secondary signal, never as a decorative gradient or glow;
+- restrained indigo as the primary accent and cool cyan only as a secondary signal; low-contrast ambient gradients and a subtle accent glow may communicate depth;
 - subtle borders, inset highlights, typography, alignment, and short easing-driven transitions for depth and responsiveness;
 - route-specific composition that reflects the work being done instead of forcing every feature into dashboard cards;
 - responsive density that preserves desktop productivity down to 1024×640 and expands content intentionally on larger windows;
@@ -32,5 +34,6 @@ Choose option 3. Aether will use:
 - The redesign touches most frontend routes and components but does not alter domain contracts or persistence.
 - New interface work should reuse the semantic primitives before introducing route-local styling.
 - Lucide remains available, but icon size, weight, framing, and meaning are curated by the interface system.
-- Decorative gradients, glow, glass cards, fake activity, fake metrics, and dead actions remain prohibited even when described as “futuristic.”
+- Glass belongs on the sidebar, overlays, hero, and selected elevated surfaces; ordinary nested content stays opaque or near-opaque. Backdrop blur is limited to a few large layers, and all glass keeps readable text contrast.
+- Decorative neon, pervasive glow, animated background effects, fake activity, fake metrics, and dead actions remain prohibited.
 - Browser-mode empty and locally persisted preview flows remain the safe visual QA surface; final desktop smoke validates the Tauri composition.

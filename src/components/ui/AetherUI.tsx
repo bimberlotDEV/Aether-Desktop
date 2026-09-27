@@ -61,6 +61,7 @@ export function PageHeader({
 }
 
 type ButtonVariant = 'primary' | 'secondary' | 'quiet' | 'danger'
+type SurfaceVariant = 'standard' | 'elevated' | 'glass' | 'highlighted' | 'warning'
 
 export function Button({
   variant = 'secondary',
@@ -87,14 +88,17 @@ export function Surface({
   children,
   className,
   interactive = false,
+  variant = 'standard',
   ...props
 }: HTMLAttributes<HTMLDivElement> & {
   interactive?: boolean
+  variant?: SurfaceVariant
 }) {
   return (
     <div
       className={cn(
         'aether-surface',
+        variant !== 'standard' && `aether-surface--${variant}`,
         interactive && 'aether-surface--interactive',
         className,
       )}
@@ -103,6 +107,24 @@ export function Surface({
       {children}
     </div>
   )
+}
+
+export function StatusChip({
+  children,
+  tone = 'neutral',
+}: {
+  children: ReactNode
+  tone?: 'neutral' | 'accent' | 'success' | 'warning' | 'danger' | 'info'
+}) {
+  return (
+    <span className={cn('aether-status-chip', `aether-status-chip--${tone}`)}>
+      {children}
+    </span>
+  )
+}
+
+export function Skeleton({ className }: { className?: string }) {
+  return <span className={cn('aether-skeleton', className)} aria-hidden="true" />
 }
 
 export function EmptyState({

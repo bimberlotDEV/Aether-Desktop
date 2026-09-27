@@ -4,20 +4,21 @@
 | -------------- | ----------------------------- |
 | Schema version | 2                             |
 | Session date   | 2026-09-27                    |
-| Active task    | `FINAL-RELEASE-PASS-001`      |
+| Active task    | `VISUAL-SYSTEM-2`             |
 | Agent          | Codex                         |
-| State          | complete; draft PR open       |
+| State          | verified; publication pending |
 
 ## Current work
 
-Completed the integrated 0.5.0 release pass. Patched the locked Rust TLS stack for
-RUSTSEC-2026-0285, corrected stale DeepSeek-only Search copy, validated migrations,
-domain regressions, privacy/tool boundaries, dependency audits, release identity,
-frontend/native builds, unsigned MSI/NSIS packaging, and key light/dark UI states,
-and recorded the final owner-only live credential/signing checklist.
+Modernized semantic light/dark colors, ambient backgrounds, depth and motion tokens,
+shared surfaces, status chips, skeletons, shell/sidebar, Pulse presentation, and
+selected cross-route details. Browser inspection covered dark/light, narrow and
+1280×800 layouts. Focused frontend tests (26), full frontend tests (144), Rust
+tests (247), typecheck, lint, build, Rust format/Clippy, and diff check pass.
 
 ## Exact resume point
 
-Validation and self-review are complete. Fix commit `58ae866` is pushed to
-`origin/agent/final-release-pass` with records commit `818ce50`, and draft PR
-#70 is open. Confirm PR/CI state and stop. Do not begin another roadmap item.
+Finish diff self-review, publish the task-owned paths from `agent/visual-system-2`
+through `scripts/publish-task.ps1`, record the draft PR, and stop. Browser preview
+cannot render native-only populated School, Notes, or Pulse data; do not claim those
+were interactively inspected.

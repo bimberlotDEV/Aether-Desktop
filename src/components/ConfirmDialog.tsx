@@ -40,7 +40,10 @@ export function ConfirmDialog({
     >
       <div
         className="absolute inset-0"
-        style={{ backgroundColor: 'var(--color-bg-overlay)' }}
+        style={{
+          backgroundColor: 'var(--color-bg-overlay)',
+          backdropFilter: 'blur(var(--blur-subtle))',
+        }}
       />
       <div
         ref={ref}
@@ -50,10 +53,6 @@ export function ConfirmDialog({
         aria-describedby="confirm-dialog-message"
         tabIndex={-1}
         className="aether-dialog relative w-full max-w-[400px] p-6"
-        style={{
-          backgroundColor: 'var(--color-bg-elevated)',
-          border: '1px solid var(--color-border)',
-        }}
         onClick={(event) => event.stopPropagation()}
       >
         {danger && (

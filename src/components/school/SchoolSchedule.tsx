@@ -268,7 +268,7 @@ export function SchoolSchedule({ spaceId, now }: { spaceId: string; now?: Date }
                 className={cn(
                   'focus-ring rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
                   view === tab.id
-                    ? 'bg-[var(--color-bg-primary)] text-[var(--color-text-primary)] shadow-sm'
+                    ? 'bg-[var(--color-bg-elevated)] text-[var(--color-text-primary)] shadow-sm'
                     : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)]',
                 )}
               >
@@ -340,7 +340,7 @@ export function SchoolSchedule({ spaceId, now }: { spaceId: string; now?: Date }
                   return (
                     <div
                       key={source.connection_id}
-                      className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-3 py-2"
+                      className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-3 py-2"
                     >
                       <label className="flex min-w-0 items-center gap-2 text-sm text-[var(--color-text-primary)]">
                         <input
@@ -383,7 +383,7 @@ export function SchoolSchedule({ spaceId, now }: { spaceId: string; now?: Date }
                                 event.target.value || null,
                               )
                             }
-                            className="focus-ring min-w-48 rounded-md border border-[var(--color-border)] bg-[var(--color-bg-primary)] px-2.5 py-1.5 text-sm text-[var(--color-text-primary)]"
+                            className="focus-ring min-w-48 rounded-md border border-[var(--color-border)] bg-[var(--color-bg-elevated)] px-2.5 py-1.5 text-sm text-[var(--color-text-primary)]"
                           >
                             <option value="">
                               {source.group_selection_valid

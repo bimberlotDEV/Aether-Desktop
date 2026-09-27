@@ -67,6 +67,7 @@ The current verified product foundation includes:
 
 * Tauri 2 + Rust Windows desktop shell;
 * React + TypeScript frontend;
+* a semantic light/dark interface system with selective glass depth, ambient backgrounds, shared surface/status/loading primitives, responsive navigation, and reduced-motion support;
 * bundled SQLite persistence;
 * Spaces;
 * Notes;
@@ -223,6 +224,11 @@ read-only, bounded, Rust-authorized, and presentation-minimized; capable cloud
 models receive only scoped descriptors and approved serialized results, and
 Brightspace remains retired.
 
+VISUAL-SYSTEM-2 subsequently modernized the frontend presentation and amended
+ADR-015 for controlled glass and ambient gradients. The browser preview was
+visually inspected in dark/light and narrow/1280×800 layouts; desktop-only live
+School, Notes, and populated Pulse states remain outside that browser inspection.
+
 The product remains Alpha.
 
 Alpha indicates product maturity and evidence level, not whether the application is functional.
@@ -253,10 +259,10 @@ remain owner-controlled evidence, not claims made by local automated validation.
 
 | Check                                       | Last verified result | Verified date | Notes                                                                           |
 | ------------------------------------------- | -------------------- | ------------- | ------------------------------------------------------------------------------- |
-| `pnpm check`                                | Pass                 | 2026-09-27    | Equivalent gates pass: typecheck, lint, and 142/142 frontend tests across 37 files. |
+| `pnpm check`                                | Pass                 | 2026-09-27    | Equivalent gates pass: typecheck, lint, and 144/144 frontend tests across 38 files. |
 | `pnpm typecheck`                            | Pass                 | 2026-09-27    | Strict frontend and IPC contracts compile cleanly.                              |
 | `pnpm lint`                                 | Pass                 | 2026-09-27    | Frontend lint remains clean.                                                     |
-| `pnpm test`                                 | Pass                 | 2026-09-27    | 142/142 frontend tests across 37 files pass.                                    |
+| `pnpm test`                                 | Pass                 | 2026-09-27    | 144/144 frontend tests across 38 files pass after VISUAL-SYSTEM-2.              |
 | `pnpm build`                                | Pass                 | 2026-09-27    | Alpha 0.5.0 production frontend build passes.                                   |
 | `pnpm audit --audit-level moderate`         | Pass                 | 2026-09-27    | No known frontend dependency vulnerabilities.                                  |
 | `cargo audit`                               | Pass                 | 2026-09-27    | Zero vulnerabilities after locking `rustls 0.23.45`; eight allowed transitive maintenance/yanked warnings remain. |
@@ -373,7 +379,7 @@ Full rationale belongs in `.ai/ARCHITECTURE.md` or dedicated ADR files.
 | `ADR-012` | Memory is explicit, user-authored, scoped, attributable, and attached to AI only by choice.                                   | Accepted                |
 | `ADR-013` | Native Windows lifecycle uses tray persistence, non-fatal shortcut registration, OS notifications, and gated trusted updates. | Accepted                |
 | `ADR-014` | Workspace export uses a sanitized and integrity-checked SQLite snapshot while excluding credentials.                          | Accepted                |
-| `ADR-015` | Aether uses an internal semantic interface system with a distinctive shell and reusable primitives.                           | Accepted                |
+| `ADR-015` | Aether uses an internal semantic interface system with reusable primitives and controlled spatial glass depth.               | Accepted, amended       |
 | `ADR-016` | Sources require explicit authorization and bounded metadata-only indexing before file intelligence.                           | Accepted                |
 | `ADR-022` | Portable archives include verified managed Vault bytes and restore through explicit approval and rollback-safe replacement.   | Accepted                |
 | `ADR-032` | AI uses a closed provider-neutral backend contract with deterministic locality routing and a separate native disclosure authority. | Accepted |

@@ -73,7 +73,7 @@ SQLite / native capabilities / external providers
 
 - Calm, restrained, premium, neutral palette with an indigo accent.
 - Support dark, light, and system themes.
-- Avoid gradients, neon glows, glassmorphism, generic dashboard composition, fake content, and dead controls.
+- Use restrained ambient gradients and selective glass for meaningful depth; avoid neon, pervasive glow, stacked blur, generic dashboard composition, fake content, and dead controls.
 - Preserve visible keyboard focus and accessible interaction states.
 - Curate icons; do not treat a generic icon library as the visual system.
 
