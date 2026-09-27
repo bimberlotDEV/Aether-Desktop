@@ -19,6 +19,5 @@ and recorded the final owner-only live credential/signing checklist.
 ## Exact resume point
 
 Validation and self-review are complete. Fix commit `58ae866` is pushed to
-`origin/agent/final-release-pass` and draft PR #70 is open. Publish the final
-task-record commit to that branch, confirm PR/CI state, and stop. Do not begin
-another roadmap item.
+`origin/agent/final-release-pass` with records commit `818ce50`, and draft PR
+#70 is open. Confirm PR/CI state and stop. Do not begin another roadmap item.

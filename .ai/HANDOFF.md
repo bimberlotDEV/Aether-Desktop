@@ -173,6 +173,5 @@ any subsequent roadmap task.
 - Owner evidence: `docs/final-release-owner-smoke.md` records the compact live
   MyTimetable/provider/restart/cancellation/light-dark/signing acceptance pass.
 - Publication: fix commit `58ae866` is pushed to
-  `origin/agent/final-release-pass`; draft PR
-  [#70](https://github.com/bimberlotDEV/Aether-Desktop/pull/70) is open. The
-  task-record commit follows on the same branch.
+  `origin/agent/final-release-pass` with records commit `818ce50`; draft PR
+  [#70](https://github.com/bimberlotDEV/Aether-Desktop/pull/70) is open.
