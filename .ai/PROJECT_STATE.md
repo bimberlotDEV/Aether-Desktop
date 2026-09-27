@@ -214,7 +214,14 @@ Current repository product version:
 0.5.0
 ```
 
-Current verified repository quality snapshot includes AI-TOOL-ROUTER-001 over the completed AI-NATIVE-TOOLS-001/REPO-HEALTH-032/PULSE-003/AI-ROUTER-001 baseline on 0.5.0. Native AI tools remain read-only, bounded, Rust-authorized, and presentation-minimized; capable cloud models receive only scoped descriptors and approved serialized results, and Brightspace remains retired.
+Current verified repository quality snapshot includes FINAL-RELEASE-PASS-001 over
+the merged AI-TOOL-ROUTER-001/AI-NATIVE-TOOLS-001/REPO-HEALTH-032/PULSE-003/
+AI-ROUTER-001 baseline on 0.5.0. The final pass patched RUSTSEC-2026-0285 in the
+locked TLS stack, corrected one stale provider-specific Search label, and found
+no remaining verified repository release blocker. Native AI tools remain
+read-only, bounded, Rust-authorized, and presentation-minimized; capable cloud
+models receive only scoped descriptors and approved serialized results, and
+Brightspace remains retired.
 
 The product remains Alpha.
 
@@ -235,23 +242,29 @@ Aether is already:
 
 Public Beta is not considered complete until the external evidence requirements are satisfied.
 
+The repository release candidate is ready for the compact owner live smoke in
+`docs/final-release-owner-smoke.md` and the protected signing/publication gates in
+`docs/release-runbook.md`. Live provider/feed behavior and signed updater trust
+remain owner-controlled evidence, not claims made by local automated validation.
+
 ---
 
 # Quality snapshot
 
 | Check                                       | Last verified result | Verified date | Notes                                                                           |
 | ------------------------------------------- | -------------------- | ------------- | ------------------------------------------------------------------------------- |
-| `pnpm check`                                | Pass                 | 2026-09-27    | Equivalent gates pass: typecheck, lint, and 141/141 frontend tests across 37 files. |
+| `pnpm check`                                | Pass                 | 2026-09-27    | Equivalent gates pass: typecheck, lint, and 142/142 frontend tests across 37 files. |
 | `pnpm typecheck`                            | Pass                 | 2026-09-27    | Strict frontend and IPC contracts compile cleanly.                              |
 | `pnpm lint`                                 | Pass                 | 2026-09-27    | Frontend lint remains clean.                                                     |
-| `pnpm test`                                 | Pass                 | 2026-09-27    | 141/141 frontend tests across 37 files pass.                                    |
+| `pnpm test`                                 | Pass                 | 2026-09-27    | 142/142 frontend tests across 37 files pass.                                    |
 | `pnpm build`                                | Pass                 | 2026-09-27    | Alpha 0.5.0 production frontend build passes.                                   |
-| `pnpm audit --audit-level moderate`         | Pass                 | 2026-09-26    | No known vulnerabilities after the Vitest 4.1.11 security patch.                |
+| `pnpm audit --audit-level moderate`         | Pass                 | 2026-09-27    | No known frontend dependency vulnerabilities.                                  |
+| `cargo audit`                               | Pass                 | 2026-09-27    | Zero vulnerabilities after locking `rustls 0.23.45`; eight allowed transitive maintenance/yanked warnings remain. |
 | `cargo test`                                | Pass                 | 2026-09-27    | 247/247 Rust tests pass, including coordinator, adapter, disclosure, cancellation, provenance, native-tool, Pulse, School, MyTimetable, and Calendar regressions. |
-| `cargo build --release`                     | Pass                 | 2026-08-29    | Optimized Aether 0.5.0 Windows executable builds and starts.                    |
+| `cargo build --release`                     | Pass                 | 2026-09-27    | Optimized Aether 0.5.0 Windows executable builds successfully.                  |
 | `cargo fmt --check`                         | Pass                 | 2026-09-27    | Rust formatting clean.                                                          |
 | `cargo clippy --all-targets -- -D warnings` | Pass                 | 2026-09-27    | Relevant targets/features warning-free.                                         |
-| `pnpm tauri:build`                          | Pass                 | 2026-08-29    | Aether 0.5.0 x64 MSI and NSIS bundles build successfully.                       |
+| `pnpm tauri:build`                          | Pass                 | 2026-09-27    | Unsigned development Aether 0.5.0 x64 MSI and NSIS bundles build successfully.  |
 | GitHub Actions                              | Pass                 | 2026-08-29    | Frontend quality/build and Rust validation pass on the recorded readiness head. |
 | Release startup smoke                       | Pass                 | 2026-08-29    | Optimized Aether 0.5.0 starts and exposes a responsive native window.           |
 

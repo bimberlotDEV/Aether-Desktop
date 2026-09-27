@@ -26,6 +26,18 @@ Entries are newest first and use ISO dates. Each entry must reference a stable t
 - **Follow-up:** None | `TASK-ID`
 ```
 
+## 2026-09-27 — `FINAL-RELEASE-PASS-001` — Integrated release candidate validated
+
+- **Type:** Fix, security, test, release, UX, and docs
+- **Implemented by:** Codex
+- **Reviewed by:** Codex self-review
+- **Summary:** Validated the merged 0.5.0 roadmap as one Windows desktop product. Patched the locked Rust TLS stack for RUSTSEC-2026-0285, replaced stale DeepSeek-only Universal Search copy with provider-neutral text, and recorded the final owner live smoke checklist. No other verified release blocker or production defect remained.
+- **Files:** `src-tauri/Cargo.lock`, `src/components/CommandPalette.tsx`, its focused regression test, release/project control records, product changelog, and `docs/final-release-owner-smoke.md`.
+- **Verification:** Frozen pnpm install; 19 unique ordered migrations; focused Command Palette 6/6; full frontend 142/142 across 37 files; full Rust 247/247; typecheck, lint, production build, Rust format, strict Clippy, optimized Rust build, moderate frontend audit, Rust advisory audit with zero vulnerabilities, release identity/tracked-secret checks, `git diff --check`, light/dark browser UI/accessibility smoke, and unsigned x64 MSI/NSIS generation — Pass.
+- **Decisions/deviations:** No migration, architecture, feature, provider, or AI write capability was added. Live provider/feed checks, Authenticode/updater signing, signed upgrade/tamper checks, and publication remain owner-controlled because credentials/trust material are unavailable. The native executable process launched/relaunched, but the attempted AppData override did not yield an isolated database, so no executable-level fresh-profile persistence claim is made beyond the migration fixtures.
+- **Follow-up:** Execute `docs/final-release-owner-smoke.md` and `docs/release-runbook.md` with protected test data and release trust inputs before publishing a signed candidate. The audit's eight allowed transitive maintenance/yanked warnings are non-blocking dependency-upstream follow-up, not active Windows vulnerabilities.
+- **Publication:** Fix commit `58ae866` is pushed to `origin/agent/final-release-pass`; draft PR [#70](https://github.com/bimberlotDEV/Aether-Desktop/pull/70) is open. The task-record commit follows on the same branch.
+
 ## 2026-09-27 — `AI-TOOL-ROUTER-001` — Bounded tool-enabled AI Router
 
 - **Type:** Feature, architecture, security, privacy, UX, test, and docs
