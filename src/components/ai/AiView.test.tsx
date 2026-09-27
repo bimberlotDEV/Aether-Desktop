@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AiConversation, AiMessage } from '@/lib/db/types'
 
@@ -111,9 +112,12 @@ describe('AiView message scrolling', () => {
       loading: false,
       error: null,
       streaming: false,
+      activity: null,
+      disclosure: null,
       load: vi.fn(),
       send: vi.fn(),
       cancel: vi.fn(),
+      approveDisclosure: vi.fn(),
       attach: vi.fn(),
       detach: vi.fn(),
       isTauri: true,
@@ -174,5 +178,45 @@ describe('AiView message scrolling', () => {
 
     expect(await screen.findByText(/no local runtime is configured/i)).toBeVisible()
     expect(screen.getByRole('button', { name: 'Send message' })).toBeDisabled()
+  })
+
+  it('shows a minimized cloud tool-result approval instead of raw tool data', async () => {
+    const approveDisclosure = vi.fn()
+    hookMocks.useAiConversation.mockReturnValue({
+      messages,
+      contextItems: [],
+      resolvedContext: [],
+      loading: false,
+      error: null,
+      streaming: true,
+      activity: {
+        phase: 'awaiting_disclosure_approval',
+        label: 'Waiting for permission to share local context…',
+      },
+      disclosure: {
+        requestId: 'request-1',
+        provider: 'openai',
+        model: 'gpt-5-mini',
+        categories: ['calendar'],
+        itemCount: 3,
+        reason: 'Use the requested local context to answer this message.',
+      },
+      load: vi.fn(),
+      send: vi.fn(),
+      cancel: vi.fn(),
+      approveDisclosure,
+      attach: vi.fn(),
+      detach: vi.fn(),
+      isTauri: true,
+    })
+    const user = userEvent.setup()
+    render(<AiView />)
+
+    expect(
+      await screen.findByText(/send 3 calendar items to OpenAI/i),
+    ).toBeVisible()
+    expect(screen.queryByText(/request-1|tool_call|arguments/i)).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Approve once' }))
+    expect(approveDisclosure).toHaveBeenCalledOnce()
   })
 })

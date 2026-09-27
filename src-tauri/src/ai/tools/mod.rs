@@ -5,14 +5,15 @@ mod scope;
 
 pub use errors::{ToolError, ToolErrorCode};
 pub use execution::{
-    execute_native_ai_tool, execute_native_ai_tool_named, NativeToolOutput, NativeToolResult,
-    ToolExecutionContext,
+    execute_native_ai_tool, validate_native_ai_tool_request, NativeToolResult, ToolExecutionContext,
 };
-pub use registry::{
-    descriptor, native_tool_registry, NativeToolDescriptor, NativeToolId, ToolExecutionType,
-    ToolResultLimits, ToolScopeRequirement,
-};
+pub use registry::{native_tool_registry, NativeToolId};
 pub use scope::ToolScope;
+
+#[cfg(test)]
+pub use execution::{execute_native_ai_tool_named, NativeToolOutput, TaskToolItem, TasksOutput};
+#[cfg(test)]
+pub use registry::ToolExecutionType;
 
 #[cfg(test)]
 mod tests {
@@ -325,6 +326,10 @@ mod tests {
         assert!(
             ToolScope::tasks(vec![NativeToolId::TasksGetOpen], None, false, false, 20,).is_err()
         );
+        let combined = calendar.clone().combine(tasks_scope(true, true)).unwrap();
+        assert!(combined.permits(NativeToolId::CalendarGetNextEvent));
+        assert!(combined.permits(NativeToolId::TasksGetOpen));
+        assert_eq!(combined.allowed_tool_ids().len(), 4);
         assert_eq!(ToolScope::default(), ToolScope::none());
     }
 

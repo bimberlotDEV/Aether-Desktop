@@ -4,13 +4,18 @@ use crate::actions::{self, ActionRuntime, OpenTarget};
 use crate::ai::backend;
 use crate::ai::capabilities::{self, ReasoningTier, StructuredOutputSupport, ToolCallingSupport};
 use crate::ai::context;
+use crate::ai::coordinator::{
+    self, DisclosureRequest, NativeToolExecutor, ToolDisclosureGate, ToolTurnPhase,
+};
 use crate::ai::credentials;
+use crate::ai::model::ModelMessage;
 use crate::ai::privacy;
 use crate::ai::proposals;
-use crate::ai::provider::{self, ChatCompletionRequest, ChatMessage, ProviderConfig};
+use crate::ai::provider::{self, ProviderConfig};
 use crate::ai::routing;
 use crate::ai::runtime::AiRuntime;
 use crate::ai::settings::{self as ai_settings, AiRoutingSettings};
+use crate::ai::tools::{self, NativeToolId, ToolExecutionContext, ToolScope};
 use crate::backup;
 use crate::context::{self as local_context, ContextRuntime};
 use crate::db::repositories::{self, with_conn};
@@ -24,6 +29,87 @@ use tauri::{ipc::Channel, AppHandle, Manager, State};
 use tauri_plugin_notification::NotificationExt;
 use tauri_plugin_opener::OpenerExt;
 use uuid::Uuid;
+
+struct DatabaseToolExecutor<'a> {
+    db: &'a Database,
+}
+
+impl NativeToolExecutor for DatabaseToolExecutor<'_> {
+    fn execute(
+        &self,
+        tool_id: NativeToolId,
+        arguments: serde_json::Value,
+        scope: &ToolScope,
+        context: ToolExecutionContext,
+    ) -> Result<tools::NativeToolResult, tools::ToolError> {
+        let conn = self.db.conn.lock().map_err(|_| tools::ToolError {
+            code: tools::ToolErrorCode::TemporarilyUnavailable,
+            message: "The local data is temporarily unavailable.".into(),
+        })?;
+        tools::execute_native_ai_tool(&conn, tool_id, arguments, scope, context)
+    }
+}
+
+struct CommandDisclosureGate<'a> {
+    runtime: &'a privacy::DisclosureWaitRuntime,
+    on_event: &'a Channel<AiStreamEvent>,
+}
+
+#[async_trait::async_trait]
+impl ToolDisclosureGate for CommandDisclosureGate<'_> {
+    async fn approve(
+        &self,
+        request: DisclosureRequest,
+        cancellation: tokio_util::sync::CancellationToken,
+    ) -> Result<bool, coordinator::CoordinatorError> {
+        let item_count = request.inventory.iter().map(|item| item.item_count).sum();
+        let categories = request
+            .inventory
+            .iter()
+            .map(|item| {
+                if item.tool_id.public_name().starts_with("calendar.") {
+                    "calendar"
+                } else {
+                    "tasks"
+                }
+            })
+            .collect::<std::collections::BTreeSet<_>>()
+            .into_iter()
+            .map(str::to_string)
+            .collect::<Vec<_>>();
+        self.on_event
+            .send(AiStreamEvent::AwaitingDisclosureApproval {
+                request_id: request.logical_request_id.clone(),
+                provider: request.backend_id.clone(),
+                model: request.model_id.clone(),
+                categories: categories.clone(),
+                item_count,
+                reason: "Use the requested local context to answer this message.".into(),
+            })
+            .map_err(|_| coordinator::CoordinatorError {
+                code: "cancelled",
+                message: "The AI response listener closed.".into(),
+                phase: ToolTurnPhase::Cancelled,
+            })?;
+        let tool_categories =
+            coordinator::inventory_categories(&request.inventory, &request.tool_scope_json);
+        self.runtime
+            .wait(
+                &request.logical_request_id,
+                &request.backend_id,
+                &request.model_id,
+                Vec::new(),
+                tool_categories,
+                cancellation,
+            )
+            .await
+            .map_err(|message| coordinator::CoordinatorError {
+                code: "approval_unavailable",
+                message,
+                phase: ToolTurnPhase::Failed,
+            })
+    }
+}
 
 struct AiRequestGuard<'a> {
     runtime: &'a AiRuntime,
@@ -1761,6 +1847,68 @@ pub fn ai_list_messages(
 
 // ─── AI Chat streaming ───────────────────────────────────
 
+fn create_turn_tool_scope(
+    conn: &rusqlite::Connection,
+    conversation: &repositories::conversations::AiConversation,
+    mode: &str,
+    context: ToolExecutionContext,
+) -> Result<ToolScope, String> {
+    if mode != "ask" {
+        return Ok(ToolScope::none());
+    }
+    let due_start = context
+        .local_date
+        .checked_sub_days(chrono::Days::new(7))
+        .ok_or_else(|| "Could not create the Task read window.".to_string())?;
+    let due_end = context
+        .local_date
+        .checked_add_days(chrono::Days::new(24))
+        .ok_or_else(|| "Could not create the Task read window.".to_string())?;
+    let mut scope = ToolScope::tasks(
+        vec![NativeToolId::TasksGetDue, NativeToolId::TasksGetOpen],
+        Some((due_start, due_end)),
+        true,
+        true,
+        20,
+    )
+    .map_err(|error| error.message)?;
+    let Some(space_id) = conversation.space_id.as_deref() else {
+        return Ok(scope);
+    };
+    let Some(space) = repositories::spaces::get_by_id(conn, space_id)? else {
+        return Ok(scope);
+    };
+    if space.template_type.as_deref() != Some("school")
+        || space.parent_space_id.is_some()
+        || space.archived_at.is_some()
+    {
+        return Ok(scope);
+    }
+    let end_at = context
+        .now
+        .checked_add_days(chrono::Days::new(31))
+        .ok_or_else(|| "Could not create the Calendar read window.".to_string())?;
+    let end_date = context
+        .local_date
+        .checked_add_days(chrono::Days::new(31))
+        .ok_or_else(|| "Could not create the Calendar read window.".to_string())?;
+    let calendar = ToolScope::calendar(
+        vec![
+            NativeToolId::CalendarGetEvents,
+            NativeToolId::CalendarGetNextEvent,
+        ],
+        space_id,
+        context.now,
+        end_at,
+        context.local_date,
+        end_date,
+        20,
+    )
+    .map_err(|error| error.message)?;
+    scope = scope.combine(calendar).map_err(|error| error.message)?;
+    Ok(scope)
+}
+
 #[derive(Clone, serde::Serialize)]
 #[serde(rename_all = "camelCase", tag = "event", content = "data")]
 pub enum AiStreamEvent {
@@ -1771,6 +1919,19 @@ pub enum AiStreamEvent {
     },
     Delta {
         content: String,
+    },
+    Status {
+        phase: ToolTurnPhase,
+        label: String,
+        tool_id: Option<NativeToolId>,
+    },
+    AwaitingDisclosureApproval {
+        request_id: String,
+        provider: String,
+        model: String,
+        categories: Vec<String>,
+        item_count: u32,
+        reason: String,
     },
     Complete {
         message: Box<repositories::conversations::AiMessage>,
@@ -1789,6 +1950,7 @@ pub enum AiStreamEvent {
 pub async fn ai_stream_message(
     db: State<'_, Database>,
     runtime: State<'_, AiRuntime>,
+    disclosures: State<'_, privacy::DisclosureWaitRuntime>,
     request_id: String,
     conversation_id: String,
     content: String,
@@ -1830,6 +1992,11 @@ pub async fn ai_stream_message(
     } else {
         None
     };
+    let tool_context = ToolExecutionContext::capture();
+    let tool_scope = with_conn(&db.conn, |conn| {
+        create_turn_tool_scope(conn, &conversation, &mode, tool_context)
+    })?;
+    let tool_enabled = !tool_scope.allowed_tool_ids().is_empty();
     let (has_explicit_context, estimated_chars) = with_conn(&db.conn, |conn| {
         let attachments = repositories::conversations::list_context_items(conn, &conversation_id)?;
         let resolved = context::resolve_all(conn, conversation.space_id.as_deref(), &attachments)?;
@@ -1885,7 +2052,11 @@ pub async fn ai_stream_message(
     let requirements = routing::CapabilityRequirements {
         text_generation: true,
         streaming: true,
-        tool_calling: ToolCallingSupport::None,
+        tool_calling: if tool_enabled {
+            ToolCallingSupport::Single
+        } else {
+            ToolCallingSupport::None
+        },
         structured_output: if ["create_tasks", "propose_actions"].contains(&mode.as_str()) {
             StructuredOutputSupport::JsonObject
         } else {
@@ -1909,7 +2080,7 @@ pub async fn ai_stream_message(
             } else {
                 routing::LatencyPreference::Balanced
             },
-            requires_tools: false,
+            requires_tools: tool_enabled,
             requires_structured_output: requirements.structured_output
                 != StructuredOutputSupport::None,
             requires_vision: false,
@@ -1921,11 +2092,11 @@ pub async fn ai_stream_message(
             // silently dispatching context that may exceed a model window.
             estimated_input_tokens: estimated_chars.try_into().unwrap_or(u32::MAX),
             reserved_output_tokens: 4_096,
-            reserved_tool_tokens: 0,
+            reserved_tool_tokens: if tool_enabled { 4_096 } else { 0 },
             measurement: routing::TokenMeasurement::Estimated,
         },
         data_policy,
-        tool_scope: routing::ToolScope::default(),
+        tool_scope,
         preferences,
         environment: routing::EnvironmentSnapshot { offline: false },
     };
@@ -2009,16 +2180,10 @@ pub async fn ai_stream_message(
             let context_count = resolved.len();
             let mut chat_messages = Vec::new();
             if let Some(system) = context::system_message(&resolved)? {
-                chat_messages.push(ChatMessage {
-                    role: "system".to_string(),
-                    content: system,
-                });
+                chat_messages.push(ModelMessage::System(system));
             }
             if let Some(instruction) = mode_instruction {
-                chat_messages.push(ChatMessage {
-                    role: "system".to_string(),
-                    content: instruction.to_string(),
-                });
+                chat_messages.push(ModelMessage::System(instruction.to_string()));
             }
             chat_messages.extend(
                 history
@@ -2027,9 +2192,12 @@ pub async fn ai_stream_message(
                         message.status == "complete"
                             && ["user", "assistant"].contains(&message.role.as_str())
                     })
-                    .map(|message| ChatMessage {
-                        role: message.role.clone(),
-                        content: message.content.clone(),
+                    .map(|message| {
+                        if message.role == "assistant" {
+                            ModelMessage::Assistant(message.content.clone())
+                        } else {
+                            ModelMessage::User(message.content.clone())
+                        }
                     }),
             );
             transaction
@@ -2054,39 +2222,101 @@ pub async fn ai_stream_message(
     }
 
     if chat_messages.is_empty() {
-        chat_messages.push(ChatMessage {
-            role: "user".to_string(),
-            content,
-        });
+        chat_messages.push(ModelMessage::User(content));
     }
-    let request = ChatCompletionRequest {
-        model: route.model_id.clone(),
-        messages: chat_messages,
-        temperature: None,
-        max_tokens: None,
-        top_p: None,
-        stream: Some(true),
-        thinking: None,
+    let executor = DatabaseToolExecutor { db: &db };
+    let disclosure_gate = CommandDisclosureGate {
+        runtime: &disclosures,
+        on_event: &on_event,
     };
-    let collected = std::sync::Mutex::new(String::new());
-    let result = backend
-        .stream_turn(&request, cancellation, &|delta| {
-            collected
-                .lock()
-                .map_err(|_| "AI response buffer is unavailable.".to_string())?
-                .push_str(&delta);
-            on_event
-                .send(AiStreamEvent::Delta { content: delta })
-                .map_err(|_| "AI response listener closed.".to_string())
-        })
-        .await;
-    let final_content = collected
+    let streamed_content = std::sync::Mutex::new(String::new());
+    let tool_provenance_state = std::sync::Mutex::new(coordinator::ToolTurnProvenance::default());
+    let result = coordinator::run_tool_turn(
+        backend.as_ref(),
+        &executor,
+        &disclosure_gate,
+        coordinator::ToolCoordinatorRequest {
+            logical_request_id: &request_id,
+            route: &route,
+            scope: &route_request.tool_scope,
+            messages: chat_messages,
+            temperature: None,
+            max_tokens: None,
+            top_p: None,
+            thinking_enabled: false,
+            context: tool_context,
+        },
+        cancellation.clone(),
+        coordinator::ToolTurnObservers {
+            on_delta: &|delta| {
+                streamed_content
+                    .lock()
+                    .map_err(|_| "AI response buffer is unavailable.".to_string())?
+                    .push_str(&delta);
+                on_event
+                    .send(AiStreamEvent::Delta { content: delta })
+                    .map_err(|_| "AI response listener closed.".to_string())
+            },
+            on_phase: &|phase, tool_id| {
+                let label = match tool_id {
+                    Some(NativeToolId::CalendarGetEvents | NativeToolId::CalendarGetNextEvent) => {
+                        "Checking your calendar…"
+                    }
+                    Some(NativeToolId::TasksGetDue | NativeToolId::TasksGetOpen) => {
+                        "Checking your tasks…"
+                    }
+                    None if phase == ToolTurnPhase::GeneratingAfterTool => "Continuing generation…",
+                    None if phase == ToolTurnPhase::Generating => "Generating…",
+                    _ => "Working…",
+                };
+                on_event
+                    .send(AiStreamEvent::Status {
+                        phase,
+                        label: label.into(),
+                        tool_id,
+                    })
+                    .map_err(|_| "AI response listener closed.".to_string())
+            },
+            on_provenance: &|provenance| {
+                *tool_provenance_state
+                    .lock()
+                    .map_err(|_| "AI provenance buffer is unavailable.".to_string())? =
+                    provenance.clone();
+                Ok(())
+            },
+        },
+    )
+    .await;
+    let partial_content = streamed_content
         .into_inner()
         .map_err(|_| "AI response buffer is unavailable.".to_string())?;
-    let route_decision_json = serde_json::to_string(&route)
-        .map_err(|error| format!("AI route provenance error: {error}"))?;
-    let disclosure_json = serde_json::to_string(&route_request.data_policy)
-        .map_err(|error| format!("AI disclosure provenance error: {error}"))?;
+    let (final_content, tool_provenance, terminal_error) = match result {
+        Ok(outcome) => (outcome.content, outcome.provenance, None),
+        Err(error) => (
+            partial_content,
+            {
+                let mut provenance = tool_provenance_state
+                    .into_inner()
+                    .map_err(|_| "AI provenance buffer is unavailable.".to_string())?;
+                provenance.tool_enabled = tool_enabled;
+                provenance.terminal_phase = Some(error.phase);
+                provenance
+            },
+            Some(error),
+        ),
+    };
+    let route_decision_json = serde_json::to_string(&serde_json::json!({
+        "decision": route,
+        "tools": tool_provenance,
+    }))
+    .map_err(|error| format!("AI route provenance error: {error}"))?;
+    let disclosure_json = serde_json::to_string(&serde_json::json!({
+        "prompt": route_request.data_policy,
+        "toolResultApprovalUsed": tool_provenance.disclosure_approval_used,
+        "toolResultClasses": tool_provenance.result_classes,
+        "toolResultSizes": tool_provenance.result_sizes,
+    }))
+    .map_err(|error| format!("AI disclosure provenance error: {error}"))?;
     let route_policy_mode = serde_json::to_string(&route.routing_mode)
         .unwrap_or_else(|_| "\"automatic\"".into())
         .trim_matches('"')
@@ -2112,8 +2342,8 @@ pub async fn ai_stream_message(
         disclosure_json: &disclosure_json,
     };
 
-    let terminal = match result {
-        Ok(()) => {
+    let terminal = match terminal_error {
+        None => {
             let metadata =
                 serde_json::json!({ "mode": mode, "contextCount": context_count }).to_string();
             let message = with_conn(&db.conn, |conn| {
@@ -2149,7 +2379,7 @@ pub async fn ai_stream_message(
                 message: Box::new(message),
             }
         }
-        Err(error) if error.code == "cancelled" => {
+        Some(error) if matches!(error.code, "cancelled" | "cloud_disclosure_cancelled") => {
             let metadata =
                 serde_json::json!({ "mode": mode, "contextCount": context_count }).to_string();
             let message = with_conn(&db.conn, |conn| {
@@ -2168,7 +2398,7 @@ pub async fn ai_stream_message(
                 message: Box::new(message),
             }
         }
-        Err(error) => {
+        Some(error) => {
             let metadata =
                 serde_json::json!({ "mode": mode, "contextCount": context_count }).to_string();
             let assistant_message = with_conn(&db.conn, |conn| {
@@ -2195,8 +2425,22 @@ pub async fn ai_stream_message(
 }
 
 #[tauri::command]
-pub fn ai_cancel_request(runtime: State<AiRuntime>, request_id: String) -> Result<bool, String> {
-    runtime.cancel(&request_id)
+pub fn ai_cancel_request(
+    runtime: State<AiRuntime>,
+    disclosures: State<privacy::DisclosureWaitRuntime>,
+    request_id: String,
+) -> Result<bool, String> {
+    let cancelled = runtime.cancel(&request_id)?;
+    let disclosure_cancelled = disclosures.cancel(&request_id)?;
+    Ok(cancelled || disclosure_cancelled)
+}
+
+#[tauri::command]
+pub fn ai_approve_tool_disclosure(
+    disclosures: State<privacy::DisclosureWaitRuntime>,
+    request_id: String,
+) -> Result<bool, String> {
+    disclosures.approve(&request_id)
 }
 
 // ─── AI Context Items ────────────────────────────────────
@@ -2287,5 +2531,70 @@ mod vault_command_tests {
         let value = json_vault_item(&item);
         assert_eq!(value["id"], "vault-1");
         assert!(value.get("stored_path").is_none());
+    }
+}
+
+#[cfg(test)]
+mod ai_tool_command_tests {
+    use chrono::{DateTime, NaiveDate, Utc};
+    use rusqlite::{params, Connection};
+
+    use super::*;
+    use crate::db::migrations;
+
+    fn context() -> ToolExecutionContext {
+        ToolExecutionContext {
+            now: DateTime::parse_from_rfc3339("2026-09-26T08:00:00Z")
+                .unwrap()
+                .with_timezone(&Utc),
+            local_date: NaiveDate::from_ymd_opt(2026, 9, 26).unwrap(),
+        }
+    }
+
+    #[test]
+    fn native_product_context_limits_advertised_calendar_scope() {
+        let conn = Connection::open_in_memory().unwrap();
+        migrations::run(&conn).unwrap();
+        conn.execute(
+            "INSERT INTO spaces(id,name,template_type) VALUES (?1,?2,?3)",
+            params!["school", "School", "school"],
+        )
+        .unwrap();
+        conn.execute(
+            "INSERT INTO spaces(id,name,template_type) VALUES (?1,?2,?3)",
+            params!["work", "Work", "blank"],
+        )
+        .unwrap();
+        let school = repositories::conversations::create_conversation(
+            &conn,
+            Some("school"),
+            "School AI",
+            "auto",
+            "auto",
+        )
+        .unwrap();
+        let work = repositories::conversations::create_conversation(
+            &conn,
+            Some("work"),
+            "Work AI",
+            "auto",
+            "auto",
+        )
+        .unwrap();
+
+        let school_scope = create_turn_tool_scope(&conn, &school, "ask", context()).unwrap();
+        assert_eq!(school_scope.allowed_tool_ids().len(), 4);
+        let work_scope = create_turn_tool_scope(&conn, &work, "ask", context()).unwrap();
+        assert_eq!(work_scope.allowed_tool_ids().len(), 2);
+        assert!(work_scope
+            .allowed_tool_ids()
+            .iter()
+            .all(|tool| tool.public_name().starts_with("tasks.")));
+        assert!(
+            create_turn_tool_scope(&conn, &school, "summarize", context())
+                .unwrap()
+                .allowed_tool_ids()
+                .is_empty()
+        );
     }
 }

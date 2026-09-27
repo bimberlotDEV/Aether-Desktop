@@ -1,54 +1,13 @@
 use async_trait::async_trait;
 use futures_util::StreamExt;
 use serde::{Deserialize, Serialize};
+use serde_json::{json, Value};
 use tokio_util::sync::CancellationToken;
+
+use super::model::{ModelMessage, ModelToolRequest, ModelTurnOutcome, ModelTurnRequest};
 
 const DEEPSEEK_ENDPOINT: &str = "https://api.deepseek.com/chat/completions";
 const OPENAI_ENDPOINT: &str = "https://api.openai.com/v1/chat/completions";
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct ChatMessage {
-    pub role: String,
-    pub content: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ChatCompletionRequest {
-    pub model: String,
-    pub messages: Vec<ChatMessage>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub temperature: Option<f32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub max_tokens: Option<u32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub top_p: Option<f32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub stream: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub thinking: Option<ThinkingConfig>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ThinkingConfig {
-    #[serde(rename = "type")]
-    pub thinking_type: String,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-struct ChatCompletionResponse {
-    #[serde(default)]
-    choices: Vec<Choice>,
-}
-#[derive(Debug, Clone, Deserialize)]
-struct Choice {
-    #[serde(default)]
-    delta: Option<ChoiceDelta>,
-}
-#[derive(Debug, Clone, Deserialize)]
-struct ChoiceDelta {
-    #[serde(default)]
-    content: Option<String>,
-}
 
 #[derive(Debug, Clone, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -124,6 +83,7 @@ pub struct ProviderError {
     pub code: &'static str,
     pub message: String,
 }
+
 impl ProviderError {
     fn new(code: &'static str, message: impl Into<String>) -> Self {
         Self {
@@ -167,10 +127,10 @@ pub trait AiProvider: Send + Sync {
     async fn test_connection(&self) -> Result<(), ProviderError>;
     async fn stream_chat(
         &self,
-        request: &ChatCompletionRequest,
+        request: &ModelTurnRequest,
         cancellation: CancellationToken,
         on_delta: &(dyn Fn(String) -> Result<(), String> + Send + Sync),
-    ) -> Result<(), ProviderError>;
+    ) -> Result<ModelTurnOutcome, ProviderError>;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -200,55 +160,76 @@ impl ChatCompletionsProvider {
             client,
         })
     }
+
     fn endpoint(&self) -> &'static str {
         match self.protocol {
             Protocol::DeepSeek => DEEPSEEK_ENDPOINT,
             Protocol::OpenAi => OPENAI_ENDPOINT,
         }
     }
-    fn build_body(&self, request: &ChatCompletionRequest, stream: bool) -> serde_json::Value {
+
+    fn build_body(&self, request: &ModelTurnRequest, stream: bool) -> Value {
         let model = if request.model.is_empty() {
             &self.config.model
         } else {
             &request.model
         };
-        let mut body =
-            serde_json::json!({ "model": model, "messages": request.messages, "stream": stream });
+        let messages = request
+            .messages
+            .iter()
+            .map(wire_message)
+            .collect::<Vec<_>>();
+        let mut body = json!({ "model": model, "messages": messages, "stream": stream });
         let object = body.as_object_mut().expect("request body is an object");
+        if !request.tools.is_empty() {
+            object.insert(
+                "tools".into(),
+                Value::Array(
+                    request
+                        .tools
+                        .iter()
+                        .map(|tool| {
+                            json!({
+                                "type": "function",
+                                "function": {
+                                    "name": wire_tool_name(&tool.name),
+                                    "description": tool.description,
+                                    "parameters": tool.input_schema
+                                }
+                            })
+                        })
+                        .collect(),
+                ),
+            );
+            object.insert("tool_choice".into(), json!("auto"));
+            object.insert("parallel_tool_calls".into(), json!(true));
+        }
         if let Some(top_p) = request.top_p {
-            object.insert("top_p".into(), serde_json::json!(top_p));
+            object.insert("top_p".into(), json!(top_p));
         }
         let max_tokens = request.max_tokens.or(self.config.max_tokens);
         match self.protocol {
             Protocol::DeepSeek => {
                 if let Some(temperature) = request.temperature.or(self.config.temperature) {
-                    object.insert("temperature".into(), serde_json::json!(temperature));
+                    object.insert("temperature".into(), json!(temperature));
                 }
                 if let Some(limit) = max_tokens {
-                    object.insert("max_tokens".into(), serde_json::json!(limit));
+                    object.insert("max_tokens".into(), json!(limit));
                 }
-                let thinking = request
-                    .thinking
-                    .as_ref()
-                    .map(|value| value.thinking_type.as_str())
-                    .unwrap_or(if self.config.thinking_enabled {
-                        "enabled"
-                    } else {
-                        "disabled"
-                    });
-                object.insert("thinking".into(), serde_json::json!({ "type": thinking }));
+                object.insert("thinking".into(), json!({ "type": if request.thinking_enabled || self.config.thinking_enabled { "enabled" } else { "disabled" } }));
             }
             Protocol::OpenAi => {
                 if let Some(limit) = max_tokens {
-                    object.insert("max_completion_tokens".into(), serde_json::json!(limit));
+                    object.insert("max_completion_tokens".into(), json!(limit));
                 }
             }
         }
         body
     }
+
     async fn send(
         &self,
-        request: &ChatCompletionRequest,
+        request: &ModelTurnRequest,
         stream: bool,
     ) -> Result<reqwest::Response, ProviderError> {
         let response = self
@@ -266,44 +247,74 @@ impl ChatCompletionsProvider {
     }
 }
 
+fn wire_message(message: &ModelMessage) -> Value {
+    match message {
+        ModelMessage::System(content) => json!({ "role": "system", "content": content }),
+        ModelMessage::User(content) => json!({ "role": "user", "content": content }),
+        ModelMessage::Assistant(content) => json!({ "role": "assistant", "content": content }),
+        ModelMessage::AssistantToolRequests { content, requests } => json!({
+            "role": "assistant",
+            "content": content,
+            "tool_calls": requests.iter().map(|request| json!({
+                "id": request.request_id,
+                "type": "function",
+                "function": { "name": wire_tool_name(&request.tool_name), "arguments": request.arguments_json }
+            })).collect::<Vec<_>>()
+        }),
+        ModelMessage::ToolResult(result) => json!({
+            "role": "tool",
+            "tool_call_id": result.request_id,
+            "content": serde_json::to_string(&json!({ "status": result.status, "output": result.output }))
+                .unwrap_or_else(|_| "{\"status\":\"error\"}".into())
+        }),
+    }
+}
+
 #[async_trait]
 impl AiProvider for ChatCompletionsProvider {
     fn name(&self) -> &str {
         &self.config.provider
     }
+
     async fn test_connection(&self) -> Result<(), ProviderError> {
-        let request = ChatCompletionRequest {
+        let request = ModelTurnRequest {
             model: self.config.model.clone(),
-            messages: vec![ChatMessage {
-                role: "user".into(),
-                content: "Reply with OK.".into(),
-            }],
+            messages: vec![ModelMessage::User("Reply with OK.".into())],
+            tools: vec![],
             temperature: None,
             max_tokens: Some(8),
             top_p: None,
-            stream: Some(false),
-            thinking: None,
+            thinking_enabled: false,
         };
         self.send(&request, false).await?;
         Ok(())
     }
+
     async fn stream_chat(
         &self,
-        request: &ChatCompletionRequest,
+        request: &ModelTurnRequest,
         cancellation: CancellationToken,
         on_delta: &(dyn Fn(String) -> Result<(), String> + Send + Sync),
-    ) -> Result<(), ProviderError> {
-        let response = tokio::select! { _ = cancellation.cancelled() => return Err(cancelled()), response = self.send(request, true) => response?, };
+    ) -> Result<ModelTurnOutcome, ProviderError> {
+        let response = tokio::select! {
+            _ = cancellation.cancelled() => return Err(cancelled()),
+            response = self.send(request, true) => response?,
+        };
         let mut stream = response.bytes_stream();
         let mut decoder = SseDecoder::default();
+        let mut tool_calls: Vec<PartialToolCall> = Vec::new();
         loop {
-            let next = tokio::select! { _ = cancellation.cancelled() => return Err(cancelled()), next = stream.next() => next, };
+            let next = tokio::select! {
+                _ = cancellation.cancelled() => return Err(cancelled()),
+                next = stream.next() => next,
+            };
             let Some(chunk) = next else { break };
             let chunk = chunk.map_err(|error| classify_network_error(error, self.name()))?;
             for event in decoder.push(&chunk)? {
                 match event {
                     SseEvent::Delta(content) => on_delta(content).map_err(|_| cancelled())?,
-                    SseEvent::Done => return Ok(()),
+                    SseEvent::ToolDelta(delta) => merge_tool_delta(&mut tool_calls, delta)?,
+                    SseEvent::Done => return finish_tool_calls(tool_calls),
                 }
             }
         }
@@ -317,10 +328,111 @@ impl AiProvider for ChatCompletionsProvider {
     }
 }
 
+#[derive(Debug, Clone, Deserialize)]
+struct ChatCompletionResponse {
+    #[serde(default)]
+    choices: Vec<Choice>,
+}
+#[derive(Debug, Clone, Deserialize)]
+struct Choice {
+    #[serde(default)]
+    delta: Option<ChoiceDelta>,
+}
+#[derive(Debug, Clone, Deserialize)]
+struct ChoiceDelta {
+    #[serde(default)]
+    content: Option<String>,
+    #[serde(default)]
+    tool_calls: Vec<WireToolCallDelta>,
+}
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
+struct WireToolCallDelta {
+    index: usize,
+    #[serde(default)]
+    id: Option<String>,
+    #[serde(default)]
+    function: Option<WireFunctionDelta>,
+}
+#[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
+struct WireFunctionDelta {
+    #[serde(default)]
+    name: Option<String>,
+    #[serde(default)]
+    arguments: Option<String>,
+}
+
+#[derive(Debug, Default)]
+struct PartialToolCall {
+    id: String,
+    name: String,
+    arguments: String,
+}
+
+fn merge_tool_delta(
+    calls: &mut Vec<PartialToolCall>,
+    delta: WireToolCallDelta,
+) -> Result<(), ProviderError> {
+    if delta.index >= 32 {
+        return Err(invalid_tool_call());
+    }
+    while calls.len() <= delta.index {
+        calls.push(PartialToolCall::default());
+    }
+    let call = &mut calls[delta.index];
+    if let Some(id) = delta.id {
+        call.id.push_str(&id);
+    }
+    if let Some(function) = delta.function {
+        if let Some(name) = function.name {
+            call.name.push_str(&name);
+        }
+        if let Some(arguments) = function.arguments {
+            call.arguments.push_str(&arguments);
+        }
+    }
+    Ok(())
+}
+
+fn finish_tool_calls(calls: Vec<PartialToolCall>) -> Result<ModelTurnOutcome, ProviderError> {
+    let mut requests = Vec::with_capacity(calls.len());
+    for call in calls {
+        if call.id.is_empty()
+            || call.name.is_empty()
+            || serde_json::from_str::<Value>(&call.arguments).is_err()
+        {
+            return Err(invalid_tool_call());
+        }
+        requests.push(ModelToolRequest {
+            request_id: call.id,
+            tool_name: normalized_tool_name(&call.name),
+            arguments_json: call.arguments,
+        });
+    }
+    Ok(ModelTurnOutcome {
+        tool_requests: requests,
+    })
+}
+
+fn invalid_tool_call() -> ProviderError {
+    ProviderError::new(
+        "invalid_tool_call",
+        "The AI provider returned a malformed tool request.",
+    )
+}
+
+fn wire_tool_name(name: &str) -> String {
+    name.replace('.', "__")
+}
+
+fn normalized_tool_name(name: &str) -> String {
+    name.replace("__", ".")
+}
+
 fn provider_label(provider: &str) -> &'static str {
-    match provider {
-        "openai" => "OpenAI",
-        _ => "DeepSeek",
+    if provider == "openai" {
+        "OpenAI"
+    } else {
+        "DeepSeek"
     }
 }
 fn cancelled() -> ProviderError {
@@ -373,6 +485,7 @@ fn classify_status(status: reqwest::StatusCode, provider: &str) -> ProviderError
 #[derive(Debug, PartialEq)]
 enum SseEvent {
     Delta(String),
+    ToolDelta(WireToolCallDelta),
     Done,
 }
 #[derive(Default)]
@@ -406,18 +519,22 @@ impl SseDecoder {
                             "The AI provider returned an invalid stream event.",
                         )
                     })?;
-                events.extend(response.choices.into_iter().filter_map(|choice| {
-                    choice
-                        .delta
-                        .and_then(|delta| delta.content)
-                        .filter(|content| !content.is_empty())
-                        .map(SseEvent::Delta)
-                }));
+                for delta in response
+                    .choices
+                    .into_iter()
+                    .filter_map(|choice| choice.delta)
+                {
+                    if let Some(content) = delta.content.filter(|value| !value.is_empty()) {
+                        events.push(SseEvent::Delta(content));
+                    }
+                    events.extend(delta.tool_calls.into_iter().map(SseEvent::ToolDelta));
+                }
             }
         }
         Ok(events)
     }
 }
+
 fn event_boundary(bytes: &[u8]) -> Option<(usize, usize)> {
     let lf = bytes
         .windows(2)
@@ -451,20 +568,23 @@ pub fn create_provider(config: ProviderConfig) -> Result<Box<dyn AiProvider>, Pr
 #[cfg(test)]
 mod tests {
     use super::*;
-    fn request() -> ChatCompletionRequest {
-        ChatCompletionRequest {
+    use crate::ai::{
+        model::{ModelToolDescriptor, ModelToolResult, ModelToolResultStatus},
+        tools::NativeToolId,
+    };
+
+    fn request() -> ModelTurnRequest {
+        ModelTurnRequest {
             model: String::new(),
-            messages: vec![ChatMessage {
-                role: "user".into(),
-                content: "Hi".into(),
-            }],
+            messages: vec![ModelMessage::User("Hi".into())],
+            tools: vec![],
             temperature: None,
             max_tokens: None,
             top_p: None,
-            stream: None,
-            thinking: None,
+            thinking_enabled: false,
         }
     }
+
     #[test]
     fn registry_is_closed_and_models_belong_to_known_providers() {
         assert_eq!(
@@ -480,8 +600,52 @@ mod tests {
         assert!(ProviderConfig::for_route("other", "secret".into(), "model").is_err());
         assert!(ProviderConfig::for_route("openai", "secret".into(), "deepseek-v4-pro").is_err());
     }
+
     #[test]
-    fn provider_protocols_shape_requests_without_cross_leaking_fields() {
+    fn both_protocols_serialize_tools_and_native_continuations() {
+        let mut value = request();
+        value.tools.push(ModelToolDescriptor {
+            tool_id: NativeToolId::TasksGetOpen,
+            name: "tasks.get_open".into(),
+            description: "Read tasks".into(),
+            input_schema: json!({"type":"object"}),
+        });
+        let tool_request = ModelToolRequest {
+            request_id: "call-1".into(),
+            tool_name: "tasks.get_open".into(),
+            arguments_json: "{}".into(),
+        };
+        value.messages.push(ModelMessage::AssistantToolRequests {
+            content: None,
+            requests: vec![tool_request],
+        });
+        value
+            .messages
+            .push(ModelMessage::ToolResult(ModelToolResult {
+                request_id: "call-1".into(),
+                tool_name: "tasks.get_open".into(),
+                tool_id: Some(NativeToolId::TasksGetOpen),
+                status: ModelToolResultStatus::Ok,
+                output: json!({"tasks":[]}),
+            }));
+        for (provider, model, protocol) in [
+            ("deepseek", "deepseek-v4-flash", Protocol::DeepSeek),
+            ("openai", "gpt-5-mini", Protocol::OpenAi),
+        ] {
+            let adapter = ChatCompletionsProvider::new(
+                ProviderConfig::for_route(provider, "secret".into(), model).unwrap(),
+                protocol,
+            )
+            .unwrap();
+            let body = adapter.build_body(&value, true);
+            assert_eq!(body["tools"][0]["function"]["name"], "tasks__get_open");
+            assert_eq!(body["messages"][1]["tool_calls"][0]["id"], "call-1");
+            assert_eq!(body["messages"][2]["tool_call_id"], "call-1");
+        }
+    }
+
+    #[test]
+    fn provider_protocols_preserve_non_tool_request_shaping() {
         let deepseek = ChatCompletionsProvider::new(
             ProviderConfig::for_route("deepseek", "secret".into(), "deepseek-v4-flash").unwrap(),
             Protocol::DeepSeek,
@@ -492,6 +656,8 @@ mod tests {
         assert!(deepseek_body.get("thinking").is_some());
         assert!(deepseek_body.get("max_tokens").is_some());
         assert!(deepseek_body.get("max_completion_tokens").is_none());
+        assert!(deepseek_body.get("tools").is_none());
+
         let openai = ChatCompletionsProvider::new(
             ProviderConfig::for_route("openai", "secret".into(), "gpt-5-mini").unwrap(),
             Protocol::OpenAi,
@@ -502,35 +668,63 @@ mod tests {
         assert!(openai_body.get("thinking").is_none());
         assert!(openai_body.get("temperature").is_none());
         assert!(openai_body.get("max_completion_tokens").is_some());
+        assert!(openai_body.get("tools").is_none());
     }
+
     #[test]
-    fn decoder_handles_split_crlf_events_and_done() {
+    fn decoder_normalizes_parallel_tool_requests_in_stable_order() {
         let mut decoder = SseDecoder::default();
-        assert!(decoder
-            .push(b"data: {\"choices\":[{\"delta\":{\"content\":\"Hel")
-            .unwrap()
-            .is_empty());
+        let events = decoder.push(b"data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"a\",\"function\":{\"name\":\"tasks__get_open\",\"arguments\":\"{\"}},{\"index\":1,\"id\":\"b\",\"function\":{\"name\":\"calendar__get_next_event\",\"arguments\":\"{}\"}}]}}]}\n\ndata: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"function\":{\"arguments\":\"}\"}}]}}]}\n\ndata: [DONE]\n\n").unwrap();
+        let mut calls = Vec::new();
+        for event in events {
+            if let SseEvent::ToolDelta(delta) = event {
+                merge_tool_delta(&mut calls, delta).unwrap();
+            }
+        }
+        let outcome = finish_tool_calls(calls).unwrap();
         assert_eq!(
-            decoder
-                .push(b"lo\"}}]}\r\n\r\ndata: [DONE]\r\n\r\n")
-                .unwrap(),
-            vec![SseEvent::Delta("Hello".into()), SseEvent::Done]
+            outcome
+                .tool_requests
+                .iter()
+                .map(|call| call.request_id.as_str())
+                .collect::<Vec<_>>(),
+            vec!["a", "b"]
+        );
+        assert_eq!(outcome.tool_requests[0].arguments_json, "{}");
+        assert_eq!(outcome.tool_requests[0].tool_name, "tasks.get_open");
+    }
+
+    #[test]
+    fn malformed_tool_call_fails_closed() {
+        assert_eq!(
+            finish_tool_calls(vec![PartialToolCall {
+                id: "a".into(),
+                name: "tasks.get_open".into(),
+                arguments: "{".into()
+            }])
+            .unwrap_err()
+            .code,
+            "invalid_tool_call"
         );
     }
+
     #[test]
-    fn decoder_ignores_keep_alive_and_reasoning_only_chunks() {
-        let mut decoder = SseDecoder::default();
-        assert!(decoder.push(b": keep-alive\n\ndata: {\"choices\":[{\"delta\":{\"reasoning_content\":\"private\"}}]}\n\n").unwrap().is_empty());
-    }
-    #[test]
-    fn decoder_preserves_utf8_split_between_network_chunks() {
-        let payload = "data: {\"choices\":[{\"delta\":{\"content\":\"hé 👋\"}}]}\n\n".as_bytes();
+    fn decoder_handles_text_utf8_and_done() {
+        let payload =
+            "data: {\"choices\":[{\"delta\":{\"content\":\"hé 👋\"}}]}\r\n\r\ndata: [DONE]\r\n\r\n"
+                .as_bytes();
         let split = payload.iter().position(|byte| *byte >= 0x80).unwrap() + 1;
         let mut decoder = SseDecoder::default();
         assert!(decoder.push(&payload[..split]).unwrap().is_empty());
         assert_eq!(
             decoder.push(&payload[split..]).unwrap(),
-            vec![SseEvent::Delta("hé 👋".into())]
+            vec![SseEvent::Delta("hé 👋".into()), SseEvent::Done]
         );
+    }
+
+    #[test]
+    fn decoder_ignores_keep_alive_and_reasoning_only_chunks() {
+        let mut decoder = SseDecoder::default();
+        assert!(decoder.push(b": keep-alive\n\ndata: {\"choices\":[{\"delta\":{\"reasoning_content\":\"private\"}}]}\n\n").unwrap().is_empty());
     }
 }

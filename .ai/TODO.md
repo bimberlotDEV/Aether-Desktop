@@ -159,7 +159,7 @@ This section defines direction, not automatic implementation authorization.
 | P0       | `SCHOOL-SPACE-001` | Add ICS-first School timetable views                | Product / UX                       | `done`         | `SCHOOL-MTT-001`                                      | The existing School parent Space surfaces local normalized MyTimetable events in truthful Today, Week, and Upcoming views, scoped to a persisted user-selected group. |
 | P0       | `PULSE-003`        | Add connected schedule/deadline relevance to Pulse | Product / UX / Data                | `done`         | `CAL-CORE-001`, `SCHOOL-SCOPE-002`, `SCHOOL-BSP-REMOVE-001` | Pulse surfaces today's real schedule, due Tasks, conflicts, continuity, and source trust through one minimized deterministic native snapshot without inferred academic deadlines or hidden AI. |
 | P1       | `AI-NATIVE-TOOLS-001` | Add bounded native Calendar and Task read tools  | Product / AI / Security            | `done`         | AI Router, Tasks, Calendar, School source scoping     | A closed Rust registry exposes four bounded read tools with strict schemas, native scope, minimized Sensitive results, and no model execution loop.                      |
-| P1       | `AI-TOOL-ROUTER-001` | Integrate native tools into the AI Router         | Product / AI / Security            | `needs_design` | `AI-NATIVE-TOOLS-001`                                 | A reviewed coordinator may validate model tool requests, execute only authorized native tools, apply disclosure policy to Sensitive results, and bound the tool loop.    |
+| P1       | `AI-TOOL-ROUTER-001` | Integrate native tools into the AI Router         | Product / AI / Security            | `done`         | `AI-NATIVE-TOOLS-001`                                 | A reviewed coordinator validates model tool requests, executes only authorized native tools, applies disclosure policy to Sensitive results, and bounds the tool loop.    |
 | P1       | `ACTION-CAL-001`   | Add Safe Actions for approved scheduling mutations | Product / Security / AI            | `needs_design` | `AI-NATIVE-TOOLS-001`, calendar mutation design       | Aether may propose a study/task scheduling change, show its consequence, require approval, execute once, and audit the result.                                           |
 | P1       | `GITHUB-INT-001`   | Add GitHub development integration                 | Product / Integration              | `candidate`    | `INT-CORE-001`                                        | Users can connect GitHub and surface bounded repository, issue, PR, build, and activity information without making Aether dependent on GitHub.                           |
 | P1       | `AUTO-CORE-001`    | Define Automation integration boundary             | Product / Architecture             | `needs_design` | `INT-CORE-001`, Safe Actions                          | Aether can trigger and receive external workflow events through a generic automation boundary without embedding workflow-engine logic throughout the app.                |
@@ -172,9 +172,9 @@ This section defines direction, not automatic implementation authorization.
 
 # Next recommended planned task
 
-The exact next task is `AI-TOOL-ROUTER-001`: design and implement the tool-enabled
-AI Router coordinator against the completed native registry without weakening
-scope, privacy, or Safe Actions. No academic tool is authorized: the superseded
+No follow-on implementation is automatically authorized. `ACTION-CAL-001`
+remains `needs_design` and requires a separate ready task contract before any
+mutation tool is introduced. No academic tool is authorized: the superseded
 `school.get_deadlines` concept remains unavailable until Aether has a true
 normalized Deadline domain, and deadlines must never be inferred from ICS,
 event titles/descriptions, or MyTimetable.

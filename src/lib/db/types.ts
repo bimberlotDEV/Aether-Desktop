@@ -866,6 +866,41 @@ export const AiStreamEventSchema = z.discriminatedUnion('event', [
   }),
   z.object({ event: z.literal('delta'), data: z.object({ content: z.string() }) }),
   z.object({
+    event: z.literal('status'),
+    data: z.object({
+      phase: z.enum([
+        'generating',
+        'tool_requested',
+        'tool_running',
+        'awaiting_disclosure_approval',
+        'generating_after_tool',
+        'completed',
+        'cancelled',
+        'failed',
+      ]),
+      label: z.string(),
+      toolId: z
+        .enum([
+          'calendar.get_events',
+          'calendar.get_next_event',
+          'tasks.get_due',
+          'tasks.get_open',
+        ])
+        .nullable(),
+    }),
+  }),
+  z.object({
+    event: z.literal('awaiting_disclosure_approval'),
+    data: z.object({
+      requestId: z.string(),
+      provider: z.enum(['deepseek', 'openai']),
+      model: z.string(),
+      categories: z.array(z.enum(['calendar', 'tasks'])),
+      itemCount: z.number().int().nonnegative(),
+      reason: z.string(),
+    }),
+  }),
+  z.object({
     event: z.literal('complete'),
     data: z.object({ message: AiMessageSchema }),
   }),

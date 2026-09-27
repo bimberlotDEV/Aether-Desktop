@@ -84,6 +84,27 @@ impl ToolScope {
         Self::default()
     }
 
+    pub(crate) fn combine(mut self, other: Self) -> Result<Self, ToolError> {
+        if (self.calendar_read.is_some() && other.calendar_read.is_some())
+            || (self.tasks_read.is_some() && other.tasks_read.is_some())
+        {
+            return Err(ToolError::unsupported_scope());
+        }
+        for tool_id in other.allowed_tool_ids {
+            if self.allowed_tool_ids.contains(&tool_id) {
+                return Err(ToolError::unsupported_scope());
+            }
+            self.allowed_tool_ids.push(tool_id);
+        }
+        self.calendar_read = self.calendar_read.or(other.calendar_read);
+        self.tasks_read = self.tasks_read.or(other.tasks_read);
+        Ok(self)
+    }
+
+    pub(crate) fn allowed_tool_ids(&self) -> &[NativeToolId] {
+        &self.allowed_tool_ids
+    }
+
     pub(crate) fn calendar(
         allowed_tool_ids: Vec<NativeToolId>,
         school_space_id: impl Into<String>,
@@ -159,7 +180,7 @@ impl ToolScope {
         })
     }
 
-    pub(super) fn permits(&self, tool_id: NativeToolId) -> bool {
+    pub(crate) fn permits(&self, tool_id: NativeToolId) -> bool {
         self.allowed_tool_ids.contains(&tool_id)
     }
 

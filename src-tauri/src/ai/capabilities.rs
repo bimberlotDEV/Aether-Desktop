@@ -132,14 +132,14 @@ fn model(
         capabilities: ModelCapabilities {
             text_generation: true,
             streaming: true,
-            tool_calling: ToolCallingSupport::None,
+            tool_calling: ToolCallingSupport::Parallel,
             structured_output: StructuredOutputSupport::JsonObject,
             vision: false,
             context_window_tokens: Some(64_000),
             maximum_output_tokens: Some(4_096),
             reasoning_tier,
             execution_location: ExecutionLocation::Cloud,
-            capability_evidence: CapabilityEvidence::AetherRegistry,
+            capability_evidence: CapabilityEvidence::AetherVerified,
         },
     }
 }
@@ -167,7 +167,7 @@ mod tests {
             .all(|model| {
                 model.capabilities.streaming
                     && !model.capabilities.vision
-                    && model.capabilities.tool_calling == ToolCallingSupport::None
+                    && model.capabilities.tool_calling == ToolCallingSupport::Parallel
             }));
     }
 }

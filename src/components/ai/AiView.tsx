@@ -482,6 +482,48 @@ export function AiView({ spaceId }: { spaceId?: string }) {
             </div>
             <footer className="aether-ai-composer">
               <div className="mx-auto max-w-[780px]">
+                {chat.disclosure && (
+                  <div
+                    role="alertdialog"
+                    aria-label="Share local AI context"
+                    className="mb-3 rounded-lg border border-[var(--color-warning)]/40 bg-[var(--color-warning)]/10 p-3"
+                  >
+                    <p className="text-sm font-medium text-[var(--color-text-primary)]">
+                      Aether needs to send {chat.disclosure.itemCount}{' '}
+                      {chat.disclosure.categories.join(' and ')}{' '}
+                      {chat.disclosure.itemCount === 1 ? 'item' : 'items'} to{' '}
+                      {providerLabel(chat.disclosure.provider)} to answer this request.
+                    </p>
+                    <p className="mt-1 text-xs text-[var(--color-text-secondary)]">
+                      Model: {routeLabel(chat.disclosure.provider, chat.disclosure.model)} ·{' '}
+                      {chat.disclosure.reason}
+                    </p>
+                    <div className="mt-3 flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => void chat.approveDisclosure()}
+                        className="rounded-md bg-[var(--color-accent)] px-3 py-1.5 text-xs font-medium text-[var(--color-accent-text)] focus-ring"
+                      >
+                        Approve once
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void chat.cancel()}
+                        className="rounded-md border border-[var(--color-border)] px-3 py-1.5 text-xs text-[var(--color-text-secondary)] focus-ring"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {chat.activity && !chat.disclosure && (
+                  <p
+                    role="status"
+                    className="mb-2 text-xs text-[var(--color-text-secondary)]"
+                  >
+                    {chat.activity.label}
+                  </p>
+                )}
                 <div className="mb-2 flex flex-wrap gap-1">
                   {MODES.map((candidate) => (
                     <button

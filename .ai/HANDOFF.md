@@ -2,197 +2,157 @@
 
 ## Contract metadata
 
-| Field             | Value                                                    |
-| ----------------- | -------------------------------------------------------- |
-| Schema version    | 3                                                        |
-| Task ID           | `AI-NATIVE-TOOLS-001`                                    |
-| Status            | `complete`                                               |
-| Owner             | Codex                                                    |
-| Last updated      | 2026-09-26                                               |
-| Related milestone | Aether 33 — native read-only AI tool foundation          |
-| Classification    | `planned_codex`                                          |
-| Branch / worktree | `agent/ai-native-tools` / `A:\Aether Desktop`            |
+| Field             | Value                                                        |
+| ----------------- | ------------------------------------------------------------ |
+| Schema version    | 3                                                            |
+| Task ID           | `AI-TOOL-ROUTER-001`                                         |
+| Status            | `complete`                                                   |
+| Owner             | Codex                                                        |
+| Last updated      | 2026-09-27                                                   |
+| Related milestone | Aether 34 — tool-enabled AI Router integration                |
+| Classification    | `planned_codex`                                              |
+| Branch / worktree | `agent/ai-tool-router` / `A:\Aether Desktop`                 |
 
 ## Objective
 
-Create a Rust-owned, closed, read-only AI tool registry for
-`calendar.get_events`, `calendar.get_next_event`, `tasks.get_due`, and
-`tasks.get_open`, with strict arguments, native authorization, minimized typed
-outputs, deterministic sanitized errors, Sensitive privacy classification, and
-hard query/result-size bounds. Do not connect tools to model execution yet.
-
-## Context
-
-- `origin/master` at `4da949f` contains the merged repository-health baseline,
-  provider-neutral AI Router, Calendar Core, explicit School source scoping,
-  Pulse, Tasks, Continuity, and Safe Actions.
-- ADR-032 deliberately left `ToolScope` as a non-executing placeholder. This
-  task replaces that placeholder with the first closed native authorization
-  contract while preserving the existing router's no-tools behavior.
-- Calendar reads must reuse the current parent-School-Space authorization and
-  MyTimetable group isolation. Task reads use local normalized Tasks only.
-- `school.get_deadlines` is superseded: no Deadline tool may exist until Aether
-  has a reviewed normalized Deadline domain. Events, ICS text, and
-  MyTimetable data are never deadline inference inputs.
+Connect the provider-neutral AI Router to the existing closed native read-tool
+registry through a bounded Rust-owned coordinator. Eligible models may propose
+authorized Calendar and Task reads, while native routing, privacy, ToolScope,
+budgets, cancellation, serialization, disclosure approval, and provenance
+remain authoritative.
 
 ## Success criteria
 
-- [x] A closed `NativeToolId` registry contains exactly the four approved read tools and rejects unknown IDs.
-- [x] Every descriptor has a stable public name, description, strict input/output schema, output version, execution type, Sensitive privacy class, required scope, and hard result limits.
-- [x] A typed native `ToolScope` authorizes only closed tool IDs plus bounded Calendar/Task read grants; models cannot select connections, providers, groups, SQL, tables, URLs, or paths.
-- [x] All inputs reject unknown fields, malformed values, invalid limits, inverted ranges, and windows over 31 days.
-- [x] Calendar tools read only the current authorized parent School Space's persisted MyTimetable/group projection, exclude cancelled/removed events, order deterministically, and return at most 50 minimized records.
-- [x] Task tools read bounded SQL projections only, exclude archived/completed Tasks, preserve deterministic due/open ordering, and return at most 50 minimized records.
-- [x] Every result is typed/versioned, Sensitive by native policy, and serialized below the 64 KiB hard ceiling; failures use a closed sanitized taxonomy.
-- [x] No write tool, arbitrary query/filesystem/provider path, frontend execution command, provider fetch, model tool loop, local model, academic deadline inference, or Brightspace behavior is added.
-- [x] Existing AI Router behavior remains unchanged and all required focused/full validation passes.
-- [x] Task-owned work is committed, pushed, and represented by a draft PR.
+- [x] Only models with registered tool capability can receive tools; non-tool turns remain unchanged.
+- [x] Provider-specific tool-call wire formats remain inside the DeepSeek/OpenAI adapter boundary.
+- [x] Advertised descriptors are the closed registry intersected with a natively created ToolScope.
+- [x] The same immutable backend/model/location handles every round of one logical turn.
+- [x] Native execution validates IDs, strict arguments, scope, classification, and per-tool limits before reads.
+- [x] The loop enforces four rounds, eight calls, and 64 KiB aggregate result bytes with deterministic serialized execution.
+- [x] Sensitive cloud tool results are never transmitted before an explicit matching one-time disclosure approval when policy requires it.
+- [x] Streaming emits typed friendly tool/approval states and cancellation covers generation, tools, approval wait, and resumed generation.
+- [x] Bounded provenance records tool IDs/counts/rounds/classes/sizes/approval/failure phase without tool bodies or provider wire JSON.
+- [x] No write tool, academic deadline inference, provider fetch, arbitrary SQL/path/scope, migration, or provider switch is introduced.
+- [x] Required focused/full validation, self-review, commit, push, and draft PR complete successfully.
 
-## In scope
+## In scope / allowed paths
 
-- `src-tauri/src/ai/tools/` (registry, scope, validation, projections, execution, errors, tests).
-- Minimal AI module/routing changes needed to replace the empty `ToolScope` placeholder without enabling routing execution.
-- Small reusable native repository projection functions for bounded School Calendar and Task reads when needed.
-- ADR-033 plus current AI architecture/project records and tests.
-
-## Allowed paths
-
-- `src-tauri/src/ai/**`
-- `src-tauri/src/db/repositories/{school_schedule,tasks}.rs`
-- `src-tauri/src/db/repositories/mod.rs` only if a focused module registration is required.
-- `docs/decisions/033-native-read-only-ai-tools.md`, `docs/decisions/README.md`, `docs/architecture.md`, `.ai/ARCHITECTURE.md`
-- `.ai/{HANDOFF,PROJECT_STATE,TODO,SESSION_NOTES,CHANGELOG}.md`
-- Test-only files directly covering the approved behavior.
+- `src-tauri/src/ai/**`, focused AI command/runtime wiring in `src-tauri/src/{commands,lib}.rs`.
+- Existing AI message provenance JSON and repository tests; no schema change unless evidence invalidates this plan.
+- `src/lib/db/{types,tauri}.ts`, `src/hooks/useAi.ts`, `src/components/ai/{AiView,AiView.test}.tsx`, and focused AI tests.
+- ADR-034, architecture docs, and `.ai/{HANDOFF,PROJECT_STATE,TODO,SESSION_NOTES,CHANGELOG}.md`.
 
 ## Out of scope
 
-- Model/router tool-call execution, tool loops, local LLM/runtime work, or provider adapter changes.
-- Tauri/frontend tool execution commands or a tool console.
-- Write/mutation/Safe Action tools, shell/filesystem/network/provider tools, arbitrary SQL, or raw repository access.
-- Academic Deadline/Assignment/Course/Material tools or inference from ICS/event content.
-- Brightspace, CAL-ICS parsing/sync, MyTimetable sync, Pulse UI, Integration runtime, routing selection changes, migrations, or dependencies.
+- Write/Safe Action tools; Calendar/Task mutations; shell, filesystem, browser, email, finance, or network tools.
+- Academic Deadline/Assignment/Course tools or inference from events, ICS, titles, descriptions, or keywords.
+- CAL-ICS, MyTimetable synchronization, School authorization redesign, Pulse, Brightspace, local-model runtime, provider failover, or unrelated UI work.
+- Full release validation, schema migration, or new dependencies unless required by verified implementation evidence.
 
 ## Architecture constraints
 
-- Native code owns tool identity, descriptors, argument parsing, authorization,
-  execution, privacy metadata, output projection, and limits.
-- Execution reads only the provided local SQLite connection and cannot perform
-  network or recursive model work.
-- Calendar authorization starts from an opaque parent School Space ID resolved
-  by trusted native coordination; repository queries derive connection/group
-  access from persisted bindings and never accept those identities as tool args.
-- Bounds must exist in SQL/repository reads, not only after loading records.
-- Existing router calls continue to use `ToolScope::none()`/default and declare
-  no tool requirement.
+- Routing, privacy/disclosure, and tool authorization remain independent native authorities.
+- ToolScope is created before dispatch from trusted product context and is never accepted from model/frontend output.
+- Provider adapters translate between one normalized model-tool contract and provider wire JSON.
+- Parallel provider calls are normalized then validated together and executed serially in stable request order.
+- Approval is bound to logical request, backend, model, inventory, ToolScope summary, expiry, and one-time use; raw results stay only in the active native turn.
+- Existing route/disclosure JSON stores bounded summaries; full payloads are never persisted.
 
 ## Dependencies
 
-- Merged `AI-ROUTER-001`, `CAL-CORE-001`, `SCHOOL-SCOPE-002`, `PULSE-003`, and Tasks domain.
-- Existing `serde`, `serde_json`, `chrono`, and `rusqlite`; no new dependency is expected.
+- Completed `AI-ROUTER-001` and `AI-NATIVE-TOOLS-001` plus ADR-032/ADR-033.
+- Existing Tauri channel, cancellation runtime, SQLite connection, disclosure approval foundation, `serde_json`, `chrono`, and provider HTTP client.
+- Official provider documentation verifies Chat Completions function/tool calling for the registered OpenAI and DeepSeek model families.
 
 ## Risks and safeguards
 
-- **Authorization leakage:** derive Calendar source/group access only through persisted School bindings and test identical groups across connections/Spaces.
-- **Over-broad data:** select dedicated DTO columns; test serialized projections for prohibited fields.
-- **Unbounded work:** enforce 31-day/50-item/64-KiB ceilings and SQL limits; reject rather than silently clamp caller values.
-- **Router behavior drift:** keep execution internal and preserve default empty scope plus existing routing regression tests.
-- **Error leakage:** map repository/native failures to closed codes and static sanitized messages.
+- **Premature disclosure:** gate serialized Sensitive result bytes before provider continuation and test absence before approval.
+- **Scope escalation:** advertise/execute only the immutable native scope; reject unknown IDs and all injected identity/path/query fields.
+- **Unbounded recursion:** hard round/call/aggregate-byte budgets survive all continuations and errors.
+- **Route drift:** construct one backend from one RouteDecision and never invoke routing again within the turn.
+- **Cancellation race:** check the logical-turn token before/after reads, approval, and provider continuation.
+- **Private persistence/UI:** persist inventories and byte counts only; expose friendly status summaries, never raw results.
 
 ## Rollback considerations
 
-The change is additive Rust code plus documentation and a compatible typed
-replacement for an unused placeholder. No migration, persisted data mutation,
-frontend contract, or dependency change is planned. Reverting the task commit
-restores the previous no-tools foundation.
+The change is additive/refactoring within AI contracts and UI events. No migration
+or dependency is planned. Reverting the cohesive task commit restores the current
+no-tools execution path while retaining the independent native registry.
 
 ## Required validation
 
-- Focused registry, strict-argument, Calendar, Task, scope/privacy, projection, and size-cap tests.
-- Pulse/School Calendar projection regressions and AI Router regressions.
+- Focused router, native tool, provider adapter, disclosure, cancellation, provenance, Calendar/Task regression, hook, IPC, and AI view tests.
 - `cargo test --manifest-path src-tauri/Cargo.toml`
 - `cargo fmt --manifest-path src-tauri/Cargo.toml -- --check`
 - `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings`
 - `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm build`
 - `git diff --check`
-- Final diff review for scope escalation, arbitrary invocation, raw exposure,
-  write capability, bounds, privacy drift, and deadline/Brightspace absence.
+- Final diff review for route switching, scope escalation, premature disclosure, payload persistence, hidden writes, unbounded loops, model-controlled authority, and secret leakage.
 
 ## Independent review requirement
 
-| Field          | Value                                                                                         |
-| -------------- | --------------------------------------------------------------------------------------------- |
-| Required       | No                                                                                            |
-| Reason         | The owner requires a distinct final self-review; no separate agent/session was requested.     |
-| Reviewer scope | Closed registry, scope isolation, projections, bounds, errors, router regression, final diff. |
+| Field          | Value                                                                                       |
+| -------------- | ------------------------------------------------------------------------------------------- |
+| Required       | No                                                                                          |
+| Reason         | Repository workflow requires a distinct self-review; the owner did not request delegation. |
+| Reviewer scope | Coordinator, adapters, scope, disclosure, cancellation, persistence, IPC/UI, and tests.     |
 
-## Human decisions required
+## Human decisions / blockers
 
-None at readiness. The owner supplied exact tool IDs, security/privacy policy,
-bounds, exclusions, validation, publication, and stop condition.
+None. The owner supplied the authority model, budgets, UX, validation, publication,
+and explicit exclusions. Repository evidence determines the bounded implementation.
 
-## Blocking decisions
+## Worktree / readiness gate
 
-None.
-
-## Worktree / ownership gate
-
-| Check                             | State                                                                                  |
-| --------------------------------- | -------------------------------------------------------------------------------------- |
-| Correct branch/worktree confirmed | Pass — `agent/ai-native-tools` / `A:\Aether Desktop`                                   |
-| Latest master confirmed           | Pass — fast-forwarded to merged PR #67, `origin/master` at `4da949f`                    |
-| `git status` inspected            | Pass — clean before task-contract creation                                             |
-| User-owned changes identified     | None                                                                                   |
-| Parallel task overlap checked     | Pass — no open task owns this branch or the native AI-tool boundary                    |
-| Serialization points identified   | AI routing `ToolScope`, School authorization projection, Task projection, AI ADR/docs  |
-
-## Readiness review
-
-Passed. The contract has a stable task ID, exact baseline, bounded objective,
-observable acceptance criteria, allowed paths, explicit exclusions, dependencies,
-risks, rollback, validation, publication, and stop condition. ADR-033 records the
-durable native authorization/execution boundary before production implementation.
-
-## Implementation log
-
-- 2026-09-26: Read the owner request and mandatory control documents, verified
-  PR #67 merged, fast-forwarded the clean requested branch to `origin/master`,
-  classified the task as `planned_codex`, and completed the readiness gate.
-- 2026-09-26: Implemented the closed registry, strict descriptors/arguments,
-  typed ToolScope, bounded School Calendar and Task projections, native Sensitive
-  result metadata, sanitized errors, 64 KiB enforcement, and focused tests.
-- 2026-09-26: Corrected next-event behavior to exclude ongoing/all-day events
-  like Pulse, bounded overdue Tasks to the native due grant, preserved explicit
-  local-date semantics for all-day reads, and completed validation/self-review.
-
-## Verification evidence
-
-- Focused native tool foundation: 10/10 tests.
-- Full native: 235/235 tests, including existing AI Router, Pulse, School,
-  Calendar, MyTimetable, migrations, and Safe Actions regressions.
-- Full frontend: 139/139 tests across 37 files.
-- `pnpm typecheck`, `pnpm lint`, `pnpm build`, Rust formatting, strict all-target
-  Clippy, and `git diff --check`: Pass.
-- Migration: none. Dependency changes: none. Frontend/Tauri command changes: none.
-
-## Self-review outcome
-
-`complete`. The final changed-path and
-diff review found no unrelated files, write SQL/tool IDs, provider/network/filesystem
-execution, frontend invoke surface, model loop, raw descriptions/source URLs/config,
-unbounded query/result path, privacy downgrade, Brightspace behavior, or academic
-deadline inference. Calendar authorization remains parent-School-Space plus exact
-persisted connection/group joins; Task output is a dedicated body-free projection.
-Every acceptance criterion above maps to focused tests or the recorded full gates.
-
-## Publication
-
-- Implementation commit: `e259ef2`
-- Branch: `agent/ai-native-tools`
-- Draft PR: [#68](https://github.com/bimberlotDEV/Aether-Desktop/pull/68)
-- Publication-record commit: recorded separately after PR creation
+- Clean isolated worktree confirmed on `agent/ai-tool-router` at the completed native-tools head.
+- No user-owned or parallel changes are present.
+- Conflict-prone ownership is limited to the AI backend/provider/runtime/IPC boundary and handled sequentially here.
+- ADR-034 records the durable coordinator/disclosure decision before production edits.
+- Readiness gate passed; implementation may proceed.
 
 ## Stop condition
 
-Stop after the four read tools and their native foundation meet the acceptance
-criteria, validation and self-review pass, project records are updated, and a
-draft PR is open. Do not begin tool-enabled AI Router integration.
+Stop after all acceptance criteria and required validation pass, self-review and
+project records are complete, the task branch is pushed, and a draft PR is open.
+Do not begin release validation or write-tool work.
+
+## Completion evidence
+
+- Added one normalized model-turn contract and a Rust-owned coordinator with hard
+  limits of four tool rounds, eight calls, and 64 KiB aggregate serialized results.
+- DeepSeek/OpenAI adapters own wire serialization and streamed tool-call assembly;
+  one selected backend/model handles the full logical turn.
+- Native product context advertises bounded Task tools and, only for an active
+  parent School Space, locally authorized Calendar tools. All calls are validated
+  together and executed serially in stable order.
+- Sensitive cloud continuations wait for a request-, route-, inventory-, and
+  scope-bound one-time approval; cancel removes the pending approval and stops the
+  turn. The frontend exposes only a compact provider/model/category/count summary.
+- Route provenance contains tool identifiers, counts, rounds, classifications,
+  byte totals, approval outcome, and failure phase without result bodies.
+- Validation: focused AI/frontend suites, full `cargo test` (247/247), full
+  `pnpm test` (141/141 across 37 files), typecheck, lint, production build, Rust
+  format, strict Clippy, and `git diff --check` all pass.
+- Self-review found no route switching, write path, arbitrary SQL/path/scope,
+  deadline inference, provider fetch, payload persistence, migration, dependency,
+  or unrelated source change.
+- Publication: implementation commit `a99c61d` is pushed to
+  `origin/agent/ai-tool-router`; draft PR
+  [#69](https://github.com/bimberlotDEV/Aether-Desktop/pull/69) is open.
+
+## Owner desktop smoke checklist
+
+Not run by Codex because it requires the owner's live provider credentials and
+interactive desktop confirmation. After installing or starting the branch build:
+
+1. Start Aether with a valid configured cloud provider.
+2. Ask a question requiring no tools and confirm ordinary streaming completes.
+3. Ask, “What is my next calendar event?” in an authorized parent School Space.
+4. Confirm the compact calendar-checking state appears.
+5. Confirm the disclosure approval appears before local calendar data is sent.
+6. Select **Approve once** and confirm the answer uses the correct authorized event.
+7. Ask, “What tasks are due soon?” and confirm bounded local Task use.
+8. Cancel a tool-enabled turn and confirm no later result or continuation appears.
+9. Restart Aether and confirm ordinary AI chat still works.
+10. Confirm the advertised registry contains no write tools.
+11. Confirm the model does not fabricate academic deadlines from event text.

@@ -526,6 +526,9 @@ export async function streamAiMessage(
 export async function cancelAiRequest(requestId: string): Promise<boolean> {
   return invoke('ai_cancel_request', { requestId })
 }
+export async function approveAiToolDisclosure(requestId: string): Promise<boolean> {
+  return invoke('ai_approve_tool_disclosure', { requestId })
+}
 export async function addAiContext(
   conversationId: string,
   entityType: 'note' | 'task' | 'vault' | 'memory',
