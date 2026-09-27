@@ -54,7 +54,7 @@ const defaultCommands: Command[] = [
     ['history'],
     '/activity',
   ),
-  command('ai', 'Open AI', 'Start or continue a DeepSeek conversation', ['chat'], '/ai'),
+  command('ai', 'Open AI', 'Start or continue an AI conversation', ['chat'], '/ai'),
   command(
     'actions',
     'Open Actions',
